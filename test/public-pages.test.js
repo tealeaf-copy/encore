@@ -62,7 +62,7 @@ test("Discover and the homepage reserve space for late sections", () => {
 // /about tells why Pottery Lab exists (docs/about-story.md): the host first, then guests, then brands, in the house voice.
 test("/about: the host's story, five pillars, three readers, the tagline word for word, and plain words", () => {
   const home = read("public/home.html"), text = home.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "");
-  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>Somebody carried the chairs\.<\/h1>/);
+  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>Every good night out starts with a host\.<\/h1>/);
   assert.equal((home.match(/<li><div><span class="n">0\d · /g) || []).length, 5, "five pillars");
   const order = ["For hosts", "For guests", "For brands"].map((k) => text.indexOf(`<span class="kick">${k}</span>`));
   assert.ok(order.every((i) => i > 0) && order[0] < order[1] && order[1] < order[2], "hosts, then guests, then brands");

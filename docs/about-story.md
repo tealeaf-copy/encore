@@ -28,7 +28,9 @@ experienced hosts and a booking they can run end to end.
 - Deck: Pottery Lab is for the people who run the supper club, the game night and the Saturday run. It makes the job easier, gets you paid, and helps the right people find you.
 
 **B. Start with the scene**
-- Headline: Somebody carried the chairs.
+- Headline: Every good night out starts with a host.
+- Earlier headline, retired as too abstract: Somebody carried the chairs.
+- Alternatives on file: The people who make the plans deserve more. / Hosting is work. We help it pay. / Find the people behind your favorite nights.
 - Deck: Behind every supper club, game night and Saturday run is a host doing work nobody sees. Pottery Lab makes that work easier, gets it paid, and helps the right people find it.
 
 **C. Name the reader**

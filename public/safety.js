@@ -13,7 +13,7 @@
   function style() { if (css) return; css = true; const s = document.createElement("style"); s.textContent = `
 .sf-more{position:absolute;top:8px;right:8px;z-index:3;width:32px;height:32px;border-radius:999px;border:1.5px solid var(--pl-line);background:rgba(255,252,247,.92);color:var(--pl-frame);display:grid;place-items:center;cursor:pointer;padding:0}
 .sf-more:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}.sf-more svg{width:16px;height:16px}
-.sf-more::after{content:"";position:absolute;inset:-8px;border-radius:999px}
+.sf-more::after{content:"";position:absolute;inset:-6px;border-radius:999px}
 .fv-by .sf-more{position:relative;width:28px;height:28px;margin-left:auto;flex:none}
 .sf-bg{position:fixed;inset:0;background:rgba(20,16,14,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10000}
 @media (min-width:640px){.sf-bg{align-items:center}}

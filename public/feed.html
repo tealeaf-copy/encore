@@ -15,7 +15,7 @@
 .composer input.clink{width:100%;margin-top:8px}
 .ptext{font-size:16px;line-height:1.5}.plink{display:block;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;margin:4px 0 8px;text-decoration:none;color:var(--ink)}.plink b{display:block}.plink small{color:var(--soft);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdel{font-size:12.5px;color:var(--soft);background:none!important;border:0!important;box-shadow:none!important;padding:0!important;cursor:pointer;text-decoration:underline;margin:0 0 8px}.composer textarea{border:0!important;box-shadow:none!important;padding:4px 2px!important}
 @media (max-width:980px){.fgrid{grid-template-columns:minmax(0,1fr)}.fside{position:static}}
-.top{position:sticky;top:0;background:var(--bg);z-index:5}
+.top{position:sticky;top:0;background:var(--pl-page,var(--bg));z-index:5}
 .bell{position:relative;background:none;border:0;font-size:22px;cursor:pointer;min-width:44px;min-height:44px;display:inline-grid;place-items:center;padding:0;color:var(--ink)}.bell .gl{width:22px;height:22px}.bell i#bellN{position:absolute;top:2px;right:2px;background:var(--brand);color:#fff;font:600 13px/1.2 var(--sys-sans,system-ui);border-radius:99px;padding:1px 6px;font-style:normal}
 .rail{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 14px;scrollbar-width:none}.rail-wait:empty{min-height:103px;box-sizing:border-box}.rail::-webkit-scrollbar{display:none}
 .ring{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;cursor:pointer;color:var(--ink);font:500 12px "IBM Plex Sans",system-ui;width:72px}
@@ -93,7 +93,8 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 .fv-kicker .place-chip{display:inline-flex!important;align-items:center;gap:8px;background:none!important;border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;font:inherit;color:inherit;min-height:0!important}
 .fv-kicker .place-chip .pc-pin,.fv-kicker .place-chip .pc-gps,.fv-kicker .place-chip .pc-note{display:none}
 .fv-kicker .place-chip b{font:inherit;color:var(--pl-ink)}.fv-kicker .place-chip button{background:none;border:0;padding:0 2px;min-height:44px;font:500 13px "IBM Plex Sans",system-ui;letter-spacing:0;text-transform:none;color:var(--pl-accent-text)!important;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.fv-kicker .pc-form{text-transform:none;letter-spacing:0}.fv-kicker .pc-form input{min-height:44px;font-size:16px;width:12em}
+.fv-kicker .pc-form{text-transform:none;letter-spacing:0;gap:8px;flex-wrap:wrap}.fv-kicker .pc-form input{min-height:44px;width:12em;box-sizing:border-box;padding:0 12px;border:1.5px solid var(--pl-line-strong,#C9BFB2);border-radius:6px;background:var(--pl-surface,#fff);color:var(--pl-ink);font:400 16px/1.2 "IBM Plex Sans",system-ui!important;letter-spacing:0!important;text-transform:none!important}
+.fv-kicker .pc-form .pc-save{background:var(--pl-accent)!important;color:#fff!important;text-decoration:none!important;padding:0 16px!important;border-radius:6px!important;font:600 14px "IBM Plex Sans",system-ui!important;min-height:44px}
 /* a post from a friend: the same scrapbook page as everything else */
 .fv-post .cheers{margin:10px 0 0!important;font-size:13px;font-weight:500;color:var(--pl-soft)}.fv-post .pdel{min-height:44px;margin:0}
 .fv-btn.cheer.on{background:#FBEBC4;border-color:#E9D29A}

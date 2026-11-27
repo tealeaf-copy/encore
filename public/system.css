@@ -15,6 +15,8 @@
    IBM Plex Mono for kickers and data only. Every colour, face, corner and line of the brand is in this block (see
    docs/brand-kit.md). test/brand-tokens.test.js checks each text/background pair here at WCAG AA. ==== */
 @import url("/fonts/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap");
+/* copy never ends on one word alone, headings break into even lines, bold is the kit's 600 (also in every full page's head, server/appstore.js) */
+:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}
 /* a stand-in shaped like IBM Plex Sans while it loads, so headings don't change size when it arrives */
 @font-face{font-family:"PL Display Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:101%;ascent-override:102%;descent-override:27%;line-gap-override:0%}
 :root{
@@ -287,8 +289,6 @@ html body :is(article.fc small,article.prog small,.prog-k){font-size:13px!import
 @media (max-width:860px){html body :is(.fv-end a,.fside h3 a){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}
 html body .pub-side{box-shadow:none!important;border:1.5px solid var(--line,var(--pl-line))!important}
 
-/* ---- copy never leaves one word alone on its last line; short headings balance their lines ---- */
-:where(p,li,dd,figcaption,blockquote,small,label){text-wrap:pretty}:where(h1,h2,h3){text-wrap:balance}
 
 /* ---- the 2026 brand: calm, grown-up chrome (docs/brand-kit.md "Look"). The scrapbook touches (tape, tilt, Caveat)
    stay on photo moments; routine UI is flat, thin-lined and still ---- */
@@ -344,7 +344,7 @@ html body #ideaLib.lib-casual .lib-head p.note{margin:4px 0 0;font-size:var(--fs
    "Coming solo", not as pills with a box jammed against the words */
 html body #view-guest#view-guest label.chip.chip:not([hidden]):has(> input[type=checkbox]){border:0!important;background:none!important;box-shadow:none!important;padding:0!important;border-radius:0!important;display:flex!important;align-items:center!important;gap:12px!important;min-height:44px;font-weight:500;align-self:stretch!important;text-align:left}
 html body #view-guest label.chip > input[type=checkbox]{flex:none;margin:0!important;width:22px!important;height:22px!important}
-@media (max-width:860px){html body #helpSide{display:none!important}}
+@media (max-width:860px){html body :is(#helpSide,#settingsSide){display:none!important}}
 
 /* ==== Field Notes: the shared frame (docs/brand-kit.md "Look"). Everything reads the tokens above, so a host's kit and a
    later brand slot in. Pages adopt the magazine patterns through these classes; the older card classes get the frame too ==== */

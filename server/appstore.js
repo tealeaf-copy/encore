@@ -56,16 +56,17 @@ const SW_REG = `<script>if("serviceWorker"in navigator&&!/^\\/(sw|support)/.test
 const VT_QUIET = `<script>addEventListener("pagereveal",(e)=>{const t=e.viewTransition;if(t)["ready","finished","updateCallbackDone"].forEach((k)=>t[k]&&t[k].catch(()=>{}))})</script>`;
 // Every page: short copy never ends on one word alone, headings break into even lines, and bold is the kit's 600 (the
 // browser's "bolder" inside a 600 label asked for a 900 the kit never loads) (design audit,
-// docs/design-audit.md). :where() keeps it at zero specificity, so a page's own text-wrap still wins.
+// docs/design-audit.md). :where() keeps it at zero specificity, so a page's own text-wrap still wins. The light invite
+// (/e, /i) has a 40,000-character budget, so it gets the same rules from public/system.css instead.
 const WRAP = `<style>:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}</style>`;
-const LIGHT = VT_QUIET + WRAP + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script><script src="/report.js" defer></script>`; // help for everyone, error reports, the status line (public/report.js)
+const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script><script src="/report.js" defer></script>`; // help for everyone, error reports, the status line (public/report.js)
 // every full page: network manners first (public/netguard.js), then the app tags; the speculation rules prefetch a page
 // link a finger lands on (server/perf.js)
 // the page-to-page fade's opt-in, in the head of every full page: public/craft.css has the same rule, but it is added by
 // a script and lands after the first paint, so the browser found no opt-in on the new page and aborted the fade (and
 // reported an unhandled rejection on every move between pages)
 const VT_OPT_IN = `<style>@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.15s}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>`;
-const FULL = `<script src="/netguard.js"></script>` + VT_OPT_IN + LIGHT + SPECULATION + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
+const FULL = `<script src="/netguard.js"></script>` + VT_OPT_IN + LIGHT + WRAP + SPECULATION + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
 // Report and block (public/safety.js) where people's posts, photos, kudos and host pages show
 const SAFETY_PAGES = /^\/($|feed|@|h\/|x\/|discover|photos|kudos|leaderboard|settings|community|g$)/;
 

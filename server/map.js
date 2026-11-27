@@ -42,7 +42,9 @@ export function vibeOf(e = {}, cat = catOf(e)) { const t = textOf(e), hh = +Stri
   if (cat === "supper" || cat === "drop" || cat === "market" || /\b(food|eat|bake|baking|cake|bread|b[aá]nh|cook|cooking|wine|dinner|lunch|picnic)\b/.test(t)) return "food";
   return "cozy"; }
 /** "free", "$" (about $20 or less a person), "$$" (to $60), "$$$" (more), or "" when we can't tell. */
-export function tierOf(e = {}) { if (e.free || e.payWhatYouLike) return "free"; const s = String(e.price ?? e.priceLine ?? "").replace(/,/g, "");
+// a drop's prices are on its items (server/drops.js): it is never "Free" because the event itself has no price
+const dropLow = (e) => { if (!(e.preorder || e.drop)) return 0; const P = (e.orderItems || []).map((i) => +i.price).filter((n) => n > 0); return P.length ? Math.min(...P) : 0; };
+export function tierOf(e = {}) { const d = dropLow(e); if (d) return d <= 20 ? "$" : d <= 60 ? "$$" : "$$$"; if (e.free || e.payWhatYouLike) return "free"; const s = String(e.price ?? e.priceLine ?? "").replace(/,/g, "");
   if (!s.trim() || /^\s*(0|free)\s*$/i.test(s)) return "free"; // no price on an open event means free, as Discover says
   const m = s.match(/(\d+(?:\.\d+)?)/); if (!m) return /free/i.test(s) ? "free" : ""; const n = +m[1]; if (!n) return "free"; return n <= 20 ? "$" : n <= 60 ? "$$" : "$$$"; }
 
@@ -65,7 +67,7 @@ export function makeMap({ store, C, H = null, geo = makeGeocoder({ store }) }) {
     const hood = clean(e.hood || (host?.hood && lc(String(e.city || "").split(",")[0]) === lc(String(host?.city || "").split(",")[0]) ? host.hood : "") || (!e.city ? host?.hood : "") || "", 60);
     const pub = !!e.meetPoint && !e.approvalRequired && e.discoverable && g.exact; // the place name only where the public card already shows it
     return { id, url: "/e/" + encodeURIComponent(id), title: clean(e.pubTitle || e.name, 140), date: /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") ? e.date : "", startTime: /^\d{2}:\d{2}$/.test(e.startTime || "") ? e.startTime : "",
-      hood, city: clean(e.city || host?.city, 60), cat, etype: typeOf(e), vibe, tier: tierOf(e), priceText: e.free ? "Free" : clean(typeof e.price === "string" || typeof e.price === "number" ? String(e.price) : "", 40),
+      hood, city: clean(e.city || host?.city, 60), cat, etype: typeOf(e), vibe, tier: tierOf(e), priceText: dropLow(e) ? "From $" + (dropLow(e) % 1 ? dropLow(e).toFixed(2) : dropLow(e)) : e.free ? "Free" : clean(typeof e.price === "string" || typeof e.price === "number" ? String(e.price) : "", 40),
       cover: PHOTO_OK(e.coverPhoto) ? e.coverPhoto : "", art: { activity: clean(e.activity, 40), kind: ART_OK(e.coverArt?.kind) ? e.coverArt.kind : "", tone: ART_OK(e.coverArt?.tone) ? e.coverArt.tone : "" },
       host: host ? { handle: clean(host.handle, 40), name: clean(host.name || host.handle, 60), color: /^#[0-9a-f]{6}$/i.test(host.theme?.accent || host.color || "") ? host.theme?.accent || host.color : "", avatarArt: /^[a-z]+(~\d){0,6}$/.test(host.theme?.avatarArt || "") ? host.theme.avatarArt : "", url: host.handle ? "/@" + host.handle : "" } : null,
       going: +going.going || 0, faces: (going.faces || []).slice(0, 3).map((f) => ({ art: /^[a-z]+$/.test(f.art || "") ? f.art : "", color: /^#[0-9a-f]{6}$/i.test(f.color || "") ? f.color : "" })),

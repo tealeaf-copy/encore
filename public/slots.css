@@ -92,7 +92,7 @@ html body :is(#f,#gForm) [hidden][hidden]{display:none!important}
    17/27 in ink, meta and helper lines at 14/20. Linen page, notebook cards, 6px corners, 1.5px ink lines, no shadows.
    A look or brand kit changes only the accent (--lk-btn, --lk-link, --kit-btn), the cover art and the title face. ==== */
 html:has(body.lk-invite),html body.lk-invite,html body.lk-on:has(#view-guest.ev2:not([hidden])){background:var(--pl-page)!important;background-image:none!important}
-html body #m#m{max-width:600px;padding:max(8px,env(safe-area-inset-top)) 16px calc(var(--inv-safe-b) + 32px);color:var(--pl-ink)}
+html body #m#m:not([data-calm="host"]){max-width:600px;padding:max(8px,env(safe-area-inset-top)) 16px calc(var(--inv-safe-b) + 32px);color:var(--pl-ink)}
 @media (max-width:699px){html body:has(.prb) #m#m{padding-bottom:calc(var(--inv-bar-h) + var(--inv-safe-b) + 32px)}} /* the reply bar's room only while it's on the page: once you've replied it goes */
 html body #m#m>.top{margin:0 0 16px;min-height:40px}
 html body #m#m>.cov{border-radius:var(--pl-r-md)!important;border:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;background:var(--lk-cover,var(--pl-surface))!important;margin:0 0 24px}

@@ -72,3 +72,9 @@ test("/about: the host's story, five pillars, three readers, the tagline word fo
   assert.doesNotMatch(text.replace(/<!doctype[^>]*>/i, ""), /—|!|seamless|effortless|unlock|elevate|curated|magical|marketplace|empower|attendees|\bseats\b|per person/i);
   assert.match(home, /<meta name="description" content="[^"]*host[^"]*">/);
 });
+
+test("host pages keep their full width when a series loads the invite stylesheet", () => {
+  const css = read("public/slots.css");
+  assert.match(css, /html body #m#m:not\(\[data-calm="host"\]\)\{max-width:600px/);
+  assert.match(read("public/host.html"), /<main id="m" data-calm="host"/);
+});

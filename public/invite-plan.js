@@ -55,7 +55,7 @@
     const replies = c.yes + c.in + c.maybe + c.no + c.asked + c.waitlist;
     const tabs = [["pick", "Pick", d.meter.invited], ["waves", "Waves", d.waves.length], ["status", "Status", replies], ["after", d.event.today ? "Check in" : "After", c.came]];
     el.innerHTML = meterHTML(d) + `<div class="ip-seg" role="tablist" aria-label="Invite plan">${tabs.map(([k, l, n]) => `<button role="tab" type="button" data-ipv="${k}" aria-selected="${s.view === k}">${l}${n ? `<small>${n}</small>` : ""}</button>`).join("")}</div><div class="ip-pane">${({ pick: pickHTML, waves: wavesHTML, status: statusHTML, after: afterHTML })[s.view](d, s, manage)}</div>`
-      + (s.view === "pick" || s.view === "waves" ? moreHTML(d, s) : "");
+      + (s.view === "pick" || s.view === "status" ? cohostRow(d) : "") + (s.view === "pick" || s.view === "waves" ? moreHTML(d, s) : "");
     wire(el, id); motion(el, id); watch(el, id); }
   // numbers that count up: the first look of a visit counts from zero, and after that a column that changed counts
   // from what it was, with a short ink underline, so new replies are easy to see
@@ -83,10 +83,10 @@
       ${d.fill && d.meter.invited ? fillHTML(d) : ""}
       <section class="ip-card"><div class="ip-ch"><h2>${planned.length ? `On the list <span class="ip-mono ip-muted">${planned.length}</span>` : "No one on the list yet"}</h2>${planned.some((r) => r.status === "planned") ? `<button class="ip-b pri sm" type="button" data-sendall>Send ${planned.filter((r) => r.status === "planned").length} now</button>` : ""}</div>
         ${planned.length ? groups.map(({ w, R }) => R.length ? `<p class="ip-grp"><span>${E(w.name)}</span><span>${w.sentAt ? "Sent" : w.at <= Date.now() + 5 * 60e3 ? "Ready to send" : `Sends ${E(when(w.at))}`}</span></p><div class="ip-rows">${R.map((r) => `<div class="ip-row"><span class="ip-av">${ini(nm(r))}</span><span><b>${E(nm(r))} ${tags(r)}</b><span class="ip-meta">${E(meta(r))}${r.rate >= 0.7 ? " · Usually in" : ""}</span></span><span class="ip-end">${r.status === "planned" ? `<select class="ip-in" style="min-height:36px;width:auto;font-size:13px" data-wave="${E(r.id)}" aria-label="Wave for ${E(r.name)}">${d.waves.filter((x) => x.kind === "people").map((x, i) => `<option value="${E(x.id)}"${x.id === r.wave ? " selected" : ""}>Wave ${i + 1}</option>`).join("")}</select><button class="ip-x" type="button" data-rm="${E(r.id)}" aria-label="Take ${E(r.name)} off">×</button>` : pill(r.status)}</span></div>`).join("")}</div>` : "").join("")
-          : `<p class="ip-sub">Tap a list above. People who came before and said they'd go again are the best place to start.</p>`}${cohostRow(d, planned)}</section>`; }
+          : `<p class="ip-sub">Tap a list above. People who came before and said they'd go again are the best place to start.</p>`}</section>`; }
   // co-host hook (public/cohost.html): Potto's line for each friend before sending, and a time that suits most of them
-  function cohostRow(d, planned) { if (!planned.length || d.event.past) return ""; const id = encodeURIComponent(d.event.id), waiting = planned.some((r) => r.status === "planned");
-    return `<div class="ip-acts ip-cohost">${waiting ? `<a class="ip-b sm" href="/cohost/${id}?m=lines">Add a line for each friend</a>` : ""}<a class="ip-b sm" href="/cohost/${id}?m=time">Find a time that works</a></div>`; }
+  function cohostRow(d) { const planned = d.rows.filter((r) => r.planned); if (!planned.length || d.event.past || d.event.today) return ""; const id = encodeURIComponent(d.event.id), waiting = planned.some((r) => r.status === "planned");
+    return `<div class="ip-acts ip-cohost">${waiting ? `<a class="ip-b" href="/cohost/${id}?m=lines">Add a line for each friend</a>` : ""}<a class="ip-b" href="/cohost/${id}?m=time">Find a time that works</a></div>`; }
   function fillHTML(d) { return `<div class="ip-note" role="note"><div><p>${E(d.fill.text)}</p><p class="ip-muted" style="margin-top:4px">${d.fill.people.slice(0, 5).map((p) => `${E(first(p.name))} (${p.rate}%)`).join(", ")}</p><div class="ip-acts"><button class="ip-b pri sm" type="button" data-fill>Invite ${d.fill.ids.length}</button></div></div></div>`; }
 
   // ---------------- Waves ----------------

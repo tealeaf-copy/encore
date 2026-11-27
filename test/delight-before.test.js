@@ -76,10 +76,10 @@ test("Here's your night: one sentence becomes a near-finished plan, honest about
   assert.equal((await post("/api/cohost/night", { text: "x" })).status, 401, "the server reading is for signed-in hosts; /start reads on the phone");
   // Potto answers the same sentence with a link that opens the canvas with the card
   const a = await (await post("/api/potto/ask", { message: "dumpling night for 8 next Saturday" }, host.cookie)).json();
-  assert.match(a.answer, /^Here's your night: Dumpling night, .*8 spots/); assert.match(a.answer, /Nothing's sent or booked/); assert.match(a.links[0].href, /^\/\?app=1&new=1&night=dumpling%20night/);
+  assert.match(a.answer, /^Here's your night: Dumpling night, .*8 spots/); assert.match(a.answer, /Nothing's sent or booked/); assert.match(a.links[0].href, /^\/\?app=1&new=1&kind=dinner&night=dumpling%20night/);
   // the hooks are in place: the canvas card, /start and the one script in the app shell
   assert.match(read("public/canvas.js"), /root\.PLCohost\?\.typed\?\.\(t\.value, cohost\(\)\)/); assert.match(read("public/canvas.js"), /<div id="cvNight"/);
-  assert.match(read("public/start.html"), /window\.PLStart = \{ apply\(P\)/); assert.match(read("index.html"), /<script src="\/cohost\.js" defer><\/script>/);
+  assert.match(read("public/start.html"), /window\.PLStart = \{ apply\(P\)/); assert.match(read("public/canvas.js"), /s\.src = "\/cohost\.js"/, "the canvas loads it, so the app shell keeps its size"); assert.doesNotMatch(read("index.html"), /cohost\.js/);
   const card = read("public/cohost.js"); assert.match(card, /Here's your night/); assert.match(card, /Looks good/); assert.match(card, /Nothing is sent or booked/);
 });
 

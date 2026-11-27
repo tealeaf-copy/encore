@@ -268,7 +268,7 @@
     if (pre) applyPreset(pre, false);
     else if (!editing && S.W.planKind === "run") runDefaults(S.W);
     if (insp) { const W = S.W; W.inspiredBy = insp.id; if (insp.title) { W.pubTitle = insp.title; W.name = insp.title; } if (insp.date) W.date = insp.date; if (insp.place) W.venueName = insp.place; if (insp.hood) W.hood = insp.hood; if (insp.city) W.city = insp.city; if (insp.cover) W.coverArt = { ...(W.coverArt || {}), kind: insp.cover }; S.dirty = true; } // ---- end inspiration ----
-    build(); root.PLCohost?.opened?.(cohost()); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
+    build(); if (root.PLCohost) root.PLCohost.opened?.(cohost()); else (root.__plCohostQ = root.__plCohostQ || []).push(() => root.PLCohost?.opened?.(cohost())); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
   // ---- co-host hook (public/cohost.js): "Here's your night" from one sentence, the card under the title. Looks good
   // fills the title, kind, day, time, spots and the drawn cover in one go; the host still saves. ----
   const cohost = () => ({ el: () => S?.el, isNew: () => !!S && !S.orig, setTitle: (t) => { if (!S) return; S.W.pubTitle = S.W.name = String(t).slice(0, 90); changed(true); },
@@ -454,6 +454,7 @@
   function suggestPlace(Sh) { const P = root.PLSuggest; if (!P?.attach) return; const city = Sh.$("#cvCity");
     P.attach(Sh.$("#cvWhere"), { kind: "place", city: () => city.value.trim() || sugCity(), onPick: (it) => { if (it.city && !city.value.trim()) city.value = it.city; } });
     P.attach(city, { kind: "city", city: sugCity }); }
+  if (!root.PLCohost && !document.querySelector('script[src^="/cohost.js"]')) { const s = document.createElement("script"); s.src = "/cohost.js"; s.async = true; document.head.appendChild(s); } // co-host: Here's your night (public/cohost.js), loaded here so the app shell stays the same size
   if (!root.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); }
   (root.__plSuggestQ = root.__plSuggestQ || []).push(() => suggestHook()); // the canvas may open before the file lands
 

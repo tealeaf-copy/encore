@@ -33,7 +33,7 @@ textarea{width:100%;min-height:76px;border:1px solid var(--pl-ink);border-radius
 input[type=date]{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;width:100%;border:1px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:16px/44px var(--pl-font-text);padding:0 12px;margin:0;display:block}
 input[type=date]::-webkit-date-and-time-value{text-align:left;line-height:44px}
 .dates{display:grid;gap:8px;margin:10px 0 0}.dates label{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:8px;font:500 12px/1.3 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
-.msg{min-height:22px;margin:8px 0 0;font-size:15px}.msg.err{color:var(--pl-danger)}.msg.ok{color:var(--pl-success)}
+.msg{margin:8px 0 0;font-size:15px}.msg:empty{display:none}.msg.err{color:var(--pl-danger)}.msg.ok{color:var(--pl-success)}
 .empty{padding:6px 0}
 .sticky{position:sticky;bottom:0;background:var(--pl-page);padding:12px 0 calc(8px + env(safe-area-inset-bottom));border-top:1px dashed var(--pl-line);margin-top:8px}
 @media (max-width:860px){body.es-has-tabs .sticky{bottom:var(--ch-tabs,64px)}}
@@ -55,7 +55,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;line-height:44px}
   const FACE = `<svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2"/><circle cx="11.6" cy="15.6" r=".9" fill="currentColor" stroke="none"/><circle cx="16.4" cy="15.6" r=".9" fill="currentColor" stroke="none"/><path d="M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg>`;
   const potto = (t) => `<div class="potto">${FACE}<p>${E(t)}</p></div>`;
   async function api(url, body, method) { const r = await fetch(url, { method: method || (body ? "POST" : "GET"), credentials: "same-origin", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined }); let j = {}; try { j = await r.json(); } catch {} if (!r.ok) { const e = new Error(j.message || "That didn't work. Try again."); e.status = r.status; throw e; } return j; }
-  const patch = (body) => api("/api/db/doc?path=" + encodeURIComponent("events/" + id), body, "PATCH");
+  // the event's own write path, from the version we just read (a change made elsewhere is merged, not overwritten)
+  const patch = async (body) => { const P = "/api/db/doc?path=" + encodeURIComponent("events/" + id), cur = await api(P).catch(() => null); return api(P, { ...body, ...(cur?.data?.updatedAt ? { _base: cur.data.updatedAt } : {}) }, "PATCH"); };
   const mark = (event, p = {}) => fetch("/api/cohost/mark", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event, via: "page", ...p }), keepalive: true }).catch(() => {});
   const say = (el, t, ok) => { if (!el) return; el.textContent = t; el.className = "msg " + (ok ? "ok" : "err"); };
   const fmt = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
@@ -67,14 +68,14 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;line-height:44px}
   // ---------------- a time that works ----------------
   async function time() { let t; try { t = await api(base + "/times"); } catch (e) { return fail(e); }
     const noInfo = t.noInfo.length ? `<p class="soft">No info yet: ${E(t.noInfo.slice(0, 8).join(", "))}${t.noInfo.length > 8 ? ` and ${t.noInfo.length - 8} more` : ""}.</p>` : "";
-    if (!t.enough) { view.innerHTML = `<span class="kick">A time that works</span><h1>Let friends pick the date</h1>${potto(t.people ? `I don't know enough about when your people are free yet, so a quick poll is the honest way. Here are three dates. Change any of them.` : `Nobody's on this event yet. Add people on the Invite tab and I can look for a time, or ask with a quick poll.`)}
+    if (!t.enough) { view.innerHTML = `<span class="kick">${E(t.title || "A time that works")}</span><h1>Let friends pick the date</h1>${potto(t.people ? `I don't know enough about when your people are free yet, so a quick poll is the honest way. Here are three dates. Change any of them.` : `Nobody's on this event yet. Add people on the Invite tab and I can look for a time, or ask with a quick poll.`)}
         <section class="card"><h2>Three dates to pick from</h2><p class="soft">Friends tap the ones they can do. The date comes off the invite until you pick one.</p>
         <div class="dates">${t.poll.map((d, i) => `<label>Date ${i + 1}<input type="date" data-poll="${i}" value="${E(d)}"></label>`).join("")}</div>${noInfo}<p class="msg" id="pm"></p></section>
         <div class="sticky"><button type="button" class="btn pri" id="poll">Ask friends these dates</button></div>`;
       $("#poll").onclick = async (ev) => { const b = ev.currentTarget, dates = [...new Set($$("[data-poll]").map((x) => x.value).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)))].sort().slice(0, 3); if (dates.length < 2) return say($("#pm"), "Pick at least two dates.");
         b.disabled = true; try { await patch({ stage: "interest", dateOptions: dates, date: "" }); mark("cohost_poll_started", { count: dates.length }); say($("#pm"), `Done. Friends now pick from ${dates.map(fmt).join(", ")}.`, true); b.textContent = "Poll is on"; } catch (e) { say($("#pm"), e.message); b.disabled = false; } };
       return; }
-    view.innerHTML = `<span class="kick">A time that works</span><h1>Times that suit most people</h1>${potto("From what I know about your people: when they've come before, what they've told you, and what else they're in for. Pick one, or leave it as it is.")}
+    view.innerHTML = `<span class="kick">${E(t.title || "A time that works")}</span><h1>Times that suit most people</h1>${potto("From what I know about your people: when they've come before, what they've told you, and what else they're in for. Pick one, or leave it as it is.")}
       ${t.options.map((o, i) => `<section class="card opt"><div><h2>${E(o.label)}${o.current ? `<span class="tag">Current</span>` : ""}</h2><p class="who">${E(o.line.slice(o.label.length + 2).replace(/^./, (c) => c.toUpperCase()))}</p>${o.unsure.length ? `<p class="soft">Can't say for ${E(o.unsure.slice(0, 6).join(", "))}${o.unsure.length > 6 ? " and others" : ""}.</p>` : ""}</div>
         ${o.current ? `<p class="soft">This is the time on the invite now.</p>` : `<div class="acts"><button type="button" class="btn${i === t.options.findIndex((x) => !x.current) ? " pri" : ""}" data-move="${i}">Move it here</button></div>`}<p class="msg" data-mm="${i}"></p></section>`).join("")}
       ${noInfo ? `<section class="card">${noInfo}<p class="soft">They aren't counted above. A reply to one of your invites teaches me more.</p></section>` : ""}`;
@@ -108,6 +109,11 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;line-height:44px}
       b.disabled = true; try { const x = await api(base + "/rescue/remind", { text }); say($("#rm"), x.reminded ? `Sent to ${x.reminded}.` : x.tooSoon ? "They got a reminder in the last day. Try again tomorrow." : "Nobody to remind right now.", !!x.reminded); b.textContent = x.reminded ? "Sent" : b.textContent; if (!x.reminded) b.disabled = false; } catch (er) { say($("#rm"), er.message); b.disabled = false; } };
     const mv = $("#mv"); if (mv) mv.onclick = async () => { mv.disabled = true; try { await patch({ date: r.better.date, startTime: r.better.time }); mark("cohost_rescue_acted", { kind: "move" }); say($("#mvm"), `Moved to ${r.better.label}. It's on the invite now.`, true); mv.textContent = "Moved"; } catch (er) { say($("#mvm"), er.message); mv.disabled = false; } }; }
 
+  // text boxes grow with what is in them, so no line is cut off
+  const grow = (t) => { t.style.height = "auto"; t.style.height = t.scrollHeight + 3 + "px"; };
+  document.addEventListener("input", (e) => { if (e.target.tagName === "TEXTAREA") grow(e.target); });
+  new MutationObserver(() => $$("textarea:not([data-g])", view).forEach((t) => { t.dataset.g = "1"; grow(t); })).observe(view, { childList: true });
+  addEventListener("resize", () => $$("textarea", view).forEach(grow));
   ({ time, lines, rescue })[m]();
 })();
 </script>

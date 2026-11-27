@@ -87,20 +87,22 @@
 .chn[hidden]{display:none!important}.chn-h{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px}.chn-h svg{flex:none}.chn-h b{display:block;font:600 18px/1.25 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif)}.chn-h p{margin:2px 0 0;color:var(--pl-soft,#444845);font-size:14px}
 .chn-rows{display:grid;gap:0;border-top:1px dashed var(--pl-line,#CFC8B9)}.chn-r{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--pl-line,#CFC8B9)}
 .chn-r>span{font:500 12px/1.3 var(--pl-font-mono,"IBM Plex Mono",monospace);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft,#444845)}
-.chn-r input,.chn-r select,.chn-r textarea{box-sizing:border-box;width:100%;min-height:44px;height:44px;border:1px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:400 16px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);padding:0 10px;margin:0}
+.chn-r input,.chn-r select,.chn-r textarea{box-sizing:border-box;width:100%;min-height:44px;height:44px;border:1.5px solid var(--pl-line-strong,#1B1D1C)!important;border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:400 16px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);padding:0 10px;margin:0}
 .chn-r textarea{height:auto;min-height:88px;padding:8px 10px;resize:vertical;line-height:1.4}.chn-r input:focus-visible,.chn-r select:focus-visible,.chn-r textarea:focus-visible,.chn button:focus-visible{outline:2px solid var(--pl-accent,#29489A);outline-offset:2px}
-.chn-two{display:grid;grid-template-columns:1.25fr 1fr;gap:8px}.chn-sug{display:block;margin-top:4px;font-size:13px;color:var(--pl-soft,#444845)}
-.chn-step{display:flex;align-items:center;gap:0;border:1px solid var(--pl-ink,#1B1D1C);border-radius:6px;width:max-content}.chn-step button{width:44px;height:44px;border:0;background:none;color:inherit;font:500 20px/1 var(--pl-font-text,"IBM Plex Sans",sans-serif);cursor:pointer}.chn-step output{min-width:36px;text-align:center;font:600 16px var(--pl-font-text,"IBM Plex Sans",sans-serif)}
-.chn-cov{display:flex;gap:10px;align-items:center}.chn-cov .chn-art{position:relative;flex:none;width:96px;aspect-ratio:16/10;border-radius:6px;overflow:hidden;border:1px solid var(--pl-ink,#1B1D1C)}
-.chn-b{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border-radius:6px;border:1.5px solid var(--pl-ink,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px/1.2 var(--pl-font-text,"IBM Plex Sans",sans-serif);cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
-.chn-b.go{border-color:var(--pl-accent,#29489A);color:var(--pl-accent,#29489A)}.chn-b.q{border-color:transparent;background:none;color:var(--pl-soft,#444845);font-weight:500}
-@media (hover:hover){.chn-b:hover{background:var(--pl-raised,#E6E1D5)}}
+.chn-two{display:grid;grid-template-columns:1.25fr 1fr;gap:8px}.chn-date{position:relative;display:flex;align-items:center;height:44px;border:1.5px solid var(--pl-line-strong,#1B1D1C)!important;border-radius:6px;background:var(--pl-surface,#FAF8F3);padding:0 10px;font:400 16px/1 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);white-space:nowrap;cursor:pointer}
+.chn-r .chn-date input{position:absolute;inset:-1.5px;width:calc(100% + 3px);height:calc(100% + 3px);min-height:0;opacity:0;border:0;padding:0;cursor:pointer}.chn-date:focus-within{outline:2px solid var(--pl-accent,#29489A);outline-offset:2px}.chn-sug{display:block;margin-top:4px;font-size:13px;color:var(--pl-soft,#444845)}
+.chn-step{display:flex;align-items:center;gap:0;border:1.5px solid var(--pl-line-strong,#1B1D1C);border-radius:6px;width:max-content}.chn-step button{width:44px;height:44px;border:0;background:none;color:inherit;font:500 20px/1 var(--pl-font-text,"IBM Plex Sans",sans-serif);cursor:pointer}.chn-step output{min-width:36px;text-align:center;font:600 16px var(--pl-font-text,"IBM Plex Sans",sans-serif)}
+.chn-cov{display:flex;gap:10px;align-items:center}.chn-cov .chn-art{position:relative;flex:none;width:96px;aspect-ratio:16/10;border-radius:6px;overflow:hidden;border:1px solid var(--pl-ink,#1B1D1C);display:flex;align-items:center;justify-content:center}.chn-cov .chn-art svg{width:86%;height:86%}
+.chn-b{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border-radius:6px;border:1.5px solid var(--pl-ink,#1B1D1C)!important;background:var(--pl-surface,#FAF8F3)!important;color:var(--pl-ink,#1B1D1C)!important;font:600 15px/1.2 var(--pl-font-text,"IBM Plex Sans",sans-serif);cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
+.chn-b.chn-go{border-color:var(--pl-accent,#29489A)!important;color:var(--pl-accent,#29489A)!important}
+@media (hover:hover){.chn-b:hover{background:var(--pl-raised,#E6E1D5)!important}}
 .chn-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.chn-acts .chn-b{flex:1 1 140px}.chn-fine{margin:8px 0 0;font-size:13px;color:var(--pl-soft,#444845)}
 .chn-done{display:grid;gap:8px}.chn-done p{margin:0}.chn-done .chn-note{white-space:pre-wrap;border-left:3px solid var(--pl-line,#CFC8B9);padding-left:10px;color:var(--pl-ink,#1B1D1C)}`;
   const css = () => { if (document.getElementById("chnCss")) return; const s = document.createElement("style"); s.id = "chnCss"; s.textContent = CSS; document.head.appendChild(s); };
   const FACE = `<svg viewBox="0 0 28 28" width="32" height="32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2"/><circle cx="11.6" cy="15.6" r=".9" fill="currentColor" stroke="none"/><circle cx="16.4" cy="15.6" r=".9" fill="currentColor" stroke="none"/><path d="M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg>`;
   const TIMES = (() => { const L = []; for (let h = 7; h <= 23; h++) for (const m of [0, 30]) L.push(`${pad(h)}:${pad(m)}`); return L; })();
-  function artHTML(kind, title) { const A = root.EventArt; if (!A || !kind) return ""; try { A.ensureCss?.(); return A.cover({ pubTitle: title, coverArt: { kind } }, { kind, title: "", label: "", exact: true }); } catch { return ""; } }
+  function artHTML(kind, title) { const A = root.EventArt; if (!A || !kind) return ""; try { const tone = A.toneOf({ pubTitle: title }, kind); return A.drawing(kind, A.SPOT[tone]); } catch { return ""; } }
+  const tintOf = (kind, title) => { const A = root.EventArt; try { return A.PASTELS[A.toneOf({ pubTitle: title }, kind)] || ""; } catch { return ""; } };
   function coversFor(p) { const A = root.EventArt; let L = []; try { L = A ? A.suggest({ pubTitle: p.title, activity: p.kind }, 6) : []; } catch {} if (p.cover && !L.includes(p.cover)) L.unshift(p.cover); return L.filter(Boolean); }
 
   /** The card's HTML for a plan. opts.kinds: [[key, label]] for the kind picker (the canvas's own list). */
@@ -109,31 +111,34 @@
       <div class="chn-rows">
         <label class="chn-r"><span>Title</span><input data-chn="title" maxlength="80" value="${esc(p.title)}" aria-label="Title"></label>
         <label class="chn-r"><span>Kind</span><select data-chn="kind" aria-label="Kind"><option value="">Something else</option>${kinds.map(([k, l]) => `<option value="${esc(k)}"${k === p.kind ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
-        <div class="chn-r"><span id="${id}WhenL">When</span><div><div class="chn-two"><input type="date" data-chn="date" value="${esc(p.date)}" aria-labelledby="${id}WhenL"><select data-chn="startTime" aria-label="Time">${[...new Set([p.startTime, ...TIMES])].filter(Boolean).sort().map((x) => `<option value="${x}"${x === p.startTime ? " selected" : ""}>${timeLabel(x)}</option>`).join("")}</select></div>${p.dateSuggested || p.timeSuggested ? `<small class="chn-sug">${p.dateSuggested && p.timeSuggested ? "My suggestion for the day and time" : p.dateSuggested ? "My suggestion for the day" : "My suggestion for the time"}. Change it if it doesn't suit.</small>` : ""}</div></div>
+        <div class="chn-r"><span id="${id}WhenL">When</span><div><div class="chn-two"><label class="chn-date"><span data-chn-dl>${esc(dateLabel(p.date))}</span><input type="date" data-chn="date" value="${esc(p.date)}" aria-labelledby="${id}WhenL"></label><select data-chn="startTime" aria-label="Time">${[...new Set([p.startTime, ...TIMES])].filter(Boolean).sort().map((x) => `<option value="${x}"${x === p.startTime ? " selected" : ""}>${timeLabel(x)}</option>`).join("")}</select></div>${p.dateSuggested || p.timeSuggested ? `<small class="chn-sug">${p.dateSuggested && p.timeSuggested ? "My suggestion for the day and time" : p.dateSuggested ? "My suggestion for the day" : "My suggestion for the time"}. Change it if it doesn't suit.</small>` : ""}</div></div>
         <div class="chn-r"><span id="${id}SpotsL">Spots</span><div><div class="chn-step" role="group" aria-labelledby="${id}SpotsL"><button type="button" data-chn-step="-1" aria-label="One fewer spot">−</button><output data-chn="headcount" aria-live="polite">${p.headcount}</output><button type="button" data-chn-step="1" aria-label="One more spot">+</button></div>${p.spotsSuggested ? `<small class="chn-sug">A usual size for this. Change it if you like.</small>` : ""}</div></div>
-        ${opts.cover !== false && p.cover && root.EventArt ? `<div class="chn-r"><span>Cover</span><div class="chn-cov"><span class="chn-art" aria-hidden="true">${artHTML(p.cover, p.title)}</span><button type="button" class="chn-b" data-chn-act="cover">Another drawing</button></div></div>` : ""}
+        ${opts.cover !== false && p.cover && root.EventArt ? `<div class="chn-r"><span>Cover</span><div class="chn-cov"><span class="chn-art" aria-hidden="true" style="background:${esc(tintOf(p.cover, p.title))}">${artHTML(p.cover, p.title)}</span><button type="button" class="chn-b" data-chn-act="cover">Another drawing</button></div></div>` : ""}
         <label class="chn-r"><span>Note to send</span><textarea data-chn="note" maxlength="300" rows="3" aria-label="Note to send">${esc(p.note)}</textarea></label>
       </div>
-      <div class="chn-acts"><button type="button" class="chn-b go" data-chn-act="apply">Looks good</button><button type="button" class="chn-b q" data-chn-act="dismiss">Not now</button></div>
+      <div class="chn-acts"><button type="button" class="chn-b chn-go" data-chn-act="apply">Looks good</button><button type="button" class="chn-b chn-q" data-chn-act="dismiss">Not now</button></div>
       <p class="chn-fine">Nothing is sent or booked. You send the link when you're ready.</p>`; }
   function doneHTML(p) { return `<div class="chn-done"><div class="chn-h">${FACE}<div><b>Your night is filled in</b><p>Save when you're ready. Here's the note to send with the link.</p></div></div><p class="chn-note">${esc(p.note)}</p>
-      <div class="chn-acts"><button type="button" class="chn-b" data-chn-act="copy">Copy the note</button><button type="button" class="chn-b q" data-chn-act="close">Done</button></div></div>`; }
+      <div class="chn-acts"><button type="button" class="chn-b" data-chn-act="copy">Copy the note</button><button type="button" class="chn-b chn-q" data-chn-act="close">Done</button></div></div>`; }
 
   /**
    * Run one card in a box. host: { box, kinds, onApply(plan), via }. Returns { show(plan), hide(), state }.
    * A tweak changes only the card; Looks good hands the whole plan to onApply.
    */
-  function card(host) { const st = { plan: null, covers: [], ci: 0, done: false, tweaked: false, text: "", dismissed: new Set() }; css();
+  function card(host) { const st = host.st || { plan: null, covers: [], ci: 0, done: false, tweaked: false, text: "", dismissed: new Set() }; css();
     const box = host.box; box.classList.add("chn"); box.setAttribute("role", "region"); box.setAttribute("aria-label", "Here's your night");
     const read = () => { const P = st.plan; if (!P) return; box.querySelectorAll("[data-chn]").forEach((el) => { const k = el.dataset.chn; if (k === "headcount") return; const v = el.value; if (k === "date" && /^\d{4}-\d{2}-\d{2}$/.test(v)) { if (v !== P.date) P.dateSuggested = false; P.date = v; } else if (k === "startTime" && v) { if (v !== P.startTime) P.timeSuggested = false; P.startTime = v; } else if (k === "title") P.title = v.trim() || P.title; else if (k === "kind") P.kind = v; else if (k === "note") P.note = v; }); };
-    const draw = () => { if (!st.plan) { box.hidden = true; box.innerHTML = ""; return; } box.hidden = false; box.innerHTML = st.done ? doneHTML(st.plan) : cardHTML(st.plan, { kinds: host.kinds, id: host.id || "chn" }); };
+    const draw = () => { if (!st.plan) { box.hidden = true; box.innerHTML = ""; return; } box.hidden = false; box.innerHTML = st.done ? doneHTML(st.plan) : cardHTML(st.plan, { kinds: host.kinds, id: host.id || "chn" }); box.querySelectorAll("textarea").forEach(grow); };
+    const grow = (t) => { t.style.height = "auto"; t.style.height = t.scrollHeight + 3 + "px"; };
+    box.addEventListener("input", (e) => { if (e.target.tagName === "TEXTAREA") grow(e.target); });
     box.addEventListener("input", (e) => { if (e.target.dataset?.chn) { st.tweaked = true; const was = st.plan?.note, auto = st.plan && was === noteFor(st.plan); read(); if (auto && e.target.dataset.chn !== "note") { st.plan.note = noteFor(st.plan); const n = box.querySelector('[data-chn="note"]'); if (n) n.value = st.plan.note; } } });
-    box.addEventListener("change", (e) => { if (e.target.dataset?.chn) { st.tweaked = true; read(); } });
+    box.addEventListener("change", (e) => { if (e.target.dataset?.chn) { st.tweaked = true; read(); if (e.target.dataset.chn === "date") { const l = box.querySelector("[data-chn-dl]"); if (l) l.textContent = dateLabel(st.plan.date); } } });
+    box.addEventListener("click", (e) => { const i = e.target.closest?.('input[type="date"]'); if (i) { try { i.showPicker?.(); } catch {} } });
     box.addEventListener("click", async (e) => { const b = e.target.closest("button"); if (!b || !box.contains(b) || !st.plan) return; const P = st.plan;
       if (b.dataset.chnStep) { const auto = P.note === noteFor(P); P.headcount = Math.max(2, Math.min(200, P.headcount + +b.dataset.chnStep)); P.spotsSuggested = false; st.tweaked = true; box.querySelector('output[data-chn="headcount"]').textContent = P.headcount; if (auto) { P.note = noteFor(P); const n = box.querySelector('[data-chn="note"]'); if (n) n.value = P.note; } return; }
       const act = b.dataset.chnAct;
-      if (act === "cover") { read(); if (!st.covers.length) st.covers = coversFor(P); st.ci = (st.ci + 1) % Math.max(1, st.covers.length); P.cover = st.covers[st.ci] || P.cover; st.tweaked = true; const a = box.querySelector(".chn-art"); if (a) a.innerHTML = artHTML(P.cover, P.title); return; }
-      if (act === "apply") { read(); try { host.onApply?.({ ...P }); } catch (err) { console.warn(err); } track("cohost_night_applied", { via: host.via, kind: P.kind || "other", tweaked: st.tweaked }); st.done = true; draw(); box.querySelector("[data-chn-act=copy]")?.focus({ preventScroll: true }); return; }
+      if (act === "cover") { read(); if (!st.covers.length) st.covers = coversFor(P); st.ci = (st.ci + 1) % Math.max(1, st.covers.length); P.cover = st.covers[st.ci] || P.cover; st.tweaked = true; const a = box.querySelector(".chn-art"); if (a) { a.innerHTML = artHTML(P.cover, P.title); a.style.background = tintOf(P.cover, P.title); } return; }
+      if (act === "apply") { read(); st.done = true; try { host.onApply?.({ ...P }); } catch (err) { console.warn(err); } track("cohost_night_applied", { via: host.via, kind: P.kind || "other", tweaked: st.tweaked }); host.after?.(); draw(); box.querySelector("[data-chn-act=copy]")?.focus({ preventScroll: true }); return; }
       if (act === "dismiss") { st.dismissed.add(st.text); track("cohost_night_dismissed", { via: host.via }); st.plan = null; draw(); return; }
       if (act === "copy") { try { await navigator.clipboard.writeText(P.note); b.textContent = "Copied"; } catch { b.textContent = "Select the note to copy it"; } return; }
       if (act === "close") { st.plan = null; draw(); } });
@@ -149,8 +154,8 @@
   function cvBox(a) { const el = a.el(); return el && el.querySelector("#cvNight"); }
   function cvCard(a) { const box = cvBox(a); if (!box) return null; if (CV?.box === box) return CV.card;
     const kinds = (root.EventCanvas?.PLAN_KINDS || []).filter((k) => !k.handoff && k.k !== "other" && k.k !== "table").map((k) => [k.k, k.label]);
-    const prev = CV?.card?.st; const c = card({ box, kinds: kinds.length ? kinds : undefined, via: "canvas", id: "cvn", onApply: (P) => a.apply(P) });
-    if (prev) { Object.assign(c.st, prev); c.redraw(); } CV = { box, card: c }; return c; }
+    const c = card({ box, st: CV?.card?.st, kinds: kinds.length ? kinds : undefined, via: "canvas", id: "cvn", onApply: (P) => a.apply(P), after: () => cvCard(a)?.redraw() });
+    if (CV?.card) c.redraw(); CV = { box, card: c }; return c; }
   let cvT = 0;
   api.typed = (text, a) => { if (!a?.isNew?.()) return; clearTimeout(cvT); cvT = setTimeout(async () => { const c = cvCard(a); if (!c) return; const P = await reading(text, "canvas");
     if (!P) { c.hide(); return; } if (c.show(P, text)) { const fb = a.el()?.querySelector("#cvFromLine"); if (fb) fb.hidden = true; } }, 450); };
@@ -162,5 +167,7 @@
   function startHook() { const f = document.getElementById("f"), title = f?.elements?.title, box = document.getElementById("stNight"); if (!title || !box || !root.PLStart) return;
     const c = card({ box, via: "start", id: "stn", onApply: (P) => root.PLStart.apply(P) }); let T = 0;
     title.addEventListener("input", () => { clearTimeout(T); T = setTimeout(() => { const P = nightFromSentence(title.value); if (P) c.show(P, title.value); else c.hide(); }, 450); }); }
+  // the canvas may open before this file lands (it loads it): run what it queued
+  for (const f of (root.__plCohostQ || []).splice(0)) { try { f(); } catch {} }
   if (location.pathname === "/start") { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startHook); else startHook(); }
 })(typeof window !== "undefined" ? window : globalThis);

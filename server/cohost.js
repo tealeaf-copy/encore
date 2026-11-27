@@ -151,7 +151,7 @@ export function makeCohost({ store, C, X, I, P, L, T, origin = () => process.env
     const time = HHMM.test(ev.startTime || "") ? ev.startTime : "19:00";
     const poll = (() => { const base = ev.date && ev.date > addDays(today, 2) ? ev.date : addDays(today, 7), sat = addDays(base, (6 - wdOf(base) + 7) % 7); return [sat, addDays(sat, 1), addDays(sat, 7)]; })();
     const enough = known.length >= 2 && known.length * 3 >= ppl.length;
-    if (!enough) return { enough: false, people: ppl.length, known: known.length, noInfo, options: [], poll, pollLabels: poll.map((d) => PC.dateLabel(d)), time, current: ev.date || "" };
+    if (!enough) return { title: titleOf(ev), enough: false, people: ppl.length, known: known.length, noInfo, options: [], poll, pollLabels: poll.map((d) => PC.dateLabel(d)), time, current: ev.date || "" };
     const cand = []; for (let i = 3; i <= 24; i++) { const date = addDays(today, i); if (ev.endDate && ev.date && date === ev.date) continue; cand.push(date); }
     if (ISO.test(ev.date || "") && ev.date > today && !cand.includes(ev.date)) cand.unshift(ev.date);
     const scored = cand.map((date) => { const can = [], cant = [], unsure = [];
@@ -162,7 +162,7 @@ export function makeCohost({ store, C, X, I, P, L, T, origin = () => process.env
     const line = (x) => { const who = x.cant.length === 0 ? (x.unsure.length || noInfo.length ? "everyone, as far as I know" : "everyone") : x.cant.length <= 2 ? `everyone but ${list(x.cant)}` : `${list(x.cant.slice(0, 2))} and ${x.cant.length - 2} more can't`;
       return `${slotLabel(x.date, x.time)}: ${who}`; };
     const cur = scored.find((x) => x.current) || null;
-    return { enough: true, people: ppl.length, known: known.length, noInfo, time, current: ev.date || "", currentCant: cur ? cur.cant.length : null,
+    return { title: titleOf(ev), enough: true, people: ppl.length, known: known.length, noInfo, time, current: ev.date || "", currentCant: cur ? cur.cant.length : null,
       options: out.map((x) => ({ date: x.date, time: x.time, label: slotLabel(x.date, x.time), line: line(x), cant: x.cant, unsure: x.unsure, can: x.can, current: x.current })), poll, pollLabels: poll.map((d) => PC.dateLabel(d)) };
   }
 
@@ -256,8 +256,8 @@ export function makeCohost({ store, C, X, I, P, L, T, origin = () => process.env
       return { answer: `For ${e.title}, ${t.options[0].line}.${t.options.length > 1 ? ` I found ${t.options.length - 1} more that could work.` : ""}${t.noInfo.length ? ` No info yet for ${list(t.noInfo.slice(0, 3))}${t.noInfo.length > 3 ? " and others" : ""}.` : ""}`, links: [{ label: "See the times", href }] }; }
     if (/\?\s*$/.test(m) && !/^(?:plan|host|make)\b/i.test(m)) return null;
     const n = nightOf(m); if (!n || n.signals < 2) return null;
-    const bits = [`${n.title}`, `${slotLabel(n.date, n.startTime)}${n.dateSuggested || n.timeSuggested ? " (my suggestion)" : ""}`, `${n.headcount} spots`, n.place ? n.place : ""].filter(Boolean);
-    return { answer: `Here's your night: ${bits.join(", ")}${n.cover ? `, with a ${(EA?.LABEL?.[n.cover] || n.cover).toLowerCase()} drawing for the cover` : ""}. Open it to check each part, then save. Nothing's sent or booked until you say so.`, links: [{ label: "Open your night", href: `/?app=1&new=1&night=${encodeURIComponent(m.slice(0, 200))}#studio` }], night: true };
+    const bits = [`${n.title}`, `${slotLabel(n.date, n.startTime)}${n.dateSuggested || n.timeSuggested ? " (my suggestion)" : ""}`, `${n.headcount} spots`, n.place ? `at ${/^(my|our) /i.test(n.place) ? n.place.toLowerCase() : n.place}` : ""].filter(Boolean);
+    return { answer: `Here's your night: ${bits.join(", ")}${n.cover ? `, with a ${(EA?.LABEL?.[n.cover] || n.cover).toLowerCase()} drawing for the cover` : ""}. Open it to check each part, then save. Nothing's sent or booked until you say so.`, links: [{ label: "Open your night", href: `/?app=1&new=1${n.kind ? `&kind=${n.kind}` : ""}&night=${encodeURIComponent(m.slice(0, 200))}#studio` }], night: true };
   }
   return { nightOf, polishNight, timesFor, linesFor, sendLines, rescueFor, remindWith, rescueDue, runJobs, pottoAnswer, peopleOf };
 }

@@ -280,3 +280,6 @@ html body #m#m .evs h3{font:600 18px/24px var(--pl-font-text)!important;letter-s
 .sl-first{margin-left:6px;padding:1px 5px;border-radius:3px;background:var(--sl-ink);color:var(--sl-bg);font:500 11px/1.4 var(--sys-mono,ui-monospace,monospace);text-transform:uppercase;letter-spacing:.06em;vertical-align:1px}
 .sl-seedrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 @media (prefers-reduced-motion:reduce){.sl-seat.on{transform:none}}
+
+/* a past event's reply card (review round 18): "You were there", with nothing left to show at a door or change */
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-was :is(.tcode,.pl-out,.pl-tk-cal,.gchange,.cwm-box){display:none!important}

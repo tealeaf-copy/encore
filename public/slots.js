@@ -67,6 +67,8 @@
   // is one) and the group chat; the name toggle as a quiet row; "Plans changed? Can't go" as a quiet link (the answer chips
   // stay in the page, hidden, and the link presses Can't go). Runs on every redraw and moves nothing already in place.
   function tidyTicket() { const rs = $("#view-guest.ev2 #gForm .ev2-rs"), tk = rs && rs.querySelector(":scope > .ticket"); if (!tk) return; rs.classList.add("pl-tk");
+    { const ev = window.__gEv, d = new Date(), today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`, past = !!ev?.date && (ev.endDate || ev.date) < today; rs.classList.toggle("pl-was", past);
+      if (past) { const eb = tk.querySelector("small.eyebrow"), p = tk.querySelector("p"); if (eb && /^you're in$/i.test(eb.textContent.trim())) eb.textContent = "You were there"; if (p && /see you there/i.test(p.textContent)) p.textContent = "Thanks for coming."; return; } }
     const cal = $$("#view-guest .ev2-acts a.btn").find((a) => /calendar|remind me/i.test(a.textContent)); if (cal && !rs.querySelector(".pl-tk-cal")) { cal.classList.add("pl-tk-cal"); rs.appendChild(cal); }
     $("#g-unwall", rs)?.closest(".gchange")?.classList.add("pl-tk-row");
     const ch = $$(".gchange", rs).find((g) => g.querySelector("[data-chg]")), yes = /you're in/i.test(tk.textContent) && !/waitlist|asked/i.test(tk.textContent);

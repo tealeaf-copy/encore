@@ -21,7 +21,7 @@
 .pli-box{border:1.5px solid #E4D9C8;border-radius:16px;background:#FFFCF7;padding:16px;margin:16px 0}.pli-box h3{margin:0 0 4px;font:600 16px/1.3 Fredoka,"IBM Plex Sans",system-ui,sans-serif;color:#1F1A17}.pli-box>p{margin:0 0 8px;color:#665A51;font-size:14px}
 .pli-list{list-style:none;margin:0;padding:0}.pli-list li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1.5px solid #E4D9C8}.pli-list li:first-child{border-top:0}
 .pli-list span{flex:1;min-width:0}.pli-list b{display:block;font:600 15px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#1F1A17}.pli-list small{display:block;color:#665A51;font-size:13px;line-height:1.35}
-.pli-list button{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
+.pli-list button{flex:none;min-height:44px;padding:0 14px;border-radius:6px;border:1.5px solid var(--pl-line-strong,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
 `; document.head.appendChild(s); }
   function start(x) { try { localStorage.removeItem("pl.hostLike"); localStorage.setItem("pl.hostIdea", JSON.stringify({ id: x.id, title: x.title || "", at: Date.now() })); } catch {}
     location.href = /(?:^|;\s*)encore_in=1/.test(document.cookie) ? "/?app=1&idea=" + encodeURIComponent(x.id) : "/signup?mode=friends&from=idea&idea=" + encodeURIComponent(x.id); }

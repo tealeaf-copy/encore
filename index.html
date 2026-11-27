@@ -9420,15 +9420,15 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal||!isFriendsDraft?.()) re
 // ==================================================================
 // Afterglow: once it's happened, the page becomes a memory. Photos from the night for people who went.
 // ==================================================================
-{ const s=document.createElement("style"); s.textContent=`.glow-wall{grid-column:1/-1}.glow-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.glow-g figure{margin:0;position:relative;aspect-ratio:1/1;border-radius:14px;overflow:hidden;border:1.5px solid var(--pl-ink);background:#F3EEE8}.glow-g img,.glow-g video{width:100%;height:100%;object-fit:cover;display:block}.glow-g figcaption{position:absolute;left:6px;bottom:6px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.92);font-size:13px;font-weight:600}.glow-empty{display:flex;gap:12px;align-items:center;color:var(--pl-soft)}`; document.head.appendChild(s) }
+{ const s=document.createElement("style"); s.textContent=`.glow-wall{grid-column:1/-1}.glow-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.glow-g figure{margin:0;position:relative;aspect-ratio:1/1;border-radius:4px;overflow:hidden;border:1.5px solid var(--pl-ink);background:var(--pl-raised)}.glow-g img,.glow-g video{width:100%;height:100%;object-fit:cover;display:block}.glow-g figcaption{position:absolute;left:6px;bottom:6px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.92);font-size:13px;font-weight:600}.glow-empty{display:flex;gap:12px;align-items:center;color:var(--pl-soft)}`; document.head.appendChild(s) }
 let __glowFor="";
 async function ev2Afterglow(){ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host?.classList.contains("ev2")) return; const past=!!e.date&&e.date<localISO(); if(!past) return;
     const M=(()=>{ try{ return myRsvp(e.id) }catch{ return null } })(), isHost=!!window.__geDoc; if(!(M?.response==="going")&&!isHost) return;
     const gf=document.getElementById("gForm"), ka=document.getElementById("kudosAsk"); if(!gf&&!ka) return; let sec=document.querySelector(".glow-wall"); if(sec&&__glowFor===e.id) return; __glowFor=e.id;
+    if(!sec){ sec=document.createElement("section"); sec.className="glow-wall"; sec.hidden=true; if(ka){ ka.after(sec); sec.style.marginTop="20px" } else gf.prepend(sec) } // claimed before the wait, so a second redraw never adds a second wall
     const q=M?.rid?`?rid=${encodeURIComponent(M.rid)}&code=${encodeURIComponent(M.code)}`:""; const j=await (await fetch(`/api/public/moments/${encodeURIComponent(e.id)}${q}`)).json().catch(()=>({moments:[]}));
-    if(!sec){ sec=document.createElement("section"); sec.className="glow-wall"; if(ka){ ka.after(sec); sec.style.marginTop="20px" } else gf.prepend(sec) }
-    const L=j.moments||[]; sec.innerHTML=`<h4>📸 Photos from the night ${L.length?`<span class="note">${L.length}</span>`:""}</h4>${L.length?`<div class="glow-g">${L.map(m=>`<figure>${m.type==="video"?`<video src="${esc(m.url)}" muted playsinline controls preload="metadata"></video>`:`<img src="${esc(m.url)}" alt="${esc(m.caption||"")}" loading="lazy">`}${m.by?`<figcaption>${esc(m.by)}</figcaption>`:""}</figure>`).join("")}</div>`:`<div class="glow-empty">${typeof pipSVG==="function"?pipSVG("happy",40):"🐷"}<p style="margin:0">No photos yet. Add the first one.</p></div>`}`;
-    sec.style.cssText="background:#fff;border:2px solid var(--pl-ink);border-radius:20px;box-shadow:5px 5px 0 var(--pl-ink);padding:22px" }catch(err){ console.warn(err) } }
+    const L=j.moments||[]; sec.hidden=false; sec.innerHTML=`<h4>Photos from the ${/^(0\d|1[0-6]):/.test(e.startTime||"")?"day":"night"} ${L.length?`<span class="note">${L.length}</span>`:""}</h4>${L.length?`<div class="glow-g">${L.map(m=>`<figure>${m.type==="video"?`<video src="${esc(m.url)}" muted playsinline controls preload="metadata"></video>`:`<img src="${esc(m.url)}" alt="${esc(m.caption||"")}" loading="lazy">`}${m.by?`<figcaption>${esc(m.by)}</figcaption>`:""}</figure>`).join("")}</div>`:`<div class="glow-empty">${typeof pipSVG==="function"?pipSVG("happy",40):"🐷"}<p style="margin:0">No photos yet. Add the first one.</p></div>`}`;
+    sec.style.cssText="background:var(--pl-surface);border:1.5px solid var(--pl-ink);border-radius:6px;padding:16px"+(ka?";margin-top:20px":"") }catch(err){ console.warn(err) } }
 { const _rgG=renderGuest; renderGuest=async function(){ const r=await _rgG.apply(this,arguments); setTimeout(ev2Afterglow,1100); return r } }
 
 // ==================================================================
@@ -12766,7 +12766,7 @@ body:not(.hv-help):has(#view-studio:not([hidden]) > #hv:not([hidden])) #encoreHe
 #hv .hv-ask .hv-acts{grid-column:2}
 #hv .hv-ask.done{opacity:0;transform:translateX(12px);transition:.3s}
 #hv .hv-chips{display:flex;flex-wrap:wrap;gap:8px}
-#hv .hv-chip{min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--hv-line2);background:#fff;font:600 14px "IBM Plex Sans",system-ui;color:var(--hv-ink);cursor:pointer}
+#hv .hv-chip{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--hv-line2);background:#fff;font:600 14px "IBM Plex Sans",system-ui;color:var(--hv-ink);cursor:pointer}
 #hv .hv-chip[aria-pressed=true]{background:var(--pl-ink);border-color:var(--pl-ink);color:#fff}
 #hv .hv-sec h3{font:600 14px "IBM Plex Sans",system-ui;color:var(--hv-smoke);margin:8px 0 4px;text-transform:none}
 #hv .hv-g{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--hv-line)}
@@ -12788,7 +12788,7 @@ body:not(.hv-help):has(#view-studio:not([hidden]) > #hv:not([hidden])) #encoreHe
 #hv .hv-tools{display:grid;gap:0}
 #hv .hv-foot{display:flex;justify-content:center;gap:16px;margin:8px 0 0}
 #hv .hv-foot button{min-height:44px;border:0;background:none;color:var(--hv-smoke);font:600 14px "IBM Plex Sans",system-ui;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#hv .hv-quote{margin:8px 0 0;padding:12px 14px;border-radius:12px;background:var(--hv-linen)}
+#hv .hv-quote{margin:8px 0 0;padding:12px 14px;border-radius:6px;background:var(--hv-linen)}
 #hv .hv-quote small{display:block;color:var(--hv-smoke);margin-top:4px}
 #hv .hv-preview{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;align-items:center}
 #hv .hv-preview .cov{width:88px;height:88px;border-radius:12px;background:var(--pl-sand) center/cover no-repeat;display:grid;place-items:center;font-size:40px}
@@ -13060,7 +13060,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     if(stage==="after"&&q("#hvNextIdeas",h)) window.PLIdeas?.list(q("#hvNextIdeas",h),{n:3,bare:true}) }
   async function kudos(d){ try{ const r=await fetch("/api/host/kudos/"+encodeURIComponent(d.id)); if(!r.ok) return; const K=await r.json(), el=q("#hvKudos"); if(!el||draft!==d) return; const L=(K.kudos||[]).filter(k=>k.love);
       let ph=0; try{ const j=await (await fetch("/api/public/moments/"+encodeURIComponent(d.id))).json(); ph=(j?.moments||[]).filter(m=>!m.hidden).length }catch{}
-      const line=q("#hvAftLine"); if(line&&((K.kudos||[]).length||ph)) line.textContent+=" "+[(K.kudos||[]).length?hvPlural(K.kudos.length,"kudos note")+".":"",ph?hvPlural(ph,"photo")+" so far.":""].filter(Boolean).join(" ");
+      const line=q("#hvAftLine"); if(line&&((K.kudos||[]).length||ph)) line.textContent=(line.dataset.base??=line.textContent)+" "+[(K.kudos||[]).length?hvPlural(K.kudos.length,"kudos note")+".":"",ph?hvPlural(ph,"photo")+" so far.":""].filter(Boolean).join(" ");
       el.innerHTML=L.slice(0,3).map(k=>`<blockquote class="hv-quote">"${E(k.love)}"<small>${E(first(k.name)||"A guest")}</small></blockquote>`).join("") }catch{} }
   // letting someone in past the spots asks first, in a sheet (not the browser's confirm box), and adds the spot
   async function decide(b,sure){ const id=b.dataset.ok||b.dataset.no, ok=!!b.dataset.ok, row=b.closest(".hv-ask,.hv-g"), d=draft;
@@ -13451,6 +13451,13 @@ body.friends-ws #view-programs.pl-nudge-ready:not(.pl-nudge-all) > :is(.pipbrief
 .cg-box{box-shadow:none!important}.fcard .fc-ic{background:var(--pl-raised)!important}.hv-potto{background:var(--pl-sand-soft)!important;border-color:var(--pl-line)!important}
 /* the full invite: the example note, the facts tiles, the early-access box and drawn thumbnails on 6px corners; the example note's line is the kit's ruling, not amber */
 #view-guest #gExample,#view-guest #forWho > div,#view-guest #earlyBox,#view-guest .em-art{border-radius:var(--pl-r-md,6px)!important}#view-guest #gExample{border:1.5px dashed var(--pl-line-strong)!important}
+/* after the event: the kudos card, "Host one like this" and the regular's badge on 6px corners and notebook tints; kudos chips are 44px to tap */
+#view-guest .kudos-ask,#view-guest .hl-box,#view-guest .reg-badge{border-radius:var(--pl-r-md,6px)!important}#view-guest .kudos-ask{background:var(--pl-surface)!important;border:1.5px solid var(--pl-line-strong)!important}#view-guest .reg-badge{background:var(--pl-sand-soft)!important}#view-guest .kudos-ask .chip{min-height:44px}#view-guest .hl-box{border-width:1.5px!important}
+/* kudos sent: the thank-you keeps the card's full width and the tip offer sits under it, not squeezed beside it */
+#view-guest .kudos-ask.done{flex-wrap:wrap}#view-guest .kudos-ask.done > div:not(.tipbox){flex:1 1 0;min-width:0}#view-guest .kudos-ask.done > .tipbox{flex:1 1 100%}
+/* check-in at the door on the kit: 6px rows with an ink line, the kit's moss for "here", an outlined Add walk-in (the list is the job; nothing here is the page's one blue button) */
+.dm-g{border-radius:var(--pl-r-md,6px)!important;background:var(--pl-surface)!important;border-color:var(--pl-line-strong)!important}.dm-g.in{background:var(--pl-raised)!important}.dm-g.in .ck{background:var(--pl-success,#3E5A2C)!important;border-color:var(--pl-success,#3E5A2C)!important}.dm-g .ck{border-width:1.5px!important}
+.dm-stats span{background:var(--pl-surface)!important;border-width:1.5px!important}.dm-walk button{background:var(--pl-surface)!important;color:var(--pl-ink)!important;border:1.5px solid var(--pl-line-strong)!important;border-radius:var(--pl-r-btn,6px)!important}
 </style>
 <!-- /round 18 -->
 <script>

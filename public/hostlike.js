@@ -14,7 +14,7 @@
   const CSS = `.hl-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:2px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 16px var(--sys-title);cursor:pointer;box-shadow:2px 2px 0 var(--pl-ink);text-decoration:none;transition:transform .15s}
 .hl-btn:hover{transform:translateY(-1px) rotate(-1deg)}.hl-btn.sm{min-height:40px;padding:0 14px;font-size:15px;box-shadow:none}
 .hl-count{margin:6px 0 0;color:var(--pl-soft);font:600 13.5px/1.35 "IBM Plex Sans",system-ui,sans-serif}.hl-count:empty{display:none}
-.hl-box{display:grid;gap:4px;justify-items:start;margin:14px 0;padding:14px;border:2px dashed var(--pl-line);border-radius:18px;background:var(--pl-page)}
+.hl-box{display:grid;gap:4px;justify-items:start;margin:14px 0;padding:14px;border:1.5px dashed var(--pl-line);border-radius:6px;background:var(--pl-page)}
 .hl-box b{font:600 17px var(--sys-title);color:var(--pl-ink)}.hl-box p{margin:0;color:var(--pl-soft);font:500 14px/1.4 "IBM Plex Sans",system-ui,sans-serif}
 @media (prefers-reduced-motion:reduce){.hl-btn{transition:none}}`;
   const css = () => { if ($("#hlCss")) return; const s = document.createElement("style"); s.id = "hlCss"; s.textContent = CSS; document.head.appendChild(s); };

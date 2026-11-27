@@ -66,6 +66,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
     <h1 id="h1">Plan a dinner. It takes a minute.</h1>
     <p class="lede" id="lede">No account yet. Your plan stays on this phone until you want to send it.</p>
     <div class="chips" id="chips" role="group" aria-label="Start from"></div>
+    <div id="trendIdeas" hidden></div>
 
     <article class="card" id="card" aria-live="polite" aria-label="Your invite, as guests will see it">
       <span class="k" id="cKind">Dinner</span>
@@ -100,6 +101,13 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
   <p class="msg" id="err" role="alert"></p>
 </main>
 <script src="/mascot.js"></script><script src="/fx.js"></script><script src="/hostloop.js"></script><script src="/shell.js" defer></script>
+<script src="/trendideas.js"></script>
+<script>
+// ---- trends: Potto's ideas above the form (public/trendideas.js), loved here first, each with its source line ----
+window.PLTrendIdeas?.mount(document.getElementById("trendIdeas"), { key: "start", n: 3, lead: "Ideas from Potto", onPick: (x) => {
+  const f = document.getElementById("f"), set = (name, v) => { const el = f?.elements?.[name]; if (el && v) { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); } };
+  set("title", x.title); if (x.line && !(f?.elements?.note?.value || "").trim()) set("note", x.source === "platform" ? "" : x.line); f?.elements?.title?.focus(); } }); // ---- end trends ----
+</script>
 <script>
 // one top heading at a time: the "done" screen takes it over from the plan
 function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => { const tag = el.closest("[hidden]") ? "h2" : "h1"; if (el.localName === tag) return; const n = document.createElement(tag); for (const a of el.attributes) n.setAttribute(a.name, a.value); while (el.firstChild) n.appendChild(el.firstChild); n.toggleAttribute("data-h1", tag === "h2"); el.replaceWith(n); }); }

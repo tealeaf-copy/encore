@@ -145,7 +145,7 @@ image stretched into a coral block; a real photo or the drawn cover stands there
 | Same table next time (/again) | out | 6/9/9/6 | 9/9/9/9 | Its heading drew at 16px (a font rule naming a token the page never loads); black pill button; 11px ui-monospace kicker. |
 | Add your photos (/p) | out | 6/9/9/7 | 9/9/9/9 | Offset ink shadows, 22px corners, a handwriting face on the polaroid, pill buttons. |
 | Year in review (/recap) | out | 7/8/9/7 | 9/9/9/9 | "gatherings" (a word the kit retires) is "events"; Potto hung off the card. |
-| Experience page (/x) | out | 8/9/9/9 | 9/9/9/9 | "Pottery Lab" as plain text is the mark and wordmark. |
+| Experience page (/x) | out | 8/9/9/9 | 9/9/9/9 | Redesigned on main in server/interest.js; that version is kept as it is. |
 | Speaker, 404 | out | 9/9/9/9 | 9/9/9/9 | |
 | About | out | 8/8/9/7 | in flight | See "In flight elsewhere". |
 | Kudos ask (/k) | out | 8/9/9/8 | in flight | See "In flight elsewhere". |
@@ -228,7 +228,7 @@ Every issue that held a page under 9, highest severity and most-visited pages fi
 | Side menu | 1280 | `.es-rail a` | 10px corners on the selected row | Low | 6px | Fixed |
 | Admin reports | both | buttons | system-ui | Low | Plex Sans, fonts from here | Fixed |
 | Every page on system.css | 390 | load | With the faces served from here, system.css waited on its own @import before applying: Settings and the leaderboard shifted on load (0.2 to 0.4 in the crawl) | Medium | public/authguard.js asks for the same fonts file at the same moment | Fixed |
-| Leaderboard | 390 | `#how`, `.foot` | "How it's ranked" and the footer painted first, then jumped down a screen when the board landed | Medium | They stay unseen until the board has drawn | Fixed |
+| Leaderboard | 390 | `#how`, `.foot` | "How it's ranked" and the footer painted first, then jumped down a screen when the board landed | Medium | Main already holds them back with `main.lb-wait` until the board has drawn; that fix is kept | Fixed on main |
 | /start | 390 | `#plan` | On a cold load the card grew from 88 to 270px and the heading changed length after paint (0.29) | Medium | The plan shows once filled for its kind (2.5 seconds at most) | Fixed |
 | Settings | 390 | `#signin` | Sign-in methods appeared when the passkey list arrived and pushed every section down 220px | Medium | Shown at once for a signed-in person | Fixed |
 | /hosts/book, /teams | 1280 | `header.top` | authguard.js loaded at the end of the page, so the header painted and then vanished under the side menu, a 66px jump on a cold load (0.31) | Medium | authguard.js in the head, like the other side-menu pages | Fixed |
@@ -329,3 +329,26 @@ without new CSS), and the brand package page (`/teams/x/...`), whose facts are s
   "Get my link" (test/hostloop-flow.test.js).
 - public/invite.html is unchanged (38,810 characters); the served light invite stays under 40,000.
 - The "Come with me?" loader is still the last script in index.html.
+
+## Ported onto main (d588bf0)
+
+The 32 commits were cherry-picked in order onto main after feed kudos and comments, Save to list, type tags, drops
+as orders, memberships, the places map, the support fallback and the /x redesign landed. Where main had changed the
+same thing, main's version is kept and the design fix sits on top:
+
+- The /x page (server/interest.js) is main's redesign; the audit's wordmark change there is left out.
+- The leaderboard's lower half already waits for the board on main (`main.lb-wait`); the audit's `:has()` rule for
+  the same shift is left out. Its 6px corners, Plex Mono formula and wordmark are kept, with main's in-place Follow.
+- The light invite keeps main's report.js tag; the wrap rules come from system.css, which now holds one copy of them
+  (main's shorter copy of the same rules is folded into it).
+- Help keeps main's tuck-aside when words sit under the button, and adds the Need a hand row on phones with no tab bar.
+- Copy main had already rewritten stays as main has it: the agenda plurals, Who fills the spots on a brand booking,
+  and the year in review's stat labels.
+- Feed and Discover cards keep main's type tags and drop lines (Order, the pickup window); the no-break dot before
+  the place is added to them.
+
+Checked on the ported code: public/invite.html is 38,349 characters; the "Come with me?" loader is still the last
+script in index.html; the 149 test files that touch changed files, one at a time, all pass but three that fail the
+same way on main (launch-support: four settings not yet in the launch checklist; potto-text: two drop-order texts;
+places: its 9 tests pass but the process does not exit). The crawl at 390 and 1280 reports only /year/2026 signed
+out asking for /api/me (401), also on main.

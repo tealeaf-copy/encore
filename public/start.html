@@ -66,7 +66,6 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
     <h1 id="h1">Plan a dinner. It takes a minute.</h1>
     <p class="lede" id="lede">No account yet. Your plan stays on this phone until you want to send it.</p>
     <div class="chips" id="chips" role="group" aria-label="Start from"></div>
-    <div id="trendIdeas" hidden></div>
 
     <article class="card" id="card" aria-live="polite" aria-label="Your invite, as guests will see it">
       <span class="k" id="cKind">Dinner</span>
@@ -87,6 +86,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
       <p class="saved" id="saved" aria-live="polite"></p>
     </form>
     <div class="go"><button type="button" class="btn pri" id="save">Get my link</button><p class="fine" id="fine">Free. Guests reply without an account.</p></div>
+    <div id="trendIdeas" hidden></div>
   </div>
 
   <div id="done" class="done" hidden>
@@ -104,9 +104,10 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 <script src="/trendideas.js"></script>
 <script>
 // ---- trends: Potto's ideas above the form (public/trendideas.js), loved here first, each with its source line ----
-window.PLTrendIdeas?.mount(document.getElementById("trendIdeas"), { key: "start", n: 3, lead: "Ideas from Potto", onPick: (x) => {
+// below the form, so nothing above moves while they load; a pick fills the form and scrolls back up to the card
+window.PLTrendIdeas?.mount(document.getElementById("trendIdeas"), { key: "start", n: 3, lead: "Not sure what to plan? Ideas from Potto", onPick: (x) => {
   const f = document.getElementById("f"), set = (name, v) => { const el = f?.elements?.[name]; if (el && v) { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); } };
-  set("title", x.title); if (x.line && !(f?.elements?.note?.value || "").trim()) set("note", x.source === "platform" ? "" : x.line); f?.elements?.title?.focus(); } }); // ---- end trends ----
+  set("title", x.title); if (x.line && !(f?.elements?.note?.value || "").trim()) set("note", x.source === "platform" ? "" : x.line); document.getElementById("card")?.scrollIntoView({ block: "start", behavior: "smooth" }); f?.elements?.title?.focus({ preventScroll: true }); } }); // ---- end trends ----
 </script>
 <script>
 // one top heading at a time: the "done" screen takes it over from the plan

@@ -274,7 +274,7 @@
       ${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
       ${e.drop && e.pickup ? meta(["Order ahead", e.pickup.replace(/^Pickup /, "Pickup "), e.left || e.price]) /* a drop: pickup, never an event date (public/pickup.js) */ : meta([when(e), e.free ? "Free" : e.price, st])}
       <a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a>${actRow(e)}</article>`; }
-  function recapCard(r) { const key = "fb:" + r.id;
+  function blendRecap(r) { // not recapCard: that name is the story viewer's recap slide above, and a second declaration replaced it, so a recap story crashed const key = "fb:" + r.id;
     REG.set(key, { host: r.host, items: (r.photos || []).map((p, i) => ({ id: "m:" + (p.id || i) + ":" + r.id, type: p.type === "video" ? "video" : "image", url: p.url, poster: p.poster, caption: [r.title, dayOf(r.date, { weekday: "short" })].filter(Boolean).join(" · "), note: p.caption, by: p.by, past: true, cta: r.next ? { label: "I'm in", url: r.next.url } : { label: "Share", url: r.share.url } })) });
     const sub = ["Recap", dayOf(r.date, { weekday: "short", month: "short", day: "numeric" }), r.where].filter(Boolean).join(" · ");
     return `<article class="fb-card fb-recap" data-fv-id="${esc(r.id)}" data-kind="recap">${lead(r.host, sub, { type: "event", target: "event:" + r.id, name: r.title })}
@@ -304,7 +304,7 @@
   const clubCard = (u) => (u?.host?.handle ? `<article class="fb-card fb-upd" data-kind="club">${lead(u.host, ["For " + (u.club?.name || "members"), u.at ? new Date(u.at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""].filter(Boolean).join(" · "), u.report ? { type: "post", target: u.report, name: u.host.name } : null)}
       <p class="fb-text">${esc(u.text || "")}</p>${u.photo && /^\/_blob\/[A-Za-z0-9]{20}$/.test(u.photo) ? `<span class="fb-media"><img class="fv-img" src="${esc(u.photo)}" alt="" loading="lazy" decoding="async"></span>` : ""}${actRow(u)}</article>` : "");
   const rowCard = (r) => `<section class="fb-card fb-rowc" data-kind="row"><header class="fb-sec"><h2>${esc(r.title || "More coming up")}</h2><a href="/discover">Discover</a></header>${row(r.items.map((e) => mini({ ...e, hood: e.where })).join(""), r.title || "More coming up")}</section>`;
-  const RENDER = { event: evCard, recap: recapCard, milestone: milestoneCard, ideas: ideasCard, club: clubCard, row: rowCard };
+  const RENDER = { event: evCard, recap: blendRecap, milestone: milestoneCard, ideas: ideasCard, club: clubCard, row: rowCard };
   /** The stream, in the server's order. postRender draws a friend's post (public/feed.html). */
   function blendHtml(B, { postRender = null, signedIn: si = false } = {}) { let n = 0; SI = !!si; ME = B.me || ME; SOC.clear(); for (const it of B.items || []) if (it?.kudos?.target) SOC.set(it.kudos.target, it);
     const parts = (B.items || []).map((it) => { try { if (it.kind === "post") return postRender ? postRender(it) : ""; if (it.kind === "follow") return followRow(it, si); const f = RENDER[it.kind] || RENDER[it.type]; return f ? f(it, it.kind === "event" ? n++ : 0) : ""; } catch { return ""; } }).filter(Boolean);
@@ -415,7 +415,7 @@
       try { const r = await fetch("/api/me/friends", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: b.dataset.fbFriend }) }); if (!r.ok) throw 0; b.classList.add("on"); say(b, "Following"); } catch { b.disabled = false; } }));
     $$("[data-fb-dismiss]", root).forEach((b) => (b.onclick = () => { const li = b.closest("li"), ul = li?.parentElement; fetch("/api/feed/dismiss", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: b.dataset.fbDismiss }) }).catch(() => {}); try { const L = JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); localStorage.setItem("pl.fbGone", JSON.stringify([b.dataset.fbDismiss, ...L].slice(0, 100))); } catch {}
       const next = li?.nextElementSibling || li?.previousElementSibling; li?.classList.add("gone"); setTimeout(() => { li?.remove(); if (ul && !ul.children.length) ul.closest(".fb-follow")?.remove(); else next?.querySelector("button,a")?.focus({ preventScroll: true }); }, RM() ? 0 : 220); }));
-    $$("[data-fb-deck]", root).forEach((b) => (b.onclick = () => need("/swipedeck.js", () => window.PLDeck?.open({}))));
+    $$("[data-fb-deck]", root).forEach((b) => (b.onclick = () => need("/swipedeck.js", () => window.PLDeck?.open({}), "PLDeck")));
   }
 
   // ---------- putting it together: a short weekly edition ----------
@@ -515,7 +515,8 @@
 
   // ---------- styles ----------
   // load a helper script once; run cb when it's there
-  function need(src, cb) { const s0 = document.querySelector(`script[src="${src}"],script[src^="${src}?"]`); if (s0) { if (s0.dataset.ok) cb?.(); else s0.addEventListener("load", () => cb?.()); return; } const s = document.createElement("script"); s.src = src; s.onload = () => { s.dataset.ok = 1; cb?.(); }; document.head.appendChild(s); }
+  // a script another loader already added (the first-visit deck below) may have loaded before we listen: its global says so
+  function need(src, cb, glob = "") { if (glob && window[glob]) return cb?.(); const s0 = document.querySelector(`script[src="${src}"],script[src^="${src}?"]`); if (s0) { if (s0.dataset.ok) cb?.(); else s0.addEventListener("load", () => cb?.()); return; } const s = document.createElement("script"); s.src = src; s.onload = () => { s.dataset.ok = 1; cb?.(); }; document.head.appendChild(s); }
   need("/hostlike.js");
   function css() { if (document.getElementById("fvCss")) return; const s = document.createElement("style"); s.id = "fvCss"; s.textContent = CSS_TEXT; document.head.appendChild(s); }
   const CSS_TEXT = `

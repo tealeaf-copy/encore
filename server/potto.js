@@ -31,6 +31,7 @@ import { keyOf } from "./safety.js";
 import { todayIn, tzOk } from "./tz.js";
 import { safeLink } from "./inbox.js";
 import { POTTO_VOICE } from "./pottovoice.js";
+import { runPottoReply, runCityAction, RUN_LINK } from "./runtemplates.js"; // New York run templates
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
@@ -116,7 +117,7 @@ ${message}
 /** Links a reply may carry: ones in the context, or the app's own pages. */
 export function allowedLinks(ctx, links) {
   const known = new Set(); for (const L of [ctx.myEvents, ctx.plans, ctx.public, ctx.follows]) for (const e of L || []) for (const k of ["link", "guestsLink", "shareLink", "chatLink"]) if (e[k]) known.add(e[k]);
-  const out = []; for (const l of Array.isArray(links) ? links : []) { const href = safeLink(l?.href), label = clean(l?.label, 60); if (!href || !label || !(known.has(href) || PAGE.test(href)) || out.some((x) => x.href === href)) continue; out.push({ label, href }); if (out.length >= 3) break; }
+  const out = []; for (const l of Array.isArray(links) ? links : []) { const href = safeLink(l?.href), label = clean(l?.label, 60); if (!href || !label || !(known.has(href) || PAGE.test(href) || RUN_LINK.test(href)) || out.some((x) => x.href === href)) continue; out.push({ label, href }); if (out.length >= 3) break; }
   return out;
 }
 /** A one-tap action, built here from the model's proposal, only for one of the host's own upcoming events. */
@@ -170,8 +171,9 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
     const photo = b.photo && /^image\/(jpeg|png|webp|gif)$/.test(String(b.photo.type || "")) && typeof b.photo.data === "string" && b.photo.data.length < 2_200_000 && /^[A-Za-z0-9+/=]+$/.test(b.photo.data.slice(0, 200)) ? { type: b.photo.type, data: b.photo.data } : null;
     const mode0 = aiMode(), cap = tokensPerDay(), used = P.usage(u.email).tokens, capped = mode0 !== "missing_key" && used >= cap;
     let mode = capped || mode0 === "missing_key" ? "offline" : mode0, note = capped ? "You've used today's AI allowance, so this is the plain version." : "";
-    let reply = null;
-    if (mode !== "offline") {
+    // New York run templates (server/runtemplates.js): the templates for a run host in New York, a run filled in from its words
+    let reply = runPottoReply(message, ctx);
+    if (!reply && mode !== "offline") {
       const prompt = pottoPrompt(photo && mode === "fake" ? { ...ctx, photo: true } : ctx, message || "What's in this photo?", thread?.turns || []); app.locals.potto.lastPrompt = prompt;
       const content = photo && mode === "live" ? [{ type: "image", source: { type: "base64", media_type: photo.type, data: photo.data } }, { type: "text", text: prompt }] : prompt;
       try { const r = await complete({ prompt: content, effort: "low" }); P.spend(u.email, estimateTokens(prompt, r.text) + (photo ? 1500 : 0)); const j = parseJsonLoose(r.text);
@@ -180,7 +182,7 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
     }
     if (!reply) reply = pottoReply(message, photo ? { ...ctx, photo: true } : ctx, { mode: "offline" });
     if (reply.route === "help") { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }]); return res.json({ route: "help", threadId: t.id }); }
-    const links = allowedLinks(ctx, reply.links), action = buildAction(ctx, reply.action), actions = action ? [action] : [];
+    const links = allowedLinks(ctx, reply.links), action = buildAction(ctx, reply.action) || runCityAction(ctx, reply.action), actions = action ? [action] : [];
     const t = P.append(u.email, thread?.id, [{ role: "me", text: message || "Photo", ...(photo ? { photo: true } : {}), ...(ctx.attached ? { eventId: ctx.attached } : {}) }, { role: "potto", text: reply.answer, links, actions: actions.map(({ body: _b, ...a }) => a) }]);
     res.json({ threadId: t.id, answer: reply.answer, links, actions, mode, ...(note ? { note } : {}), ...(reply.needsAi && mode === "offline" && !note ? { note: status(u).unavailable } : {}) }); });
   // the help guide's answer to a support question, kept in the same thread

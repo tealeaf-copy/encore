@@ -64,6 +64,11 @@
   --pl-shadow:none;
   --pl-shadow-float:0 0 0 1.5px #1B1D1C;
   --pl-rule:1.5px solid #1B1D1C;--pl-rule-dashed:1px dashed #CFC8B9;
+  /* the section rule: thicker than a card's line, over each section of a long page */
+  --pl-rule-section:3px solid #1B1D1C;
+  /* spacing, one scale (docs/brand-kit.md "Spacing and sections"): 4, 8, 12, 16, 24, 32, 48 */
+  --pl-space-1:4px;--pl-space-2:8px;--pl-space-3:12px;--pl-space-4:16px;--pl-space-5:24px;--pl-space-6:32px;--pl-space-7:48px;
+  --pl-gutter:16px;
 }
 /* ==== end of brand tokens ==== */
 
@@ -382,9 +387,9 @@ html body :is(.fv-card.fv-ev .fv-media,.ev-poster .ev-art){border-bottom:var(--p
 .pl-frame{position:relative;border:var(--pl-bw) solid var(--pl-frame);border-radius:4px;overflow:hidden}
 /* the weekly edition: a masthead over an ink rule, section heads with a "See all", a pull quote, dashed rulings between rows */
 .pl-masthead{border-top:var(--pl-rule);padding-top:12px;font:500 13px/1.3 var(--pl-font-mono);letter-spacing:var(--pl-kicker-track);text-transform:uppercase;color:var(--pl-accent-text)}
-.pl-sec{border-top:var(--pl-rule);padding-top:12px;margin-top:24px}
-.pl-sec__head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-.pl-sec__head h2{margin:6px 0 0;font:var(--pl-display-weight) 28px/1.15 var(--pl-font-display);letter-spacing:var(--pl-display-track)}
+.pl-sec{border-top:var(--pl-rule-section);padding-top:var(--pl-space-3);margin-top:var(--pl-space-7)}
+.pl-sec__head{display:flex;justify-content:space-between;align-items:baseline;gap:var(--pl-space-3);margin-bottom:var(--pl-space-3)}
+.pl-sec__head h2{margin:0;font:var(--pl-display-weight) 28px/1.15 var(--pl-font-display);letter-spacing:var(--pl-display-track)}
 .pl-sec__more{font:600 15px var(--pl-font-text);color:var(--pl-accent-text);text-decoration:none}
 .pl-quote{margin:24px 0;padding:16px 0;border-top:var(--pl-rule-dashed);border-bottom:var(--pl-rule-dashed);font:var(--pl-serif-weight) 22px/30px var(--pl-font-serif);color:var(--pl-ink)}
 .pl-quote cite{display:block;margin-top:8px;font:500 13px var(--pl-font-mono);font-style:normal;letter-spacing:var(--pl-kicker-track);text-transform:uppercase;color:var(--pl-soft)}
@@ -404,3 +409,28 @@ html body .es-tabs a:is([href^="/signup?mode=friends"],[href="/?app=1"],[href^="
 /* ---- design audit (docs/design-audit.md): shared fixes found page by page ---- */
 /* Home's "Draft" tag sits at its own width, a status chip in the tint, not a stretched grey bar */
 html body .fc-draft{display:inline-block!important;align-self:flex-start;width:max-content;max-width:100%;background:var(--pl-sand)!important;color:var(--pl-ink)!important;border-radius:999px;padding:2px 10px!important;margin-left:0}
+/* ---- Spacing and sections (docs/brand-kit.md): the shared pieces of a long page ----
+   .pl-page-head  title, a short gap to the byline (.pl-byline), a bigger gap to the hero
+   .pl-hero       the cover: edge to edge on a phone (no frame), framed on wider screens; a tiny caption under it
+   .pl-sec        a thick ink rule over each section, clear space above it, the heading close under it (above)
+   .pl-facts      three or more facts as a two-column table: the label in the text face at 600, the value beside it
+   .pl-actions    one row of actions at one height: one filled primary, the rest outlined, icon-only for share/print
+   .pl-list       short items with room between them and no bullets; .pl-list__group is a small caps sub-heading
+   .pl-intro      an intro held to three lines, with an inline "Read more" ([data-pl-more] toggles .is-open) */
+.pl-page-head h1{margin:0}
+.pl-byline{margin:var(--pl-space-2) 0 0;font:500 15px/22px var(--pl-font-text);color:var(--pl-soft)}
+.pl-hero{margin:var(--pl-space-5) 0 0}
+.pl-hero>img,.pl-hero>.pl-hero__media{display:block;width:100%;border:var(--pl-bw) solid var(--pl-frame,var(--pl-ink));border-radius:var(--pl-r-md);object-fit:cover}
+.pl-hero figcaption,.pl-hero__cap{margin:var(--pl-space-2) 0 0;font:400 13px/18px var(--pl-font-text);color:var(--pl-soft)}
+@media (max-width:600px){.pl-hero>img,.pl-hero>.pl-hero__media{width:calc(100% + 2 * var(--pl-gutter));margin-inline:calc(-1 * var(--pl-gutter));max-width:none;border-width:0;border-radius:0}.pl-hero figcaption,.pl-hero__cap{margin-inline:0}}
+.pl-facts{display:grid;grid-template-columns:minmax(88px,max-content) minmax(0,1fr);margin:0;border-top:var(--pl-rule-dashed)}
+.pl-facts>dt,.pl-facts>dd{margin:0;padding:var(--pl-space-3) 0;border-bottom:var(--pl-rule-dashed);font:400 16px/24px var(--pl-font-text);color:var(--pl-ink)}
+.pl-facts>dt{padding-right:var(--pl-space-5);font-weight:600}
+.pl-actions{display:flex;flex-wrap:wrap;align-items:stretch;gap:var(--pl-space-2);margin:var(--pl-space-4) 0 0}
+.pl-actions>:is(a,button){display:inline-flex;align-items:center;justify-content:center;gap:var(--pl-space-2);min-height:44px;padding:0 var(--pl-space-4);border:var(--pl-bw) solid var(--pl-line-strong);border-radius:var(--pl-r-btn);background:var(--pl-surface);color:var(--pl-ink);font:600 15px/1 var(--pl-font-text);text-decoration:none;white-space:nowrap;cursor:pointer}
+.pl-actions>.is-primary{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent,#fff)}
+.pl-actions>.is-icon{width:44px;padding:0}.pl-actions>.is-icon svg{width:20px;height:20px}
+.pl-list{list-style:none;margin:0;padding:0}.pl-list>li{padding:var(--pl-space-2) 0;font:400 16px/26px var(--pl-font-text)}
+.pl-list__group{margin:var(--pl-space-5) 0 var(--pl-space-1);font:500 13px/1.3 var(--pl-font-mono);letter-spacing:var(--pl-kicker-track,.04em);text-transform:uppercase;color:var(--pl-soft)}
+.pl-intro{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.pl-intro.is-open{display:block;overflow:visible}
+.pl-more{border:0;background:none;padding:0;min-height:44px;font:600 15px var(--pl-font-text);color:var(--pl-accent-text);cursor:pointer}

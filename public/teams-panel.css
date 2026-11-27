@@ -59,9 +59,9 @@
 .tp-tl time{font:500 13px/1.5 var(--pl-font-mono);color:var(--pl-soft)}
 .tp-tl span{font-weight:600}
 .tp-of{font:500 14px var(--pl-font-mono);font-variant-numeric:tabular-nums;color:var(--pl-soft)}
-.tp-den{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;font-size:15px}
-.tp-den li{display:flex;justify-content:space-between;gap:12px;border-bottom:var(--tp-rule);padding-bottom:6px}
-.tp-den li b{font:500 15px var(--pl-font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tp-den{list-style:none;margin:var(--pl-space-2,8px) 0 0;padding:0;display:grid;gap:0;font-size:16px;border-top:var(--pl-rule-dashed)} /* the facts table (docs/brand-kit.md): label at 600, value beside it, roomy rows */
+.tp-den li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--pl-space-4,16px);align-items:baseline;border-bottom:var(--pl-rule-dashed);padding:var(--pl-space-3,12px) 0}.tp-den li>span{font-weight:600}
+.tp-den li b{font:500 15px var(--pl-font-mono);font-variant-numeric:tabular-nums;text-align:right;text-wrap:balance}
 .tp-grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media (min-width:900px){.tp-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .tp-grid>*{min-width:0}

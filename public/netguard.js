@@ -55,3 +55,11 @@
   // a dropped connection rejects fetch with a TypeError; pages catch most of them, the rest shouldn't read as crashes
   addEventListener("unhandledrejection", (e) => { const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(String(r.message))) { e.preventDefault(); if (!window.__plNetNoted) { window.__plNetNoted = 1; console.warn("[net] a request failed:", r.message); } } });
 })();
+
+// "Read more" on a clamped intro (.pl-intro in public/system.css): a [data-pl-more] button opens the intro it names
+// (aria-controls) or the one just before it, and closes it again. Here because every full page loads this file first.
+(() => { if (window.__plMore) return; window.__plMore = 1;
+  document.addEventListener("click", (e) => { const b = e.target.closest && e.target.closest("[data-pl-more]"); if (!b) return;
+    const t = document.getElementById(b.getAttribute("aria-controls") || "") || b.previousElementSibling; if (!t) return;
+    const open = t.classList.toggle("is-open"); b.setAttribute("aria-expanded", String(open)); b.textContent = open ? "Show less" : "Read more"; });
+})();

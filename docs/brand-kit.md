@@ -175,7 +175,46 @@ Potto is a signature, not a fixture. The straight-line Potto in the mark speaks 
 
 ### UI tokens
 
-Spacing is 4, 8, 12, 16, 24, 32. Buttons are 36 / 44 / 52 tall (44 minimum on phones). The older names pages use (`--ink`, `--paper`, `--sys-*`, `--fv-*`) point at the `--pl-*` tokens, so a new brand is a change to the token block.
+Spacing is 4, 8, 12, 16, 24, 32, 48 (`--pl-space-1` to `--pl-space-7`). Buttons are 36 / 44 / 52 tall (44 minimum on phones). The older names pages use (`--ink`, `--paper`, `--sys-*`, `--fv-*`) point at the `--pl-*` tokens, so a new brand is a change to the token block.
+
+### Spacing and sections
+
+A long page (a plan, an event, a host's package, a booking) reads like a well-set magazine page: a lot of room, an
+even rhythm, nothing crammed or cut off. The pieces are shared classes in `public/system.css`, built on the tokens,
+so a page (or a host's kit) adopts them without restyling.
+
+| Token | Value | Use |
+|---|---|---|
+| `--pl-space-1` | 4px | inside a chip, a label to its value |
+| `--pl-space-2` | 8px | title to byline, between buttons in a row, a caption under a photo |
+| `--pl-space-3` | 12px | under the section rule, under a section heading, table row padding |
+| `--pl-space-4` | 16px | the page gutter on a phone (`--pl-gutter`), card padding, before an action row |
+| `--pl-space-5` | 24px | byline to hero, between groups in a section |
+| `--pl-space-6` | 32px | between cards in a feed |
+| `--pl-space-7` | 48px | above each section rule |
+| `--pl-rule-section` | 3px ink | the rule over each section (cards keep the 1.5px line) |
+
+- **Page head** (`.pl-page-head`, `.pl-byline`, `.pl-hero`): the big title, a short gap (8px) to the byline, a
+  bigger gap (24px) to the hero.
+- **Hero** (`.pl-hero`): edge to edge on a phone (no frame, no corners), in the 1.5px frame from 601px up. A tiny
+  caption under it (`figcaption`, 13px, soft ink), never text over a busy photo.
+- **Section** (`.pl-sec`, `.pl-sec__head`): 48px of clear space, the 3px ink rule, 12px, a bold heading (Plex Sans
+  600, 22 to 28px) with an optional mono count or "See all" on the right, then 12px to what it heads. The heading sits
+  close to its content and far from the section before.
+- **Facts** (`.pl-facts`, a `<dl>`): three or more facts (when, where, group size, price, length) as a two-column
+  table: the label in the text face at 600 on the left, the value on the right, 12px rows with dashed rulings.
+  Two facts can stay on one line; three or more never go in a dot-separated run.
+- **Action row** (`.pl-actions`): one row, every control 44px tall. One filled primary (`.is-primary`), the rest
+  outlined; share, print and edit are icon-only squares (`.is-icon`, with an `aria-label`). Anything that doesn't fit
+  on a phone goes in the page's "···" menu rather than a second row.
+- **Lists** (`.pl-list`): short items with 8px above and below each and no bullets; a group gets a small-caps
+  sub-heading (`.pl-list__group`, Plex Mono 13px caps).
+- **Intro** (`.pl-intro`): held to three lines with an inline "Read more" (`<button class="pl-more" data-pl-more>`,
+  opened by public/netguard.js on every full page).
+
+Pages on this pattern so far: the plan page (`/plans/<id>`: section rule and spacing, the hero edge to edge on a
+phone, the action row) and a booking's seats table (`/teams/bookings/<id>`, the facts table). The experience pages
+(server/interest.js) are moving onto it in a separate change.
 
 ### Do and don't
 

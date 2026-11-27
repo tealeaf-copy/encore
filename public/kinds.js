@@ -17,7 +17,7 @@
     food: `<svg ${G}><path d="M6 3v5a2 2 0 0 0 4 0V3M8 3v14M14 17V3c-1.7 0-3 2-3 5s1.3 3 3 3"/></svg>`, warn: `<svg ${G}><path d="M10 3.5 17 16H3zM10 8.5v3.5M10 14h.01"/></svg>`, link: `<svg ${G}><path d="M8.5 11.5a3 3 0 0 0 4.2 0l2.6-2.6a3 3 0 0 0-4.2-4.2l-1 1M11.5 8.5a3 3 0 0 0-4.2 0l-2.6 2.6a3 3 0 0 0 4.2 4.2l1-1"/></svg>`,
     phone: `<svg ${G}><path d="M5 3.5h3l1.2 3.5-1.8 1.2a9 9 0 0 0 4.4 4.4l1.2-1.8 3.5 1.2v3a1.5 1.5 0 0 1-1.6 1.5A13 13 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5z"/></svg>`, check: `<svg ${G}><path d="M4.5 10.5 8 14l7.5-8"/></svg>`, door: `<svg ${G}><path d="M5 17V3.5h8.5V17M3 17h14M11 10.5h.01"/></svg>` };
   const CSS = `
-.kd{margin:18px 0 0}.kd .pv-h2{margin-top:26px}
+.kd{margin:18px 0 0}.kd .pv-h2{margin-top:var(--pl-space-7,48px)}
 .kd-card{margin:12px 0 0;padding:14px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface)}
 .kd-k{display:block;font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--pl-accent-text)}
 .kd-name{margin:4px 0 2px;font:600 24px/1.2 var(--pl-font-serif);letter-spacing:-.01em;color:var(--pl-ink)}

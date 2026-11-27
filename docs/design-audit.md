@@ -288,3 +288,24 @@ What was left in that run, read one by one:
 - **The map** needs its CDN library; the sandbox always shows the list fallback.
 - **Push, haptics and the native app** weren't in scope.
 
+
+## Spacing and sections (the owner's spacing reference)
+
+The owner shared a recipe page's layout for its spacing. Only the principles were taken (nothing of its look,
+fonts, colours or words) and written into docs/brand-kit.md "Spacing and sections": a 4 to 48px spacing scale
+(`--pl-space-1` to `--pl-space-7`, `--pl-gutter`), a 3px section rule (`--pl-rule-section`) and shared classes in
+public/system.css for the page head, an edge-to-edge hero on phones, the section rule and heading, a two-column
+facts table, a one-height action row, roomy unbulleted lists with small-caps group heads, and a three-line intro
+with "Read more" (opened by public/netguard.js).
+
+Pages that follow it now:
+
+| Page | What it uses |
+|---|---|
+| Plan page (`/plans/<id>`: table, trip, summit) | Sections: 48px above a 3px ink rule, the 22px heading 12px under it and 12px over its content; the cover edge to edge on a phone; one action row (Add to calendar, See the invite, Edit as a pencil square; Print stays in the ··· menu, where it already was) |
+| A booking (`/teams/bookings/<id>`) | Seats and the survey counts as the facts table: the label at 600 on the left, the value on the right, 12px rows with dashed rulings |
+| Experience pages (`/x/...`, server/interest.js) | Being moved onto the same tokens and classes in a separate change; nothing here overrides them |
+
+Not yet on it, for a next pass: the host page's sections (its kudos and offers blocks are in flight elsewhere), the
+light invite (its 40,000-character budget leaves little room; it already loads system.css, so it can use the classes
+without new CSS), and the brand package page (`/teams/x/...`), whose facts are still a list with icons.

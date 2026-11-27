@@ -8,23 +8,11 @@
 (function () {
   "use strict";
   if (window.HostLoop) return;
-  const reduce = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";");
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-  const tok = (n, fb) => { try { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || fb; } catch { return fb; } };
 
   // ---------- styles (tokens only) ----------
   const css = `
-.hl-press,.hl-btn{transition:transform .08s ease}.hl-press:active,.hl-btn:active{transform:translateY(1px) scale(.985)}
-.hl-check{display:inline-block;width:20px;height:20px;vertical-align:-4px}.hl-check path{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;animation:hlDraw .38s ease-out forwards}
-@keyframes hlDraw{to{stroke-dashoffset:0}}
-.hl-stamp{position:fixed;left:50%;top:38%;z-index:9999;pointer-events:none;transform:translate(-50%,-50%) rotate(-6deg);border:2px solid var(--pl-ink);color:var(--pl-ink);border-radius:6px;padding:8px 16px;font:600 22px/1 var(--pl-font-mono);letter-spacing:.12em;text-transform:uppercase;background:var(--pl-surface);animation:hlStamp .9s ease-out forwards}
-.hl-stamp.inline{position:relative;left:auto;top:auto;display:inline-block;transform:rotate(-6deg);animation-name:hlStampIn}
-@keyframes hlStamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(1.5)}18%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(.96)}26%{transform:translate(-50%,-50%) rotate(-6deg) scale(1)}80%{opacity:1}100%{opacity:0}}
-@keyframes hlStampIn{0%{opacity:0;transform:rotate(-6deg) scale(1.5)}35%{opacity:1;transform:rotate(-6deg) scale(.96)}50%,100%{opacity:1;transform:rotate(-6deg) scale(1)}}
-.hl-confetti{position:fixed;inset:0;pointer-events:none;z-index:9998;overflow:hidden}.hl-confetti i{position:absolute;top:-12px;width:8px;height:8px;border-radius:1px;animation:hlFall linear forwards}
-@keyframes hlFall{to{transform:translate3d(var(--dx),105vh,0) rotate(var(--r));opacity:.9}}
-@media (prefers-reduced-motion:reduce){.hl-check path{animation:none;stroke-dashoffset:0}.hl-stamp,.hl-stamp.inline{animation:none;opacity:1}.hl-press:active,.hl-btn:active{transform:none}}
 /* host Home card */
 .hl-card{background:var(--pl-surface);border:1px solid var(--pl-line-strong);border-radius:6px;padding:16px;margin:16px 0;color:var(--pl-ink);font-family:var(--pl-font-text)}
 .hl-card .hl-k{font:500 12px/1.3 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft);margin:0 0 10px}
@@ -50,28 +38,13 @@
 .hl-sheet{background:var(--pl-page);border:1px solid var(--pl-ink);border-radius:6px 6px 0 0;width:100%;max-width:480px;padding:20px 16px calc(20px + env(safe-area-inset-bottom));text-align:center;color:var(--pl-ink)}
 @media (min-width:600px){.hl-sheet-bg{align-items:center}.hl-sheet{border-radius:6px}}
 .hl-sheet h2{font:400 28px/1.15 var(--pl-font-display);margin:8px 0 6px}.hl-sheet p{margin:0 0 16px;color:var(--pl-soft)}
-.hl-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--pl-ink);color:var(--pl-surface);border-radius:6px;padding:10px 14px;font-size:14px;z-index:9995;max-width:calc(100% - 32px)}
 `;
   const st = document.createElement("style"); st.id = "hostloop-css"; st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
   // ---------- feedback ----------
-  const fx = {
-    haptic(kind = "light") { try { window.EncoreNative?.haptic?.(kind); } catch {} }, // the app only; a quiet no-op on the web
-    sound(kind = "tap") { if (ls.get("pl.sounds") !== "1") return; try { const A = window.AudioContext || window.webkitAudioContext; if (!A) return; const c = fx._ac || (fx._ac = new A()), o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
-      o.type = "sine"; o.frequency.value = kind === "done" ? 740 : kind === "stamp" ? 392 : 560; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + (kind === "stamp" ? 0.22 : 0.12));
-      o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.25); } catch {} },
-    check() { return `<svg class="hl-check" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg>`; },
-    tick(el, to, ms = 420) { if (!el) return; const from = +el.textContent || 0; if (reduce() || from === to) { el.textContent = to; return; } const t0 = performance.now();
-      const step = (t) => { const k = Math.min(1, (t - t0) / ms); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); },
-    stamp(word = "Sent", where) { const s = document.createElement("div"); s.className = "hl-stamp" + (where ? " inline" : ""); s.textContent = word; s.setAttribute("aria-hidden", "true");
-      if (where) where.appendChild(s); else { document.body.appendChild(s); setTimeout(() => s.remove(), 1000); } fx.haptic("medium"); fx.sound("stamp"); return s; },
-    confetti() { if (reduce()) return; const box = document.createElement("div"), C = [tok("--pl-accent", "currentColor"), tok("--pl-sand", "currentColor"), tok("--pl-ink", "currentColor"), tok("--pl-sage", "currentColor"), tok("--pl-highlight", tok("--pl-sand", "currentColor"))];
-      box.className = "hl-confetti"; box.setAttribute("aria-hidden", "true");
-      for (let i = 0; i < 42; i++) { const p = document.createElement("i"), dur = 1.6 + Math.random() * 1.4; p.style.left = Math.random() * 100 + "%"; p.style.background = C[i % C.length]; p.style.setProperty("--dx", (Math.random() * 80 - 40) + "px"); p.style.setProperty("--r", (Math.random() * 540 - 270) + "deg"); p.style.animationDuration = dur + "s"; p.style.animationDelay = Math.random() * 0.4 + "s"; if (i % 3 === 0) { p.style.width = "6px"; p.style.height = "10px"; } box.appendChild(p); }
-      document.body.appendChild(box); setTimeout(() => box.remove(), 3400); fx.haptic("success"); },
-    toast(msg) { document.querySelector(".hl-toast")?.remove(); const t = document.createElement("div"); t.className = "hl-toast"; t.setAttribute("role", "status"); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); },
-    press() { document.addEventListener("pointerdown", (e) => { const b = e.target.closest?.(".hl-btn,.hl-press"); if (b) { fx.haptic("light"); fx.sound("tap"); } }, { passive: true }); },
-  };
+  // the feedback itself lives in public/fx.js (window.PLFx), shared with every page; this loads it if the page didn't
+  if (!window.PLFx && !document.querySelector('script[src^="/fx.js"]')) { const t = document.createElement("script"); t.src = "/fx.js"; (document.head || document.documentElement).appendChild(t); }
+  const fx = window.PLFx || new Proxy({}, { get: (_, k) => (...a) => { const f = window.PLFx?.[k]; return typeof f === "function" ? f(...a) : k === "check" ? "" : undefined; } });
   const potto = (pose, size) => { try { return window.Potto ? window.Potto.svg(pose, size, "Potto") : ""; } catch { return ""; } };
   const api = { get: async (u) => { const r = await fetch(u, { credentials: "same-origin" }); if (!r.ok) throw Object.assign(new Error("http " + r.status), { status: r.status }); return r.json(); },
     post: async (u, b) => { const r = await fetch(u, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(b || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "That didn't work."), { status: r.status }); return j; } };

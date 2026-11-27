@@ -49,7 +49,7 @@ ol.path::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;border
   <section class="box" aria-labelledby="hP"><h2 id="hP">The path</h2><ol class="path" id="path"></ol></section>
   <section class="box" id="badgeBox" hidden aria-labelledby="hB"><h2 id="hB">Badges</h2><div class="badges" id="badges"></div></section>
 </main>
-<script src="/mascot.js"></script><script src="/hostloop.js"></script>
+<script src="/mascot.js"></script><script src="/fx.js"></script><script src="/hostloop.js"></script>
 <script>
 (async function () {
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"), fx = window.HostLoop?.fx || {};

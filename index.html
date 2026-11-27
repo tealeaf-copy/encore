@@ -6174,6 +6174,7 @@ function conciergeHTML(){ const S=cgState(), mine=allEvents.some(e=>!e.example),
     <div class="cg-thread" id="cgThread" ${S.msgs.length?"":"hidden"} aria-live="polite"></div>
     <div class="cg-box"><label class="vh" for="qsText">Ask Potto</label><textarea id="qsText" rows="2" placeholder="Describe an event, ask for ideas, or name a brand to see what they host"></textarea>
       <div class="cg-bar"><span class="cg-mode"><span class="spark">✦</span> Pottery Lab concierge</span><button class="cg-send" id="qsGo" aria-label="Send" type="button">↑</button></div></div>
+    <p id="plHint" style="margin:8px 2px 0;font-size:13px;color:var(--smoke,var(--pl-soft))">You can paste a Discord post, or <label style="text-decoration:underline;cursor:pointer;display:inline-block;padding:12px 0;margin:-12px 0">open a calendar file<input type="file" accept=".ics,text/calendar" hidden></label>.</p>
     <div class="cg-sugg" id="cgSugg" ${S.msgs.length>2?"hidden":""}>${sugg.map(([ic,t,a])=>`<button type="button" data-cg="${esc(a)}"><span class="cg-ic">${ic}</span>${esc(t)}</button>`).join("")}</div></section>` }
 const EV_ICON=[[/dinner|chef|table|meal|lunch|breakfast|brunch|supper|tasting|wine/i,'<path d="M7 3v8M5 3v4a2 2 0 004 0V3M7 11v10"/><path d="M17 3c-2 2-2 6 0 8v10"/>'],
  [/booth|conference|expo|trade|stand|sponsor/i,'<path d="M3 21V9l9-5 9 5v12"/><path d="M3 9h18M8 21v-6h8v6"/>'],
@@ -12636,9 +12637,9 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
     if(PT().looksMd(t)){ ev.preventDefault(); const o=PT().parseText(t); ta.value=o.text; plPending={text:o.text.trim(),o}; ta.dispatchEvent(new Event("input",{bubbles:true})) } });
   document.addEventListener("dragover",ev=>{ if(ev.target?.closest?.(".cg-box")) ev.preventDefault() });
   document.addEventListener("drop",ev=>{ if(!ev.target?.closest?.(".cg-box")) return; const f=ev.dataTransfer?.files?.[0]; if(f&&plIcs(f)) ev.preventDefault() });
-  let plT=0; new MutationObserver(()=>{ if(plT) return; plT=setTimeout(()=>{ plT=0; const box=q(".cg-box"); if(!box||q("#plHint")) return;
-    box.insertAdjacentHTML("afterend",`<p id="plHint" style="margin:8px 2px 0;font-size:13px;color:var(--smoke,var(--pl-soft))">You can paste a Discord post, or <label style="text-decoration:underline;cursor:pointer;display:inline-block;padding:12px 0;margin:-12px 0">open a calendar file<input type="file" accept=".ics,text/calendar" hidden></label>.</p>`);
-    q("#plHint input").onchange=e=>plIcs(e.target.files?.[0]) },400) }).observe(document.documentElement,{childList:true,subtree:true});
+  let plT=0; new MutationObserver(()=>{ if(plT) return; plT=setTimeout(()=>{ plT=0; const box=q(".cg-box"); if(!box) return; // the hint is drawn with the composer (no jump); this only wires it, or adds it where an older composer lacks it
+    if(!q("#plHint")) box.insertAdjacentHTML("afterend",`<p id="plHint" style="margin:8px 2px 0;font-size:13px;color:var(--smoke,var(--pl-soft))">You can paste a Discord post, or <label style="text-decoration:underline;cursor:pointer;display:inline-block;padding:12px 0;margin:-12px 0">open a calendar file<input type="file" accept=".ics,text/calendar" hidden></label>.</p>`);
+    const inp=q("#plHint input"); if(inp&&!inp.dataset.w){ inp.dataset.w=1; inp.onchange=e=>plIcs(e.target.files?.[0]) } },400) }).observe(document.documentElement,{childList:true,subtree:true});
 
   // ---- the studio: Slots, series and channels (public/slots.js) ----
   let slSaveT=null; const slSave=()=>{ clearTimeout(slSaveT); slSaveT=setTimeout(()=>{ try{ saveEvent(true) }catch(e){ console.warn(e) } },700) };
@@ -13323,12 +13324,26 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 <script>
 // ---- the host loop (public/hostloop.js, server/hostloop.js): host Home's card with the streak, today's small move,
 // warmth and Circles, and the once-only milestone celebration ----
-(function(){ if(location.pathname!=="/"||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };
-  if(!window.Potto) add("/mascot.js"); add("/hostloop.js") })();
+(function(){ if(location.pathname!=="/"||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.async=false; document.head.appendChild(t) };
+  if(!window.Potto) add("/mascot.js"); add("/fx.js"); add("/hostloop.js") })();
+// ---- Home settles once: the cards that arrive late (the streak card, guides, new replies, hosts you follow, near you,
+// the playbook line) each land under the quick-start panel at their own time, and each used to push the page down.
+// Everything under that panel waits, hidden but laid out, until they've stopped arriving, then shows in one fade.
+// Never longer than 2.6 seconds; the panel and everything above it shows at once. ----
+(function(){ if(location.pathname!=="/"||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return;
+  const st=document.createElement("style"); st.textContent="#view-programs.pl-settling>#qsPanel~*{visibility:hidden}#view-programs.pl-settled>#qsPanel~*{animation:plSettle .28s ease-out both}@keyframes plSettle{from{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){#view-programs.pl-settled>#qsPanel~*{animation:none}}"; document.head.appendChild(st);
+  let done=false, t0=0, quiet=null, cap=null, mo=null;
+  const reveal=()=>{ if(done) return; done=true; clearTimeout(quiet); clearTimeout(cap); mo?.disconnect(); const v=document.getElementById("view-programs"); if(!v) return; v.classList.remove("pl-settling"); v.classList.add("pl-settled"); setTimeout(()=>v.classList.remove("pl-settled"),400) };
+  const arm=(v)=>{ if(t0||done) return; t0=performance.now(); v.classList.add("pl-settling"); cap=setTimeout(reveal,2600);
+    const later=()=>{ clearTimeout(quiet); quiet=setTimeout(reveal,Math.max(750,1100-(performance.now()-t0))) }; later();
+    mo=new MutationObserver(later); mo.observe(v,{childList:true}) };
+  const watch=()=>{ const v=document.getElementById("view-programs"); if(!v) return; if(!v.hidden) return arm(v);
+    const o=new MutationObserver(()=>{ if(!v.hidden){ o.disconnect(); arm(v) } }); o.observe(v,{attributes:true,attributeFilter:["hidden"]}); setTimeout(()=>o.disconnect(),8000) };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",watch); else watch(); })();
 </script>
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----
-(function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };
+(function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)) return; const t=document.createElement("script"); t.src=src; t.async=false; document.head.appendChild(t) };
   if(location.pathname==="/g") add("/comewith.js"); if(location.pathname==="/g"||location.pathname==="/") add("/hostlike.js") })();
 </script>

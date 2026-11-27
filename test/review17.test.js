@@ -1,0 +1,80 @@
+// Review round 17 (delight for the people who live in the tools): one shared feedback module (public/fx.js) the host
+// loop and the brand pages both use; campaign milestones stamped once when they land; a check-in that answers the tap
+// at once; meters that fill once; the campaign report as a one-page issue; and no small serif titles on brand pages or
+// the plans timeline.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { reportHtml } from "../server/campaigns.js";
+
+const read = (f) => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
+
+test("one feedback module: fx.js has the stamp, the tick and the haptic; the host loop uses it instead of its own", () => {
+  const fx = read("public/fx.js"), hl = read("public/hostloop.js");
+  for (const k of ["haptic(", "stamp(", "tick(", "ink(", "fill(", "countUp(", "fresh(", "firstInSession("]) assert.ok(fx.includes(k), "fx.js has " + k);
+  assert.match(fx, /window\.EncoreNative\?\.haptic\?\.\(kind\)/, "haptics go through the app's bridge");
+  assert.match(fx, /prefers-reduced-motion:reduce\)\{.*\.hl-stamp,\.hl-stamp\.inline,\.fx-inked\{animation:none/, "the stamp stands still for people who ask for less motion");
+  assert.match(fx, /if \(!L\.length \|\| reduce\(\)/, "meters and counts don't move for them either");
+  assert.doesNotMatch(hl, /@keyframes hlStamp/, "the stamp's look lives in one place");
+  assert.match(hl, /const fx = window\.PLFx \|\|/, "the host loop reads the shared module");
+  for (const f of ["public/start.html", "public/path.html", "public/circles.html", "public/settings.html"]) assert.match(read(f), /<script src="\/fx\.js"( defer)?><\/script><script src="\/hostloop\.js"/, f + " loads fx.js first");
+  assert.match(read("index.html"), /add\("\/fx\.js"\); add\("\/hostloop\.js"\)/, "and the app's Home too, in order");
+  assert.match(read("index.html"), /t\.async=false/, "dynamic scripts keep their order");
+});
+
+test("campaign milestones: first booking, all hosts, report ready, inked once when they land", () => {
+  const c = read("public/teams-campaigns.html");
+  for (const t of ["First booking confirmed", "All hosts confirmed", "Report ready"]) assert.ok(c.includes(t), t);
+  assert.match(c, /fx\.fresh\("miles\." \+ C\.id, done\)/, "only what's new since the last visit is stamped");
+  assert.match(c, /data-mrep/, "Report ready opens the report");
+  const h = read("public/teams-home.html"); assert.match(h, /milesLine\(c\)/, "Home shows each campaign's latest milestone"); assert.match(h, /c\.confirmed/);
+  assert.match(read("server/campaigns.js"), /confirmed: R\.filter\(\(r\) => \["booked", "done"\]\.includes\(statusOf\(r\)\)\)\.length/, "the brief carries the count");
+});
+
+test("brand check-in answers the tap at once, then saves; a failed save puts it back", () => {
+  const c = read("public/teams-campaigns.html");
+  assert.match(c, /const h = paint\(on\); if \(on && fx\) \{ fx\.ink\(b\); fx\.haptic\("medium"\)/, "paint first, with the stamp and a haptic");
+  assert.match(c, /catch \(e\) \{ paint\(!on\)/, "undo on failure");
+  assert.match(c, /class="ti-arrive"/, "an arrivals meter that fills as people check in");
+});
+
+test("brand pages: a skeleton the size of the page, meters that fill once, numbers that count up once", () => {
+  for (const f of ["public/teams-campaigns.html", "public/teams-home.html", "public/teams-insights.html"]) { const s = read(f); assert.match(s, /class="ti-skel"/, f); assert.match(s, /<script src="\/fx\.js"><\/script>/, f); assert.doesNotMatch(s, />Loading…</, f + " has no bare Loading line"); }
+  assert.match(read("public/teams-home.html"), /fx\.countUp\(main, "home"\)/);
+  assert.match(read("public/teams-intel.css"), /\.ti-grid>\*\{min-width:0\}/, "grid columns never push the page sideways at 390");
+});
+
+test("the report reads like a one-page issue: masthead, kicker, standfirst, pull numbers, a lead quote only when someone agreed", () => {
+  const R = { totals: { events: 3, eventsDone: 2, invited: 40, attended: 30, showPct: 90, againPct: 88, againAnswered: 20, meetings: 6, followUps: 9, costPerAttendeeCents: 9000, yes: 33, themes: { shown: false, themes: [] }, quotes: [{ text: "Best dinner of the year.", name: "Ana" }, { text: "Small and warm.", name: "Bo" }] },
+    budget: { budgetCents: 100000, committedCents: 50000, spentCents: 20000, remainingCents: 50000 }, kpis: [{ label: "Guests who came", have: 30, goal: 25, pct: 120 }, { label: "Pipeline meetings", have: 6, goal: 10, pct: 60 }], events: [] };
+  const html = reportHtml({ title: "Spring dinners", goal: "Meet builders.", cities: ["New York"] }, R, { company: "Fernwood Labs" });
+  assert.match(html, /class="rp-mast"><span class="rp-mname">Field report<\/span>/);
+  assert.match(html, /Fernwood Labs · Campaign report · New York/);
+  assert.match(html, /<p class="rp-stand">30 guests came to 2 events, and 88% would go again\. 6 pipeline meetings so far\.<\/p>/, "one plain sentence from the totals");
+  assert.equal((html.match(/class="rp-pn"/g) || []).length, 3, "three pull numbers");
+  assert.match(html, /<figure class="rp-quote"><blockquote>Best dinner of the year\.<\/blockquote><figcaption>Ana, a guest, who said we could quote them by first name/);
+  assert.equal((html.match(/class="rp-met"/g) || []).length, 1, "Goal met stamps only the goal that was met");
+  assert.doesNotMatch(html, /@|—/);
+  const none = reportHtml({ title: "Q", cities: [] }, { ...R, totals: { ...R.totals, quotes: [] } }, {});
+  assert.doesNotMatch(none, /rp-quote/, "no quote, no lead quote");
+  const css = read("public/teams-intel.css");
+  assert.match(css, /\.rp-bar i\{[^}]*animation:rpFill/, "goal bars fill once");
+  assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{\.rp-bar i,\.rp-met\{animation:none\}\}/);
+});
+
+test("no small serif titles: teams-intel.css and timeline.css set the serif only at 24px and up", () => {
+  for (const f of ["public/teams-intel.css", "public/timeline.css"]) {
+    const css = read(f), bad = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^}]*font(?:-family)?:[^};]*(?:--pl-font-serif|--ti-serif|--tl-serif)[^}]*)\}/g)) { const size = (m[2].match(/(\d+(?:\.\d+)?)px/) || [])[1]; if (size && +size < 24) bad.push(m[1].trim() + " " + size); }
+    assert.deepEqual(bad, [], f);
+  }
+});
+
+test("the app's Home settles once: late cards wait under the quick-start panel and show together, the hint draws with the composer", () => {
+  const spa = read("index.html");
+  assert.match(spa, /#view-programs\.pl-settling>#qsPanel~\*\{visibility:hidden\}/, "hidden but laid out, so their arrival moves nothing on screen");
+  assert.match(spa, /cap=setTimeout\(reveal,2600\)/, "never longer than 2.6 seconds");
+  assert.match(spa, /@media \(prefers-reduced-motion:reduce\)\{#view-programs\.pl-settled>#qsPanel~\*\{animation:none\}\}/);
+  assert.equal((spa.match(/<p id="plHint"/g) || []).length, 2, "drawn in the composer, with the old insert kept as a fallback");
+  assert.match(spa, /if\(!q\("#plHint"\)\) box\.insertAdjacentHTML/);
+});

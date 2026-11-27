@@ -1,8 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Insights · Pottery Lab</title><meta name="description" content="What resonates: which kinds of experiences people love, which fit your buyers, and how your own events went. Totals only.">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"></head>
-<body class="bb ti"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
-<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<body class="bb ti"><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="p"></i><i class="r"></i><i class="b"></i></div></main>
+<script src="/fx.js"></script><script src="/eventart.js"></script><script src="/brandbook.js"></script>
 <script>
 (function () {
   const { esc, api, icon, money, $, $$ } = BB; BB.top("insights");
@@ -19,7 +19,7 @@
     shell(); draw();
   }
   function shell() {
-    main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Insights</p><h1>What <em>resonates</em></h1><p class="ti-sub">Which experiences people love, which fit your buyers, and how your own events went.</p></div>
+    main.removeAttribute("aria-busy"); main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Insights</p><h1>What <em>resonates</em></h1><p class="ti-sub">Which experiences people love, which fit your buyers, and how your own events went.</p></div>
       <div class="acts"><a class="bb-btn quiet" href="/teams/insights/how">${icon("shield")}How insights work</a><a class="bb-btn primary" href="/teams/campaigns?new=1">${icon("plus")}Start a campaign</a></div></header>
       <nav class="ti-tabs" role="tablist" aria-label="Insights">${[["fit", "Fit for your buyers"], ["trends", "Experience trends"], ["results", "Your results"]].map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}</nav><div id="pane"></div>`;
     $$("[data-tab]").forEach((b) => (b.onclick = () => { tab = b.dataset.tab; $$("[data-tab]").forEach((x) => x.setAttribute("aria-selected", String(x === b))); history.replaceState(null, "", tab === "fit" ? location.pathname : `?tab=${tab}`); draw(); }));
@@ -56,19 +56,20 @@
       <section class="ti-card" style="margin-top:16px" id="sum"><p class="ti-k">What we'd try for you</p><div class="ti-summary"><p class="bb-meta">Writing a short summary from the numbers…</p></div></section>
       <div class="ti-grid two" style="margin-top:16px">
         <section class="ti-card"><h2>Kinds of experience, best fit first</h2><p class="ti-sub">${F.audience.enough ? `Matched on ${esc(F.audience.peopleBand)} guests like your buyers${where}.` : `Ranked on everyone${where}.`} Fit weighs how often your buyers go, would go again, how teams rated them, and your budget.</p>
-          ${K.length ? `<ol class="ti-fit">${K.map((k) => `<li><span class="ti-score" title="Fit out of 100">${k.score}</span><div><h3>${esc(k.label)}</h3><ul class="ti-why">${k.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div><div class="r">${k.medianPriceCents != null ? `<b>${k.medianPriceCents ? money(k.medianPriceCents) : "Free"}</b>${k.medianPriceCents ? "a person, typical" : "usually"}` : ""}<br>${k.events} events · ${esc(k.peopleBand)} people</div></li>`).join("")}</ol>` : `<div class="ti-empty"><h3>Not enough yet${where}</h3><p>Try another city, or leave the city blank.</p></div>`}
+          ${K.length ? `<ol class="ti-fit">${K.map((k) => `<li><span class="ti-score" title="Fit out of 100" data-fx-count="${k.score}">${k.score}</span><div><h3>${esc(k.label)}</h3><ul class="ti-why">${k.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div><div class="r">${k.medianPriceCents != null ? `<b>${k.medianPriceCents ? money(k.medianPriceCents) : "Free"}</b>${k.medianPriceCents ? "a person, typical" : "usually"}` : ""}<br>${k.events} events · ${esc(k.peopleBand)} people</div></li>`).join("")}</ol>` : `<div class="ti-empty"><h3>Not enough yet${where}</h3><p>Try another city, or leave the city blank.</p></div>`}
           ${hid.length ? `<p class="bb-meta" style="margin-top:12px">Not enough yet to show: ${esc(hid.map((k) => k.label.toLowerCase()).join(", "))}.</p>` : ""}</section>
         <section class="ti-card"><h2>Hosts who fit</h2><p class="ti-sub">Hosts you can book for teams${where}, ranked the same way.</p>
-          ${F.hosts.length ? `<ol class="ti-fit">${F.hosts.slice(0, 6).map((h) => `<li><span class="ti-score">${h.score}</span><div><h3>${h.pkg ? `<a href="/teams/x/${esc(h.handle)}/${esc(h.pkg)}">${esc(h.name)}</a>` : esc(h.name)}${h.trusted ? `<span class="ti-badge blue">Trusted</span>` : ""}</h3><p class="bb-meta" style="margin:0">${esc(h.pkgName || h.kindLabel)} · ${esc(h.area)}</p><ul class="ti-why">${h.why.slice(1).map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div><div class="r">${h.perPersonCents ? `<b>${money(h.perPersonCents)}</b>a person` : ""}</div></li>`).join("")}</ol>
+          ${F.hosts.length ? `<ol class="ti-fit">${F.hosts.slice(0, 6).map((h) => `<li><span class="ti-score" data-fx-count="${h.score}">${h.score}</span><div><h3>${h.pkg ? `<a href="/teams/x/${esc(h.handle)}/${esc(h.pkg)}">${esc(h.name)}</a>` : esc(h.name)}${h.trusted ? `<span class="ti-badge blue">Trusted</span>` : ""}</h3><p class="bb-meta" style="margin:0">${esc(h.pkgName || h.kindLabel)} · ${esc(h.area)}</p><ul class="ti-why">${h.why.slice(1).map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div><div class="r">${h.perPersonCents ? `<b>${money(h.perPersonCents)}</b>a person` : ""}</div></li>`).join("")}</ol>
             <p style="margin:12px 0 0"><a class="bb-btn quiet block" href="/teams/discover${F.city ? `?hood=${encodeURIComponent(F.city)}` : ""}">See every host${where}</a></p>` : `<div class="ti-empty"><p>No bookable hosts${where} yet.</p></div>`}</section></div>
       ${privacy()}`;
+    window.PLFx?.countUp($("#fitOut"), "fit"); window.PLFx?.fill($("#fitOut").querySelectorAll(".ti-bars .b i"), "fit");
     try { const S = await api("/api/insights/summary", body); $("#sum").innerHTML = `<p class="ti-k">${esc(S.title)}</p><div class="ti-summary"><p>${esc(S.text)}</p><small>${esc(S.note)}</small></div>`; } catch { $("#sum").remove(); }
   }
 
   // ---- trends ----
   let tCity = "", tCut = "days";
   async function drawTrends() {
-    $("#pane").innerHTML = `<p class="bb-meta">Loading…</p>`; let T;
+    $("#pane").innerHTML = `<div class="ti-skel" aria-label="Loading"><i class="r"></i><i class="b"></i></div>`; let T;
     try { T = await api(`/api/insights/trends?city=${encodeURIComponent(tCity)}&cut=${tCut}`); } catch (e) { $("#pane").innerHTML = `<p>${esc(e.message)}</p>`; return; }
     const O = T.overall, cuts = ["days", "time", "size", "price", "season", "hood", "city"].filter((c) => !(c === "city" && tCity));
     const rows = T.kinds.map((r) => r.hidden ? `<tr class="hid"><td>${esc(r.label)}</td><td colspan="6" style="text-align:left">${esc(r.why)}</td></tr>`
@@ -88,7 +89,7 @@
 
   // ---- your results ----
   async function drawResults() {
-    $("#pane").innerHTML = `<p class="bb-meta">Loading…</p>`; let R;
+    $("#pane").innerHTML = `<div class="ti-skel" aria-label="Loading"><i class="r"></i><i class="b"></i></div>`; let R;
     try { R = await api("/api/campaigns/results"); } catch (e) { $("#pane").innerHTML = `<p>${esc(e.message)}</p>`; return; }
     if (!R.campaigns) { $("#pane").innerHTML = `<div class="ti-empty"><h3>No results yet</h3><p>Run an event in a campaign and your numbers land here.</p><p><a class="bb-btn primary" href="/teams/campaigns?new=1">Start a campaign</a></p></div>`; return; }
     const T = R.themes;

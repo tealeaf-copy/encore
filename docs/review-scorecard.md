@@ -102,3 +102,29 @@ Compared again: Eventbrite is still the reference for running a big room (badges
 ### Still below 9, and why
 
 - **Joy at 8** for the engineer, designer, field marketer, game night, weekend getaway and summit personas. Their jobs now work end to end, but the screens they live in (campaign tabs, the plan page, the status board) are tidy rather than delightful, and a few brand pages set small titles in the serif. Those pages belong to the brand and Plans work running in parallel, so this loop left their look alone.
+
+## Round 4 (loop 17: delight for the people who live in the tools)
+
+Screens: `review17/round-4/before` and `review17/round-4/after`. Same seeded worlds, plus a game night tonight with a bracket, a hack night with a demo queue, a two-day summit with an agenda and a weekend away with a plan. Compared against Partiful's small moments of reward and Eventbrite's organizer reporting.
+
+Only the six personas below 9 on delight are re-scored; everyone else was re-checked on their main path and holds at 9.
+
+| Persona | Use | Joy | Ease | Intu | Pick | Notes (what moved) |
+|---|---|---|---|---|---|---|
+| Engineer | 9 | 8 | 9 | 9 | 9 | The app's Home jumped as five cards arrived one by one (CLS 0.28 for a signed-in guest at 390). Now they wait, laid out but hidden, and show together: CLS about 0.05. Brand pages load into skeletons sized like the page. Check-in answers the tap in under 5ms. Still 8: the invite planner's tap waits on the network. |
+| Product designer | 9 | 8 | 9 | 9 | 9 | Small serif titles are gone from teams-intel.css and timeline.css. The report is now an issue, not a table. Still 8: the plan page and the slot cards (16px corners) are next. |
+| Field marketer (brand) | 9 | 9 | 9 | 9 | 9 | Milestones stamp in once when they land ("First booking confirmed", "All hosts confirmed", "Report ready"), Home shows each campaign's latest one, meters fill once, tile numbers count up once, check-in stamps and fills an arrivals line, and the report reads like a one-page issue. |
+| Game or hack night host | 9 | 8 | 9 | 9 | 9 | No change yet (round 5 and 6). |
+| Weekend getaway host | 9 | 8 | 9 | 9 | 9 | No change yet (round 5). |
+| Small summit host | 9 | 8 | 9 | 9 | 9 | Brand-side check-in and the report help a summit run by a brand. Still 8: the agenda page and its run of show (round 5). |
+
+### Fixed in round 4
+
+- **One feedback module, public/fx.js** (`window.PLFx`): the host loop's stamp, tick, check, haptic (through `EncoreNative.haptic`), sounds and confetti moved here, plus `ink()` (press an element down like a rubber stamp), `fill()` (a meter fills once a visit), `countUp()` (numbers count up once a visit) and `fresh()` (what's new since the last visit). public/hostloop.js reads it; every page that loads the host loop loads it first. Nothing moves with reduced motion.
+- **Campaign milestones** under the campaign tiles: done ones are inked stamps, the rest wait in pencil with a hint ("4 of 5 hosts confirmed"). A milestone new since your last visit stamps in with a haptic; "Report ready" opens the report. Home shows each active campaign's latest milestone and the next one.
+- **Check-in on the brand Run tab** answers the tap at once (the button, the count, an arrivals line, the stamp, a haptic), then saves, and puts it back if the save fails. The last guest in gets an "All here" stamp.
+- **The report as a one-page issue** (`reportHtml` in server/campaigns.js): a "Field report" masthead with a double rule, a kicker with the company and cities, the headline, a one-line standfirst written only from the totals, three pull numbers set large, a lead quote in the serif (only from a guest who said yes to being quoted), numbered sections, goal bars that fill once and a "Goal met" stamp. Still no guest names or emails.
+- **Brand pages** (Home, Campaigns, Insights) load into skeletons the size of the page, not "Loading…". Home's tiles count up once and its meters fill once; "Coming up" says "Tomorrow" or "In 3 days". Insights' fit scores count up once.
+- **No small serif titles**: card, section and campaign titles in teams-intel.css and the timeline titles in timeline.css use the text face at 600 under 24px.
+- **Run tab at 390**: grid columns no longer push the page sideways (`.ti-grid>*{min-width:0}`).
+- **The app's Home settles once** (index.html): cards that arrive late (the streak card, guides, new replies, hosts you follow, near you, the playbook line) wait under the quick-start panel, laid out but hidden, until they stop arriving (2.6 seconds at most), then fade in together. The paste or calendar-file hint is drawn with the composer instead of 400ms later.

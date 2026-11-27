@@ -77,8 +77,12 @@ window.InviteOrder.ticket = function (e, ws, H, U, M, el) {
   const tapped = (() => { try { return !!U.ls.get("encore-paytap-" + eid); } catch { return false; } })(), rid = M.rid || "";
   const status = M.paid ? "Paid. See you at pickup." : M.paidClaim ? `Got it. ${first} will check and confirm.` : `${first} has it${pay ? "" : e.ticketNote ? ". Pay at pickup" : ""}.`;
   if (!el) return;
+
   el.outerHTML = `<div class="ticket" id="tk"><h2>Ordered</h2><p class="muted" style="margin:0">${esc(M.order || "")}</p>${M.code && (M.shop || e.drop) ? `<p class="muted" style="margin:0">Order #${esc(String(M.code).slice(0, 6))}. Show this at pickup.</p>` : ""}${M.where ? `<p class="muted" style="margin:0">Pickup: ${esc(M.where)}</p>` : ""}
     <p class="muted" style="margin:0">${esc(status)}</p><div class="btns">${pay && !M.paid && !M.paidClaim ? `<a class="btn pay" id="oPay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(money(total))}</a>` : ""}${pay && rid && !M.paid && !M.paidClaim ? `<button type="button" class="btn" id="oPaid"${tapped ? "" : " hidden"}>I paid</button>` : ""}</div></div>`;
+  // round 17: coming back on pickup day, the address is still here (asked again with the order's own code, never stored on the phone)
+  if (!M.where && rid && M.code && e.drop) fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(M.code)}`).then((r) => r.json()).then((a) => { const w = a && a.ok ? [a.venueAddr, e.hood].filter(Boolean).join(", ") : ""; const ps = document.querySelectorAll("#tk p.muted"), last = ps[ps.length - 1];
+    if (w && last && !/^Pickup: /.test(last.previousElementSibling?.textContent || "")) { const p = document.createElement("p"); p.className = "muted"; p.style.margin = "0"; p.textContent = "Pickup: " + w; last.before(p); } }).catch(() => {});
   // review round 10: after Pay, "I paid" records a claim on their own reply, as on any paid invite. The host still confirms.
   const oPay = $("#oPay"), oPaid = $("#oPaid");
   if (oPay && oPaid) { oPay.addEventListener("click", () => { U.ls.set("encore-paytap-" + eid, "1"); oPaid.hidden = false; });

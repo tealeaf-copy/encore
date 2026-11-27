@@ -19,7 +19,7 @@
     form?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth", block: "start" }); setTimeout(() => form?.querySelector("#nm")?.focus({ preventScroll: true }), 450); };
   const show = (on) => { if (!bar) return; bar.classList.toggle("on", on); }; // its room is in slots.css (body:has(.prb)), so nothing jumps and nothing stays behind
   // a drop's order form (public/invite-order.js) stands in for the reply form: the bar says Order and goes there
-  const formNow = () => { const og = document.getElementById("oGo"); if (og) return og.closest("form") || og.parentElement; return document.getElementById("f"); };
+  const formNow = () => { const og = document.getElementById("oGo"); if (og) return og.closest("form") || og.parentElement; const f = document.getElementById("f"); return f && !f.hidden && !document.getElementById("tk") ? f : null; }; // once a reply or an order is in, there is nothing left for the bar to ask
   function mount() { const f = formNow(); if (f === form) return; form = f; io?.disconnect(); bar?.remove(); bar = null; document.body.style.paddingBottom = ""; if (!f) return;
     const goL = document.getElementById("oGo")?.textContent.trim() || f.querySelector('input[name=r][value="going"]')?.closest("label")?.textContent.trim() || f.querySelector("#send")?.textContent.trim() || "I'm in";
     const txt = (q) => (document.querySelector(q)?.textContent || "").trim(), when = txt("#m .facts > div:first-child b").replace(/ to [^·]+$/, ""), sub = txt("#spots span") || txt("#price span");

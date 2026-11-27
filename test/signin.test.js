@@ -135,6 +135,10 @@ test("a new email account needs a code, then a name; email codes expire, allow 5
   assert.equal(v.need, "name"); assert.equal((await (await J.get("/api/auth/pending")).json()).email, "kai@example.com");
   const f = await (await J.post("/api/auth/finish", { name: "Kai Moana" })).json(); assert.equal(f.ok, true); assert.match(f.redirect, /welcome=1/);
   const m = await me(J); assert.equal(m.name, "Kai Moana"); assert.equal(m.emailVerified, true);
+  // a new account that was headed somewhere (a dinner drafted on /start) lands there, not on the welcome screen
+  const D = jar(); await D.post("/api/auth/join", { code: (await (await H.J.get("/api/codes")).json()).codes.find((c) => !c.used).code }); await D.post("/api/auth/email/start", { email: "dee@example.com", next: "/start?save=1" });
+  await D.post("/api/auth/email/verify", { email: "dee@example.com", code: lastCode("dee@example.com") });
+  assert.equal((await (await D.post("/api/auth/finish", { name: "Dee Park" })).json()).redirect, "/start?save=1");
   // 5 tries per code: four wrong, the fifth wrong ends it, and then even the right code fails
   const T = jar(); await T.post("/api/auth/email/start", { email: "tries@example.com" }); const good = lastCode("tries@example.com"), bad = good === "000000" ? "111111" : "000000";
   for (let i = 1; i <= 4; i++) { const r = await T.post("/api/auth/email/verify", { email: "tries@example.com", code: bad }); assert.equal(r.status, 400); assert.match((await r.json()).message, new RegExp(`${5 - i} tr`)); }

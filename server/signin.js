@@ -241,7 +241,7 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     const signIn = (acct, isNew, redirect) => {
       const sso = ssoBlock(acct); if (sso) return { error: "sso_required", message: "Your company uses single sign-on. Sign in with SSO instead.", sso };
       if (idn.provider !== "passkey") linkIdentity(acct.email, idn); if (idn.emailVerified && lc(idn.email) === lc(acct.email)) markVerified(acct.email);
-      const to = redirect || next || homeOf(acct.ws);
+      const to = next || redirect || homeOf(acct.ws); // where they were headed wins over the welcome screen: a dinner drafted on /start comes back to be saved
       if (ctx.native) { const t = crypto.randomBytes(24).toString("base64url"); put("system/handoff-" + h40(t), { email: acct.email, ws: acct.ws, to }, 2 * MIN); clearJoin(req, res); return { ok: true, redirect: `${appScheme()}://auth/app?t=${t}`, isNew }; } // the browser sheet hands back to the app
       startSession(req, res, acct.email, acct.ws); clearJoin(req, res);
       console.log(`[signin] ${idn.provider} ${isNew ? "joined" : "signed in"}: ${idn.phone ? maskPhone(idn.phone) : maskEmail(acct.email)}`);

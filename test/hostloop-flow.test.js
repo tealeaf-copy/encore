@@ -28,7 +28,7 @@ after(async () => { for (const k of Object.keys(ENV)) delete process.env[k]; awa
 
 test("Pre-signup draft carryover: plan on /start signed out, sign up, and the same dinner is saved and sent", async () => {
   const page = await fetch(srv.base + "/start"); assert.equal(page.status, 200); const html = await page.text();
-  assert.match(html, /Save your dinner and get a link to send/); assert.match(html, /pl\.startDraft/, "the draft lives on this phone"); assert.match(html, /next=start/);
+  assert.match(html, /Save your dinner and get a link to send/); assert.match(html, /pl\.startDraft/, "the draft lives on this phone"); assert.match(html, /next=%2Fstart%3Fsave%3D1/, "sign-up comes back to save the draft");
   assert.match(read("public/signup.html"), /q\.get\("next"\) === "start"\) \{ location\.href = "\/start\?save=1"/, "sign-up comes back to save the draft");
   assert.equal((await post("/api/me/hostloop/draft", { draft: { title: "x" } })).status, 401, "saving needs an account");
   const { cookie } = await signup("Mina Cho", "mina.loop@example.com", "mina-loop");

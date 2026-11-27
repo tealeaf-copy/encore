@@ -155,7 +155,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
   function prompt() {
     const bg = document.createElement("div"); bg.className = "sheet-bg"; const n = T[t].noun;
     bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="spH"><div class="row">${window.Potto ? Potto.svg("carry", 64, "Potto") : ""}<div><h2 id="spH">Save your ${n} and get a link to send</h2><p>A free account keeps it safe. Everything you typed comes with you.</p></div></div>
-      <div class="stack"><a class="btn pri" href="/signup?mode=friends&next=start">Create my account</a><a class="btn" href="/login?next=%2Fstart%3Fsave%3D1">I already have one</a><button type="button" class="plain" id="spNo">Not yet. Keep it on this phone</button></div></div>`;
+      <div class="stack"><a class="btn pri" href="/signup?mode=friends&next=%2Fstart%3Fsave%3D1">Create my account</a><a class="btn" href="/login?next=%2Fstart%3Fsave%3D1">I already have one</a><button type="button" class="plain" id="spNo">Not yet. Keep it on this phone</button></div></div>`;
     document.body.appendChild(bg); const close = () => bg.remove(); bg.querySelector("#spNo").onclick = () => { close(); $("#saved").innerHTML = (fx.check ? fx.check() : "") + " Kept on this phone. It'll be here."; }; bg.onclick = (e) => { if (e.target === bg) close(); };
     bg.querySelector(".btn.pri").focus();
   }

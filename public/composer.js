@@ -53,7 +53,7 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
 .pc-post{margin-left:auto;min-height:44px;padding:0 22px;border:0;border-radius:var(--pl-r-btn,6px);background:var(--pl-accent);color:var(--pl-on-accent,#fff);font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}.pc-post:disabled{opacity:.45;cursor:default}
 .pc-reuse{display:grid;border-top:1px solid var(--pl-line);background:var(--pl-page);padding:0 12px 12px}.pc-reuse a{display:flex;gap:12px;align-items:center;min-height:52px;padding:8px 4px;color:var(--pl-ink);text-decoration:none;border-bottom:1px dashed var(--pl-line)}.pc-reuse a:last-child{border-bottom:0}.pc-reuse a:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}.pc-reuse b{display:block;font-weight:600;font-size:15px}.pc-reuse small{display:block;color:var(--pl-soft);font-size:14px;line-height:1.35}.pc-reuse svg{flex:none;color:var(--pl-accent-text,var(--pl-accent))}
 .pc-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 12px 14px;border-top:1px solid var(--pl-line);background:var(--pl-page)}
-.pc-tile{display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 12px;border:1px solid var(--pl-line);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);color:var(--pl-ink);text-decoration:none;text-align:left;font:600 14px/1.25 var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}
+.pc-tile{display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 12px;text-wrap:balance;border:1px solid var(--pl-line);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);color:var(--pl-ink);text-decoration:none;text-align:left;font:600 14px/1.25 var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}
 .pc-tile svg{flex:none;color:var(--pl-accent-text)}.pc-tile:hover{border-color:var(--pl-line-strong)}.pc-tile:only-child{grid-column:1/-1}
 .pc-list{list-style:none;margin:0;padding:0}.pc-list li+li{border-top:1px solid var(--pl-line)}
 .pc-list button{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:56px;padding:10px 4px;border:0;background:none;text-align:left;color:var(--pl-ink);font:15px var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}.pc-list small{color:var(--pl-soft);font-size:13px}
@@ -101,8 +101,8 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
     const T = O.tiles || [];
     const tile = (k) => k === "event" ? `<a class="pc-tile" href="/?app=1&new=1#studio" data-tile="event">${I.event}<span>New event</span></a>`
       : k === "drop" ? `<button type="button" class="pc-tile" data-tile="drop">${I.drop}<span>Drop</span></button>`
-      : k === "photos" ? `<button type="button" class="pc-tile" data-tile="photos">${I.photos}<span>Share photos from an event</span></button>`
-      : k === "club" ? `<button type="button" class="pc-tile" data-tile="club">${I.club}<span>Update for your fan club</span></button>` : "";
+      : k === "photos" ? `<button type="button" class="pc-tile" data-tile="photos">${I.photos}<span>Event photos</span></button>`
+      : k === "club" ? `<button type="button" class="pc-tile" data-tile="club">${I.club}<span>Fan club update</span></button>` : "";
     const nD = drafts().length;
     const sc = sheet(`<div class="pc-top"><button type="button" data-x>Cancel</button><button type="button" class="pc-drafts" data-drafts>Drafts${nD ? `<b>${nD}</b>` : ""}</button></div>
       <div class="pc-body"><div class="pc-who">${face(O.face)}<span><b>${esc(O.name || "You")}</b><small data-aud></small></span></div>

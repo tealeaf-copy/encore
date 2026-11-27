@@ -13,7 +13,7 @@
   function kindHtml(K) { if (!K) return "";
     if (K.kind === "table" && K.table) { const t = K.table;
       return H("The table", t.party ? `Booked for ${t.party}` : "") + L(`<b style="font:600 24px/1.2 var(--pl-font-serif)">${esc(t.restaurant || "The restaurant")}</b>`) + L(esc([T.clock(t.time) && "At " + T.clock(t.time), t.count ? `${t.count} coming so far` : ""].filter(Boolean).join(" · ")))
-        + (t.hold ? L(mark(t.hold)) : "") + (t.split ? L(esc(t.split.line), "color:var(--pl-soft)") : "") + go(K.you.in ? "The booking and the bill" : "About the table"); }
+        + (t.hold ? L(mark(t.hold), "text-wrap:balance") : "") + (t.split ? L(esc(t.split.line), "color:var(--pl-soft)") : "") + go(K.you.in ? "The booking and the bill" : "About the table"); }
     if (K.kind === "weekend" && K.stay) { const s = K.stay, open = (K.beds?.list || []).reduce((a, b) => a + b.left, 0), seats = (K.cars?.list || []).reduce((a, c) => a + c.left, 0);
       return H("Where we're staying", s.area || "") + L(`<b>${esc(s.name || "To come")}</b>${s.checkIn ? ` · check in ${esc(T.clock(s.checkIn))}` : ""}`) + (s.address ? L(esc(s.address)) : s.locked ? L("The address goes to people who are in.", "color:var(--pl-soft)") : "")
         + L(esc([K.beds ? `${open} ${open === 1 ? "bed spot" : "bed spots"} open` : "", K.cars?.list.length ? `${seats} ${seats === 1 ? "seat" : "seats"} in cars` : "", (K.ledger?.lines || []).find((x) => x.youOwe)?.line || ""].filter(Boolean).join(" · ")), "color:var(--pl-soft)")

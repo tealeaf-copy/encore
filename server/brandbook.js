@@ -709,12 +709,14 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
 const escH = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 export function invoiceHtml(I) {
   const row = (l, c) => `<tr><td>${escH(l)}</td><td class="n">${money(c)}</td></tr>`;
+  // dates read "Fri, Nov 27, 2026" (docs/brand-kit.md), not 2026-11-27
+  const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : d || "");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${escH(I.number)} · Pottery Lab</title>
 <link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head><body class="bb bb-invoice"><main class="bb-wrap bb-narrow">
-<div class="bb-inv-head"><div><p class="bb-kicker">Invoice</p><h1>${escH(I.number)}</h1><p class="bb-meta">Issued ${escH(I.issued)}${I.dueDate ? ` · Balance due ${escH(I.dueDate)}` : ""}</p></div><button class="bb-btn" onclick="print()">Save as PDF</button></div>
+<div class="bb-inv-head"><div><p class="bb-kicker">Invoice</p><h1>${escH(I.number)}</h1><p class="bb-meta">Issued ${escH(day(I.issued))}${I.dueDate ? ` · Balance due ${escH(day(I.dueDate))}` : ""}</p></div><button class="bb-btn" style="white-space:nowrap;flex:none" onclick="print()">Save as PDF</button></div>
 <div class="bb-inv-parties"><section><h2>From</h2><p><b>${escH(I.seller.name)}</b><br>Booked through Pottery Lab${I.seller.taxId ? `<br>Tax ID ${escH(I.seller.taxId)}` : ""}</p></section>
 <section><h2>Bill to</h2><p><b>${escH(I.buyer.company)}</b>${I.buyer.contact ? `<br>${escH(I.buyer.contact)}` : ""}${I.buyer.address ? `<br>${escH(I.buyer.address).replace(/\n/g, "<br>")}` : ""}${I.buyer.taxId ? `<br>VAT / Tax ID ${escH(I.buyer.taxId)}` : ""}${I.buyer.po ? `<br>PO ${escH(I.buyer.po)}` : ""}</p></section></div>
-<p class="bb-meta">${escH(I.what)} · ${escH(I.date)} · ${I.headcount} people</p>
+<p class="bb-meta">${escH(I.what)} · ${escH(day(I.date))} · ${I.headcount} people</p>
 <table class="bb-lines"><tbody>${I.lines.map((l) => row(l.label, l.cents)).join("")}</tbody><tfoot><tr><th>Total</th><th class="n">${money(I.totalCents)}</th></tr><tr><td>Paid</td><td class="n">${money(I.paidCents)}</td></tr><tr><th>Balance due</th><th class="n">${money(I.dueCents)}</th></tr></tfoot></table>
 <p class="bb-meta">Questions about this invoice? Message the host from your booking on Pottery Lab.</p></main></body></html>`;
 }

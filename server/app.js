@@ -671,6 +671,7 @@ export function createApp({ store, dataDir }) {
     const kept = [];
     let out = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, code) => { if (code.length < SPLIT_MIN) { kept.push(m); return `\u0000S${kept.length - 1}\u0000`; } const k = add(code, "js"); scripts.push(k); return `<script src="/_app/${k}" fetchpriority="high"></script>`; })
       .replace(/<style>([\s\S]*?)<\/style>/g, (m, css) => (css.length < SPLIT_MIN ? m : `<link rel="stylesheet" href="/_app/${add(css, "css")}">`))
+      .replace(/<!--[\s\S]*?-->/g, "") // notes for us in index.html never reach the phone (the shell stays in its budget, test/pm-mcp); scripts are set aside above, so no code is touched
       .replace(/\u0000S(\d+)\u0000/g, (m, i) => kept[+i]);
     // on invite links (/g), web fonts wait until the app has loaded: the RSVP form is usable sooner on a slow phone,
     // and the text swaps to the brand fonts a moment later (they're cached for the next visit)

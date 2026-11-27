@@ -46,7 +46,7 @@
 .hi-sh{width:min(560px,100%);max-height:88dvh;display:flex;flex-direction:column;background:#FAF8F3;color:#1B1D1C;border:1.5px solid #1B1D1C;border-bottom:0;border-radius:6px 6px 0 0;font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif}
 @media (min-width:700px){.hi-bg{align-items:center}.hi-sh{border-bottom:1.5px solid #1B1D1C;border-radius:6px}}
 .hi-sh header{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:start;padding:16px 16px 10px;border-bottom:1px solid #E2DCD1}
-.hi-sh h2{margin:0;font:600 20px/1.25 "IBM Plex Sans",system-ui,sans-serif;overflow-wrap:anywhere}.hi-sh header p{margin:4px 0 0;color:#444845;font-size:15px}
+.hi-bg .hi-sh h2{margin:0;font:600 20px/1.25 "IBM Plex Sans",system-ui,sans-serif!important;letter-spacing:0;text-transform:none;overflow-wrap:anywhere}.hi-sh header p{margin:4px 0 0;color:#444845;font-size:15px}
 .hi-x{width:44px;height:44px;display:grid;place-items:center;border:1.5px solid #CFC8B9;border-radius:6px;background:none;color:inherit;cursor:pointer}
 .hi-bd{overflow:auto;padding:12px 16px calc(16px + env(safe-area-inset-bottom));min-height:0}
 .hi-bd .hi-row{grid-template-columns:52px minmax(0,1fr) auto}

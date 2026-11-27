@@ -8883,7 +8883,8 @@ function gEditable(el,{label,fields,id}){ if(!el||el.dataset.ge) return; el.data
     f.onsubmit=async e=>{ e.preventDefault(); const patch={}; fields.forEach((x,i)=>Object.assign(patch,x.toPatch(f[`f${i}`].value.trim(),x._pick))); const b=f.querySelector("button[type=submit]"); b.disabled=true; b.textContent="Saving…"; try{ await saveHostEdit(id,patch); toast("Saved. Guests see it now."); location.reload() }catch(err){ toast(err.message); b.disabled=false; b.textContent="Save" } } };
   el.addEventListener("click",e=>{ if(e.target.closest("form,a,button")) return; open() }); el.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!el.querySelector("form")){ e.preventDefault(); open() } }) }
 { const _rgH=renderGuest; renderGuest=async function(){ const r=await _rgH.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host) return r; if(window.__geFor!==e.id){ window.__geFor=e.id; window.__geDoc=await hostEventDoc(e.id) } const d=window.__geDoc; if(!d) return r; const id=e.id;
-    document.body.classList.add("g-own"); // your own event: no reply form, no Ask to join bar, no Report (the style block with g-cancelled); the server refuses a host's reply too
+    // your own event: no reply form, no Ask to join bar, no Report; Manage in the host line (the server refuses a host's reply too)
+    document.body.classList.add("g-own"); if(!document.getElementById("gOwnCss")){ const s=document.createElement("style"); s.id="gOwnCss"; s.textContent="html body.g-own #view-guest#view-guest#view-guest :is(#gForm,#gTopCta,#statusPill,.gx-lz),html body.g-own :is(#gBar,#gStick,.g-bar,.prb){display:none!important}"; document.head.appendChild(s) }
     // one slim line for the host (never more than 40px above the cover): You're the host · Edit · Open in app, and a close
     let geOff=false; try{ geOff=sessionStorage.getItem("encore-gebar-off-"+id)==="1" }catch{}
     if(!geOff&&!host.querySelector("#geBar")){ const bar=document.createElement("div"); bar.id="geBar"; bar.className="ge-bar ge-slim"; bar.setAttribute("role","region"); bar.setAttribute("aria-label","Host tools"); bar.innerHTML=`<span class="ge-t">You're the host</span><span aria-hidden="true">·</span><button type="button" class="ge-a" data-ge="edit" title="Tap anything outlined to edit it">Edit</button><span aria-hidden="true">·</span><a class="ge-a" href="/#studio" onclick="try{localStorage.setItem('encore-open',${JSON.stringify(JSON.stringify(id))})}catch{}">Manage</a><button type="button" class="ge-x" data-ge="x" aria-label="Hide this line">×</button>`;
@@ -13384,7 +13385,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 })();
 </script>
 <!-- ==================== end host event page ==================== -->
-<script src="/sections.js" defer></script><script src="/runtemplates.js" defer></script><!-- NYC run templates: Routes near you in the canvas once a run is being planned, the create line and the run sign-up (public/runtemplates.js) --><script src="/canvas.js" defer></script>
+<script src="/sections.js" defer></script><script src="/runtemplates.js" defer></script><!-- run templates, Routes near you (public/runtemplates.js) --><script src="/canvas.js" defer></script>
 <script>
 // ---- the host loop (public/hostloop.js, server/hostloop.js): host Home's card with the streak, today's small move,
 // warmth and Circles, and the once-only milestone celebration ----
@@ -13430,7 +13431,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 // (public/event-extras.js; Help is main's footer link, public/report.js); a cancelled event says so and asks for no reply ----
 (function(){ if(location.pathname!=="/g"||typeof renderGuest!=="function") return;
   for(const src of ["/follow.js","/event-extras.js"]) if(!document.querySelector(`script[src="${src}"]`)){ const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) }
-  const st=document.createElement("style"); st.textContent=`html body.g-cancelled #view-guest#view-guest#view-guest :is(#gForm,#gTopCta,#statusPill,[data-addcal]),html body.g-cancelled :is(#gBar,.g-bar,.prb),html body.g-early #view-guest#view-guest#view-guest :is(#gForm,#gTopCta),html body.g-early :is(#gBar,.g-bar,.prb),html body.g-own #view-guest#view-guest#view-guest :is(#gForm,#gTopCta,#statusPill,.gx-lz),html body.g-own :is(#gBar,#gStick,.g-bar,.prb){display:none!important}#view-guest .gx-lz{text-align:center;font-size:14px}#view-guest .gx-lz a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .gx-cancel h3{margin:0 0 6px}`; document.head.appendChild(st);
+  const st=document.createElement("style"); st.textContent=`html body.g-cancelled #view-guest#view-guest#view-guest :is(#gForm,#gTopCta,#statusPill,[data-addcal]),html body.g-cancelled :is(#gBar,.g-bar,.prb),html body.g-early #view-guest#view-guest#view-guest :is(#gForm,#gTopCta),html body.g-early :is(#gBar,.g-bar,.prb){display:none!important}#view-guest .gx-lz{text-align:center;font-size:14px}#view-guest .gx-lz a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .gx-cancel h3{margin:0 0 6px}`; document.head.appendChild(st);
   // the parts are placed by one function: after each render, and again whenever a later redraw of the page replaces them
   const H={}, ML={}; let id0="";
   function place(){ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host||!/^#rsvp-/.test(location.hash)) return;

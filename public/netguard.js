@@ -18,7 +18,8 @@
     const was = signedIn(); if (method !== "GET" && method !== "HEAD") { live.clear(); return watch(raw(input, init), was, url); }
     if (input instanceof Request || init?.signal || init?.body || (init?.cache && init.cache !== "default")) return watch(raw(input, init), was, url);
     const key = method + " " + url.href + " " + JSON.stringify(init?.headers || {}), hit = live.get(key), now = performance.now();
-    if (hit && now - hit.at < SHARE_MS) return hit.p.then((r) => r.clone());
+    // each one who shares gets the answer in a task of its own, so twenty redraws don't pile into one long task
+    if (hit && now - hit.at < SHARE_MS) return hit.p.then((r) => new Promise((ok) => setTimeout(() => ok(r.clone()), 0)));
     const p = watch(raw(input, init), was, url); const E = { at: now, p }; live.set(key, E);
     p.then(() => { if (live.get(key) === E) live.delete(key); }, () => { if (live.get(key) === E) live.delete(key); });
     return p.then((r) => r.clone());
@@ -44,6 +45,10 @@
   try { navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.plReload && e.data.plReload === location.href) location.reload(); }); } catch {}
   const key = () => { try { return crypto.randomUUID(); } catch { return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12); } };
   window.PLNet = { key, raw };
+  // the soft page-to-page fade (public/craft.css): when the browser skips it (the next page's styles weren't in yet, a
+  // hidden tab), its promises reject; that's not an error, the page still opens
+  const quiet = (t) => { for (const k of ["ready", "finished", "updateCallbackDone"]) t?.[k]?.catch?.(() => {}); };
+  addEventListener("pagereveal", (e) => quiet(e.viewTransition)); addEventListener("pageswap", (e) => quiet(e.viewTransition));
   // a dropped connection rejects fetch with a TypeError; pages catch most of them, the rest shouldn't read as crashes
   addEventListener("unhandledrejection", (e) => { const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(String(r.message))) { e.preventDefault(); if (!window.__plNetNoted) { window.__plNetNoted = 1; console.warn("[net] a request failed:", r.message); } } });
 })();

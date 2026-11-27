@@ -77,7 +77,7 @@ export function localFonts(html, dir) {
  * script in it has run). The URL must be exactly the one the page's script asks for, so the fetch picks up the answer.
  */
 export function dataPreload(reqPath, cookie = "") {
-  const signedIn = /(?:^|;\s*)encore_in=1/.test(cookie || "");
+  const signedIn = /(?:^|;\s*)(encore_in=1|encore_auth=)/.test(cookie || ""); // the hint, or the session cookie itself on a first visit
   let m, url = "";
   if ((m = /^\/@([a-z0-9][a-z0-9-]{1,29})$/.exec(reqPath))) url = "/api/public/host/" + encodeURIComponent(m[1]); // public/host.html
   else if ((m = /^\/[ei]\/([A-Za-z0-9_-]{2,80})$/.exec(reqPath)) && m[1] !== "_preview") url = "/api/public/event-host/" + encodeURIComponent(m[1]); // public/invite.html

@@ -126,6 +126,7 @@ test("a page's first API read is preloaded with the exact URL its script asks fo
 
 test("speculation rules and the network guard are on full pages, not the light invite", async () => {
   const feed = zlib.gunzipSync((await raw("/feed", { "accept-encoding": "gzip" })).body).toString();
+  assert.match(feed, /<style>@view-transition\{navigation:auto\}::view-transition-old\(root\),::view-transition-new\(root\)\{animation-duration:\.15s\}/, "the fade's opt-in is in the head, before the first paint");
   assert.match(feed, /<script type="speculationrules">/); assert.match(feed, /<script src="\/netguard\.js\?v=/);
   const rules = JSON.parse(feed.match(/<script type="speculationrules">([^<]+)<\/script>/)[1]);
   assert.equal(rules.prefetch[0].eagerness, "moderate"); assert.ok(!rules.prerender, "prefetch only");
@@ -271,7 +272,7 @@ test("/g: the follow box under a guest's ticket stays put (two layout rules used
 test("the network guard shares identical reads in flight, never across a write", async () => {
   let calls = 0; const pending = [];
   const fakeFetch = (u, init) => { calls++; return new Promise((r) => pending.push(() => r(new Response(JSON.stringify({ u, n: calls }), { status: 200 })))); };
-  const sb = { fetch: fakeFetch, location: { href: "https://pl.test/feed", origin: "https://pl.test", pathname: "/feed" }, document: { cookie: "encore_in=1", getElementById: () => null }, performance: { now: () => 0 }, addEventListener() {}, navigator: {}, console, URL, Response, Request, Promise, JSON, crypto: globalThis.crypto };
+  const sb = { fetch: fakeFetch, location: { href: "https://pl.test/feed", origin: "https://pl.test", pathname: "/feed" }, document: { cookie: "encore_in=1", getElementById: () => null }, performance: { now: () => 0 }, addEventListener() {}, navigator: {}, console, URL, Response, Request, Promise, JSON, setTimeout, crypto: globalThis.crypto };
   sb.window = sb; vm.createContext(sb); vm.runInContext(read("public/netguard.js"), sb);
   const a = sb.fetch("/api/me"), b = sb.fetch("/api/me"); assert.equal(calls, 1, "two reads at once: one request");
   sb.fetch("/api/me/feed", { method: "POST", body: "{}" }); const c = sb.fetch("/api/me"); assert.equal(calls, 3, "a write ends the sharing");

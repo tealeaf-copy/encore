@@ -85,29 +85,32 @@ async function flows() {
     page.on("response", (x) => { if (x.url().startsWith(base) && x.status() >= 500) bad(`${x.status()} ${x.request().method()} ${x.url().slice(base.length, base.length + 120)}`); });
     await page.goto(base + p, { waitUntil: "load", timeout: 20000 }).catch((e) => bad("load: " + e.message.split("\n")[0])); await page.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(400);
     return { ctx, page, bad }; };
+  // a sheet the page opens by itself (the feed's "Would you go?" deck for a new account) is closed first, the way a person would
+  const dismiss = async (page) => { for (let i = 0; i < 3; i++) { const open = await page.evaluate(() => [...document.querySelectorAll('[role=dialog][aria-modal=true],dialog[open]')].some((d) => d.getBoundingClientRect().height > 40)).catch(() => false); if (!open) return;
+    const x = page.locator('[role=dialog] [aria-label^="Close"], [role=dialog] button[aria-label*="close" i]').filter({ visible: true }).first(); if (await x.count()) await x.click({ timeout: 2000 }).catch(() => {}); else await page.keyboard.press("Escape"); await page.waitForTimeout(300); } };
   const sheet = async (page) => page.waitForFunction(() => [...document.querySelectorAll('[role=dialog],dialog[open],.sheet,.sk-sheet')].some((d) => d.getBoundingClientRect().height > 40), null, { timeout: 5000 }).then(() => true, () => false);
   // the primary nav, tapped in turn, then back: the first page returns at the scroll it was left at
   for (const r of ["out", "host"]) {
-    const { ctx, page, bad } = await open(r, "/feed");
+    const { ctx, page, bad } = await open(r, "/feed"); await dismiss(page);
     const links = await page.evaluate(() => [...new Set([...document.querySelectorAll(".es-tabs a[href], nav.es-tabs a[href], .es-rail a[href], header.top nav.tabs a[href]")].map((a) => a.getAttribute("href")).filter((h) => h && h.startsWith("/") && !/^\/(api|logout)|#/.test(h)))].slice(0, 7)).catch(() => []);
     if (!links.length) bad("no primary nav links found");
     for (const h of links) {
       await page.evaluate(() => scrollTo(0, 600)); await page.waitForTimeout(150); const y0 = await page.evaluate(() => scrollY), from = page.url();
       const a = page.locator(`.es-tabs a[href="${h}"], .es-rail a[href="${h}"], header.top nav.tabs a[href="${h}"]`).filter({ visible: true }).first();
-      if (!(await a.count())) continue;
+      if (!(await a.count())) continue; await dismiss(page);
       await Promise.all([page.waitForLoadState("load", { timeout: 20000 }).catch(() => {}), a.click({ timeout: 5000 }).catch((e) => bad(`tap ${h}: ${e.message.split("\n")[0]}`))]); await page.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(300);
       await health(page, (w) => bad(`after tapping ${h}: ${w}`));
       if (page.url() !== from) { await page.goBack({ waitUntil: "load", timeout: 20000 }).catch((e) => bad(`back from ${h}: ${e.message.split("\n")[0]}`)); await page.waitForTimeout(900);
-        if (page.url() !== from) bad(`back from ${h} landed on ${page.url().slice(base.length)}`);
+        await dismiss(page); if (page.url() !== from) bad(`back from ${h} landed on ${page.url().slice(base.length)}`);
         else { const y1 = await page.evaluate(() => scrollY); if (y0 > 100 && Math.abs(y1 - y0) > 200) bad(`back from ${h}: scroll ${y0} came back as ${y1}`); } }
     }
     await ctx.close();
   }
   // the + sheet on the feed, signed in
-  { const { ctx, page, bad } = await open("host", "/feed"); const b = page.locator('[aria-label="Create"]').filter({ visible: true }).first();
+  { const { ctx, page, bad } = await open("host", "/feed"); await dismiss(page); const b = page.locator('[aria-label="Create"]').filter({ visible: true }).first();
     if (!(await b.count())) bad("no + (Create) button"); else { await b.click().catch((e) => bad("tap +: " + e.message.split("\n")[0])); if (!(await sheet(page))) bad("the + sheet didn't open"); else await health(page, (w) => bad("+ sheet: " + w)); } await ctx.close(); }
-  // the share sheet on an invite (?share=1 opens it, the host guide's Share step)
-  { const { ctx, page, bad } = await open("host", `/e/${S.open}?share=1`); if (!(await sheet(page))) bad("the share sheet didn't open"); else await health(page, (w) => bad("share sheet: " + w)); await ctx.close(); }
+  // the share sheet on an invite (?share=1 opens it). As a guest: the host's own /e/ link hands off to the full invite
+  { const { ctx, page, bad } = await open("out", `/e/${S.open}?share=1`); if (!(await sheet(page))) bad("the share sheet didn't open"); else await health(page, (w) => bad("share sheet: " + w)); await ctx.close(); }
   // the reply form on the light invite: I'm in, then the form shows its Send button
   { const { ctx, page, bad } = await open("out", `/e/${S.open}`); const going = page.locator('input[name="r"][value="going"]').first();
     if (!(await going.count())) bad("no I'm in choice on the invite"); else { await going.check({ force: true }).catch((e) => bad("I'm in: " + e.message.split("\n")[0])); const send = page.locator("#send"); if (!(await send.isVisible().catch(() => false))) { await send.scrollIntoViewIfNeeded().catch(() => {}); } if (!(await send.count())) bad("the reply form has no Send button"); }

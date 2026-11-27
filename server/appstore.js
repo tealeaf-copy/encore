@@ -51,10 +51,17 @@ try { splash = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, "icons", "splash
 const SPLASH_LINKS = splash.map((s) => `<link rel="apple-touch-startup-image" media="(device-width: ${s.dw}px) and (device-height: ${s.dh}px) and (-webkit-device-pixel-ratio: ${s.r}) and (orientation: portrait)" href="${s.src}">`).join("");
 const SW_REG = `<script>if("serviceWorker"in navigator&&!/^\\/(sw|support)/.test(location.pathname))addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>`;
 // The light invite (/e/, /i/) has a 40,000-character budget: it gets only the essentials.
-const LIGHT = `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script>`;
+// a page-to-page fade the browser skips rejects its promises; that's not an error (public/netguard.js does the same on
+// full pages, this is the light invite's copy)
+const VT_QUIET = `<script>addEventListener("pagereveal",(e)=>{const t=e.viewTransition;if(t)["ready","finished","updateCallbackDone"].forEach((k)=>t[k]&&t[k].catch(()=>{}))})</script>`;
+const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script>`;
 // every full page: network manners first (public/netguard.js), then the app tags; the speculation rules prefetch a page
 // link a finger lands on (server/perf.js)
-const FULL = `<script src="/netguard.js"></script>` + LIGHT + SPECULATION + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
+// the page-to-page fade's opt-in, in the head of every full page: public/craft.css has the same rule, but it is added by
+// a script and lands after the first paint, so the browser found no opt-in on the new page and aborted the fade (and
+// reported an unhandled rejection on every move between pages)
+const VT_OPT_IN = `<style>@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.15s}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>`;
+const FULL = `<script src="/netguard.js"></script>` + VT_OPT_IN + LIGHT + SPECULATION + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
 // Report and block (public/safety.js) where people's posts, photos, kudos and host pages show
 const SAFETY_PAGES = /^\/($|feed|@|h\/|x\/|discover|photos|kudos|leaderboard|settings|community|g$)/;
 

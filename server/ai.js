@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { pottoReply } from "./pottorules.js";
 import { IG_PROMPT_TAG, fakeIgDraft } from "./igdraft.js"; // "Start from your Instagram" in offline mode (server/igimport.js)
+import { fakeSuggest } from "./suggestbank.js"; // Potto's autocomplete in offline mode (server/suggest.js)
 
 export const MODEL = "claude-opus-5-5";
 export const MAX_TOKENS = 32000;
@@ -260,6 +261,7 @@ function lastUserText(messages) {
 export function fakeText(prompt) {
   const p = typeof prompt === "string" ? prompt : JSON.stringify(prompt);
   if (/^POTTO-ASK\b/.test(p)) return JSON.stringify(fakePotto(p));
+  if (/^POTTO-SUGGEST\b/.test(p)) return JSON.stringify(fakeSuggest(p)); // autocomplete (server/suggest.js) in offline mode
   // a prompt can be content blocks (text and images, as complete() sends them): the Instagram draft reads its text blocks
   if (p.includes(IG_PROMPT_TAG)) return JSON.stringify(fakeIgDraft(prompt));
   if (/"nudges"/.test(p)) {

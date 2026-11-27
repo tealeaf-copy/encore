@@ -90,6 +90,7 @@ import { mountPosthog, capture, cspWith } from "./posthog.js"; // product analyt
 import { mountMcp } from "./mcp.js";
 import { mountMap } from "./map.js"; // the map view (/map) and its geodata (server/geo.js)
 import { mountPlaces } from "./places.js"; // "Your places" and the year in nights (server/places.js, server/sharecards.js)
+import { mountSuggest } from "./suggest.js"; // Potto's autocomplete: ideas and places as you type (server/suggest.js, public/autocomplete.js)
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
 import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
@@ -865,6 +866,7 @@ export function createApp({ store, dataDir }) {
   mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountPlaces(app, { store, small, currentUser, C, X, sendStatic }); // after the map: it reads its geo (server/places.js)
+  mountSuggest(app, { store, small, currentUser, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
   mountLibrary(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, sendStatic, express }); // server/library.js, after hooks: it reads saves and boards
   mountCuration(app, { store, small, currentUser, C, X, sendStatic }); // server/curation.js: list visibility, curator pages, follows, I'd go again (after the library)
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js

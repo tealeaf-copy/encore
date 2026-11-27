@@ -47,7 +47,7 @@ body.bb{margin:0;background:var(--bb-page);color:var(--bb-ink);font:16px/1.5 var
 .bb-top{position:sticky;top:0;z-index:40;background:var(--bb-page);border-bottom:1px solid var(--bb-line)}
 .bb-top .in{max-width:var(--bb-max);margin:0 auto;padding:0 16px;height:56px;display:flex;align-items:center;gap:16px}
 @media (min-width:861px){.bb-top .in{padding:0 32px}}
-.bb-logo{display:flex;align-items:center;gap:8px;text-decoration:none;font:400 20px var(--bb-serif)}
+.bb-logo{display:flex;align-items:center;min-height:44px;gap:8px;text-decoration:none;font:400 20px var(--bb-serif)}
 .bb-logo svg{width:22px;height:22px}
 .bb-nav{display:flex;gap:4px;margin-left:auto}
 .bb-nav a{text-decoration:none;font-size:14px;padding:8px 10px;border-radius:var(--bb-r);color:var(--bb-soft);min-height:44px;display:inline-flex;align-items:center;gap:6px}

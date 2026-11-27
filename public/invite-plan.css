@@ -16,7 +16,7 @@
 .ip-b.sm{min-height:36px;padding:0 12px;font-size:13px}.ip-b.ghost{border-color:transparent;background:transparent;color:var(--pl-accent-text)}
 .ip-b[disabled]{opacity:.5;cursor:default}
 .ip-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.ip-chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 14px var(--sys-title);cursor:pointer;white-space:nowrap}
+.ip-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 14px var(--sys-title);cursor:pointer;white-space:nowrap}
 .ip-chip[aria-pressed="true"]{background:var(--pl-ink);border-color:var(--pl-ink);color:#fff}.ip-chip .ip-mono{color:inherit;opacity:.75;font-size:13px}
 .ip-chip.on{background:var(--pl-accent-soft);border-color:transparent;color:var(--pl-accent-text)}.ip-chip .x{font-size:16px;line-height:1;margin-left:2px}
 .ip-chips{display:flex;flex-wrap:wrap;gap:8px}

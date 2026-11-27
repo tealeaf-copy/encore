@@ -25,7 +25,7 @@
 .sf label{display:flex;gap:10px;align-items:center;min-height:44px;font-size:16px;border-bottom:1.5px solid var(--pl-line)}.sf label:last-of-type{border-bottom:0}.sf input[type=radio]{width:20px;height:20px;accent-color:var(--pl-accent)}
 .sf textarea{width:100%;box-sizing:border-box;border:1.5px solid var(--pl-line-strong);border-radius:12px;padding:10px 12px;font:16px/1.4 inherit;min-height:72px;margin:8px 0 12px}
 .sf-foot{max-width:720px;margin:24px auto 96px;padding:0 16px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font:14px/1.4 "IBM Plex Sans",system-ui,sans-serif}
-.sf-foot a{color:var(--pl-soft)}
+.sf-foot a{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-soft)}
 `; document.head.appendChild(s); }
   const DOTS = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="13" cy="8" r="1.6" fill="currentColor"/></svg>';
 

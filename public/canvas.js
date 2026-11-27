@@ -396,7 +396,7 @@
   function stateLine() { const live = !S.isNew; return S.dirty ? (live ? "Not saved yet. Guests see changes after you save." : "Draft, saved on this device. Only you can see it.") : live ? "Live. Guests see changes after you save." : "Draft. Only you can see it."; }
   // ---- trends: Potto's ideas (public/trendideas.js), loved here first, each with its source; Use this fills the title and kind ----
   function ideasRow() { const el = S?.el && q("#cvIdeas", S.el); if (!el || !root.PLTrendIdeas?.mount) return;
-    root.PLTrendIdeas.mount(el, { key: "canvas", n: 3, lead: "Ideas from Potto", onPick: (x) => { const W = S.W;
+    root.PLTrendIdeas.mount(el, { key: "canvas", n: 3, lead: "Ideas from Potto", ready: true, onPick: (x) => { const W = S.W;
       if (x.kind && !W.planKind && PLAN_KINDS.some((k) => k.k === x.kind && !k.handoff)) { const r = applyKind(W, x.kind, S.open); S.W = r.d; S.open = r.open; }
       S.W.pubTitle = S.W.name = String(x.title || "").slice(0, 90); changed(true); say(`${x.title}: started. Change anything.`); q("#cvTitle", S.el)?.focus({ preventScroll: true }); } }); } // ---- end trends ----
   function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); }

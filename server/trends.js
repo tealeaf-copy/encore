@@ -309,6 +309,9 @@ export function mountTrends(app, { store, express, currentUser, C, X, IDEAS }) {
   app.get("/api/public/ideas/suggest", (req, res) => { if (slow(req, res, 600)) return; const u = viewer(req), p = u ? T.personOf(u) : { interests: [], city: "", made: [], recent: [] };
     const q = { city: cityQ(req) || p.city, interests: [...new Set([...listOf(req.query.interests), ...p.interests])], made: p.made, recent: p.recent, n: +req.query.n || 4, offset: +req.query.offset || 0 };
     res.set("Cache-Control", u ? "private, no-store" : "public, max-age=300").json({ city: q.city, ...T.suggest(q) }); });
+  // the label for ideas a page already has (Home's "Ideas to try" shelf): which source vouches for each title
+  app.get("/api/public/ideas/labels", (req, res) => { if (slow(req, res, 600)) return; const titles = String(req.query.titles || "").split("|").map((t) => clean(t, 60)).filter(Boolean).slice(0, 8);
+    res.set("Cache-Control", "public, max-age=300").json({ labels: T.annotate(titles.map((title) => ({ title })), { city: cityQ(req) }).map(({ title, source, sourceLine }) => ({ title, source, sourceLine })) }); });
   app.get("/api/me/trends/home", (req, res) => { const u = viewer(req); res.set("Cache-Control", "private, no-store"); if (!u) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); res.json(T.home(u)); });
   // trend notes, for ENCORE_ADMIN_EMAILS only (404 for everyone else, as if the route weren't here)
   const admin = (req, res) => { const u = viewer(req) || (() => { try { return currentUser(req); } catch { return null; } })(); if (!u || !isAdmin(u.email)) { res.status(404).json({ code: "not_found", message: "Not found." }); return null; } res.set("Cache-Control", "private, no-store"); return u; };

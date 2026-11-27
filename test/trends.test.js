@@ -53,6 +53,8 @@ before(async () => {
   // Gus's own run last week, to compare: lots of repeat guests (the same people as his earlier run)
   await ev("gus", "trRunG0", { name: "Saturday 5k, coffee after", activity: "run", date: day(-40), headcount: 12 }); guests("gus", "trRunG0", 6, 0, "rg", { shared: true });
   await ev("gus", "trRunG1", { name: "Saturday 5k, coffee after", activity: "run", date: day(-2), headcount: 12 }); guests("gus", "trRunG1", 6, 0, "rg", { shared: true });
+  // one trend note dated today, so the editorial tier is there whenever this runs (the shipped seed expires by itself)
+  srv.store.set("system/trendnotes", { kind: "trendnotes", retired: [], added: [{ id: "n-testmj", name: "Mahjong night", line: "Learn-to-play tables next to tables for regulars.", where: "social media", seasons: ["any"], cities: [], added: day(0), format: "mahjong", say: "A mahjong night for 8 Friday at 7" }] });
   srv.app.locals.social.bust(); srv.app.locals.trends.bust();
 });
 after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_ADMIN_EMAILS", "ENCORE_SIGNUP_PER_HOUR", "ENCORE_FAKE_EMAIL"]) delete process.env[k]; await srv.close(); });
@@ -168,6 +170,8 @@ test("Potto uses it: chat, text, the ideas row, the swipe deck, the feed card, W
   assert.equal(readIntent("what should I host?", { today: day(0) }).intent, "ideas"); assert.equal(readIntent("any ideas to host this weekend", { today: day(0) }).intent, "ideas");
   const T = srv.app.locals.pottoText; assert.ok(T?.ideasText, "the text intent's answer"); const txt = T.ideasText({ email: U.gus.email, ws: U.gus.ws, name: "Gus Kim" }).text; assert.match(txt, /Loved here|Trending on social|An idea from Potto/); assert.ok(txt.length <= 600);
   // "Ideas to try" (public/ideasnudge.js) and the swipe deck carry the labels too
+  const lb = await (await get("/api/public/ideas/labels?city=Brooklyn&titles=" + encodeURIComponent("Supper club for 8|Mahjong night|Sunrise hike"))).json();
+  assert.deepEqual(lb.labels.map((x) => x.source), ["platform", "editorial", "potto"]); assert.match(lb.labels[0].sourceLine, /^Loved here: \d+ guests/);
   const tr = await (await get("/api/public/ideas/try?n=4&city=Brooklyn")).json(); assert.ok(tr.ideas.every((x) => /^idea-/.test(x.id) && x.sourceLine), JSON.stringify(tr));
   const dk = await (await get("/api/public/deck?city=Brooklyn")).json(); const ideaCards = dk.cards.filter((c) => c.kind === "idea"); assert.ok(ideaCards.length && ideaCards.every((c) => c.sourceLine), "deck ideas are labelled");
   // the feed's ideas card says where its ideas come from
@@ -193,6 +197,8 @@ test("browser at 390: the canvas shows labelled ideas, Use this fills the title,
     const page = await ctx.newPage(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
     await page.goto(srv.base + "/?app=1#programs", { waitUntil: "domcontentloaded" });
     await page.waitForSelector("#ptiHome .pti", { timeout: 20000 });
+    await page.waitForSelector("#ideaLib .pti-s", { timeout: 20000 }).catch(() => {}); const shelf = await page.$$eval("#ideaLib [data-casualidea]", (L) => L.map((c) => c.querySelector(".pti-s")?.textContent || ""));
+    assert.ok(shelf.length === 0 || shelf.every((t) => /^(Loved here: \d+ guests|Trending on social|An idea from Potto)/.test(t)), "Home's idea shelf carries source lines: " + shelf.join(" | "));
     const home = await page.$eval("#ptiHome", (el) => el.innerText); assert.match(home, /What's working near you/); assert.match(home, /in Brooklyn: \d+ hosts/); assert.match(home, /more repeat guests than most runs in Brooklyn/);
     const tap = await page.$eval("#ptiHome .pti-use", (b) => { const r = b.getBoundingClientRect(); return [r.width, r.height]; }); assert.ok(tap[0] >= 44 && tap[1] >= 44, "44px targets");
     await page.evaluate(() => document.querySelectorAll(".hl-sheet-bg").forEach((x) => x.remove()));

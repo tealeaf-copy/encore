@@ -16,11 +16,11 @@
   const ls = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
   const city = () => { let c = ""; try { c = (window.EncorePlace?.get?.() || {}).city || ""; } catch {} if (!c) { try { c = localStorage.getItem("encore.city") || ""; } catch {} } if (!c) c = ls("pl.interests")?.city || ""; return String(c || "").slice(0, 60); };
   const interests = () => { const p = ls("pl.interests"); return (Array.isArray(p) ? p : p?.interests || []).join(","); };
-  const pages = new Map(); // offset -> Promise<{ ideas, more }>
+  const pages = new Map(), ready = new Map(); // "n|offset" -> Promise<{ ideas, more }>, and the ones that have arrived
   function fetchIdeas({ n = 4, offset = 0 } = {}) { const k = `${n}|${offset}`; if (pages.has(k)) return pages.get(k);
     const q = new URLSearchParams({ n: String(n), offset: String(offset) }); const c = city(), i = interests(); if (c) q.set("city", c); if (i) q.set("interests", i);
     const p = fetch("/api/public/ideas/suggest?" + q, { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { ideas: [] })).then((j) => ({ ideas: j.ideas || [], more: !!j.more })).catch(() => ({ ideas: [], more: false }));
-    pages.set(k, p); return p; }
+    p.then((r) => ready.set(k, r)); pages.set(k, p); return p; }
   function css() { if (document.getElementById("ptiCss")) return; const s = document.createElement("style"); s.id = "ptiCss"; s.textContent = `
 .pti{border:1px solid var(--pl-line-strong,#1B1D1C);border-radius:6px;background:var(--pl-surface,#FAF8F3);padding:12px 14px;margin:12px 0;color:var(--pl-ink,#1B1D1C);font-family:var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif)}
 .pti-k{margin:0;font:500 12px/1.4 var(--pl-font-mono,"IBM Plex Mono",monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft,#444845)}
@@ -37,15 +37,18 @@
 `; document.head.appendChild(s); }
   const row = (x, i, pick) => `<li><div class="pti-t"><b>${esc(x.title)}</b>${x.line ? `<span>${esc(x.line)}</span>` : ""}<small class="pti-s" data-source="${esc(x.source)}">${esc(x.sourceLine || "An idea from Potto")}</small></div><button type="button" class="pti-use" data-pti="${i}" aria-label="${esc(pick)}: ${esc(x.title)}">${esc(pick)}</button></li>`;
   const states = new WeakMap();
-  /** Paint ideas into el. onPick(idea) runs on Use this. Repaints from cache when called again on a fresh element. */
-  async function mount(el, { onPick = null, n = 3, lead = "Ideas from Potto", sub = "", pick = "Use this", key = "" } = {}) {
+  /** Paint ideas into el. onPick(idea) runs on Use this. Repaints from cache when called again on a fresh element.
+   *  ready: true paints only ideas that have already arrived (the canvas: it never pops a box in above the page; the
+   *  ideas show on its next redraw instead). */
+  async function mount(el, { onPick = null, n = 3, lead = "Ideas from Potto", sub = "", pick = "Use this", key = "", ready: onlyReady = false } = {}) {
     if (!el) return []; css(); const k = key || el.id || "pti"; const st = mount.mem[k] || (mount.mem[k] = { offset: 0 }); states.set(el, st);
     const paint = (r) => { if (!r.ideas.length) { el.hidden = true; return; } el.hidden = false; st.r = r;
       el.innerHTML = `<section class="pti" aria-label="${esc(lead)}"><p class="pti-k">${esc(lead)}</p>${sub ? `<p class="pti-h3">${esc(sub)}</p>` : ""}<ul class="pti-l">${r.ideas.map((x, i) => row(x, i, pick)).join("")}</ul>${r.more || st.offset ? `<button type="button" class="pti-more" data-pti-more>${r.more ? "More ideas" : "Back to the first ideas"}</button>` : ""}</section>`;
       el.querySelectorAll("[data-pti]").forEach((b) => (b.onclick = () => { const x = r.ideas[+b.dataset.pti]; if (x) (onPick || start)(x); }));
       const m = el.querySelector("[data-pti-more]"); if (m) m.onclick = async () => { st.offset = r.more ? st.offset + n : 0; m.disabled = true; paint(await fetchIdeas({ n, offset: st.offset })); el.querySelector(".pti-use")?.focus(); }; };
     if (st.r && st.n === n) { paint(st.r); return st.r.ideas; }
-    st.n = n; const r = await fetchIdeas({ n, offset: st.offset }); paint(r); return r.ideas; }
+    st.n = n; const k2 = `${n}|${st.offset}`; if (onlyReady && !ready.has(k2)) { el.hidden = true; fetchIdeas({ n, offset: st.offset }); return []; }
+    const r = ready.get(k2) || (await fetchIdeas({ n, offset: st.offset })); paint(r); return r.ideas; }
   mount.mem = {};
   /** Start a new event from an idea: the create canvas with its kind, and the title filled in. */
   function start(x) { const C = window.EventCanvas; if (!C?.open) { location.href = "/start"; return; }
@@ -55,17 +58,28 @@
     const L = [...r.ideas, ...r2.ideas]; return (t ? L.filter((x) => x.title.toLowerCase().includes(t) || (x.say || "").toLowerCase().includes(t)) : L).slice(0, n).map((x) => ({ text: x.say || x.title, title: x.title, source: x.source, sourceLine: x.sourceLine })); }
 
   // ---------- Home: "What's working near you" ----------
-  async function home() { const v = document.getElementById("view-programs"); if (!v || v.hidden || document.getElementById("ptiHome") || !window.__wsPersonal) return;
-    let j = home.j && Date.now() - home.at < 5 * 60e3 ? home.j : null; // a redraw of Home puts the card back from what we have
-    if (!j) { if (Date.now() - (home.at || 0) < 60e3) return; home.at = Date.now(); try { const r = await fetch("/api/me/trends/home", { credentials: "same-origin" }); j = home.j = r.ok ? await r.json() : null; } catch {} }
-    if (!j || document.getElementById("ptiHome") || (!(j.top || []).length && !(j.compare || []).length)) return; css();
+  const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
+  function homeData() { if (home.p && Date.now() - home.at < 5 * 60e3) return home.p; home.at = Date.now();
+    return (home.p = fetch("/api/me/trends/home", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => (home.j = j || false))); }
+  function home() { const v = document.getElementById("view-programs"); if (!v || v.hidden || document.getElementById("ptiHome") || !window.__wsPersonal) return;
+    const j = home.j; if (j === undefined) { if (signedIn() && !home.wait) { home.wait = 1; homeData().then(() => { home.wait = 0; if (home.j) home(); }); } return; } if (!j) return;
+    if (!(j.top || []).length && !(j.compare || []).length) return; css();
     const box = document.createElement("div"); box.id = "ptiHome";
     box.innerHTML = `<section class="pti" aria-labelledby="ptiHomeH"><p class="pti-k">${esc(j.city ? "Near you, " + j.city : "Near you")}</p><h3 class="pti-h3" id="ptiHomeH">What's working near you</h3>
       ${(j.top || []).length ? `<ul class="pti-l">${j.top.map((x, i) => `<li><div class="pti-t"><b>${esc(x.title)}</b><span>${esc(x.reason)}</span></div><button type="button" class="pti-use" data-pth="${i}" aria-label="Plan one: ${esc(x.title)}">Plan one</button></li>`).join("")}</ul>` : ""}
       ${(j.compare || []).map((l) => `<p class="pti-cmp">${esc(l)}</p>`).join("")}</section>`;
     box.querySelectorAll("[data-pth]").forEach((b) => (b.onclick = () => start(j.top[+b.dataset.pth])));
-    const after = v.querySelector("#whatsNew") || v.querySelector("#qsPanel:not([hidden])") || v.querySelector("#pipHome"); if (after) after.after(box); else v.append(box); }
-  let busy = 0; const tick = () => { if (busy || document.getElementById("ptiHome") || !document.getElementById("view-programs")) return; busy = 1; setTimeout(() => home().finally(() => { busy = 0; }), 900); };
+    // under the composer when that spot is off screen (nothing on screen moves), else at the end of Home
+    const after = v.querySelector("#whatsNew") || v.querySelector("#qsPanel:not([hidden])") || v.querySelector("#pipHome");
+    if (after && after.getBoundingClientRect().bottom >= innerHeight) after.after(box); else v.append(box); }
+  // Home's "Ideas to try" shelf (index.html ideaLibraryHTML): the same quiet source line under each card
+  function shelf() { const C = [...document.querySelectorAll("#ideaLib [data-casualidea]:not([data-src])")]; if (!C.length || shelf.busy) return; shelf.busy = 1; C.forEach((c) => c.setAttribute("data-src", ""));
+    const q = new URLSearchParams({ titles: C.map((c) => c.dataset.casualidea).join("|") }); if (city()) q.set("city", city());
+    fetch("/api/public/ideas/labels?" + q, { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { labels: [] })).catch(() => ({ labels: [] })).then((j) => { shelf.busy = 0; css();
+      C.forEach((c, i) => { const L = j.labels?.[i]; if (!L?.sourceLine || c.querySelector(".pti-s")) return; const sm = document.createElement("small"); sm.className = "pti-s"; sm.dataset.source = L.source; sm.textContent = L.sourceLine; c.appendChild(sm); }); }); }
+  const tick = () => { if (!document.getElementById("ptiHome") && document.getElementById("view-programs")) home(); if (document.getElementById("ideaLib")) shelf(); };
   if (typeof MutationObserver === "function" && document.documentElement) new MutationObserver(tick).observe(document.documentElement, { childList: true, subtree: true });
+  // in the app, signed in: fetch early, so the canvas and Home draw the ideas with the page instead of after it
+  try { if (signedIn() && (/[?&]app=1/.test(location.search) || location.pathname === "/")) { homeData(); fetchIdeas({ n: 3, offset: 0 }); } } catch {}
   window.PLTrendIdeas = { fetch: fetchIdeas, mount, start, suggestFor, home };
 })();

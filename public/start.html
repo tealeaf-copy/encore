@@ -101,13 +101,14 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
   <p class="msg" id="err" role="alert"></p>
 </main>
 <script src="/mascot.js"></script><script src="/fx.js"></script><script src="/hostloop.js"></script><script src="/shell.js" defer></script>
-<script src="/trendideas.js"></script>
+<script src="/trendideas.js" defer></script>
 <script>
 // ---- trends: Potto's ideas above the form (public/trendideas.js), loved here first, each with its source line ----
 // below the form, so nothing above moves while they load; a pick fills the form and scrolls back up to the card
-window.PLTrendIdeas?.mount(document.getElementById("trendIdeas"), { key: "start", n: 3, lead: "Not sure what to plan? Ideas from Potto", onPick: (x) => {
+// deferred, so the page's own script still draws the plan before the first paint
+addEventListener("DOMContentLoaded", () => window.PLTrendIdeas?.mount(document.getElementById("trendIdeas"), { key: "start", n: 3, lead: "Not sure what to plan? Ideas from Potto", onPick: (x) => {
   const f = document.getElementById("f"), set = (name, v) => { const el = f?.elements?.[name]; if (el && v) { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); } };
-  set("title", x.title); if (x.line && !(f?.elements?.note?.value || "").trim()) set("note", x.source === "platform" ? "" : x.line); document.getElementById("card")?.scrollIntoView({ block: "start", behavior: "smooth" }); f?.elements?.title?.focus({ preventScroll: true }); } }); // ---- end trends ----
+  set("title", x.title); if (x.line && !(f?.elements?.note?.value || "").trim()) set("note", x.source === "platform" ? "" : x.line); document.getElementById("card")?.scrollIntoView({ block: "start", behavior: "smooth" }); f?.elements?.title?.focus({ preventScroll: true }); } })); // ---- end trends ----
 </script>
 <script>
 // one top heading at a time: the "done" screen takes it over from the plan

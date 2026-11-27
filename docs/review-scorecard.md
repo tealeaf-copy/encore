@@ -258,3 +258,64 @@ Needs something code can't give:
 ### Not walked this round
 
 Rewards and the fan club beyond its first card, the after-event flow (kudos, photos, recap), campaigns and insights beyond loading them and reading them, check-in, and anything behind sign-in with Apple, Google or a passkey. Their scores above lean on earlier rounds.
+
+## Round 18 (round 17's list closed, then the journeys it skipped)
+
+Screens: `round18/before` and `round18/after` in the session scratchpad (matching file names), plus `round18/walk` for each step. Same seeded world as round 17 (demo hosts, the Fernwood Labs brand world, a new casual host made by walking /start), plus a real drop, a fan club with a member, a past event with kudos and a photo, and a check-in. Driven at 390px and 1280px. New this round: every key journey was also run on a slow connection (each API call held back 1.8 seconds, each file 250ms), and every page was checked for tap targets under 44px, corners off the kit, pill buttons, more than one h1 and layout shift with its sources.
+
+"Before" is round 17's "after", marked down where the deeper walk found things round 17 had not seen (it had not walked the after-event page, past plans, the fan club past its first card, check-in or a slow connection).
+
+| Reviewer | Use | Joy | Ease | Intu | Pick | What moved (before → after) |
+|---|---|---|---|---|---|---|
+| Casual event attendee | 8 → 9 | 7 → 9 | 9 → 9 | 8 → 9 | 8 → 8 | Before: a past event drew "Photos from the night" four times and still said "You're in, show this at the door, Plans changed? Can't go"; Past plans nagged "Pay $60 to finish" for a dinner in September and said "with Claire's". Now: one photo wall, "You were there", "Went · with Claire". The invite's host line is signed with the host's face or initial, and a yes gets a small ink stamp ("See you Fri"). Still 8 on Pick: see below. |
+| Casual event host | 9 → 9 | 9 → 9 | 9 → 9 | 8 → 9 | 8 → 8 | Home shows one nudge, not four cards; idea chips lead with what the host makes; the side menu is the same on Home as everywhere else; the first yes gets its own moment on Home ("Sam is in.") and one email. /start to a link still takes 8 seconds scripted. Check-in at the door walked: tap a name, add a walk-in. |
+| Experience host | 8 → 9 | 8 → 9 | 8 → 8 | 7 → 9 | 8 → 8 | Before: "Start a fan club" opened the page editor, where nothing is called a fan club, and guests had no way to join one (the server had it all; no page did). A drop's "Open the full invite", and every example drop, showed an event with "I'm in" and a bring list. Now the fan club is a card on the host's page (start, join, leave, members), and a drop opens as an order page from every link. The menu card is a ruled notebook card. Still 8 on Ease and Pick: see below. |
+| Field marketer | 9 → 9 | 9 → 9 | 9 → 9 | 9 → 9 | 9 → 9 | Held. Money at risk now says in one line why it goes up for a day and comes back down. Links, chips and "more" rows on the teams pages are 44px on a phone. Campaigns walked in depth: a new campaign from name to plan, the day-of list, the report. |
+| Brand | 9 → 9 | 9 → 9 | 9 → 9 | 9 → 9 | 9 → 9 | Held. Booking pages no longer drop their messages and terms when the panels land (layout shift 0.29 to 0.34, now 0.00). Insights names "your buyers" once there are three groups, so the sentence no longer leaves one out. |
+| Engineer | 8 → 9 | 8 → 8 | 8 → 9 | 9 → 9 | 8 → 9 | Layout shift under 0.1 on every page the crawl visits at both widths (numbers below). One h1 per screen state. Slow connection: no double submits, no stuck loaders, and no blank first seconds on Home or the full invite. Found and fixed on the way: asking for the confirm-email link again was a 500; the photo wall race; "How it went" repeating itself. Still 8 on Joy: see below. |
+| Product designer | 8 → 9 | 8 → 8 | 9 → 9 | 9 → 9 | 8 → 8 | The editor's Save is the 6px ink-blue primary and its dock a notebook bar; 6px corners on Home, the host event view, the full invite, Discover, Hosts, Ideas, Plans, Settings, contacts, drops and check-in; the menu card and stickers on palette; a host page with no cover prints the name once. Still 8 on Joy and Pick: see below. |
+| UX/UI designer | 8 → 9 | 8 → 8 | 8 → 9 | 9 → 9 | 8 → 8 | 49 kinds of control under 44px across 60 page views at 390 are now 0 (settings switches, Insights chips, contact tick boxes, feed Follow and dismiss, People tabs, kudos chips, teams links). No pill buttons left on the pages swept except the Ask Potto bar. Still 8 on Joy and Pick: see below. |
+| Product manager | 8 → 9 | 8 → 9 | 8 → 9 | 8 → 9 | 8 → 8 | The two dead ends found this round are closed (fan club, a drop's full invite). Home has one nudge at a time. Hosting points in plain words. The first-event cheer no longer tells a host with two past dinners that this is their first. Still 8 on Pick: see below. |
+
+### Fixed in round 18
+
+- **Layout shift** (public/host.html, public/brandbook.css, public/team-bookings.html, public/feed.html, public/chats.html): the host page asks for badges, rank and track record alongside the page and draws them in the first pass, and decides one or two columns once, before the first paint. /@long-table at 1280: 0.29 signed out and 0.52 as its owner, now 0.03 to 0.08. The teams header's room is held from the first paint (/teams/discover 0.35 to 0.01, /teams/trusted 0.22 to 0.00, a booking 0.34 to 0.00). The feed and chats start in their final columns (0.19 and 0.18 to under 0.03). The scrapbook, what's on offer, a series and turnout are laid out hidden and shown together, so none pushes another down (that alone was 0.18 on some loads). Plans and Inbox hold the side menu's room from the first paint. On a first, cold load the public feed dropped 170px when its stories row and "New here?" line arrived (0.17); both hold their room now (0.00). `node scripts/crawl-pages.mjs --cls` lists every page over 0.1: none at 390, none at 1280. The crawl's own limit drops from 0.25 to 0.15.
+- **One h1** (index.html, public/start.html, public/signin.html): a view or step that is not showing keeps its heading as an h2 until it is shown. Sign-in 8 to 1, /start 2 to 1, the app 2 or 3 to 1, including with the editor open. On the full invite the top heading is the event's title on a past event too (it was "Send Claire some kudos").
+- **Slow connections** (index.html, public/authguard.js, public/help.js): Home and the full invite say "Setting the table…" and "Opening the invite…" in the first seconds instead of a blank page and a half-drawn tab bar; the invite's preview cover stays until the invite has drawn (it used to lift at 9 seconds onto a blank page); the feed's header no longer shows desktop links and the help button over the logo while it loads. Reply, order, join and kudos each sent once on a double tap, with the button disabled while sending.
+- **Home** (index.html, public/hostloop.js, server/hostloop.js): one nudge at a time (something a guest is waiting on, then today's small move, then the next step), the rest behind "More: next step, streak, playbook". Idea chips and "Ideas to try" lead with what the host makes. "Warmth" is "hosting points". The same eleven links in the same order in the side menu as on every other page.
+- **Drops** (public/invite.html, public/invite-order.js, index.html, public/replybar.js): a drop is an order page from every link: what, where to pick up, the menu with prices and what's left, pickup times, Order. Example drops show the same page and take no orders. The kicker reads "Order from Long Table Supper Club". invite.html is 38,810 characters.
+- **Fan club** (public/fanclub.js, new; server/guides.js, server/fanclub.js): a card at #club on the host's page. The host starts it with a name and one line, sees members and who comes most, and can turn it off. A guest sees what members get and joins in one tap (signed out, the tap goes through sign-up and comes back). A member sees the host's notes, the members' chat and a quiet way to leave.
+- **Small moments**: the host's line on an invite is signed with their face; a yes gets an ink stamp; the host's first yes is a sheet on Home and one email ("Sam is in for Dumpling night"), and the replies after it stay in the bell.
+- **After the event** (index.html, public/slots.js, server/plans.js): one photo wall, a reply card that reads "You were there", a kudos thank-you that keeps its width, "How it went" said once, past plans that say "Went" and never ask for money.
+- **On the kit**: the editor, the menu card, stickers, check-in rows, and 6px corners and buttons across the surfaces listed in the table. Nothing under 12px on the host path, the streak card, chats and the calendar.
+- **Tap targets**: every control on the 60 page views swept at 390 is 44px or has a 44px hit area on itself.
+- **Money at risk** (server/brandpanel.js): "Why it goes up, then down: until Mon, Dec 7 only the deposit is paid, so half of it is at risk. On Tue, Dec 8 the rest is due, and half of everything paid is at risk for that one day. From Wed, Dec 9 only the $360 deposit stays with the host, and the rest comes back." The amounts are untouched.
+- **Words**: "Add to my calendar" for "Subscribe (webcal)"; "Photos from the day" for a morning run; "with Claire" for "with Claire's"; "Long Table Supper Club Regulars" for "Long's Regulars"; "Pandan honeycomb cake." for "Pandan honeycomb cake ." on the feed.
+- **A server bug**: POST /api/me/verify used a helper that did not exist, so asking for the confirm-email link a second time was a 500. Tested in test/security15.test.js.
+- **Less noise**: a host's Home no longer asks for sign-off requests for its own events or brand bookings (work plans only).
+
+### Still under 9, and why
+
+Code can fix these; this round did not:
+
+- **Hosts hear about replies only in the app after the first one** (casual host, experience host, PM: Pick). The first yes on an event now emails the host; every reply after it waits in the bell. A host who is not in the app, and has no push yet, will not know a fourth guest said yes. A per-event "email me each reply" switch or a daily summary would close it.
+- **The fan club's settings have no page yet** (experience host: Ease). The card starts and stops a club and shows members. Perks, the first-dibs window, removing a member and a member's own badge and mute switches are in the server and not on the page. Notes to members are written from the + on the feed, one step away from the card.
+- **Home's lower cards can show for a moment before they settle** (engineer, UX/UI: Joy). On a slow connection the cards under the composer are visible for a fraction of a second, hide, then fade in together.
+- **A seeded brand host's Home still logs eight 404s for sign-off requests** (engineer). The seed writes those events without the flags a real event carries, so this may be the seed only; it was not checked against a real brand booking.
+- **The very first /discover after a server start jumps once on a wide screen** (engineer). 0.54 at 1280 on the first load in the crawl's world, 0.00 on every load after it and 0.03 in the seeded world. The event and host sections are redrawn after they have painted; the cause was not found.
+- **The map page jumps when its map library does not load** (engineer). It falls back to a list, and the list lands after the first paint (0.5 in this sandbox, where the library is blocked).
+- **Emoji and older corners remain in places** (designers: Joy and Pick). Event tiles, kudos tags and stickers use emoji; bottom sheets keep 22 to 24px top corners; a host's own look (Bo's, Claire's) keeps its own radii by design. The work-mode app, /recap, /playbook, gift pages and admin pages were not swept this round.
+- **The app is one large file of layered patches** (engineer: Joy). This round added one more block to it. It works and is tested, and it is slow to reason about.
+
+Needs something code can't give:
+
+- **Friends and photos** (attendee: Pick). A cold guest still meets one host and line-drawn covers. It needs real hosts, real photos and the guest's own friends on the platform.
+- **Paid seats** (experience host, PM: Pick). Money still moves through the host's own pay link. A real checkout needs a payments account and an owner decision.
+- **The app** (hosts, PM: Pick). Push, haptics and Add to Home Screen need the native build.
+
+### Not verified this round
+
+- Kudos and comments on feed cards: the seeded world had no feed card with an action row, so they were not exercised by hand. Only sizes and corners of the suggestion cards changed in public/feedvisual.js; their tests pass.
+- Sign in with Apple, Google or a passkey; real email, SMS and push delivery (all faked here).
+- Widths between 390 and 1280, and browsers other than Chromium.
+- The fan club card on a host's page with a brand kit other than the three seeded ones.

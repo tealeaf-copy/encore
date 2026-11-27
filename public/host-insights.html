@@ -1,0 +1,66 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Host insights · Pottery Lab</title><meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/system.css">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="/calm.js"></script>
+<style>
+/* Host Insights (server/paidinsights.js): the paid, deeper cut of "What's working near you". Field Notes kit, phone first. */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text)}
+main{max-width:760px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
+a{color:var(--pl-accent-text)}
+.hi-top{display:flex;align-items:center;min-height:44px;margin:0 0 8px}.hi-top a{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-ink);font-weight:500;text-decoration:none}
+.hi-k{margin:0;font:500 12px/1.4 var(--pl-font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--pl-soft)}
+h1{font:600 28px/1.15 var(--pl-font-display);margin:4px 0 6px;letter-spacing:-.015em}
+h2{font:600 18px/1.3 var(--pl-font-text);margin:0 0 4px}h3{font:600 15px/1.3 var(--pl-font-text);margin:12px 0 6px}
+.lede{margin:0 0 16px;color:var(--pl-soft)}
+.card{background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:6px;padding:16px;margin:0 0 16px;min-width:0}
+.card>p{color:var(--pl-soft);font-size:14px;margin:0 0 10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:6px;border:1px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:600 15px var(--pl-font-text);cursor:pointer;text-decoration:none}
+.btn.go{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}.btn:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+.price{font:600 20px/1.3 var(--pl-font-text);margin:8px 0}
+.list{margin:8px 0 12px;padding-left:20px;color:var(--pl-soft)}.list li{margin:4px 0}
+.best{display:grid;gap:8px;grid-template-columns:1fr}@media (min-width:640px){.best{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.best div{border:1px solid var(--pl-line);border-radius:6px;padding:10px 12px}.best span{display:block;font-size:13px;color:var(--pl-soft)}.best b{display:block;font-size:16px}.best small{display:block;font:400 12px/1.35 var(--pl-font-mono);color:var(--pl-soft)}
+.cmp{list-style:none;margin:0;padding:0}.cmp li{padding:8px 0;border-top:1px dashed var(--pl-line);font-size:15px}.cmp li:first-child{border-top:0}
+.msg{min-height:20px;font-size:14px;color:var(--pl-soft);margin:8px 0 0}
+.note{display:flex;gap:8px;font-size:14px;color:var(--pl-soft);border:1px dashed var(--pl-line);border-radius:6px;padding:10px 12px;margin:16px 0 0}
+</style></head><body>
+<main id="m"><nav class="hi-top" aria-label="Back"><a href="/?app=1">Back to Home</a></nav>
+  <p class="hi-k">Host insights</p><h1 id="h">What works in your city</h1><p class="lede" id="lede">Best days, times and prices for your formats, and how your events compare with similar ones.</p>
+  <div id="s" data-calm="stats" aria-live="polite"></div></main>
+<script src="/insightsui.js"></script>
+<script>
+(async function () {
+  const $ = (s) => document.querySelector(s), esc = PLIns.esc, S = $("#s"); PLIns.css();
+  const j = (u, b) => fetch(u, { method: b ? "POST" : "GET", credentials: "same-origin", headers: b ? { "Content-Type": "application/json" } : {}, body: b ? JSON.stringify(b) : undefined }).then(async (r) => { const x = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(x.message || "Something went wrong. Try again."), { status: r.status }); return x; });
+  let ME; try { ME = await j("/api/paid-insights/me"); } catch (e) { S.innerHTML = `<p class="pli-na">${esc(e.message)}</p>`; return; }
+  if (ME.state === "signin") { S.innerHTML = `<section class="card"><h2>Sign in to see Host insights</h2><p>Your city, your formats, and how your events compare.</p><a class="btn go" href="/login?next=%2Fhost%2Finsights">Sign in</a></section>`; return; }
+  if (ME.product === "market") { S.innerHTML = `<section class="card"><h2>Host insights are for hosts</h2><p>On a brand team? Market insights cover every city and format.</p><a class="btn go" href="/teams/market">Open Market insights</a></section>`; return; }
+  if (ME.state !== "open") return locked();
+  let D; try { D = await j("/api/paid-insights/host"); } catch (e) { S.innerHTML = `<p class="pli-na">${esc(e.message)}</p>`; return; }
+  draw(D);
+
+  function locked() { const r = ME.requested;
+    S.innerHTML = `<section class="card" aria-labelledby="hiL"><h2 id="hiL">Go deeper than What's working near you</h2><ul class="list"><li>The best day, time and price band for your formats in your city</li><li>How fast events like yours fill, and how often they have a waitlist</li><li>Repeat-guest rates, and how yours compare with similar events</li></ul>
+      <p class="price">${esc(PLIns.money(ME.prices.hostCents))} a month</p><p>Included with a membership: turn one on from your page and this opens by itself. Numbers come from public events only, and other hosts are never named.</p>
+      ${ME.billing ? `<button class="btn go" id="buy" type="button">Subscribe</button>` : r && r.status === "open" ? `<p><b>Requested.</b> We'll turn it on and let you know.</p>` : `<button class="btn go" id="ask" type="button">Request access</button>`}<p class="msg" id="msg" role="status"></p></section>`;
+    const b = $("#buy") || $("#ask"); if (!b) return;
+    b.onclick = async () => { b.disabled = true; try { if (b.id === "buy") { location.href = (await j("/api/paid-insights/checkout", {})).url; return; } await j("/api/paid-insights/request", {}); ME = await j("/api/paid-insights/me"); locked(); } catch (e) { b.disabled = false; $("#msg").textContent = e.message; } }; }
+
+  function draw(D) {
+    if (D.city) $("#h").textContent = `What works in ${D.city}`;
+    const best = (x, what) => `<div><span>${esc(what)}</span><b>${esc(x?.label || "Not enough yet")}</b><small>${esc(x?.fillPct != null ? `fills ${x.fillPct}%, ${x.basis}` : "Needs more similar events")}</small></div>`;
+    S.innerHTML = `${!D.city ? `<section class="card"><h2>Add your city</h2><p>Set the city on your page, and this fills in for it.</p><a class="btn" href="/?app=1#settings">Edit your page</a></section>` : ""}
+      ${D.formats.length ? D.formats.map((f) => `<section class="card" aria-label="${esc(f.label)}"><p class="hi-k">Your format</p><h2>${esc(f.label)} in ${esc(f.city || "your city")}</h2>
+        ${f.you ? `<h3>Yours</h3>${PLIns.tiles(f.you, ["fillPct", "waitlistPct", "repeatPct", "fillDays"])}` : `<p>You haven't run a public one in the last 12 months.</p>`}
+        <h3>Similar ${esc(f.label.toLowerCase())} nearby</h3>${f.peers.enough ? PLIns.tiles(f.peers, ["fillPct", "waitlistPct", "repeatPct", "fillDays"]) : `<p class="pli-na">Not enough yet. ${esc(f.peers.basis)}</p>`}
+        ${f.compare.length ? `<h3>How yours compare</h3><ul class="cmp">${f.compare.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}
+        ${f.best ? `<h3>What works best for this format</h3><div class="best">${best(f.best.day, "Best day")}${best(f.best.time, "Best time")}${best(f.best.price, "Best price band")}</div>` : ""}</section>`).join("")
+        : `<section class="card"><h2>Host a public event and this fills in</h2><p>Your formats, best days and prices show here once you've run a public event.</p></section>`}
+      ${D.cityTop.length ? `<section class="card"><p class="hi-k">Across ${esc(D.city)}</p><h2>Formats that fill, last 90 days</h2>${PLIns.chart(Object.assign(D.cityTop, { byLabel: "Format" }), "fillPct", { cols: ["events", "hosts", "fillPct", "waitlistPct", "repeatPct", "priceCents"], caption: "Fill rate by format", view: PLIns.savedView() })}</section>` : ""}
+      <section class="card"><p class="hi-k">Who comes</p><h2>People who chose to share</h2>${D.who?.state === "on" ? D.who.cuts.map((c) => `<h3>${esc(c.label)}</h3>${c.shown ? `<p class="pli-basis">${esc(c.basis)}</p>` + PLIns.chart(Object.assign(c.cells.map((x) => ({ ...x, enough: true, basis: "" })), { byLabel: c.label }), "pct", { cols: ["pct"], caption: c.label, view: PLIns.savedView() }) : `<p class="pli-na">${esc(c.why)}</p>`}`).join("") : `<p class="pli-na">${esc(D.who?.note || "Not on yet.")}</p>`}</section>
+      <p class="note">${esc(D.about)} A number shows only with ${ME.min.hosts} hosts and ${ME.min.guests} guests behind it. <a href="/privacy#insights">How we count</a></p>`;
+    PLIns.wire(S); }
+})();
+</script></body></html>

@@ -1,0 +1,32 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Paid insights access · Pottery Lab</title><meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/system.css">
+<style>
+/* Admins only (ENCORE_ADMIN_EMAILS): access requests for Market and Host Insights, and manual grants (server/paidinsights.js). */
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text)}
+main{max-width:860px;margin:0 auto;padding:24px 16px 80px}h1{font:600 28px/1.15 var(--pl-font-display);margin:0 0 6px}h2{font:600 18px/1.3 var(--pl-font-text);margin:24px 0 8px}
+p{color:var(--pl-soft);margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--pl-line);border-radius:6px;background:var(--pl-surface);margin:0 0 8px}
+.row b{display:block}.row small{display:block;color:var(--pl-soft);font-size:13px;overflow-wrap:anywhere}
+.acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input{min-height:44px;width:84px;padding:0 10px;border:1px solid var(--pl-line-strong);border-radius:6px;font:16px var(--pl-font-text);background:var(--pl-surface);color:var(--pl-ink)}
+button{min-height:44px;padding:0 16px;border-radius:6px;border:1px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:600 15px var(--pl-font-text);cursor:pointer}
+button.go{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}button:focus-visible,input:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+.empty{border:1px dashed var(--pl-line);border-radius:6px;padding:12px;color:var(--pl-soft)}
+</style></head><body><main id="m"><h1>Paid insights access</h1><p id="lede">Requests from teams and hosts, and who has access. Grant access by hand when payments aren't set up.</p><div id="s"></div><p id="msg" role="status"></p></main>
+<script>
+(async function () {
+  const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const j = (u, b) => fetch(u, { method: b ? "POST" : "GET", credentials: "same-origin", headers: b ? { "Content-Type": "application/json" } : {}, body: b ? JSON.stringify(b) : undefined }).then(async (r) => { const x = await r.json().catch(() => ({})); if (!r.ok) throw new Error(x.message || "That didn't work."); return x; });
+  const name = (p) => (p === "market" ? "Market insights" : "Host insights");
+  async function draw() { let d; try { d = await j("/api/admin/paid-insights"); } catch (e) { $("#s").innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+    $("#lede").textContent = d.billing ? "Payments are on: teams and hosts subscribe themselves. You can still grant access by hand." : "Payments aren't set up, so teams and hosts ask for access here. Grant it by hand.";
+    const open = d.requests.filter((r) => r.status === "open");
+    $("#s").innerHTML = `<h2>Waiting (${open.length})</h2>${open.length ? open.map((r) => `<div class="row"><span><b>${esc(r.team || r.ws)}</b><small>${esc(name(r.product))} · ${r.product === "market" ? `${r.seats} ${r.seats === 1 ? "seat" : "seats"} · ` : ""}${esc(r.email)} · ${esc(new Date(r.at).toLocaleDateString())}${r.note ? " · " + esc(r.note) : ""}</small></span>
+        <span class="acts">${r.product === "market" ? `<input type="number" min="1" max="200" value="${r.seats}" aria-label="Seats" data-seats="${esc(r.ws)}">` : ""}<button class="go" data-grant="${esc(r.ws)}" data-p="${r.product}">Grant</button></span></div>`).join("") : `<p class="empty">No requests waiting.</p>`}
+      <h2>Who has access</h2>${d.plans.length ? d.plans.map((p) => `<div class="row"><span><b>${esc(p.team || p.ws)}</b><small>${esc(name(p.product))} · ${p.on ? "On" : "Off"} · ${esc(p.source || "")}${p.product === "market" ? ` · ${p.seatsUsed} of ${p.seats} seats used` : ""}</small></span><span class="acts">${p.on ? `<button data-off="${esc(p.ws)}" data-p="${p.product}">Turn off</button>` : `<button class="go" data-grant="${esc(p.ws)}" data-p="${p.product}">Turn on</button>`}</span></div>`).join("") : `<p class="empty">Nobody yet.</p>`}`;
+    document.querySelectorAll("[data-grant]").forEach((b) => (b.onclick = async () => { const ws = b.dataset.grant, s = document.querySelector(`[data-seats="${CSS.escape(ws)}"]`); try { await j("/api/admin/paid-insights/grant", { ws, product: b.dataset.p, seats: +(s?.value || 1), on: true }); $("#msg").textContent = "Access granted."; draw(); } catch (e) { $("#msg").textContent = e.message; } }));
+    document.querySelectorAll("[data-off]").forEach((b) => (b.onclick = async () => { try { await j("/api/admin/paid-insights/grant", { ws: b.dataset.off, product: b.dataset.p, on: false }); $("#msg").textContent = "Turned off."; draw(); } catch (e) { $("#msg").textContent = e.message; } })); }
+  draw();
+})();
+</script></body></html>

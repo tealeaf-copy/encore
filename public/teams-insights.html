@@ -20,7 +20,7 @@
   }
   function shell() {
     main.removeAttribute("aria-busy"); main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Insights</p><h1>What <em>resonates</em></h1><p class="ti-sub">Which experiences people love, which fit your buyers, and how your own events went.</p></div>
-      <div class="acts"><a class="bb-btn quiet" href="/teams/insights/how">${icon("shield")}How insights work</a><a class="bb-btn primary" href="/teams/campaigns?new=1">${icon("plus")}Start a campaign</a></div></header>
+      <div class="acts"><a class="bb-btn quiet" href="/teams/insights/how">${icon("shield")}How insights work</a><a class="bb-btn quiet" href="/teams/market">${icon("all")}Market insights</a><!-- paid insights hook (server/paidinsights.js) --><a class="bb-btn primary" href="/teams/campaigns?new=1">${icon("plus")}Start a campaign</a></div></header>
       <nav class="ti-tabs" role="tablist" aria-label="Insights">${[["fit", "Fit for your buyers"], ["trends", "Experience trends"], ["results", "Your results"]].map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}</nav><div id="pane"></div>`;
     $$("[data-tab]").forEach((b) => (b.onclick = () => { tab = b.dataset.tab; $$("[data-tab]").forEach((x) => x.setAttribute("aria-selected", String(x === b))); history.replaceState(null, "", tab === "fit" ? location.pathname : `?tab=${tab}`); draw(); }));
   }

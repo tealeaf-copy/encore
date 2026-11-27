@@ -1,0 +1,105 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Market insights · Pottery Lab</title><meta name="description" content="What events are popular in which cities and formats, when, at what price, and who runs them well. Totals from public events only.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css">
+<style>
+/* Market Insights (server/paidinsights.js). Field Notes kit, phone first. */
+.mi-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+@media (min-width:860px){.mi-form{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.mi-form .bb-field{margin:0 0 12px;min-width:0}
+.mi-sec{margin:16px 0 0}.mi-sec>h2{font:600 18px/1.3 var(--pl-font-text);margin:0 0 4px}.mi-sec>.ti-sub{margin:0 0 10px}
+.mi-two{display:grid;gap:16px}@media (min-width:860px){.mi-two{grid-template-columns:1fr 1fr}}
+.mi-hosts{list-style:none;margin:0;padding:0}.mi-hosts li{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px dashed var(--pl-line)}.mi-hosts li:first-child{border-top:0}
+.mi-hosts b{display:block;font:600 15px/1.3 var(--pl-font-text)}.mi-hosts small{display:block;color:var(--pl-soft);font-size:13px}.mi-hosts .acts{display:flex;gap:8px;flex-wrap:wrap}
+.mi-lock ul{margin:8px 0 12px;padding-left:20px;color:var(--pl-soft)}.mi-lock li{margin:4px 0}
+.mi-price{font:600 20px/1.3 var(--pl-font-text);margin:8px 0}
+.mi-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px}
+.mi-row input[type=checkbox]{width:24px;height:24px;accent-color:var(--pl-accent)}
+.mi-ed{border-left:3px solid var(--pl-line-strong);padding-left:12px}
+.mi-who{display:grid;gap:16px}@media (min-width:860px){.mi-who{grid-template-columns:1fr 1fr}}
+.mi-acts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.mi-msg{min-height:20px;font-size:14px;color:var(--pl-soft);margin:8px 0 0}
+</style></head>
+<body class="bb ti" data-top><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="p"></i><i class="r"></i><i class="b"></i></div></main>
+<script src="/fx.js"></script><script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/insightsui.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, $ } = BB; BB.top("insights"); PLIns.css();
+  const main = $("#main"), U = new URLSearchParams(location.search), money = PLIns.money;
+  const Q = { city: U.get("city") || "", hood: U.get("hood") || "", format: U.get("format") || "", season: U.get("season") || "", dow: U.get("dow") || "", tod: U.get("tod") || "", price: U.get("price") || "", window: U.get("window") || "90", by: U.get("by") || "format", metric: U.get("metric") || "fillPct" };
+  let ME = null, D = null, busy = 0;
+  const OPTS = { season: [["winter", "Winter"], ["spring", "Spring"], ["summer", "Summer"], ["autumn", "Autumn"]], dow: [["1", "Mondays"], ["2", "Tuesdays"], ["3", "Wednesdays"], ["4", "Thursdays"], ["5", "Fridays"], ["6", "Saturdays"], ["0", "Sundays"]],
+    tod: [["morning", "Mornings"], ["afternoon", "Afternoons"], ["evening", "Evenings"], ["late", "Late"]], price: [["free", "Free"], ["u25", "Under $25"], ["p25", "$25 to $60"], ["p60", "$60 to $120"], ["p120", "$120 and up"]],
+    window: [["30", "Last 30 days"], ["90", "Last 90 days"], ["365", "Last 12 months"]], by: [["format", "Format"], ["hood", "Neighbourhood"], ["city", "City"], ["dow", "Day of week"], ["tod", "Time of day"], ["price", "Price a person"], ["season", "Season"]],
+    metric: [["fillPct", "Fill rate"], ["waitlistPct", "Events with a waitlist"], ["againPct", "Would go again"], ["repeatPct", "Repeat guests"], ["priceCents", "Typical price"], ["hosts", "Hosts"], ["events", "Events"]] };
+  const sel = (k, label, L, any = "Any") => `<label class="bb-field"><span>${esc(label)}</span><select data-q="${k}">${any ? `<option value="">${esc(any)}</option>` : ""}${L.map(([v, t]) => `<option value="${esc(v)}"${String(Q[k]) === String(v) ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`;
+  const head = (ex) => `<header class="ti-head"><div><p class="bb-kicker">Market insights${ex ? ` <span class="pli-ex">Example</span>` : ""}</p><h1>What's <em>popular</em>, and where</h1><p class="ti-sub">Which events fill in which cities, formats, days and prices, what's rising, and who runs them well. Totals from public events only.</p></div>
+    <div class="acts"><a class="bb-btn quiet" href="/teams/insights">${icon("spark")}What resonates</a><a class="bb-btn quiet" href="/privacy#insights">${icon("shield")}How we count</a></div></header>`;
+
+  async function boot() {
+    try { ME = await api("/api/paid-insights/me"); } catch (e) { main.innerHTML = `<p>${esc(e.message)}</p>`; return; }
+    main.removeAttribute("aria-busy");
+    if (ME.state === "signin") return BB.teamGate(main, { title: "Sign in to see market insights", lede: "What events are popular in which cities and formats, and who runs them well. Totals only." });
+    if (ME.product === "host") { main.innerHTML = head(false) + `<section class="ti-card"><h2>Market insights are for brand teams</h2><p class="ti-sub">Hosting? Your city, your formats and how your events compare are in Host insights.</p><p class="mi-acts"><a class="bb-btn primary" href="/host/insights">Open Host insights</a></p></section>`; return; }
+    if (ME.state !== "open") return locked();
+    await load();
+  }
+
+  function locked() {
+    const r = ME.requested, per = money(ME.prices.seatCents);
+    main.innerHTML = head(false) + `<section class="ti-card mi-lock" aria-labelledby="miL"><p class="ti-k">${ME.state === "no_seat" ? "All seats are taken" : "Paid, per seat"}</p><h2 id="miL">${ME.state === "no_seat" ? "Your team's seats are all in use" : "See what's popular, where, before you book"}</h2>
+      <ul><li>Fill rate, waitlists, would go again, repeat guests and typical price by city, neighbourhood, format, season, day, time and price band</li><li>Formats rising and falling month over month, with trend notes from our team kept apart and labelled</li><li>Hosts who run a format well, one tap from Quick book</li><li>A CSV of any view, and a monthly email</li></ul>
+      <p class="mi-price">${esc(per)} a seat a month</p><p class="ti-sub">Totals from public events only. A number shows only when ${ME.min.hosts} hosts and ${ME.min.guests} guests are behind it.</p>
+      ${ME.billing ? `<form id="buy" class="mi-acts"><label class="bb-field" style="margin:0;min-width:120px"><span>Seats</span><input id="seats" type="number" min="1" max="50" value="${ME.seats ? ME.seats + 1 : 1}" inputmode="numeric"></label><button class="bb-btn primary" type="submit" style="align-self:flex-end">Subscribe</button></form>`
+        : r && r.status === "open" ? `<p class="ti-privacy">${icon("check")}<span>Requested for ${r.seats} ${r.seats === 1 ? "seat" : "seats"}. We'll turn it on and let you know.</span></p>`
+        : `<form id="ask" class="mi-acts"><label class="bb-field" style="margin:0;min-width:120px"><span>Seats</span><input id="seats" type="number" min="1" max="50" value="1" inputmode="numeric"></label><button class="bb-btn primary" type="submit" style="align-self:flex-end">Request access</button></form>`}
+      <p class="mi-msg" id="msg" role="status"></p><p class="ti-sub">Want to see it working first? <a href="/teams/demo">Open the demo</a> with example data.</p></section>`;
+    const f = $("#buy") || $("#ask"); if (!f) return;
+    f.onsubmit = async (e) => { e.preventDefault(); const b = f.querySelector("button"); b.disabled = true; const seats = +$("#seats").value || 1;
+      try { if (f.id === "buy") { const j = await api("/api/paid-insights/checkout", { seats }); location.href = j.url; return; } await api("/api/paid-insights/request", { seats }); ME = await api("/api/paid-insights/me"); locked(); }
+      catch (er) { b.disabled = false; $("#msg").textContent = er.message; } }; }
+
+  const query = () => { const q = new URLSearchParams(); for (const [k, v] of Object.entries(Q)) if (v !== "" && !(k === "window" && v === "90") && !(k === "by" && v === "format") && !(k === "metric" && v === "fillPct")) q.set(k, v); return q; };
+  async function load() { const n = ++busy; const q = query(); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
+    try { const j = await api("/api/paid-insights/market?" + q); if (n !== busy) return; D = j; draw(); } catch (e) { main.innerHTML = head(false) + `<p class="pli-na">${esc(e.message)}</p>`; } }
+
+  function draw() {
+    const ex = !!D.example, F = D.filters, cityL = D.cities.find((c) => c.value === F.city)?.label || "", fmtL = D.formats.find((x) => x.value === F.format)?.label || "", y0 = window.scrollY;
+    const place = [D.hoods.find((h) => h.value === F.hood)?.label, cityL].filter(Boolean).join(", ") || "All cities";
+    main.innerHTML = head(ex) + (ex ? `<p class="ti-privacy">${icon("flag")}<span>${esc(D.exampleLabel)}</span></p>` : "") + `
+      <section class="ti-card" aria-labelledby="miF"><h2 id="miF" class="ti-k">Explore</h2><form class="mi-form" id="f" onsubmit="return false">
+        ${sel("city", "City", D.cities.map((c) => [c.value, c.label]), "All cities")}${sel("hood", "Neighbourhood", D.hoods.map((c) => [c.value, c.label]), F.city ? "All of " + cityL : "Pick a city first")}
+        ${sel("format", "Format", D.formats.map((c) => [c.value, c.label]), "All formats")}${sel("season", "Season", OPTS.season)}${sel("dow", "Day of week", OPTS.dow)}${sel("tod", "Time of day", OPTS.tod)}${sel("price", "Price a person", OPTS.price)}${sel("window", "Window", OPTS.window, "")}</form></section>
+      <section class="mi-sec" aria-labelledby="miO"><h2 id="miO">${esc(fmtL || "Everything")} in ${esc(place)}</h2><p class="ti-sub">${esc(D.windowLabel[0].toUpperCase() + D.windowLabel.slice(1))}. ${esc(D.about)}</p>${PLIns.tiles(D.overall)}</section>
+      <section class="mi-sec" aria-labelledby="miB"><h2 id="miB">By ${esc(D.byLabel.toLowerCase())}</h2><div class="mi-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">${sel("by", "Break down by", OPTS.by, "")}${sel("metric", "Show", OPTS.metric, "")}</div>
+        ${D.rows.length ? PLIns.chart(Object.assign(D.rows, { byLabel: D.byLabel }), D.metric, { caption: `${OPTS.metric.find((m) => m[0] === D.metric)[1]} by ${D.byLabel.toLowerCase()}. Rows under ${D.min.hosts} hosts or ${D.min.guests} guests say Not enough yet.`, view: PLIns.savedView() }) : `<p class="pli-na">Not enough yet.</p>`}</section>
+      <div class="mi-two">
+        <section class="ti-card mi-sec" aria-labelledby="miM"><p class="ti-k">Measured on Pottery Lab</p><h2 id="miM">Rising and falling${cityL ? " in " + esc(cityL) : ""}</h2><p class="ti-sub">${esc(D.movers.note)}</p>${moverList(D.movers)}</section>
+        <section class="ti-card mi-sec mi-ed" aria-labelledby="miE"><p class="ti-k">Trending on social</p><h2 id="miE">Editorial notes</h2><p class="ti-sub">Written by the Pottery Lab team from what's popular on social media and group invite apps. Not measured, and never counted in the numbers here.</p>
+          ${D.editorial.length ? `<ul class="pli-move">${D.editorial.map((n) => `<li><span><b>${esc(n.name)}</b> ${esc(n.line)}<small class="pli-basis" style="display:block">${esc(n.label)}, ${esc(n.where)}</small></span></li>`).join("")}</ul>` : `<p class="pli-na">No notes this season.</p>`}</section></div>
+      <section class="ti-card mi-sec" aria-labelledby="miH"><p class="ti-k">Who runs it well</p><h2 id="miH">${D.hostsRun?.enough ? esc(D.hostsRun.headline) : "Hosts who run this format"}</h2>${hostsBlock()}</section>
+      <section class="ti-card mi-sec" aria-labelledby="miW"><p class="ti-k">Who comes</p><h2 id="miW">People who chose to share</h2>${whoBlock(D.who)}</section>
+      <section class="ti-card quiet mi-sec" aria-labelledby="miX"><h2 id="miX" class="ti-k">Take it with you</h2>
+        <p class="mi-acts"><a class="bb-btn" href="/api/paid-insights/market.csv?${esc(query().toString())}" download>${icon("doc")}Download this view (CSV)</a>${ME.manage ? `<button class="bb-btn quiet" type="button" id="manage">Manage billing</button>` : ""}</p>
+        <p class="ti-sub">The CSV has the same totals as this page, nothing about any guest.</p>
+        ${ex ? `<p class="ti-sub">The monthly email isn't sent from the demo.</p>` : `<div class="mi-row"><label for="dig">Monthly email with what's rising<small class="ti-sub" style="display:block;margin:0">Once a month, to you. Stop it here or from the email.</small></label><input type="checkbox" id="dig"${ME.digest ? " checked" : ""}></div>`}
+        <p class="mi-msg" id="msg" role="status"></p></section>
+      <p class="ti-privacy">${icon("lock")}<span>Totals only, from public events. Private, members-only, example and sample events are never counted. A number shows with at least ${D.min.hosts} hosts and ${D.min.guests} guests behind it; who comes shows with at least ${ME.min.people} people. <a href="/privacy#insights">How we count</a></span></p>`;
+    PLIns.wire(main); window.scrollTo(0, y0);
+    main.querySelectorAll("[data-q]").forEach((s) => (s.onchange = () => { Q[s.dataset.q] = s.value; if (s.dataset.q === "city") Q.hood = ""; if (s.dataset.q === "format" && s.value && Q.by === "format") Q.by = "dow"; load(); }));
+    const dig = $("#dig"); if (dig) dig.onchange = async () => { try { const j = await api("/api/paid-insights/digest", { on: dig.checked }); ME.digest = j.on; $("#msg").textContent = j.on ? "The monthly email is on." : "The monthly email is off."; } catch (e) { $("#msg").textContent = e.message; dig.checked = !dig.checked; } };
+    const mg = $("#manage"); if (mg) mg.onclick = async () => { try { location.href = (await api("/api/paid-insights/portal", {})).url; } catch (e) { $("#msg").textContent = e.message; } };
+    main.querySelectorAll("[data-pick]").forEach((b) => (b.onclick = () => { Q.format = b.dataset.pick; load(); }));
+  }
+  function moverList(M) { const L = [...M.rising.slice(0, 5).map((x) => ({ ...x, up: true })), ...M.falling.slice(0, 3).map((x) => ({ ...x, up: false }))];
+    if (!L.length) return `<p class="pli-na">Not enough yet. A format shows here once both months have ${D.min.hosts} hosts and ${D.min.guests} guests.</p>`;
+    return `<ul class="pli-move">${L.map((x) => `<li><i class="mk ${x.up ? "up" : "down"}" aria-hidden="true"></i><span style="flex:1;min-width:0"><b>${esc(x.label)}</b> <span class="tag ${x.up ? "up" : "down"}">${x.up ? "Rising" : "Falling"} ${x.up ? "+" : "-"}${Math.abs(x.change)}%</span><small class="pli-basis" style="display:block">${esc(x.basis)}</small></span><button type="button" class="bb-btn quiet" data-pick="${esc(x.format)}" aria-label="Explore ${esc(x.label)}">Explore</button></li>`).join("")}</ul>`; }
+  function hostsBlock() { const H = D.hostsRun;
+    if (!H) return `<p class="pli-na">Pick a city and a format above to see who runs it, with a link to book them.</p>`;
+    if (!H.enough) return `<p class="pli-na">Not enough yet. ${esc(H.basis || "")}</p>`;
+    return `<p class="pli-basis">${esc(H.basis)}. Only hosts with a public page, and only what their page already shows.</p>${H.hosts.length ? `<ul class="mi-hosts">${H.hosts.map((h) => `<li><span><b>${esc(h.name)}</b><small>${esc([h.area, h.line].filter(Boolean).join(" · "))}</small></span><span class="acts">${h.link ? `<a class="bb-btn quiet" href="${esc(h.link)}">See their page</a>` : ""}<a class="bb-btn primary" href="${esc(h.quickBook)}">Quick book</a></span></li>`).join("")}</ul>` : `<p class="pli-na">No host with a public page has run two or more of these here yet.</p>`}`; }
+  function whoBlock(W) { if (!W || W.state !== "on") return `<p class="pli-na">${esc(W?.note || "Not on yet.")}</p>`;
+    return `<p class="ti-sub">${esc(W.note)} Guests choose this in Settings and can remove it any time. You never see who they are.</p><div class="mi-who">${W.cuts.map((c) => `<div><h3 style="font:600 15px var(--pl-font-text);margin:0 0 6px">${esc(c.label)}</h3>${c.shown ? (c.note ? `<p class="pli-basis">${esc(c.note)}</p>` : "") + `<p class="pli-basis">${esc(c.basis)}</p>` + PLIns.chart(Object.assign(c.cells.map((x) => ({ ...x, enough: true, basis: "" })), { byLabel: c.label }), "pct", { cols: ["pct"], caption: `${c.label}: share of ${c.people} people who chose to share${c.multi ? ". People can pick more than one, so shares add up to more than 100%." : ""}`, view: PLIns.savedView() }) : `<p class="pli-na">${esc(c.why)}</p>`}</div>`).join("")}</div>`; }
+  boot();
+})();
+</script></body></html>

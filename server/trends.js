@@ -144,11 +144,24 @@ export function collect({ store, X, C = null, app = null, now = Date.now() }) {
       const follows = past ? fol.filter((f) => f.at >= at - DAY / 2 && f.at <= at + 7 * DAY).length : 0;
       const d = new Date(at);
       recs.push({ ws, format: formatOf(e), type: typeOf(e), city: clean(e.city, 60), hood: clean(e.hood, 60), age, past, dow: d.getUTCDay(), season: seasonOf(at),
-        guests, fill, waitlist, againYes, againOf: K.length, saves: saves.get(x.id)?.size || 0, vouches, buzz, follows, repeat, host: !!owner });
+        guests, fill, waitlist, againYes, againOf: K.length, saves: saves.get(x.id)?.size || 0, vouches, buzz, follows, repeat, host: !!owner,
+        ...paidFields(e, x.id, R, G, cap, at) }); // ---- paid insights fields (server/paidinsights.js) ----
     }
   }
   return recs;
 }
+
+// ---- paid insights fields (server/paidinsights.js): price, start hour, month, fill speed, hashed guest keys ----
+// Internal like every record field: guest keys are the same one-way hash as server/curation.js, used only to count
+// distinct opted-in people for demographic cells. They never leave the server.
+const priceOf = (e) => { if (e.free === true || /^(free|0|\$0)$/i.test(String(e.price ?? "").trim())) return 0; const m = /(\d+(?:\.\d+)?)/.exec(String(e.price ?? "").replace(/,/g, "")); return m ? Math.round(+m[1] * 100) : null; };
+function paidFields(e, id, R, G, cap, at) {
+  const hm = /^(\d{1,2}):\d{2}/.exec(String(e.startTime || e.time || "")), hour = hm ? Math.min(23, +hm[1]) : null;
+  let fillDays = null; if (cap > 0) { const T = R.filter((r) => r.eventId === id && r.response === "going" && +r.createdAt).map((r) => +r.createdAt).sort((a, b) => a - b);
+    if (T.length >= cap) { const t0 = +e.publishedAt || +e.createdAt || T[0]; fillDays = Math.max(0, Math.round(((T[cap - 1] - t0) / DAY) * 10) / 10); } }
+  return { priceCents: priceOf(e), hour, month: new Date(at).toISOString().slice(0, 7), cap: cap || 0, fillDays, gk: G.map((em) => h24(em)) };
+}
+// ---- end paid insights fields ----
 
 // ---------- groups ----------
 function newGroup(key, f, city, hood) { return { key, format: f, city, hood, hosts: new Set(), w: 0, events: 0, wGuests: 0, guestsPast: 0, yesW: 0, ofW: 0, fillW: 0, fillN: 0, waitW: 0, evW: 0, repW: 0, buzzW: 0, dow: new Array(7).fill(0), win: { 30: newWin(), 90: newWin(), [WINDOW_DAYS]: newWin() } }; }

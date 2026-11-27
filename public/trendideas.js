@@ -72,7 +72,7 @@
     const box = document.createElement("div"); box.id = "ptiHome";
     box.innerHTML = `<section class="pti" aria-labelledby="ptiHomeH"><p class="pti-k">${esc(j.city ? "Near you, " + j.city : "Near you")}</p><h3 class="pti-h3" id="ptiHomeH">What's working near you</h3>
       ${(j.top || []).length ? `<ul class="pti-l">${j.top.map((x, i) => `<li><div class="pti-t"><b>${esc(x.title)}</b><span>${esc(x.reason)}</span></div><button type="button" class="pti-use" data-pth="${i}" aria-label="Plan one: ${esc(x.title)}">Plan one</button></li>`).join("")}</ul>` : ""}
-      ${(j.compare || []).map((l) => `<p class="pti-cmp">${esc(l)}</p>`).join("")}</section>`;
+      ${(j.compare || []).map((l) => `<p class="pti-cmp">${esc(l)}</p>`).join("")}<p class="pti-cmp"><a href="/host/insights" style="display:inline-flex;align-items:center;min-height:44px;color:var(--pl-accent,#29489A)">Best days, times and prices for your formats: Host insights</a></p></section>`; // paid insights hook: the deeper cut (server/paidinsights.js)
     box.querySelectorAll("[data-pth]").forEach((b) => (b.onclick = () => start(j.top[+b.dataset.pth])));
     // under the composer when that spot is off screen (nothing on screen moves), else at the end of Home
     const after = v.querySelector("#whatsNew") || v.querySelector("#qsPanel:not([hidden])") || v.querySelector("#pipHome");

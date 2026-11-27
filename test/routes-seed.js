@@ -72,6 +72,7 @@ export function pagesFor(S) {
     { path: "/moderation", as: "admin" }, { path: "/admin/invites", as: "admin" }, "/join/FAAAAAAAAA",
     "/import/instagram", "/import/instagram?mode=refresh", { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
     "/proposals", "/proposals/new", "/proposals/example/dinner", // brand proposals (server/proposals.js): the host's list and builder, and an example
+    "/teams/market", "/host/insights", { path: "/admin/paid-insights", as: "admin" }, // paid insights (server/paidinsights.js)
     ...(S.listHandle ? [`/@${S.listHandle}/lists`, "/library"] : []), ...(S.listToken ? [`/l/${S.listToken}`] : []), // lists people follow (server/curation.js)
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }

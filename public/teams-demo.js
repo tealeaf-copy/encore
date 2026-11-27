@@ -74,7 +74,7 @@
       const n = L.length, menu = s.menu || s.end;
       card.innerHTML = `<p class="k"><span>${s.menu ? "Demo" : `Step ${i + 1} of ${n}`}</span><button class="q" type="button" data-x aria-label="Hide the guide">Hide</button></p><h2>${esc(s.title)}</h2><p>${esc(here ? s.body() : "Pick up where you left off.")}</p>
         <div class="row">${!here ? `<button class="p" type="button" data-back>Back to step ${i + 1}</button>` : s.action ? `<button class="p" type="button" data-act>${esc(s.action.label)}</button>` : s.tap ? `<button class="p" type="button" data-tap>${esc(s.tap)}</button>` : ""}
-        ${menu ? `<a class="b ${s.menu ? "p" : ""}" href="/teams/demo?path=find">Find a host</a><a class="b" href="/teams/demo?path=book">Book a host</a><a class="b" href="/teams/demo?path=gift">Send gifts</a>` : ""}</div>
+        ${menu ? `<a class="b ${s.menu ? "p" : ""}" href="/teams/demo?path=find">Find a host</a><a class="b" href="/teams/demo?path=book">Book a host</a><a class="b" href="/teams/demo?path=gift">Send gifts</a><a class="b" href="/teams/market">Market insights</a>` : ""}<!-- paid insights hook: example data in the demo (server/paidinsights.js) --></div>
         <p class="demo">Made up: nothing you do is sent or charged. <a href="/teams/demo?reset=1${T.path !== "menu" ? "&path=" + esc(T.path) : ""}">Start over</a> · <a href="#" data-leave>Leave the demo</a></p>`;
       card.querySelector("[data-x]").onclick = () => { T.off = true; save(); draw(); };
       card.querySelector("[data-leave]").onclick = async (e) => { e.preventDefault(); try { localStorage.removeItem(KEY); } catch {} try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/teams"; };

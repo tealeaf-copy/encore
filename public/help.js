@@ -205,7 +205,7 @@
     const H = innerHeight, W = innerWidth, xs = [W - 20, W - 90, W - 160].filter((x) => x > 0); let top = H;
     for (const x of xs) { let gap = 0;
       for (let y = H - 4; y > H * 0.5; y -= 6) { const els = document.elementsFromPoint(x, y).filter((e) => e !== host && !host.contains(e)); let hit = false;
-        for (const e of els) { const f = fixedish(e); if (!f) continue; const r = f.getBoundingClientRect(); if (r.width >= W * 0.9 && r.height >= H * 0.9 && e === f) continue; hit = true; break; }
+        for (const e of els) { const f = fixedish(e); if (!f) continue; const r = f.getBoundingClientRect(); if (r.width >= W * 0.9 && r.height >= H * 0.9 && e === f) continue; if (r.height > H * 0.5 && getComputedStyle(f).position === "sticky") continue; /* a sticky side column (Plans' calendar) is page, not a bar: docking over the logo hid the wordmark */ hit = true; break; }
         if (hit) { top = Math.min(top, y); gap = 0; } else if (++gap > 3 && top < H) break; } }
     // also the known bottom-right pieces by name (tab bars, Edit page / Shop buttons, sticky reply bars), even with gaps between them
     try { for (const e of document.querySelectorAll('.es-tabs,nav.tabs,.store-fab,.shop-fab,.own-fab,#gBar,#gStick,[class*="-fab"]')) { if (host.contains(e)) continue; const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
@@ -229,10 +229,11 @@
   // look again when scrolling stops (the button stays as it is while the page moves)
   { let st = 0; addEventListener("scroll", () => { clearTimeout(st); st = setTimeout(() => place(), 160); }, { passive: true }); }
   function helpRow() {
+    // inside main, at its end and across its whole width (beside main, a flex page squeezed main into a column)
     const main = document.querySelector("main"), row = document.createElement("p"); row.className = "eh-row"; row.setAttribute("data-help-auto", "");
-    row.style.cssText = "margin:24px 16px 16px;text-align:center";
-    row.innerHTML = `<button type="button" data-help-open style="min-height:44px;padding:0 16px;border:1.5px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-btn,6px);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px var(--pl-font-text,'IBM Plex Sans'),system-ui,sans-serif;cursor:pointer">Need a hand? Ask Potto</button>`;
-    if (main && main.parentElement) main.after(row); else document.body.appendChild(row);
+    row.style.cssText = "margin:24px 0 16px;text-align:center;grid-column:1/-1;flex:1 1 100%;width:100%;box-sizing:border-box";
+    row.innerHTML = `<button type="button" data-help-open style="min-height:44px;padding:0 16px;white-space:nowrap;border:1.5px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-btn,6px);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px var(--pl-font-text,'IBM Plex Sans'),system-ui,sans-serif;cursor:pointer">Need a hand? Ask Potto</button>`;
+    (main || document.body).appendChild(row);
   }
   function place() {
     try { const b = btn(); if (!b || isOpen()) return; const away = modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;

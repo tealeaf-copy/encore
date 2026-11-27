@@ -68,7 +68,6 @@
     if (pp && pc > 1) { const of = n > 1 && pc === n ? `all ${n}` : ""; return p ? `${p} a class, or ${amt(pp)} for ${of || pc}` : `${amt(pp)} for ${of || pc + " classes"}`; } if (p && e.priceUnit === "class") return `${p} a class`; if (n > 1 && p) return +e.dropIn > 0 ? `${p} for all ${n}, or ${amt(e.dropIn)} a class` : `${p} for all ${n}`; return ""; };
   // the calendar repeat, COUNT for a course
   const srRRule = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const BY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][x.getDay()]; const f = r === "monthly" ? `FREQ=MONTHLY;BYDAY=${srNth(x)}${BY}` : r === "biweekly" ? "FREQ=WEEKLY;INTERVAL=2" : r === "weekly" ? "FREQ=WEEKLY" + (srDays(e).length > 1 ? ";BYDAY=" + srDays(e).map((i) => ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][i]).join(",") : "") : ""; return f ? "RRULE:" + f + (+e.sessions > 1 ? `;COUNT=${+e.sessions}` : "") : ""; };
-  // ---------- end series helpers ----------
   const load = () => Promise.all([fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)), fetch("/api/public/event-host/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/public/attendees/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     mine?.rid && mine.code ? (() => { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`, j = (r) => (r.ok ? r.json() : null);
       return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null])
@@ -177,6 +176,7 @@
       <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">Who's coming, polls and more.</p>
       ${yes ? `<p class="yourturn muted" id="yourTurn"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(eid)}">Your turn? Hosting friends is free.</a></p>` : ""}`;
     if (!S.back) document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
+    /\brun/.test(e.activity) && more("/runfollow.js", () => RunFollow(e, h, data, rid, code, eid));
     // a guest who steps out frees their spot and hears it went through
     const out = $("#out"); if (out) out.onclick = async () => { out.disabled = true;
       try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": S.ws }, body: JSON.stringify({ response: "no", changedAt: Date.now() }) }); if (!r.ok) throw 0;

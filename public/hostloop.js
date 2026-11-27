@@ -68,6 +68,7 @@
       : `<p class="hl-line">${esc("That's today's move done. The rest can wait.")} ${fx.check()}</p>`;
     return `<section class="hl-card" id="hlCard" aria-labelledby="hlH"><p class="hl-k" id="hlH">Your hosting${s.cadence === "week" ? " · weekly" : s.cadence === "off" ? "" : " · monthly"}</p>
       <div class="hl-row">${big}<div><p class="hl-line">${esc(s.line)}</p>${s.status !== "none" && s.status !== "off" ? passes(s) : ""}</div></div>${hu}${restart}
+      <details style="margin-top:8px"><summary style="cursor:pointer;font-size:14px;color:var(--pl-soft)">What's this?</summary><p class="hl-line" style="margin-top:6px">Your streak counts the ${s.cadence === "week" ? "weeks" : "months"} in a row you hosted something, even a coffee. A rest pass covers a quiet ${s.cadence === "week" ? "week" : "month"} so the streak keeps going. Hosting points add up events, guests and small moves toward your monthly goal.</p></details>
       <hr class="hl-rule"><p class="hl-k">Today's small move</p>${move}
       <hr class="hl-rule"><div class="hl-foot" style="justify-content:space-between"><div class="hl-ring">${ringSvg(w.pct)}<span><b style="color:var(--pl-ink)" data-hl-warm>${w.points}</b> of ${w.goal} hosting points in ${esc(w.month)}</span></div>
       <div class="hl-links"><a href="/path">Host path</a><a href="/circles">${S.circle.on ? "Your circle" : "Circles"}</a></div></div></section>`;
@@ -104,7 +105,7 @@
     const P = S.prefs, sw = (id, label, on, sub = "") => `<div class="row"><span>${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ""}</span><input type="checkbox" class="sw" data-hl="${id}" aria-label="${esc(label)}"${on ? " checked" : ""}></div>`;
     const sel = (id, label, opts, cur) => `<div class="row"><span>${esc(label)}</span><select data-hl="${id}" style="min-height:44px;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:15px var(--pl-font-text);padding:0 8px">${opts.map(([v, t]) => `<option value="${v}"${String(v) === String(cur) ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></div>`;
     const sec = document.createElement("section"); sec.setAttribute("aria-labelledby", "hHost"); sec.id = "hosting";
-    sec.innerHTML = `<h2 id="hHost">Hosting</h2><p>Your streak, your goal, and when Potto taps you. At most 2 notes a week, never between ${P.quiet[0] > 12 ? P.quiet[0] - 12 + "pm" : P.quiet[0] + "am"} and ${P.quiet[1]}am.</p>
+    sec.innerHTML = `<h2 id="hHost">Hosting</h2><p>Your streak counts the months (or weeks) in a row you host something. Points add up events, guests and small moves toward a monthly goal. Potto sends at most 2 notes a week, never between ${P.quiet[0] > 12 ? P.quiet[0] - 12 + "pm" : P.quiet[0] + "am"} and ${P.quiet[1]}am.</p>
       ${sel("cadence", "Count my streak", [["month", "Monthly"], ["week", "Weekly"], ["off", "No streak, count events"]], P.cadence)}
       ${sw("showStreak", "Show my streak on my page", P.showStreak, "Off: only you see it")}
       ${sel("goal", "Monthly points goal", [[15, "Light: 15"], [30, "Steady: 30"], [60, "Busy: 60"]], P.goal)}

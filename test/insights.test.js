@@ -69,7 +69,7 @@ test("opt in: guests are left out by default, and turning it on or off changes t
   assert.deepEqual(prefsOf(srv.store, "opal@guests.example").work, ["design", "leader"]);
   assert.equal((await ok(await post("/api/me/insights", { include: false }, me))).include, false);
   // the settings page says it plainly
-  const html = await (await get("/settings")).text(); assert.match(html, /Don't include my activity in brand insights/); assert.match(html, /How insights work/);
+  const html = await (await get("/settings")).text(); assert.match(html, /Keep my activity out of brand insights/); assert.match(html, /How insights work/);
   for (const p of S.people.filter((x) => x.city === "San Francisco")) srv.store.set(prefKey(p.email), { kind: "plinsight", include: p.include, work: p.work, at: Date.now() });
 });
 

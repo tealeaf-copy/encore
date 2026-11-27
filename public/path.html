@@ -44,8 +44,8 @@ ol.path::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;border
   <span class="eyebrow">Host path</span>
   <h1>From dinner for four to a weekend away.</h1>
   <p class="lede" id="lede">Every step has a short guide and a template. Go in any order. Small counts.</p>
-  <section class="box" id="warmBox" hidden aria-labelledby="hW"><h2 id="hW">Hosting points this month</h2><div class="warm"><div id="ring"></div><div><div class="n"><span id="wPts">0</span> <small id="wGoal"></small></div><ul class="parts" id="parts"></ul></div></div></section>
-  <section class="box" id="streakBox" hidden aria-labelledby="hS"><h2 id="hS">Your streak</h2><div class="streak"><div class="n" id="sN"></div><div><p style="margin:0" id="sLine"></p><div id="sPass" style="margin-top:6px;font:500 12px var(--pl-font-mono);color:var(--pl-soft)"></div></div></div></section>
+  <section class="box" id="warmBox" hidden aria-labelledby="hW"><h2 id="hW">Hosting points this month</h2><p class="empty" style="margin:0 0 12px">Points for showing up: events, guests welcomed, would-go-again and small moves. Followers don't count.</p><div class="warm"><div id="ring"></div><div><div class="n"><span id="wPts">0</span> <small id="wGoal"></small></div><ul class="parts" id="parts"></ul></div></div></section>
+  <section class="box" id="streakBox" hidden aria-labelledby="hS"><h2 id="hS">Your streak</h2><p class="empty" style="margin:0 0 12px">Months in a row you hosted something, even a coffee. A rest pass covers a quiet month.</p><div class="streak"><div class="n" id="sN"></div><div><p style="margin:0" id="sLine"></p><div id="sPass" style="margin-top:6px;font:500 12px var(--pl-font-mono);color:var(--pl-soft)"></div></div></div></section>
   <section class="box" aria-labelledby="hP"><h2 id="hP">The path</h2><ol class="path" id="path"></ol></section>
   <section class="box" id="badgeBox" hidden aria-labelledby="hB"><h2 id="hB">Badges</h2><div class="badges" id="badges"></div></section>
 </main>
@@ -55,9 +55,9 @@ ol.path::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;border
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"), fx = window.HostLoop?.fx || {};
   const GUIDE = { dinner4: "first-supper", table8: "first-supper", ticketed: "first-supper", regular: "game-night", series: "grow-regulars", soldout: "grow-regulars" }; // GUIDE_OF in server/hostloop.js
   // the same nodes as PATH in server/hostloop.js, for people who aren't signed in
-  const BASE = [["dinner4", "Dinner for 4", ["Pick a night two weeks out.", "Ask three people you'd like at the same table.", "Cook one thing well. Buy the rest."]], ["table8", "A table of 8", ["Invite ten; eight will say yes.", "Seat people next to someone new.", "Send a reminder the day before."]],
+  const BASE = [["dinner4", "Dinner for 4", ["Pick a night two weeks out.", "Ask three people you'd like at the same table.", "Cook one thing well. Buy the rest."]], ["table8", "A table of 8", ["Invite ten. About eight will be in.", "Seat people next to someone new.", "Send a reminder the day before."]],
     ["regular", "A regular night", ["Same day, same time, every month.", "Say the next date out loud at the end.", "Let a regular bring a friend."]], ["ticketed", "Your first ticketed event", ["Price to cover costs, then a little.", "Say what the money pays for.", "Keep a few spots for people you know."]],
-    ["series", "A series", ["Give it a name people can say.", "Number the episodes.", "Your regulars hear first."]], ["soldout", "A sold-out night", ["Fewer seats than you think.", "Turn on the waitlist.", "Tell the waitlist first next time."]],
+    ["series", "A series", ["Give it a name people can say.", "Number the episodes.", "Your regulars hear first."]], ["soldout", "A sold-out night", ["Fewer spots than you think.", "Turn on the waitlist.", "Tell the waitlist first next time."]],
     ["weekend", "A weekend away", ["Book the place before the people.", "Share a rough plan, not a schedule.", "Collect money early."]], ["summit", "A summit", ["Start with five speakers you know.", "A host for every room.", "Leave the hallway time long."]]]
     .map(([id, title, steps], i) => ({ id, title, steps, state: i ? "later" : "next", template: "/start?t=" + id, guideHref: GUIDE[id] ? "/guides/" + GUIDE[id] : "" }));
   let S = null; try { S = await HostLoop.api.get("/api/me/hostloop?peek=1"); if (S.off) S = null; } catch {}

@@ -12,7 +12,7 @@
 .plf-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--pl-line);border-radius:999px;padding:4px 14px 4px 4px;font:600 15px "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink)}
 .plf-faces{display:inline-flex}.plf-faces span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1.5px solid #fff;background:var(--c,var(--pl-sand));font-size:15px;margin-left:-8px;color:var(--pl-ink);font-weight:700}.plf-faces span:first-child{margin-left:0}
 .plf-pill b{font-weight:700}`;
-  const css = () => { if (document.getElementById("plfCss")) return; const s = document.createElement("style"); s.id = "plfCss"; s.textContent = CSS; document.head.appendChild(s); };
+  const css = () => { if (document.getElementById("plfgCss")) return; const s = document.createElement("style"); s.id = "plfgCss"; s.textContent = CSS; document.head.appendChild(s); }; // its own id: public/follow.js uses plfCss, and with one id the second script to load drew no styles
   const TINTS = ["#F3E7A8", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#A9D5F8", "#FCCBA6"], tint = (p, i) => TINTS[([...String(p.name || "")].reduce((a, c) => a + c.charCodeAt(0), 0) + i) % TINTS.length];
   const face = (p) => (p.emoji && !["🙂", "🎉"].includes(p.emoji) ? p.emoji : (p.name || "?")[0].toUpperCase());
   function html(info) { css(); if (!info?.count) return ""; const P = info.people || [];

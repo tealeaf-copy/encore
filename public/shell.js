@@ -4,6 +4,15 @@
 // and, on pages without their own header, a top bar with Discover and Host something. Phones keep the page's own header.
 // A friend's invite (/g) never shows the brands link: a guest opening a dinner invite isn't shopping for hosts.
 // "Need a hand?" (public/help.js): Potto's help panel for signed-in hosts, on the app and every public page with this shell.
+// A fresh page starts at the top. Some browsers carry the last page's scroll offset across a page-to-page fade
+// (cross-document view transition), so a profile opened from far down the feed landed mid-page. Back/forward, reloads
+// and #links keep their own position, and a reader who has already touched the page is never moved.
+(() => { try { if (window.__plTop) return; window.__plTop = 1; const nav = performance.getEntriesByType("navigation")[0];
+  if (!nav || nav.type !== "navigate" || location.hash) return; let touched = false;
+  ["touchstart", "wheel", "keydown", "pointerdown"].forEach((t) => addEventListener(t, () => (touched = true), { once: true, passive: true, capture: true }));
+  const top = () => { if (!touched && (window.scrollY || document.documentElement.scrollTop) > 0) window.scrollTo(0, 0); };
+  top(); addEventListener("pagereveal", top, { once: true }); document.addEventListener("DOMContentLoaded", top, { once: true });
+  addEventListener("pageshow", (e) => { if (!e.persisted) { top(); setTimeout(top, 60); } }, { once: true }); } catch {} })();
 (function () { try { if (window.__encoreHelpLoad || !(/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/plans") || location.pathname === "/g" || /^\/chats(\/|$)/.test(location.pathname)) return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // Chats in the nav: the unread badge and the Me sheet (public/chatnav.js)
 (function () { try { if (window.__plChatNavLoad) return; window.__plChatNavLoad = 1; const s = document.createElement("script"); s.src = "/chatnav.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();

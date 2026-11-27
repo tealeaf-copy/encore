@@ -78,3 +78,9 @@ test("host pages keep their full width when a series loads the invite stylesheet
   assert.match(css, /html body #m#m:not\(\[data-calm="host"\]\)\{max-width:600px/);
   assert.match(read("public/host.html"), /<main id="m" data-calm="host"/);
 });
+
+test("a fresh page starts at the top: the guard ships with the loader, the shell and the brand pages", () => {
+  for (const f of ["public/calm.js", "public/shell.js", "public/brandbook.js"]) { const s = read(f);
+    assert.match(s, /nav\.type !== "navigate" \|\| location\.hash/, f + " leaves back, reload and #links alone");
+    assert.match(s, /if \(!touched && [^;]*scrollTo\(0, 0\)/, f + " never moves a reader who has touched the page"); }
+});

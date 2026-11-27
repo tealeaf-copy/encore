@@ -17,6 +17,15 @@
 //
 // It also turns on soft page-to-page fades with the View Transitions API where the browser has it (public/craft.css
 // holds the @view-transition rule; this adds the same-document fallback for pages that swap views in place).
+// A fresh page starts at the top. Some browsers carry the last page's scroll offset across a page-to-page fade
+// (cross-document view transition), so a profile opened from far down the feed landed mid-page. Back/forward, reloads
+// and #links keep their own position, and a reader who has already touched the page is never moved.
+(() => { try { if (window.__plTop) return; window.__plTop = 1; const nav = performance.getEntriesByType("navigation")[0];
+  if (!nav || nav.type !== "navigate" || location.hash) return; let touched = false;
+  ["touchstart", "wheel", "keydown", "pointerdown"].forEach((t) => addEventListener(t, () => (touched = true), { once: true, passive: true, capture: true }));
+  const top = () => { if (!touched && (window.scrollY || document.documentElement.scrollTop) > 0) window.scrollTo(0, 0); };
+  top(); addEventListener("pagereveal", top, { once: true }); document.addEventListener("DOMContentLoaded", top, { once: true });
+  addEventListener("pageshow", (e) => { if (!e.persisted) { top(); setTimeout(top, 60); } }, { once: true }); } catch {} })();
 (function () {
   if (typeof window === "undefined" || window.PLCalm) return;
   const DELAY = 300, FADE = 320, SLOW = 12000;

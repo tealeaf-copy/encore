@@ -56,6 +56,7 @@ import { mountLaunch } from "./launch.js";
 import { mountInbox, inboxPrefsOf } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
 import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
 import { mountPottoText } from "./pottotext.js"; import { mountFriendInvites } from "./friendinvites.js"; // Potto by text, friend invites by text
+import { mountPayMethods } from "./paymethods.js"; // Get paid: Venmo, PayPal, Cash App on a person's profile, shown to guests who are in
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
@@ -787,6 +788,7 @@ export function createApp({ store, dataDir }) {
   mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X }); mountInvites(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // the address book and the invite plan
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
+  mountPayMethods(app, { store, small, currentUser, X }); // Get paid (server/paymethods.js)
   mountHostLike(app, { store, small, currentUser }); // "Host one like this" (server/hostlike.js)
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountRecognition(app, { C, X });

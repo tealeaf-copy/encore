@@ -81,7 +81,7 @@
       // ---- end repeats ----
       if (!e || !ws || ((e.sample || e.example) && !e.drop) || !e.casual || e.discreet || e.stage === "interest" || (!e.date && !e.drop) || (e.date && e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
-      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
+      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (paidOf(e) || e.preorder) more("/paymethods.js"); /* Get paid: the host's buttons once in */ if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
       // a returning pre-order guest sees their order
       else if (e.preorder && mine?.order && st && st.response === "going") more("/invite-order.js", () => window.InviteOrder?.ticket?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }, { ...mine, paid: !!st.paid, paidClaim: !!st.paidClaim || !!mine.paidClaim }, document.getElementById("tk"))); })
     .catch(go);

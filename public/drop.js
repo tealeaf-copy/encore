@@ -121,7 +121,7 @@
       // a shop set up before drops (never converted: no priced item yet) prefills what the host already typed
       D = { title: L?.title || "", note: L?.note || "", items: (L?.items || []).length ? L.items.map((x) => ({ ...x, price: x.price ? String(x.price) : "" })) : [{ name: "", price: "", stock: "", photo: "" }, { name: "", price: "", stock: "", photo: "" }], slots: L?.slots || [], area: L?.area || "", address: L?.address || "", always: true, date: "", pay: L?.payUrl ? "link" : "pickup", payUrl: L?.payUrl || "", open: true, ...(opts.prefill || {}) }; }
     D.items = (D.items || []).map((x) => ({ ...x, price: x.price ? String(x.price) : "", stock: +x.stock ? String(x.stock) : "" }));
-    let step = 1, S;
+    let step = 1, S, pmUrl = ""; // pmUrl: the host's first Get paid method (public/paymethods.js), used when the link is left empty
     const pull = () => { if (!S) return; const b = S.body;
       if (step === 1) { D.title = $("#dpTitle", b)?.value.trim() ?? D.title; D.items = $$(".dp-item", b).map((el, i) => ({ ...D.items[i], name: $("[data-n]", el).value.trim(), price: $("[data-p]", el).value.trim(), stock: $("[data-s]", el).value.trim() })); }
       if (step === 2) { D.area = $("#dpArea", b).value.trim(); D.address = $("#dpAddr", b).value.trim(); D.always = $("input[name=dpWhen]:checked", b)?.value !== "day"; D.date = $("#dpDate", b)?.value || ""; D.orderBy = $("#dpBy", b)?.value.trim() || ""; }
@@ -133,6 +133,7 @@
         for (const [x, el] of filled) { if (!x.name) return err("Give this item a name.", $("[data-n]", el)); if (!priceIn(x.price)) return err(x.price ? `Check the price for ${x.name}. Use a number like 12 or 12.50.` : `Add a price for ${x.name}.`, $("[data-p]", el)); } }
       if (step === 2 && !D.slots.length && $("#dpFrom", S.body)) { const a = +$("#dpFrom", S.body).value, z = +$("#dpTo", S.body).value; if (z > a) D.slots.push(windowLabel(D.always ? $("#dpDay", S.body)?.value : "", a, z)); }
       if (step === 2) { if (!D.slots.length) return err("Add at least one pickup time. Pick a day and times, then tap Add.", $("#dpFrom", S.body)); if (!D.area) return err("Add the neighborhood people see.", $("#dpArea", S.body)); if (!D.always && !D.date) return err("Pick the pickup day.", $("#dpDate", S.body)); }
+      if (step === 3 && D.pay === "link" && !D.payUrl && pmUrl) D.payUrl = pmUrl; // Get paid
       if (step === 3) { if (D.pay === "link" && !/^https:\/\/\S{3,}/i.test(D.payUrl)) return err("Pay links start with https://. Or pick Pay at pickup.", $("#dpPayUrl", S.body)); }
       return true; };
     const preview = () => `<div class="dp-pv" aria-live="polite"><small>What guests see</small>${dropCard({ ...D, items: D.items.filter((x) => x.name || x.price) })}</div>`;
@@ -163,7 +164,7 @@
         <label class="dp-f"><span>Orders close <small>(optional)</small></span><input id="dpBy" value="${esc(D.orderBy || "")}" maxlength="40" placeholder="Thu 8pm"></label>${preview()}`; }
       if (step === 3) body = `<div class="dp-potto">${potto("happy", 48)}<p>Last one. How do people pay you?</p></div>
         <div class="dp-opts" role="radiogroup" aria-label="How people pay"><label class="dp-opt"><input type="radio" name="dpPay" value="pickup" ${D.pay !== "link" ? "checked" : ""}><span class="ic">${I.bag}</span><span><b>Pay at pickup</b><small>Cash or a tap when they collect.</small></span></label><label class="dp-opt"><input type="radio" name="dpPay" value="link" ${D.pay === "link" ? "checked" : ""}><span class="ic">${I.share}</span><span><b>A pay link</b><small>Venmo, PayPal.me, Cash App or Stripe. The amount fills in for them.</small></span></label></div>
-        <label class="dp-f" id="dpPayL" ${D.pay === "link" ? "" : "hidden"}><span>Your pay link</span><input id="dpPayUrl" type="url" inputmode="url" value="${esc(D.payUrl)}" placeholder="https://venmo.com/u/yourname" autocomplete="off"></label>
+        <div id="dpPayM" ${D.pay === "link" ? "" : "hidden"}></div><label class="dp-f" id="dpPayL" ${D.pay === "link" ? "" : "hidden"}><span>Your pay link</span><input id="dpPayUrl" type="url" inputmode="url" value="${esc(D.payUrl)}" placeholder="https://venmo.com/u/yourname" autocomplete="off"></label>
         <label class="dp-f"><span>A line about it <small>(optional)</small></span><textarea id="dpNote" rows="2" maxlength="240" placeholder="Baked Saturday morning. Contains egg and coconut.">${esc(D.note)}</textarea></label>${preview()}`;
       S = sheet({ title: edit ? "Edit your drop" : ({ 1: "Set up a drop", 2: "When and where do they pick up?", 3: "How do people pay?" })[step], sub: step === 1 && !edit ? "Order ahead, pick up at a set time." : "", step, of: 3, stepName: STEPS[step], body, foot, label: "Set up a drop" });
       const b = S.body; b.addEventListener("input", (e) => { e.target.removeAttribute?.("aria-invalid"); const er = $("#dpErr", S.bg); if (er) er.textContent = ""; clearTimeout(draw.t); draw.t = setTimeout(refreshPv, 150); }); b.addEventListener("change", refreshPv);
@@ -171,8 +172,12 @@
       $$("[data-rm]", b).forEach((x) => (x.onclick = () => { pull(); D.items.splice(+x.dataset.rm, 1); draw(); }));
       $$("[data-ph]", b).forEach((inp) => (inp.onchange = async () => { const f = inp.files[0]; if (!f) return; pull(); if (f.size > 8e6) { err("That photo is over 8 MB. Pick a smaller one."); return; } toast("Adding the photo…");
         try { const r = await fetch("/api/assets", { method: "POST", headers: { "Content-Type": f.type || "image/jpeg" }, body: f }); const j = await r.json(); if (!r.ok) throw new Error(j.message); D.items[+inp.dataset.ph].photo = j.url; draw(); toast("Photo added."); } catch (e) { err(e.message || "That photo didn't upload. Try again."); } }));
+      // ---- Get paid (public/paymethods.js): "Guests pay you through" the host's profile methods, Change opens a small sheet ----
+      if (step === 3 && $("#dpPayM", b)) { const pm = () => { const P = window.PayMethods; if (!P) return; P.dropRow($("#dpPayM", b)); const up = () => P.primaryUrl().then((u) => (pmUrl = u)); up(); P.onChange(up); };
+        if (window.PayMethods) pm(); else { const t = document.createElement("script"); t.src = "/paymethods.js"; t.onload = pm; document.head.appendChild(t); } }
+      // ---- end Get paid ----
       $$("input[name=dpWhen]", b).forEach((r) => (r.onchange = () => { pull(); D.always = r.value !== "day"; draw(); }));
-      $$("input[name=dpPay]", b).forEach((r) => (r.onchange = () => { $("#dpPayL", b).hidden = r.value !== "link" || !r.checked; if (r.value === "link" && r.checked) $("#dpPayUrl", b).focus(); }));
+      $$("input[name=dpPay]", b).forEach((r) => (r.onchange = () => { $("#dpPayL", b).hidden = r.value !== "link" || !r.checked; if ($("#dpPayM", b)) $("#dpPayM", b).hidden = $("#dpPayL", b).hidden; if (r.value === "link" && r.checked) $("#dpPayUrl", b).focus(); }));
       $("#dpAddSlot", b) && ($("#dpAddSlot", b).onclick = () => { pull(); const a = +$("#dpFrom", b).value, z = +$("#dpTo", b).value; if (z <= a) { err("The end time comes after the start.", $("#dpTo", b)); return; }
         const l = windowLabel(D.always ? $("#dpDay", b)?.value : "", a, z); if (!D.slots.includes(l)) D.slots.push(l); draw(); });
       $$("[data-rs]", b).forEach((x) => (x.onclick = () => { pull(); D.slots.splice(+x.dataset.rs, 1); draw(); }));

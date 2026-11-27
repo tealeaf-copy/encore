@@ -49,6 +49,18 @@
     document.querySelector("#plnAsked [data-pln-ok]").onclick = () => { try { localStorage.setItem("pl.askedSeen", String(ASK.total)); } catch {} document.getElementById("plnAsked")?.remove(); }; }
   fetch("/api/host/interest", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.items?.length) return; ASK = j; paintAsked();
     new MutationObserver(() => { clearTimeout(window.__plnA); window.__plnA = setTimeout(paintAsked, 150); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); }).catch(() => {});
+  // ---- Get paid (server/paymethods.js, public/paymethods.js): an event or drop asks guests to pay and there's no way to pay yet ----
+  let PAY = null; const TAG = `<svg ${GL}><path d="M3.2 10.4V3.6a.6.6 0 0 1 .6-.6h6.8l6.2 6.2a1 1 0 0 1 0 1.4l-5.8 5.8a1 1 0 0 1-1.4 0zM7 7.4h.01"/></svg>`;
+  const paySeen = () => { try { return localStorage.getItem("pl.payNudge") === PAY?.need?.eventId; } catch { return false; } };
+  function paintPay() { const v = document.getElementById("view-programs"); if (!v || v.hidden || !PAY?.need || PAY.has || paySeen() || document.getElementById("plnPay")) return; css();
+    const at = v.querySelector(":scope > #qsPanel"), h = `<section class="pln" id="plnPay" aria-label="Add how you get paid"><span class="pln-e" aria-hidden="true">${TAG}</span><b>Add how you get paid</b><p>${esc(PAY.need.title)} asks guests to pay. Add Venmo, PayPal or Cash App once. Guests who are in get a button with the amount filled in.</p>
+      <div class="pln-acts"><button type="button" class="pln-go" data-pln-pay>Add how you get paid</button><button type="button" class="pln-no" data-pln-payno>Not now</button></div></section>`;
+    at ? at.insertAdjacentHTML("afterend", h) : v.insertAdjacentHTML("afterbegin", h); const el = document.getElementById("plnPay");
+    el.querySelector("[data-pln-pay]").onclick = () => { if (window.PayMethods?.sheet) window.PayMethods.sheet({ onSave: (j) => { if (j?.has) { PAY.has = true; document.getElementById("plnPay")?.remove(); } } }); else location.href = "/settings#getpaid"; };
+    el.querySelector("[data-pln-payno]").onclick = () => { try { localStorage.setItem("pl.payNudge", PAY.need.eventId); } catch {} el.remove(); }; }
+  fetch("/api/me/pay", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.need || j.has) return; PAY = j; paintPay();
+    new MutationObserver(() => { clearTimeout(window.__plnP); window.__plnP = setTimeout(paintPay, 150); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); }).catch(() => {});
+  // ---- end Get paid ----
   async function start() { N = await load(); if (!N?.discover) return; paint();
     const mo = new MutationObserver(() => { clearTimeout(window.__plnT); window.__plnT = setTimeout(paint, 120); }); mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); }
   window.PLNudges = { load, card, doneCard, paint };

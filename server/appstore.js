@@ -64,11 +64,10 @@ const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><met
 // link a finger lands on (server/perf.js)
 // the page-to-page fade's opt-in, in the head of every full page: public/craft.css has the same rule, but it is added by
 // a script and lands after the first paint, so the browser found no opt-in on the new page and aborted the fade (and
-// reported an unhandled rejection on every move between pages). The light invite has it too: a fade from
-// the feed or Discover into /e/ found no opt-in there and aborted the same way.
+// reported an unhandled rejection on every move between pages). The light invite has it too, in public/invite.css (a
+// stylesheet in its head, so it is there before the first paint and the page stays under 40,000 characters): a fade
+// from the feed or Discover into /e/ found no opt-in there and aborted the same way.
 const VT_OPT_IN = `<style>@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.15s}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>`;
-// the light invite's own opt-in is the short form (the page stays under 40,000 characters): the fade, unless motion is reduced
-const VT_OPT_IN_LIGHT = `<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>`;
 const FULL = `<script src="/netguard.js"></script>` + VT_OPT_IN + LIGHT + WRAP + SPECULATION + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
 // Report and block (public/safety.js) where people's posts, photos, kudos and host pages show
 const SAFETY_PAGES = /^\/($|feed|@|h\/|x\/|discover|photos|kudos|leaderboard|settings|community|g$)/;
@@ -81,7 +80,7 @@ export function pwaHead(html, reqPath = "/") {
   const s = String(html);
   if (s.includes('rel="manifest"') || !/<head[^>]*>/i.test(s)) return s;
   const light = /^\/(e|i)\//.test(reqPath);
-  const tags = (light ? VT_OPT_IN_LIGHT + LIGHT : FULL) + (!light && SAFETY_PAGES.test(reqPath) ? `<script src="/safety.js" defer></script>` : "");
+  const tags = (light ? LIGHT : FULL) + (!light && SAFETY_PAGES.test(reqPath) ? `<script src="/safety.js" defer></script>` : "");
   // after <meta charset> when the page has one near the top (it has to stay in the first 1024 bytes), else after <head>
   const cs = /<meta charset=[^>]*>/i.exec(s.slice(0, 1024));
   return cs ? s.slice(0, cs.index + cs[0].length) + tags + s.slice(cs.index + cs[0].length) : s.replace(/<head[^>]*>/i, (m) => m + tags);

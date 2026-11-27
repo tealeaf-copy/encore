@@ -79,22 +79,31 @@
     const fill = () => { acts.forEach((el) => { const id = el.closest("[data-ms]").dataset.ms, c = (M?.cards || []).find((x) => x.id === id); if (!c || el.childElementCount) return;
       el.innerHTML = window.PLShareCards.actions({ png: c.png, name: `pottery-lab-${id}.png`, title: c.title }); window.PLShareCards.wire(el);
       el.addEventListener("click", (e) => { const t = e.target.closest("[data-plsc-save],[data-plsc-share]"); if (t) post(`/api/me/milestones/${encodeURIComponent(id)}/shared?via=${t.matches("[data-plsc-save]") ? "save" : "share"}`); }); }); };
-    if (window.PLShareCards) { window.PLShareCards.css(); fill(); }
-    else if (!document.querySelector('script[src^="/sharecards.js"]')) { const s = document.createElement("script"); s.src = "/sharecards.js"; s.onload = () => { window.PLShareCards.css(); fill(); }; document.head.appendChild(s); } }
+    // the share buttons come from public/sharecards.js, loaded once; a box drawn again while it loads still gets them
+    shareLib().then((ok) => { if (ok && box.isConnected) { window.PLShareCards.css(); fill(); } }); }
+  let libP = null;
+  const shareLib = () => (window.PLShareCards ? Promise.resolve(true) : (libP = libP || new Promise((res) => { const s = document.createElement("script"); s.src = "/sharecards.js"; s.onload = () => res(!!window.PLShareCards); s.onerror = () => { libP = null; res(false); }; document.head.appendChild(s); })));
   function place() { const view = document.getElementById("view-programs"); if (!view || view.hidden) return; css(); view.querySelector("#plmsBox")?.remove(); const h = html(); if (!h) return;
     const hl = view.querySelector("#hlCard"), anchor = hl || view.querySelector("#qsPanel")?.closest("section") || null;
     if (anchor && anchor.parentElement) anchor.insertAdjacentHTML("afterend", h); else view.insertAdjacentHTML("beforeend", h);
     wire(view.querySelector("#plmsBox")); }
   let at = 0;
+  let busy = null; // one request at a time; callers that arrive meanwhile wait for it
   async function home(force) { const view = document.getElementById("view-programs"); if (!view || view.hidden) return;
-    if (force || !M || Date.now() - at > 60e3) { try { const r = await fetch("/api/me/milestones", { credentials: "same-origin" }); if (!r.ok) return; M = await r.json(); at = Date.now(); } catch { return; } }
+    if (busy || force || !M || Date.now() - at > 60e3) { busy = busy || fetch("/api/me/milestones", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) { M = j; at = Date.now(); } }).catch(() => {}).finally(() => { busy = null; }); await busy; if (!M) return; }
     place(); }
+  // Home can draw, or redraw its contents, before this file loads or without a hashchange: whenever it is showing
+  // without the cards, they go back in (placing is a no-op once they're in, and the data is fetched once a minute at most)
+  let watchT = 0;
+  function watchHome() { const v = document.getElementById("view-programs"); if (!v || v.__plms) return; v.__plms = 1;
+    new MutationObserver(() => { if (v.hidden || watchT || v.querySelector("#plmsBox")) return; watchT = setTimeout(() => { watchT = 0; if (!v.hidden && !v.querySelector("#plmsBox")) home(false); }, 150); }).observe(v, { attributes: true, attributeFilter: ["hidden"], childList: true });
+    if (!v.hidden) home(false); }
   /** The host loop's once-only celebration, as a card here (public/hostloop.js calls this instead of its sheet). */
   function loopCard(c) { if (!c) return; if (["tenth", "soldout"].includes(c.id)) return; // the milestone cards above say these
     loop = { id: "loop-" + c.id, stamp: c.id === "firstyes" ? "Yes" : c.id === "regular" ? "3x" : "1st", title: c.title, line: c.line, on: new Date().toISOString().slice(0, 10) }; place(); }
   function mount() {
     if (typeof window.renderPrograms === "function" && !window.renderPrograms.__plms) { const orig = window.renderPrograms, w = function () { const r = orig.apply(this, arguments); setTimeout(() => home(false), 0); return r; }; w.__plms = 1; window.renderPrograms = w; }
-    window.addEventListener("hashchange", () => setTimeout(() => home(false), 60)); setTimeout(() => home(true), 450);
+    window.addEventListener("hashchange", () => setTimeout(() => home(false), 60)); setTimeout(() => home(true), 450); watchHome();
     wrapSheet(); new MutationObserver(() => { wrapSheet(); if (document.querySelector("#covField .cvp-grid:not(:has([data-cvtitle]))")) paintPicker(); }).observe(document.documentElement, { childList: true, subtree: true }); }
   if (location.pathname === "/" || location.pathname === "/index.html") document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", mount) : mount();
   window.PLTitleCover = { tiles, art, fetchFor, used };

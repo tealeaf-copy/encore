@@ -165,6 +165,8 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
     const T = P.threads(u.email), thread = b.threadId ? T.find((t) => t.id === String(b.threadId)) : null;
     if (isSupport(message)) { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }]); return res.json({ route: "help", threadId: t.id }); }
     const eventId = clean(b.eventId, 80), ctx = ctxOf(req, u, eventId);
+    // trips hook: a trip question gets the trip's own answer and links (server/trips.js tripAnswer), never a made-up booking
+    const tr = b.photo ? null : app.locals.trips?.answerFor?.(u, message); if (tr) { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }, { role: "potto", text: tr.answer, links: tr.links, actions: [] }]); return res.json({ threadId: t.id, answer: tr.answer, links: tr.links, actions: [], mode: "rules" }); }
     const photo = b.photo && /^image\/(jpeg|png|webp|gif)$/.test(String(b.photo.type || "")) && typeof b.photo.data === "string" && b.photo.data.length < 2_200_000 && /^[A-Za-z0-9+/=]+$/.test(b.photo.data.slice(0, 200)) ? { type: b.photo.type, data: b.photo.data } : null;
     const mode0 = aiMode(), cap = tokensPerDay(), used = P.usage(u.email).tokens, capped = mode0 !== "missing_key" && used >= cap;
     let mode = capped || mode0 === "missing_key" ? "offline" : mode0, note = capped ? "You've used today's AI allowance, so this is the plain version." : "";

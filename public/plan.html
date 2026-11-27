@@ -129,7 +129,7 @@
       + (inc.length ? `<div><h3>Included</h3><ul class="fn-inc">${inc.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "") + `</div>`; }
   function draw() {
     const locked = P.locked ? `<div class="pv-lock"><p>${P.response === "waitlist" ? "You're on the waitlist. The plan shows here once you're in." : P.response === "requested" ? `You asked to join. The plan shows here once ${esc(P.host.first || "the host")} lets you in.` : `Say you're in to see the plan, day by day.`}</p><a class="btn primary" href="/e/${encodeURIComponent(P.id)}">Open the invite</a></div>` : "";
-    const empty = !P.locked && !P.days.some((d) => d.items.length), w = when(), K = P.kinds, KH = window.PLKinds && K ? window.PLKinds.html(P) : "";
+    const empty = !P.locked && !P.days.some((d) => d.items.length), w = when(), K = P.kinds, feel = !!K?.trip?.feeler /* trips hook: a trip still asking friends shows only the feeler */, KH = window.PLKinds && K && !feel ? window.PLKinds.html(P) : "";
     // a booked table needs no day-by-day plan; a summit's guests read the agenda, and the run of show stays with the host and team
     const noPlan = (K?.kind === "table" && empty) || P.runOfShow, ros = K?.kind === "summit" && P.isHost;
     m.classList.toggle("kd-wide", K?.kind === "summit" && P.isHost);
@@ -139,11 +139,13 @@
       + `<div class="pv-acts">${P.date && !P.cancelled ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.chat ? `<a href="${esc(P.chat)}">Group chat</a>` : ""}${P.isHost ? `<a class="is-icon" href="/?open=${encodeURIComponent(P.id)}" aria-label="Edit in the studio" title="Edit in the studio"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></a>` : ""}</div>`
       /* one row of actions at one height (docs/brand-kit.md): the primary, the invite, Edit as an icon; Print and the rest are in the ··· menu */
       + whereHtml()
+      + (K?.trip ? `<div id="tripRoot" class="tr-root"></div>` : "") /* trips hook: public/trip.js draws the feeler, stays, deals, things to do and arrivals here */
       + KH
-      + (noPlan ? "" : `<h2 class="pv-h2">${ros ? "Run of show" : "The plan"}<small>${ros ? "Host and team" : P.multi ? `${P.days.length || T.daysBetween(P.date, P.endDate) + 1} days` : esc(T.rangeText(P.date))}</small></h2>`
+      + (noPlan || feel ? "" : `<h2 class="pv-h2">${ros ? "Run of show" : "The plan"}<small>${ros ? "Host and team" : P.multi ? `${P.days.length || T.daysBetween(P.date, P.endDate) + 1} days` : esc(T.rangeText(P.date))}</small></h2>`
       + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : itinHtml())))
-      + beforeHtml()
-      + (P.editable && !(K?.kind === "table" && empty) ? editorHtml(empty) : "");
+      + (feel ? "" : beforeHtml())
+      + (P.editable && !feel && !(K?.kind === "table" && empty) ? editorHtml(empty) : "");
+    if (K?.trip) tripHook();
     if (KH) window.PLKinds.wire(m, P, { proof: proof?.rid && proof?.code ? { rid: proof.rid, code: proof.code } : null, redraw: () => { const y = scrollY; draw(); scrollTo(0, y); } });
     m.querySelector("[data-addcal]")?.addEventListener("click", (e) => window.PLAddCal?.open(e.currentTarget, P));
     m.querySelector(".pv-acts [data-print]")?.addEventListener("click", () => window.print()); // the agenda for the door, on one sheet
@@ -159,6 +161,10 @@
     if (/#agenda$/.test(location.hash) && !draw.__a) { draw.__a = true; setTimeout(() => document.getElementById("agenda")?.scrollIntoView({ block: "start" }), 60); }
     if (P.editable && /[?&]edit=1\b/.test(location.search)) setTimeout(() => m.querySelector(".it-ed")?.scrollIntoView({ block: "start" }), 60); // from the editor's Settings: "The plan, day by day"
   }
+  // ---- trips hook: public/trip.js, loaded only for a trip; refresh() reloads the plan after a change that moves it ----
+  function tripHook() { const root = m.querySelector("#tripRoot"), go = () => window.PLTrip?.mount(root, P, { proof: proof?.rid && proof?.code ? { rid: proof.rid, code: proof.code } : null, refresh, setProof: (x) => { proof = x; } });
+    if (window.PLTrip) return go(); if (!tripHook.s) { tripHook.s = document.createElement("script"); tripHook.s.src = "/trip.js"; document.head.appendChild(tripHook.s); } tripHook.s.addEventListener("load", () => { const r = m.querySelector("#tripRoot"); if (r === root) go(); }, { once: true }); }
+  async function refresh() { try { const pq = proof?.rid && proof?.code ? `?rid=${encodeURIComponent(proof.rid)}&code=${encodeURIComponent(proof.code)}` : ""; const r = await fetch(`/api/public/plan/${encodeURIComponent(P.id)}${pq}`, { credentials: "same-origin" }); if (!r.ok) return; P = (await r.json()).plan; rows = P.days.flatMap((d) => d.items.map((x) => ({ ...x }))); const y = scrollY; draw(); scrollTo(0, y); } catch {} }
   // ---- the host lays out the plan ----
   let rows = P.days.flatMap((d) => d.items.map((x) => ({ ...x })));
   const KINDS = Object.entries(T.ITIN_LABEL);

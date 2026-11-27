@@ -73,6 +73,7 @@
     mine?.rid && mine.code ? (() => { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`, j = (r) => (r.ok ? r.json() : null);
       return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null])
     .then(async ([doc, H, A, st]) => { const e = doc?.data, ws = doc?.workspace;
+      if (e?.trip && e.stage === "interest") return more("/trip.js", () => window.PLTrip.invite({ id, e, mine })); // trips hook: the trip feeler (public/trip.js)
       if (e?.drop) return more("/pickup.js", () => more("/droppage.js", () => window.DropPage({ id, e, ws, H, mine, st, ls, gkey, esc, payLinkOf }))); // a drop: the order page (public/droppage.js)
       // ---- repeats: a past date shows the next date's form ----
       let courseNext = "";

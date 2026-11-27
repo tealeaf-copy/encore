@@ -24,6 +24,9 @@ import { seatsTaken } from "./social.js";
 import { latestReplies } from "./tables.js";
 import { payLink } from "./shop.js";
 import { eventTz, todayIn } from "./tz.js";
+import { payOfWs, eventMethods, deepLink, PAY_LABEL } from "./paymethods.js"; // trips hook: the organiser's Get paid buttons on "You owe" lines
+/** Paid-back lines ("Sam paid Maya $84") as costs the ledger nets: a cost Sam paid that only Maya is in. Pure. */
+export const payCosts = (payments) => (Array.isArray(payments) ? payments : []).filter((p) => p && p.cents > 0 && p.from && p.to && p.from !== p.to).map((p) => ({ id: "pay-" + p.id, label: "Paid back", cents: p.cents, paidBy: p.from, among: [p.to] }));
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/, HHMM = /^\d{2}:\d{2}$/, ID = /^[A-Za-z0-9_-]{2,80}$/, SID = /^[a-z0-9]{1,16}$/;
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -261,6 +264,7 @@ export function makeKinds({ store, C = {}, X = {} } = {}) {
       out.table = { restaurant: res.restaurant, time: res.time, party: res.party, hold: holdLine(res, today), split: billSplit(res, count, { payUrl: httpsOf(ev.payLink || ev.payUrl), host: hostFirst, note: clean(ev.pubTitle || ev.name, 60), forHost: isHost }),
         ...(inn ? { link: res.link, confirmation: res.confirmation, address: clean(ev.venueAddr, 200), phone: res.phone } : {}),
         ...(isHost ? { meter, payUrl: httpsOf(ev.payLink || ev.payUrl), holdUntil: res.holdUntil, holdTime: res.holdTime, bill: res.bill, splitMode: res.split, confirmedFor: Number.isInteger(res.confirmedFor) ? res.confirmedFor : null } : { count }) }; }
+    if (kind === "weekend" && ev.trip) out.trip = { feeler: ev.stage === "interest" }; // trips hook: public/trip.js on the plan page (server/trips.js)
     if (kind === "weekend") { const L = cleanLodging(ev.lodging), people = peopleIn(S, id, hostName), nameOf = (p) => people.find((x) => x.pid === p)?.name || "", T = tripRec(S, id), live = new Set(people.map((p) => p.pid));
       out.stay = { name: L.name, area: L.area || clean(ev.hood, 60), checkIn: L.checkIn, checkOut: L.checkOut, ...(inn ? { address: L.address, link: L.link, notes: L.notes } : { locked: !!(L.address || L.link) }) };
       const beds = cleanBeds(ev.beds);
@@ -270,11 +274,13 @@ export function makeKinds({ store, C = {}, X = {} } = {}) {
       if (ev.carpool !== false) { const cars = (T.cars || []).filter((c) => live.has(c.driver));
         out.cars = { canAct: inn && !!pid, driving: cars.some((c) => c.driver === pid), list: cars.map((c) => { const riders = (c.riders || []).filter((p) => live.has(p));
           return { id: c.id, seats: c.seats, left: Math.max(0, c.seats - riders.length), note: inn ? c.note : "", driver: inn ? (c.driver === pid ? "You" : nameOf(c.driver)) : "", mine: c.driver === pid, riding: !!pid && riders.includes(pid), riders: inn ? riders.map((p) => (p === pid ? "You" : nameOf(p))) : [] }; }) }; }
-      if (inn) { const full = ledgerOf((T.costs || []), people), mineL = ledgerFor(full, pid, { host: isHost }), payOf = (p) => (p === "host" ? httpsOf(ev.payLink || ev.payUrl) : httpsOf(T.payUrls?.[p]));
+      if (inn) { const full = ledgerOf((T.costs || []), people), settled = ledgerOf([...(T.costs || []), ...payCosts(T.payments)], people) /* trips hook: paid-back lines net out (server/trips.js) */; full.owe = settled.owe; const mineL = ledgerFor(full, pid, { host: isHost }), hostPay = payOfWs(ws), hostKeys = eventMethods(hostPay, ev).filter((k) => k !== "note" && k !== "link"), payOf = (p) => (p === "host" ? httpsOf(ev.payLink || ev.payUrl) : httpsOf(T.payUrls?.[p]));
         out.ledger = { people: isHost ? people.map((p) => ({ pid: p.pid, name: p.name })) : [], payUrl: pid && pid !== "host" ? httpsOf(T.payUrls?.[pid]) : httpsOf(ev.payLink || ev.payUrl),
           costs: mineL.costs.map((c) => ({ id: c.id, label: c.label, total: money(c.cents), cents: c.cents, paidBy: c.paidBy === pid ? "You" : nameOf(c.paidBy), share: c.shares[pid] != null && c.among.includes(pid) ? money(c.shares[pid]) : "", split: c.count || c.among.length, everyone: c.everyone, ...(isHost ? { among: c.among.map(nameOf), shares: Object.fromEntries(Object.entries(c.shares).map(([k, v]) => [nameOf(k), money(v)])) } : {}) })),
           lines: mineL.owe.filter((o) => o.from === pid || o.to === pid) /* even the host only sees the lines they are in */.map((o) => { const url = o.from === pid ? payOf(o.to) : "", note = clean(ev.pubTitle || ev.name, 60);
-            return { line: oweLine(o, pid, nameOf), cents: o.cents, youOwe: o.from === pid, ...(url ? { pay: { href: payLink(url, o.cents, note), label: `Pay ${nameOf(o.to)} ${money(o.cents)}` } } : o.from === pid ? { hint: `Pay ${nameOf(o.to)} back however you two like.` } : {}) }; }),
+            const pays = o.from === pid && o.to === "host" && !url ? hostKeys.map((k) => ({ label: PAY_LABEL[k], href: deepLink(k, hostPay[k], o.cents, note) })).filter((x) => x.href) : []; // the organiser's Get paid buttons
+            return { line: oweLine(o, pid, nameOf), cents: o.cents, youOwe: o.from === pid, from: o.from, to: o.to, ...(pays.length ? { pays } : {}), ...(url ? { pay: { href: payLink(url, o.cents, note), label: `Pay ${nameOf(o.to)} ${money(o.cents)}` } } : o.from === pid && !pays.length ? { hint: `Pay ${nameOf(o.to)} back however you two like.` } : {}) }; }),
+          paid: (T.payments || []).filter((x) => (isHost || x.from === pid || x.to === pid) && live.has(x.from) && live.has(x.to)).map((x) => ({ id: x.id, line: `${x.from === pid ? "You" : nameOf(x.from)} paid ${x.to === pid ? "you" : nameOf(x.to)} ${money(x.cents)}`, undo: x.from === pid || isHost })),
           yours: pid ? { paid: money(mineL.totals[pid]?.paid || 0), share: money(mineL.totals[pid]?.share || 0) } : null }; } }
     if (kind === "summit") { const speakers = cleanSpeakers(ev.speakers), A = cleanAgenda(ev.agenda, ev, speakers).agenda || { tracks: [], rooms: [], sessions: [] }, R = agendaRec(S, id), live = new Set(latestReplies(S, id).filter((x) => x.r.response === "going").map((x) => x.id));
       const count = (sid) => Object.entries(R.saves || {}).filter(([p, L]) => (p === "host" || live.has(p)) && (L || []).includes(sid)).length, saved = pid ? (R.saves?.[pid] || []) : [], clash = conflictsOf(A.sessions, saved);

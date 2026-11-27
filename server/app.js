@@ -60,7 +60,7 @@ import { mountPayMethods } from "./paymethods.js"; // Get paid: Venmo, PayPal, C
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
-import { mountPlans } from "./plans.js"; import { mountKinds } from "./kinds.js"; // a table for friends, a weekend away, a summit (server/kinds.js) // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
+import { mountPlans } from "./plans.js"; import { mountKinds } from "./kinds.js"; import { mountTrips } from "./trips.js"; /* trips: hook for server/trips.js */ // a table for friends, a weekend away, a summit (server/kinds.js) // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountBrandPanel } from "./brandpanel.js"; // quick book, briefs, outcomes, host earnings (server/brandpanel.js)
@@ -179,6 +179,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
 const PUBLIC_FIELDS = ["questions", "qStyle", "bookingId", "tentative", "hideHostFollow", "forCompany", "why", "askQ", "houseRules", "name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "brandMode", "coverPhoto", "coverArt", "unlisted", "playlistUrl", "hideGuests", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free", "stage", "interestGoal", "dateOptions", "getThere", "geo", "askPhone", "ticketNote", "audienceWho", "earlyUntil", "courses", "dinnerTheme", "autoGo", "askDiet"];
 // Series: a multi-week course (sessions) and a class pass (passPrice for passCount) reach the guest link too.
 PUBLIC_FIELDS.push("sessions", "passPrice", "passCount", "weekdays", "dropIn", "costNote");
+PUBLIC_FIELDS.push("trip"); // trips hook: the feeler a friend answers (destination, weekends, budget bands, interests, note; server/trips.js cleanTrip)
 // How the price reads: "$12 each" (priceUnit), "$40 for 2" (groupPrice for groupSize).
 PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
 // review round 7: a pre-order's items ("Country loaf $12") for the order form, and the date before this one of a repeat
@@ -846,7 +847,8 @@ export function createApp({ store, dataDir }) {
   mountSlots(app, { store, small, X, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: slots and quiet guests (server/slots.js)
   const PL = mountPlans(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
   mountReplyFill(app, { store, small, currentUser, X });
-  mountKinds(app, { store, small, big: express.json({ limit: "300kb" }), currentUser, C, X, P: PL, sendStatic }); // the parts each scale needs: a booked table, a weekend away, a summit (server/kinds.js)
+  const KK = mountKinds(app, { store, small, big: express.json({ limit: "300kb" }), currentUser, C, X, P: PL, sendStatic }); // the parts each scale needs: a booked table, a weekend away, a summit (server/kinds.js)
+  mountTrips(app, { store, small, currentUser, C, X, P: PL, K: KK, publicOrigin: (req) => originOf(req) }); // trips hook: the feeler, stays, group deals, things to do, arrivals (server/trips.js)
   mountHooksOut(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req) }); // review round 13: Discord/Slack and calendars (server/hooksout.js)
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)

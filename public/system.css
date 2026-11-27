@@ -18,7 +18,7 @@
 /* copy never ends on one word alone, headings break into even lines, bold is the kit's 600, and a weight the kit doesn't load
    (bold Plex Mono, which comes in 500 only) draws in the nearest real one instead of a smeared fake bold (also in
    every full page's head, server/appstore.js) */
-:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}:where(html){font-synthesis-weight:none}
+:where(p,li,dd,dt,blockquote,label,caption){text-wrap:pretty}:where(small,figcaption){text-wrap:balance}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}:where(html){font-synthesis-weight:none}
 /* a stand-in shaped like IBM Plex Sans while it loads, so headings don't change size when it arrives */
 @font-face{font-family:"PL Display Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:101%;ascent-override:102%;descent-override:27%;line-gap-override:0%}
 :root{
@@ -331,7 +331,7 @@ html body .nu-cta{flex-wrap:wrap;row-gap:12px}html body .nu-cta .nu-price{white-
 html body #ideaLib.lib-casual .lib-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
 html body #ideaLib.lib-casual .lib-card{padding:14px!important;border:1.5px solid var(--line)!important;border-radius:var(--r-md)!important;box-shadow:none!important;transform:none!important;background:var(--card)!important;cursor:pointer;min-height:0!important}
 html body #ideaLib.lib-casual .lib-card h3{font-size:17px!important;font-weight:600!important;margin:8px 0 4px!important;line-height:1.25;text-wrap:balance}
-html body #ideaLib.lib-casual .lib-card .lib-line{font-size:15px!important;line-height:1.45!important;color:var(--pl-soft)!important;margin:0!important;text-wrap:pretty}
+html body #ideaLib.lib-casual .lib-card .lib-line{font-size:15px!important;line-height:1.45!important;color:var(--pl-soft)!important;margin:0!important;text-wrap:balance}
 html body #ideaLib.lib-casual .lib-ic i{width:40px!important;height:40px!important}
 html body #ideaLib.lib-casual .lib-head p.note{margin:4px 0 0;font-size:var(--fs-14);color:var(--smoke)}
 @media (min-width:861px){html body #ideaLib.lib-casual .lib-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}

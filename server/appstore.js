@@ -58,7 +58,7 @@ const VT_QUIET = `<script>addEventListener("pagereveal",(e)=>{const t=e.viewTran
 // browser's "bolder" inside a 600 label asked for a 900 the kit never loads) (design audit,
 // docs/design-audit.md). :where() keeps it at zero specificity, so a page's own text-wrap still wins. The light invite
 // (/e, /i) has a 40,000-character budget, so it gets the same rules from public/system.css instead.
-const WRAP = `<style>:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}:where(html){font-synthesis-weight:none}</style>`;
+const WRAP = `<style>:where(p,li,dd,dt,blockquote,label,caption){text-wrap:pretty}:where(small,figcaption){text-wrap:balance}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}:where(html){font-synthesis-weight:none}</style>`;
 const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script><script src="/report.js" defer></script>`; // help for everyone, error reports, the status line (public/report.js)
 // every full page: network manners first (public/netguard.js), then the app tags; the speculation rules prefetch a page
 // link a finger lands on (server/perf.js)

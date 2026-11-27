@@ -21,7 +21,7 @@
 .kd-card{margin:12px 0 0;padding:14px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface)}
 .kd-k{display:block;font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--pl-accent-text)}
 .kd-name{margin:4px 0 2px;font:600 24px/1.2 var(--pl-font-serif);letter-spacing:-.01em;color:var(--pl-ink)}
-.kd-line{margin:4px 0 0;font:400 16px/1.45 var(--pl-font-text);color:var(--pl-ink)}.kd-soft{color:var(--pl-soft)}
+.kd-line{margin:4px 0 0;font:400 16px/1.45 var(--pl-font-text);color:var(--pl-ink);text-wrap:balance}.kd-soft{color:var(--pl-soft)}
 .kd-hold{display:inline;background:var(--pl-highlight);box-decoration-break:clone;-webkit-box-decoration-break:clone;padding:0 3px}
 .kd-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
 .kd-b{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--pl-line-strong);background:var(--pl-page);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none;cursor:pointer}

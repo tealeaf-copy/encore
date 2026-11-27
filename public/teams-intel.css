@@ -241,3 +241,5 @@ blockquote cite{display:block;font-style:normal;color:var(--pl-soft);font-size:1
 @media (prefers-reduced-motion:reduce){.rp-bar i,.rp-met{animation:none}}
 @media (max-width:640px){.ti-fit>li{grid-template-columns:44px minmax(0,1fr)}.ti-fit .r{grid-column:2;text-align:left;white-space:normal}.ti-fit .r b{display:inline;margin-right:6px}.ti-fit .r br{display:none}.ti-fit .r:empty{display:none}}
 @media (max-width:899px){.ti-run>section:last-child{order:-1}}
+/* design audit: short findings lines in cards break evenly instead of leaving "else" alone */
+.ti-card li,.ti-card .ti-sub{text-wrap:balance}

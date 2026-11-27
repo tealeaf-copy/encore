@@ -162,3 +162,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     const done = () => { try { localStorage.setItem("pl.aboutNote", "1"); } catch {} };
     n.querySelector("a").addEventListener("click", done); n.querySelector("button").onclick = () => { done(); n.remove(); }; };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", put) : put(); } catch {} })();
+
+// ---- delight after (public/delightafter.js): Plans (today's card, the morning after, keep in touch), the host's manage view (the hour-before checklist, the summary, the polaroid, the next one) and its switches in Settings; signed in only ----
+(function () { try { if (window.__plDelightLoad || !/^\/(plans|settings)?$/.test(location.pathname) || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; window.__plDelightLoad = 1;
+  const s = document.createElement("script"); s.src = "/delightafter.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();

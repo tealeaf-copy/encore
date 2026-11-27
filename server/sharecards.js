@@ -134,10 +134,17 @@ function drawMap(P, M, x, y, w, h, accent) { P.rect(x, y, w, h, PAPER, 10); P.fr
   for (const A of (M.areas || []).filter((a) => a.label).slice(0, 5)) { const cx = X(A.x), cy = Y(A.y), r = Math.max(26, A.r * w), t = cardText(A.label, 28), tw = measure(t, "sansBold", 26) + 20, lx = Math.min(Math.max(x + 12, cx - tw / 2), x + w - 12 - tw), ly = Math.min(cy + r + 10, y + h - 50);
     P.rect(lx, ly, tw, 38, PAPER, 6); P.frame(lx, ly, tw, 38, INK, 2.5, 6); drawText(P, t, lx + 10, ly + 28, "sansBold", 26, INK); } }
 
+// a polaroid (delight after, server/delightafter.js): the event's drawing in a white frame, the date stamped on its wide
+// bottom edge. Still no photos on a card.
+function polaroid(P, spec, x, y, w, h) { const pad = Math.round(w * 0.06), bottom = Math.max(70, Math.round(h * 0.16)), side = Math.min(w - pad * 2, h - pad - bottom);
+  const fw = side + pad * 2, fx = x + (w - fw) / 2; P.rect(fx + 6, y + 8, fw, side + pad + bottom, LINE, 8); P.rect(fx, y, fw, side + pad + bottom, [255, 254, 250], 8); P.frame(fx, y, fw, side + pad + bottom, INK, 3, 8);
+  P.rect(fx + pad, y + pad, side, side, PAPER, 2); P.image(kit().art(spec.art) || kit().art("party"), fx + pad + side * 0.08, y + pad + side * 0.08, side * 0.84, side * 0.84);
+  if (spec.stamp) drawText(P, cardText(spec.stamp, 24), fx + pad, y + pad + side + bottom * 0.62, "mono", Math.round(Math.min(40, bottom * 0.38)), SOFT, { track: 1.5 }); }
+
 // ---------------------------------------------------------------- the two layouts
 /** Every word a card will carry, in order. */
 export function textOf(spec = {}) { return [spec.kicker, spec.title, spec.sub, spec.body, spec.quote?.text, spec.quote?.by, ...(spec.stats || []).flatMap((s) => [s.n, s.label]), ...(spec.list || []).flatMap((l) => [l.k, l.v]),
-  ...(spec.map?.areas || []).map((a) => a.label), spec.foot, "pottery lab"].filter((s) => s != null && s !== "").map((s) => cardText(s)); }
+  ...(spec.map?.areas || []).map((a) => a.label), spec.frame === "polaroid" ? spec.stamp : "", spec.foot, "pottery lab"].filter((s) => s != null && s !== "").map((s) => cardText(s)); }
 
 function story(spec, P, accent) { const W = P.w, H = P.h, m = 84, cw = W - m * 2, footY = H - 150;
   P.frame(36, 36, W - 72, H - 72, INK, 5, 14);
@@ -154,7 +161,7 @@ function story(spec, P, accent) { const W = P.w, H = P.h, m = 84, cw = W - m * 2
   const afterH = (qL.length ? qL.length * 52 * 1.3 + (spec.quote.by ? 76 : 30) : 0) + (bL.length ? bL.length * 44 * 1.32 + 24 : 0) + LI.length * 104 + (spec.potto && !spec.map && !spec.art ? 0 : spec.potto ? 120 : 0);
   const room = footY - 40 - y - afterH;
   if ((spec.map || spec.art) && room > 200) { const vh = Math.min(spec.map ? 820 : 700, room - 30);
-    if (spec.map) drawMap(P, spec.map, m, y, cw, vh, accent); else P.image(kit().art(spec.art) || kit().art("party"), m + 40, y, cw - 80, vh); y += vh + 34; }
+    if (spec.map) drawMap(P, spec.map, m, y, cw, vh, accent); else if (spec.frame === "polaroid") polaroid(P, spec, m + 60, y, cw - 120, vh); else P.image(kit().art(spec.art) || kit().art("party"), m + 40, y, cw - 80, vh); y += vh + 34; }
   if (qL.length) { const top = y; qL.forEach((l, i) => drawText(P, l, m + 40, y + 52 * 0.8 + i * 52 * 1.3, "serif", 52, INK)); y += qL.length * 52 * 1.3 + 10;
     if (spec.quote.by) y = block(P, spec.quote.by, m + 40, y, cw - 60, "sans", 36, SOFT, { maxLines: 1 }) + 10; P.rect(m, top, 8, y - top, accent, 3); y += 30; }
   if (bL.length) { bL.forEach((l, i) => drawText(P, l, m, y + 44 * 0.8 + i * 44 * 1.32, "sans", 44, INK)); y += bL.length * 44 * 1.32 + 24; }
@@ -170,7 +177,7 @@ function link(spec, P, accent) { const W = P.w, H = P.h, m = 56; P.frame(18, 18,
   if (spec.title) { const px = fitSize(spec.title, "sansBold", 92, 44, cw, 2); y = block(P, spec.title, m, y, cw, "sansBold", px, INK, { lh: 1.04, maxLines: 2, track: -px * 0.02 }) + 14; }
   if (spec.sub) y = block(P, spec.sub, m, y, cw, "serif", 38, INK, { lh: 1.22, maxLines: 2 }) + 14;
   const line = spec.body || (spec.stats || []).slice(0, 3).map((s) => `${s.n} ${s.label}`).join(" · "); if (line && y < H - 140) block(P, line, m, y, cw, "sans", 30, SOFT, { lh: 1.3, maxLines: Math.max(1, Math.floor((H - 110 - y) / 39)) });
-  if (spec.map) drawMap(P, spec.map, W - m - vis, 50, vis, H - 100, accent); else if (spec.art) P.image(kit().art(spec.art) || kit().art("party"), W - m - vis, 80, vis, H - 160);
+  if (spec.map) drawMap(P, spec.map, W - m - vis, 50, vis, H - 100, accent); else if (spec.frame === "polaroid") polaroid(P, spec, W - m - vis + 40, 50, vis - 80, H - 100); else if (spec.art) P.image(kit().art(spec.art) || kit().art("party"), W - m - vis, 80, vis, H - 160);
   drawText(P, cardText(spec.foot || "pottery lab", 48).toUpperCase(), m, H - 54, "mono", 22, SOFT, { track: 1 }); }
 
 const cache = new Map();

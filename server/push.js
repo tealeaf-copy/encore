@@ -27,7 +27,7 @@ export const PUSH_KINDS = {
   replies: { label: "Replies and messages", kinds: ["reply", "msg", "faq", "inquiry", "booked", "order", "help", "support"] },
   in: { label: "You're in, and event updates", kinds: ["letin", "itson", "invite", "ifwith", "table", "sametable"] },
   spots: { label: "A spot opened up", kinds: ["waitlist", "drop"] },
-  reminders: { label: "Reminders", kinds: ["prep", "kudos", "after", "reminded", "saved", "alert", "digest", "nudge", "payremind"] },
+  reminders: { label: "Reminders", kinds: ["prep", "kudos", "after", "reminded", "saved", "alert", "digest", "nudge", "payremind", /* delight after (server/delightafter.js): */ "dayof", "hostcheck", "aftersum", "scrapbook", "keepintouch"] },
   photos: { label: "New photos", kinds: ["photos"] },
   people: { label: "Friends and kudos", kinds: ["friend", "vibe", "kudos-in", "tip"] },
 };

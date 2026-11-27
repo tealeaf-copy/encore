@@ -95,7 +95,8 @@ import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from
 import { mountPosthog, capture, cspWith } from "./posthog.js"; // product analytics, off unless ENCORE_POSTHOG_KEY is set (server/posthog.js, docs/analytics.md)
 import { mountMcp } from "./mcp.js";
 import { mountMap } from "./map.js"; // the map view (/map) and its geodata (server/geo.js)
-import { mountPlaces } from "./places.js"; // "Your places" and the year in nights (server/places.js, server/sharecards.js)
+import { mountPlaces } from "./places.js";
+import { mountDelightAfter } from "./delightafter.js"; // during and after the event: the morning-of card, live photos, the host's hour before, the morning after, the polaroid, the next one, keep in touch (server/delightafter.js) // "Your places" and the year in nights (server/places.js, server/sharecards.js)
 import { mountSuggest } from "./suggest.js"; // Potto's autocomplete: ideas and places as you type (server/suggest.js, public/autocomplete.js)
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
@@ -875,6 +876,7 @@ export function createApp({ store, dataDir }) {
   mountSurprise(app, { store, small, currentUser, C, X, H: HK, invitedGuest: (...a) => app.locals.invitedGuest?.(...a) }); // ---- surprise touches: drawn covers, milestones, regulars, invite lines, send-offs (server/surprise.js) ----
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountPlaces(app, { store, small, currentUser, C, X, sendStatic }); // after the map: it reads its geo (server/places.js)
+  mountDelightAfter(app, { store, small, currentUser, C, X }); // ---- delight after: after plans, places and Potto by text, which it reads (server/delightafter.js) ----
   mountSuggest(app, { store, small, currentUser, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
   mountLibrary(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, sendStatic, express }); // server/library.js, after hooks: it reads saves and boards
   mountCuration(app, { store, small, currentUser, C, X, sendStatic }); // server/curation.js: list visibility, curator pages, follows, I'd go again (after the library)

@@ -40,7 +40,8 @@ export const distinctId = (unit) => crypto.createHmac("sha256", salt()).update(S
 // ---------------------------------------------------------------- what may be sent
 export const FUNNEL = ["signup", "first_event_created", "share_clicked", "first_reply", "three_replies", "event_done", "kudos_received", "guest_follow", "guest_became_host"];
 export const EVENTS = new Set([...FUNNEL, "xp_exposure", "xp_conversion", "event_published", "reply_received", "kudos_given", "comment_posted", "chat_message_sent", "follow", "fanclub_joined",
-  "drop_order_placed", "brand_quickbook_searched", "brand_request_sent", "signed_in", "signup_completed"]);
+  "drop_order_placed", "brand_quickbook_searched", "brand_request_sent", "signed_in", "signup_completed",
+  "delight_sent", "delight_shown", "delight_tapped"]); // delight after: each moment by name (server/delightafter.js)
 const WORD = /^[a-z][a-z0-9_-]{0,39}$/i;
 const ENUMS = {
   step: new Set(FUNNEL),

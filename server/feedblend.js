@@ -35,6 +35,7 @@ import { seriesKey, episodeNumber } from "./episodes.js";
 import { streakOf } from "./recognition.js";
 import { makeCommentStore } from "./feedcomments.js";
 import { soldOf } from "./drops.js";
+import { polaroidOf, stampOf } from "./delightafter.js"; // delight after: the host's posted polaroid recap leads its recap card
 import "../public/pickup.js"; // a drop's pickup words, the same on every page (globalThis.PLPickup)
 
 const DAY = 864e5;
@@ -212,7 +213,10 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     return out.sort((a, b) => b._s - a._s).slice(0, 8).map(({ _s, ...r }) => r); }
   /** One past event as a recap card; min: how many photos it needs (the stream wants two, the post page none). */
   function recapItem(v, x, now = Date.now(), { min = 2 } = {}) { const I = v.I, e = x.e, t = today(now), ctx = { owner: x.owner, ws: x.ws };
-      const P = V.momentsOf(I, x.id).filter((m) => V.momentSeen(I, m, v.email) && !v.blocks.has("moment:" + m.url)).sort((a, b) => (a.at || 0) - (b.at || 0)); if (P.length < min) return null;
+      let P = V.momentsOf(I, x.id).filter((m) => V.momentSeen(I, m, v.email) && !v.blocks.has("moment:" + m.url)).sort((a, b) => (a.at || 0) - (b.at || 0));
+      // delight after: a polaroid the host posted shows just the photos they picked (each still through momentSeen), with the date stamp
+      const pol = polaroidOf(store, x.id), picked = pol ? pol.photos.map((pid) => P.find((m) => m.id === pid)).filter(Boolean) : []; if (picked.length) P = picked;
+      if (P.length < (picked.length ? 1 : min)) return null;
       const c = V.card(I, x, { email: v.email }), h = hostLead(v, x.ws, c.host);
       // a friend who shared photos from it leads the note (first name only)
       const fr = new Map(); for (const m of P) { const em = lc(m.authorEmail); if (em && v.friends.has(em)) fr.set(em, (fr.get(em) || 0) + 1); }
@@ -223,9 +227,9 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       const pub = recapNames(I, x);
       const note = c.quote ? { text: c.quote.text, name: c.quote.name } : P.find((m) => clean(m.caption).length > 3) ? { text: scrub(clean(P.find((m) => clean(m.caption).length > 3).caption, 200)), name: first(P.find((m) => clean(m.caption).length > 3).authorName) } : null;
       const nx = V.nextOf(I, x, t);
-      return { kind: "recap", key: "r:" + x.id, id: x.id, host: h, by, title: c.title, date: e.date, where: placeOf(e), note, stats, photos: P.slice(-10).map(V.momentOut), photoCount: P.length,
+      return { kind: "recap", key: "r:" + x.id, id: x.id, host: h, by, title: c.title, date: e.date, where: placeOf(e), note, stats, photos: P.slice(-10).map(V.momentOut), photoCount: P.length, ...(picked.length ? { polaroid: { stamp: stampOf(e.date), caption: clean(pol.caption, 140), png: `/api/delight/polaroid/${encodeURIComponent(x.id)}.png` } } : {}),
         next: nx ? { title: nx.title, date: nx.date, url: nx.url } : null, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), chat: chatOf(v, x), kudos: kudosOf(v, "r:" + x.id, pub, ctx), comments: commentsOf(v, "r:" + x.id, ctx), followed: v.followed.has(x.ws),
-        _s: (v.followed.has(x.ws) ? 50 : 0) + (by ? 40 : 0) + Math.min(10, P.length) - (now - Date.parse(e.date)) / DAY / 3 }; }
+        _s: (picked.length ? 30 : 0) + (v.followed.has(x.ws) ? 50 : 0) + (by ? 40 : 0) + Math.min(10, P.length) - (now - Date.parse(e.date)) / DAY / 3 }; }
 
   // ---------- milestones ----------
   const STEPS = [3, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200];

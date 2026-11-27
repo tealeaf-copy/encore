@@ -35,7 +35,9 @@
 @media (hover:hover){.dz-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px -12px rgba(31,26,23,.35)}.dz-card:hover .dz-sw{border-radius:18px 24px 14px 26px/12px 18px 22px 14px!important}}
 </style>
 <script>if(location.pathname==="/g"&&(!location.hash||location.hash==="#"))location.replace("/discover");</script>
-<script>if(location.pathname==="/g")document.documentElement.classList.add("g-loading")</script><style>html.g-loading #view-guest{opacity:0!important;transition:none!important}</style>
+<script>if(location.pathname==="/g")document.documentElement.classList.add("g-loading")</script><style>html.g-loading #view-guest{opacity:0!important;transition:none!important}
+/* on a slow connection the first second or two was a blank page: a quiet line holds the place until the preview or the invite draws */
+html.g-loading body::after{content:"Opening the invite\2026";position:fixed;inset:0;display:grid;place-items:center;font:400 17px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#444845;pointer-events:none;z-index:1}</style>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -6907,7 +6909,7 @@ LIB.push({name:"Free Bake Giveaway",audience:"friends",format:"Giveaway",line:"B
 // Until the answer is in (at most 2.5s), Home stays invisible: it used to draw the work Home first and swap it for the
 // friends one a moment later, the app's biggest layout jump.
 const wsReveal=()=>document.documentElement.classList.remove("ws-wait");
-try{ if(!isGuestRoute?.()&&(!location.hash||location.hash==="#programs")){ const st=document.createElement("style"); st.textContent="html.ws-wait #view-programs{visibility:hidden}"; document.head.appendChild(st); document.documentElement.classList.add("ws-wait"); setTimeout(wsReveal,2500) } }catch{}
+try{ if(!isGuestRoute?.()&&(!location.hash||location.hash==="#programs")){ const st=document.createElement("style"); st.textContent="html.ws-wait #view-programs,html.ws-wait #appHeader{visibility:hidden}html.ws-wait body::after{content:'Setting the table\\2026';position:fixed;inset:0;display:grid;place-items:center;font:400 17px/1.4 'IBM Plex Sans',system-ui,sans-serif;color:#444845;pointer-events:none}"; /* while we find out whose Home this is: no half-drawn tab bar, and a quiet line instead of a blank page (slow connections, review round 18) */ document.head.appendChild(st); document.documentElement.classList.add("ws-wait"); setTimeout(wsReveal,2500) } }catch{}
 (async()=>{ try{ if(isGuestRoute?.()) return; const r=await fetch("/api/workspace"); if(!r.ok) return; const W=await r.json(); window.__wsDone=1; if(W&&W.personal===false&&W.plan!=="self-hosted"&&!W.handle&&!W.regularOnly&&!location.hash&&!/[?&](classic|new)=1/.test(location.search)){ location.replace("/teams/home"); return } /* brand teams: Home is the dashboard at /teams/home; ?classic=1 keeps the older programs view */ if(W?.personal){ window.__wsPersonal=true; document.body.classList.add("friends-ws"); if(!location.hash||location.hash==="#programs") renderPrograms?.() } else if(window.__homeTab==="start"&&(!location.hash||location.hash==="#programs")) renderPrograms?.() }catch{} finally{ requestAnimationFrame(wsReveal) } })();
 // The crew: who's bringing what, and rides, where the host can see them.
 function crewClaims(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id&&r.response==="going"), G=d.guests||[], key=x=>String(x.email||x.name||"").toLowerCase(), seen=new Set(), out=[];
@@ -9774,7 +9776,7 @@ window.addEventListener("hashchange",casualRoute); setTimeout(casualRoute,300); 
 // guest page: render hidden, show once laid out (no jump from one layout to another)
 if(location.pathname==="/g"){ const s=document.createElement("style"); s.textContent=`#view-guest{transition:opacity .25s ease}`; document.head.appendChild(s); document.documentElement.classList.add("g-loading");
   // reveal as soon as the invite has drawn (the first render can run before any hook is attached), never later than 1.2 s
-  const show=()=>{ document.documentElement.classList.remove("g-loading"); mo.disconnect() }; setTimeout(show,9000);
+  const show=()=>{ document.documentElement.classList.remove("g-loading"); mo.disconnect() }; setTimeout(function cap(){ if(ready()||performance.now()>22000) show(); else setTimeout(cap,400) },9000); // on a slow connection the cover stays until the invite has really drawn (it used to lift at 9s onto a blank page)
   const ready=()=>{ const v=document.getElementById("view-guest"); return window.__gFinal&&v&&!v.hidden&&v.querySelector(".invite,h1,.gtitle,.ticket,form") };
   const mo=new MutationObserver(()=>{ if(ready()) requestAnimationFrame(()=>setTimeout(show,60)) }); mo.observe(document.documentElement,{childList:true,subtree:true});
   if(ready()) show() }

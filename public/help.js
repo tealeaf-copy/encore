@@ -183,7 +183,7 @@
     try { const b = btn(); if (!b || isOpen()) return; const away = modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
       // phones with a bottom tab bar: help lives in the Me sheet (public/chatnav.js), so nothing floats over the page's own
       // buttons (the Home composer's send arrow, toggles, card menus). The nudge can still offer it once, above the bar.
-      const intab = tabBar() || !!document.querySelector("[data-help-open]"); /* or the page has its own Help row */ b.classList.toggle("eh-intab", intab); host.style.height = intab || phone() ? "" : "72px";
+      const intab = tabBar() || !!document.querySelector("[data-help-open]") || (innerWidth <= 860 && document.documentElement.classList.contains("es-pre") && !document.querySelector(".es-tabs,nav.tabs")) /* a page that is about to get its tab bar (slow connection): don't float over the logo meanwhile */; /* or the page has its own Help row */ b.classList.toggle("eh-intab", intab); host.style.height = intab || phone() ? "" : "72px";
       const h = obstacleHeight(), dock = !intab && h > innerHeight * 0.45 - 8;
       b.classList.toggle("eh-dock", dock); nudge().classList.toggle("eh-dock", dock);
       const bottom = dock ? 16 : Math.round(h ? h + 12 : 16); document.documentElement.style.setProperty("--eh-bottom", bottom + "px");

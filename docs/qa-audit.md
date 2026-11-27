@@ -93,7 +93,7 @@ cause (the same cause on several pages or roles is one row).
 | Every sheet with `aria-modal` | Tab | Tab left the open sheet (36 sheets). | Low | Fixed once for every sheet in `public/netguard.js` (and in `public/savelist.js` for the light invite). |
 | Sheets on /feed, /inbox, /contacts, /discover, /g | Closing a sheet | Focus was dropped on the page body (15 sheets). | Low | Fixed: focus goes back to what had it, or, when that was redrawn (the reply form that became a ticket), to the page's heading or first control (`public/netguard.js`); People rows take focus; Save to list and the chat's details find their redrawn button. |
 | /map (after the port) | An event title in the list | A 21px tall target on a phone once the audit's padding was dropped for main's text face. | Low | Fixed on main in round 18 (`min-height:44px`). |
-| / and /feed (after the port) | A card's title | Main's 44px title link measured 358 by 40 on a phone: a one-line title is 28px and had 6px each side. | Low | Fixed: 8px each side (`public/feedvisual.js`, and the number in `test/feed-kudos-comments.test.js`). |
+| / and /feed (after the port) | A card's title | Main's 44px title link measured 358 by 40 on a phone: a one-line title is 28px and had 6px each side. | Low | Fixed on main since (9px each side, `public/feedvisual.js`). |
 | /login, /signup, the feed's comments sheet (new on main) | Every control | Added to the audit after the port. | None | Nothing found. |
 
 By severity: 12 high, 14 medium and 4 low causes (about 120 tap targets, 36 sheets and 15 sheets behind three of the low
@@ -140,9 +140,35 @@ it's ranked and the footer wait for the board". Layout-shift readings are only g
 test runs going (a load average over 100) the same commit read timeouts, blank pages and shifts that a quiet run
 does not.
 
+### Main moved again: what the audit finds on the newest work
+
+While the port was being checked, main took 137 more commits (help for everyone, the post page, the new drop and
+calendar sheets, the design audit). The port was carried onto that main as well ("Potto by text test: drop pickup
+reads in the shared words"), and `npm test` there passes except one test that fails on main itself (the app shell
+is over its 80,000 character budget, `test/pm-mcp.test.js`). The click audit on that main is not clean. It was run
+once at 1280 (25 issues, journeys 6 of 8) and part of the way at 390 (58 issues in the page checks, stopped
+there). One was fixed here; the rest are open and belong to the work that added them:
+
+| Page | Element | Issue | Severity | Status |
+|---|---|---|---|---|
+| Share sheet (link, flyer, QR) | Instagram, Save | "phone is not a function": a flag named `phone` hid the `phone()` check in the same block, so both buttons threw. | High | Fixed: the flag is `isPhone` (`public/sharekit.js`). |
+| /map (desktop) | Need a hand? Get help | The new help link sits under the map: covered at the top, the middle and the bottom of the page. | High | Open. |
+| /e/<a drop> | One more <item> | "Cannot set properties of null (setting 'textContent')" on a tap. | High | Open. |
+| /e/<a drop> (desktop, signed out) | Page load | Layout shift 0.56. | Medium | Open. |
+| /feed | Kudos on a drop's card | Asks for `/post/e/<id>`, a 404. | Medium | Open. |
+| /e (replied on another phone) | Plans changed? Can't go | The change is refused ("You can only change your own response") and the page shows nothing. The full invite got this fix in the audit; the light invite's new button needs the same (send the reply's code). | Medium | Open. |
+| /e | Add to calendar (the new sheet) | Esc doesn't close it, Tab leaves it, and focus is dropped on the page when it closes. | Low | Open. |
+| Most pages (phone) | Help, Need a hand? Get help | Tap targets of 28 by 44 and 165 by 20. | Low | Open. |
+| /contacts, /plans/<id>, /library, /e/<a drop> (phone) | Open <name>, Your page, See your page, the host's name | Tap targets about 20px tall. | Low | Open. |
+
+The harness needs three updates for that main before its count means anything: the comments under a feed card
+moved from a sheet to the post page (the "feed comments sheet" opener finds nothing), journey 2 expects Add to
+calendar to be a link (it is a sheet now), and journey 4 expects the + sheet's old Drop setup.
+
+
 ## Results
 
-On main after the port:
+On main at "Leaderboard: How it's ranked and the footer wait for the board" (branch `qa-audit-port-on-b0a4ecb`), a quiet machine:
 
 - `node scripts/click-audit.mjs --width 390`: 0 issues on 1,593 taps across 90 pages and sheets (167 controls over the 60 a page cap were not tapped).
 - `node scripts/click-audit.mjs --width 1280`: 0 issues on 1,848 taps across 90 pages and sheets (192 over the cap).

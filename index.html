@@ -12027,6 +12027,8 @@ async function fvMoments(){ const d=draft, el=document.getElementById("afterPart
   if(/^[A-Za-z0-9_-]{3,200}$/.test(pend)) ready(async()=>{ try{ localStorage.removeItem("pl.hostIdea") }catch{}
     const j=await (await fetch("/api/public/inspo/item?id="+encodeURIComponent(pend))).json().catch(()=>null), x=j?.data; if(!x) return;
     if(q.get("idea")){ q.delete("idea"); history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:"")+location.hash) }
+    // a run idea opens the create canvas as a run, with Routes near you (public/runtemplates.js)
+    { const R=window.RunTemplates; if(R?.planRun&&R.parse(`${x.title} ${x.hostThis?.say||x.line||""}`)){ setTimeout(()=>R.planRun({ title:x.title }),fromSignup?1800:200); return } }
     const esc1=(t)=>String(t).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
     setTimeout(()=>{ try{ const el=document.createElement("div"); el.dataset.casualidea=x.title; el.dataset.line=(x.hostThis?.say||x.line||"").replace(new RegExp("^"+esc1(x.title)+"[:,]?\\s*","i"),"")||"with friends"; el.hidden=true; document.body.appendChild(el); el.click(); el.remove();
       setTimeout(()=>{ try{ if(typeof draft==="undefined"||!draft) return; const L=x.hostThis?.look||x.look; if(L&&Array.isArray(L.palette)){ draft.look={palette:L.palette.slice(0,3),effect:L.effect||"none",titleFont:L.titleFont||"",buttonEmoji:L.buttonEmoji||"",buttonLabel:L.buttonLabel||"",...(L.vibe?{vibe:L.vibe}:{})} }
@@ -13381,7 +13383,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 })();
 </script>
 <!-- ==================== end host event page ==================== -->
-<script src="/sections.js" defer></script><script src="/runtemplates.js" defer></script><!-- NYC run templates: the picker, the Home card, the composer and the canvas's run sign-up (public/runtemplates.js) --><script src="/canvas.js" defer></script>
+<script src="/sections.js" defer></script><script src="/runtemplates.js" defer></script><!-- NYC run templates: Routes near you in the canvas once a run is being planned, the create line and the run sign-up (public/runtemplates.js) --><script src="/canvas.js" defer></script>
 <script>
 // ---- the host loop (public/hostloop.js, server/hostloop.js): host Home's card with the streak, today's small move,
 // warmth and Circles, and the once-only milestone celebration ----

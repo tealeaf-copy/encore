@@ -5,13 +5,16 @@
 //
 // Pure (no page needed; server/runtemplates.js loads this file for Potto and the tests):
 //   RunTemplates.LIST, byId(id), isNYC(city), toEvent(id, { today, date, time, title, repeat }), parse(text, today),
-//   urlOf(id, over), fromQuery(URLSearchParams, today), signup(ev) / signupSet(ev, key, value), RUN_Q
+//   urlOf(id, over), fromQuery(URLSearchParams, today), signup(ev) / signupSet(ev, key, value), RUN_Q,
+//   routes({ dist, surface, near }), howFar(T), mapUrl(T): Routes near you (meeting spot, distance, surface, map link)
 // On a page (the app, index.html):
 //   RunTemplates.sheet({ onPick, date, time, title, repeat }): the picker, a bottom sheet
 //   RunTemplates.use(id, over): opens the create canvas (public/canvas.js) filled in from the template
-//   the host's Home gets a "New York runs, ready to go" card when the host's city is New York (their page city, the
-//   city picker, or Potto), with their followers and "Message them about the next run" (POST /api/host/announce)
-//   and the Home composer reads "easy 5K in Prospect Park Saturday 8" straight into the template.
+//   RunTemplates.mountRoutes(el, o): "Routes near you" inside the canvas, only once the host is planning a run (or
+//   "Add your route" outside New York); registered with Potto's picks (window.PLSuggestPlaces) as the run provider
+//   RunTemplates.planRun(o): the canvas as a run, from the Home create line, Potto or a run idea's Host this
+//   RunTemplates.messageSheet(): Message your followers, from the host's own page (public/drop.js offer)
+//   Nothing shows on Home by itself: the templates only come up when someone is planning a run (owner request, Nov 2026).
 (function (root) {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   // pace groups, written the way a run host says them
@@ -160,13 +163,32 @@
   /** A template's one line on a card: "Prospect Park · Sat 8am · about 3.35 mi". Pure. */
   const lineOf = (T, o = {}) => [T.park === T.hood ? T.park : `${T.park}, ${T.borough}`, `${WD[T.d].slice(0, 3)} ${clock(o.time || T.t)}`, T.dist.split(/\.\s/)[0].replace(/^About/, "about").replace(/ \(.*?\)/, "").replace(/\.$/, "")].join(" · ");
 
-  const pure = { LIST, byId, isNYC, toEvent, parse, urlOf, fromQuery, signup, signupSet, RUN_Q, WAIVER, lineOf, seasonNote, nextOn };
+  // ---- Routes near you: where each route starts (a public spot), about how far on the planned run, and what it runs on ----
+  // lat, lng: the meeting spot (for "Use my location" and the map link); km: the run as planned; surface: park loop, waterfront, bridge or trail
+  const GEO = { reservoir: [40.7835, -73.959, 5.1, ["park"]], "cp-loop": [40.7681, -73.9812, 9.8, ["park"]], hudson: [40.7466, -74.008, 5, ["waterfront"]], bridge: [40.7122, -74.004, 4, ["bridge"]],
+    prospect: [40.6743, -73.97, 5.4, ["park"]], mccarren: [40.7206, -73.951, 5, ["park"]], "east-river": [40.7745, -73.944, 5, ["waterfront"]], astoria: [40.7798, -73.922, 5, ["waterfront", "park"]], "van-cortlandt": [40.889, -73.8986, 5, ["trail"]] };
+  for (const T of LIST) { const g = GEO[T.id]; if (g) Object.assign(T, { lat: g[0], lng: g[1], km: g[2], surface: g[3] }); }
+  const SURFACES = [["park", "Park loop"], ["waterfront", "Waterfront"], ["bridge", "Bridge"], ["trail", "Trail"]], SURF = Object.fromEntries(SURFACES);
+  const DISTANCES = [["short", "Under 5K", (km) => km < 5], ["mid", "5 to 10K", (km) => km >= 5 && km < 10], ["long", "10K plus", (km) => km >= 10]];
+  /** km between two { lat, lng } */
+  const kmBetween = (a, b) => { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r, x = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
+  /** "About 3.4 mi (5.4 km)" */
+  const howFar = (T) => `About ${(T.km * 0.621371).toFixed(1).replace(/\.0$/, "")} mi (${String(T.km).replace(/\.0$/, "")} km)`;
+  /** The start point in the phone's maps app (an outbound link; nothing is read from it). */
+  const mapUrl = (T) => `https://www.google.com/maps/search/?api=1&query=${T.lat}%2C${T.lng}`;
+  /** The routes for a run plan: o.dist ("short" | "mid" | "long"), o.surface, o.near { lat, lng } sorts by distance. [{ T, away }] */
+  function routes(o = {}) { const d = DISTANCES.find((x) => x[0] === o.dist), near = o.near && isFinite(o.near.lat) && isFinite(o.near.lng) ? o.near : null;
+    const L = LIST.filter((T) => (!d || d[2](T.km)) && (!o.surface || T.surface.includes(o.surface))).map((T) => ({ T, away: near ? kmBetween(near, T) : null }));
+    if (near) L.sort((a, b) => a.away - b.away); return L; }
+
+  const pure = { LIST, byId, isNYC, toEvent, parse, urlOf, fromQuery, signup, signupSet, RUN_Q, WAIVER, lineOf, seasonNote, nextOn, routes, howFar, mapUrl, kmBetween, SURFACES, DISTANCES };
   root.RunTemplates = pure;
   if (typeof document === "undefined") return;
 
   // ================= on a page =================
   const q = (s, el = document) => el.querySelector(s), qa = (s, el = document) => [...el.querySelectorAll(s)];
-  const CSS = `.rt-bg{position:fixed;inset:0;z-index:9400;background:rgba(27,29,28,.42);display:flex;align-items:flex-end;justify-content:center}
+  const CSS = `.rt-fn{--pl-surface:#FAF8F3;--pl-ink:#1B1D1C;--pl-line:#E2DCD1;--pl-line-strong:#CFC6B8;--pl-soft:#444845;--pl-accent:#29489A;--pl-accent-text:#29489A;--pl-ok:#3F5A2F;--pl-danger:#A2361A;--pl-font-text:"IBM Plex Sans"}
+.rt-bg{position:fixed;inset:0;z-index:9400;background:rgba(27,29,28,.42);display:flex;align-items:flex-end;justify-content:center}
 .rt-sh{width:min(560px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);border:1.5px solid var(--pl-ink,#1B1D1C);border-bottom:0;border-radius:6px 6px 0 0;font:16px/1.45 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}
 @media (min-width:700px){.rt-bg{align-items:center}.rt-sh{border-bottom:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px}}
 .rt-sh header{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:start;padding:16px 16px 10px;border-bottom:1px solid var(--pl-line,#E2DCD1)}
@@ -186,7 +208,7 @@
 .rt-msg{padding:12px 16px calc(16px + env(safe-area-inset-bottom));overflow:auto}.rt-msg p{margin:0 0 10px}.rt-who{color:var(--pl-soft,#444845);font-size:14px}.rt-ok{color:var(--pl-ok,#3F5A2F);font-weight:600}.rt-err{color:var(--pl-danger,#A2361A);min-height:1em}`;
   const css = () => { if (q("#rtCss")) return; const s = document.createElement("style"); s.id = "rtCss"; s.textContent = CSS; document.head.appendChild(s); };
   const X = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>';
-  function frame(label, head, body) { css(); const bg = document.createElement("div"); bg.className = "rt-bg";
+  function frame(label, head, body) { css(); const bg = document.createElement("div"); bg.className = "rt-bg rt-fn";
     bg.innerHTML = `<div class="rt-sh" role="dialog" aria-modal="true" aria-label="${esc(label)}"><header><div>${head}</div><button type="button" class="rt-x" data-x aria-label="Close">${X}</button></header>${body}</div>`;
     document.body.appendChild(bg); const back = document.activeElement; const close = () => { bg.remove(); try { back?.focus?.({ preventScroll: true }); } catch {} };
     bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("[data-x]")) close(); }); bg.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
@@ -211,10 +233,10 @@
   // ---- the host's followers, and one message to all of them about the next run ----
   async function messageSheet() { const [F, E] = await Promise.all([getJ("/api/host/followers"), getJ("/api/potto/events")]); const n = +F?.count || 0, mine = (E?.events || []).filter((e) => e.mine);
     const names = (F?.followers || []).map((f) => String(f.name || "").trim().split(/\s+/)[0]).filter(Boolean);
-    const S = frame("Message your followers", `<h2>Message your followers</h2><p>${n ? `${n} ${n === 1 ? "person follows" : "people follow"} you. They get this by email, and by text if they gave a number.` : "Nobody follows you yet. After a run, guests can follow you in one tap."}</p>`,
-      `<div class="rt-msg">${names.length ? `<p class="rt-who">${esc(names.slice(0, 12).join(", "))}${names.length > 12 ? ` and ${names.length - 12} more` : ""}</p>` : ""}${mine.length && n ? `<label class="rt-f">Which run<select id="rtEv">${mine.map((e) => `<option value="${esc(e.id)}">${esc(e.title)} · ${esc(e.when)}</option>`).join("")}</select></label>
-        <label class="rt-f">Your message<textarea id="rtNote" rows="4" maxlength="500"></textarea></label><p class="rt-err" id="rtErr" role="alert"></p><button type="button" class="rt-go" id="rtSend">Send to ${n} ${n === 1 ? "follower" : "followers"}</button>` : n ? `<p>Make the next run first, then come back here to tell everyone.</p><button type="button" class="rt-go" data-new>Pick a run</button>` : ""}</div>`);
-    const sel = q("#rtEv", S.bg), note = q("#rtNote", S.bg), fill = () => { const e = mine.find((x) => x.id === sel.value); if (e) note.value = `Next run: ${e.title}, ${e.when}. Are you in? Tap the link to reply.`; };
+    const S = frame("Message your followers", `<h2>Message your followers</h2><p>${n ? `${n} ${n === 1 ? "person follows" : "people follow"} you. They get this by email, and by text if they gave a number.` : "Nobody follows you yet. After an event, guests can follow you in one tap."}</p>`,
+      `<div class="rt-msg">${names.length ? `<p class="rt-who">${esc(names.slice(0, 12).join(", "))}${names.length > 12 ? ` and ${names.length - 12} more` : ""}</p>` : ""}${mine.length && n ? `<label class="rt-f">Which event<select id="rtEv">${mine.map((e) => `<option value="${esc(e.id)}">${esc(e.title)} · ${esc(e.when)}</option>`).join("")}</select></label>
+        <label class="rt-f">Your message<textarea id="rtNote" rows="4" maxlength="500"></textarea></label><p class="rt-err" id="rtErr" role="alert"></p><button type="button" class="rt-go" id="rtSend">Send to ${n} ${n === 1 ? "follower" : "followers"}</button>` : n ? `<p>Make your next event first, then come back here to tell everyone.</p><a class="rt-go" href="/?app=1&amp;new=1#studio" style="display:inline-flex;align-items:center;text-decoration:none">Make an event</a>` : ""}</div>`);
+    const sel = q("#rtEv", S.bg), note = q("#rtNote", S.bg), fill = () => { const e = mine.find((x) => x.id === sel.value); if (e) note.value = `Next up: ${e.title}, ${e.when}. Are you in? Tap the link to reply.`; };
     if (sel) { fill(); sel.onchange = fill; }
     q("[data-new]", S.bg)?.addEventListener("click", () => { S.close(); sheet(); });
     q("#rtSend", S.bg)?.addEventListener("click", async (ev) => { const b = ev.currentTarget, er = q("#rtErr", S.bg); b.disabled = true; er.textContent = "";
@@ -223,31 +245,84 @@
         q(".rt-msg", S.bg).innerHTML = `<p class="rt-ok">Sent.</p><p>${+j.emailed || 0} by email${+j.texted ? `, ${+j.texted} by text` : ""}. Replies land on the run's guest list.</p><button type="button" class="rt-go sec" data-x>Done</button>`; }
       catch (e) { er.textContent = e.message; b.disabled = false; } }); }
 
-  // ---- the host's Home: a card when they're in New York ----
-  async function homeCard() { const v = q("#view-programs"); let hid = false; try { hid = localStorage.getItem("pl.rtHide") === "1"; } catch {} if (!v || hid || q("#rtHome", v) || !root.__wsPersonal || !(await hostInNYC()) || q("#rtHome", v)) return;
-    const F = await getJ("/api/host/followers"), n = +F?.count || 0, today = localIso(new Date()), dow = new Date().getDay();
-    const top = LIST.slice().sort((a, b) => ((a.d - dow + 7) % 7 || 7) - ((b.d - dow + 7) % 7 || 7)).slice(0, 3); if (q("#rtHome", v)) return;
-    const card = document.createElement("section"); card.className = "rt-card"; card.id = "rtHome"; card.setAttribute("aria-labelledby", "rtHomeH"); css();
-    card.innerHTML = `<div class="rt-hd"><h2 id="rtHomeH">New York runs, ready to go</h2><button type="button" class="rt-x" data-hide aria-label="Hide New York runs">${X}</button></div><p>The spot, route, pace groups and coffee after are filled in. Pick one, check it, share the link.</p>
-      <div class="rt-row">${top.map((T) => `<button type="button" class="rt-b" data-tpl="${T.id}"><b>${esc(T.title)}</b><span>${esc(lineOf(T))}</span></button>`).join("")}</div>
-      <button type="button" class="rt-ln" data-all>See all ${LIST.length} New York runs</button>
-      <div class="rt-fol"><span>${n ? `${n} ${n === 1 ? "person follows" : "people follow"} you` : "No followers yet. Guests can follow you after they reply."}</span>${n ? `<button type="button" class="rt-go sec" data-msg>Message them</button>` : ""}</div>`;
-    card.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (b.hasAttribute("data-hide")) { try { localStorage.setItem("pl.rtHide", "1"); } catch {} card.remove(); return; } if (b.dataset.tpl) use(b.dataset.tpl, { today }); else if (b.hasAttribute("data-all")) sheet(); else if (b.hasAttribute("data-msg")) messageSheet(); });
-    const at = q("#qsPanel", v) || q(".cg", v); if (at) at.after(card); else v.prepend(card); }
-  let ht = 0; const later = () => { clearTimeout(ht); ht = setTimeout(() => homeCard().catch(() => {}), 200); };
+  // ---- Routes near you: inside the create canvas, only once the host is planning a run (public/canvas.js routesHook) ----
+  // A New York host gets the routes: distance and surface filters, Use my location, and per route the meeting spot, about
+  // how far and a link to the start point in their maps app. Picking one fills the canvas. Anywhere else (no routes there
+  // yet), a short Add your route: the start spot, about how far, a link to their own route.
+  // o: { nyc, picked, ui (kept across redraws), own, onPick(id), onOwn({ spot, dist, link }) }
+  const RCSS = `.rt-routes{box-sizing:border-box;width:100%;min-width:0;contain:inline-size;margin:0 0 14px;padding:4px 0;color:#1B1D1C;font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+.rt-rh{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}.rt-rh h3{margin:0;font:600 18px/1.3 "IBM Plex Sans",system-ui,sans-serif}
+.rt-sub{margin:4px 0 10px;color:#444845;font-size:15px}.rt-fine{margin:10px 0 0;color:#444845;font-size:14px}
+.rt-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.rt-cl{flex-basis:100%;font-size:14px;font-weight:600;color:#444845}
+.rt-routes .rt-chip,.rt-rh .rt-chip{flex:none;min-height:44px;padding:0 10px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff;color:#1B1D1C;font:600 14px "IBM Plex Sans",system-ui,sans-serif;white-space:nowrap;cursor:pointer}.rt-routes .rt-chip[aria-pressed=true]{border-color:#1B1D1C!important;background:#1B1D1C!important;color:#fff!important}
+.rt-rl{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.rt-r{display:grid;gap:2px;padding:12px;border:1.5px solid #CFC8B9;border-radius:6px;background:#FAF8F3}.rt-r.on{border-color:#29489A}
+.rt-r b{font-size:16px;overflow-wrap:anywhere}.rt-r span{font-size:15px;color:#444845;overflow-wrap:anywhere}
+.rt-ra{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:8px}
+.rt-routes .rt-pick{min-height:44px;padding:0 16px;border:1.5px solid #29489A;border-radius:6px;background:#fff;color:#29489A;font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}.rt-routes .rt-pick[aria-pressed=true]{background:#29489A!important;color:#fff!important}
+.rt-map{min-height:44px;display:inline-flex;align-items:center;color:#29489A;font-weight:600;font-size:15px;text-decoration:underline;text-underline-offset:3px}
+.rt-routes .rt-f{display:grid;gap:4px;margin:0 0 10px;font-weight:600;font-size:14px}.rt-routes .rt-f input{height:48px;box-sizing:border-box;font:400 16px "IBM Plex Sans",system-ui,sans-serif;padding:0 12px;border:1px solid #CFC8B9;border-radius:6px;background:#fff;color:#1B1D1C}
+.rt-routes .rt-f small{font-weight:400;color:#444845}
+.rt-routes :is(.rt-chip,.rt-pick,.rt-map,.rt-ln,.rt-go,input):focus-visible{outline:3px solid rgba(41,72,154,.35);outline-offset:2px}`;
+  function mountRoutes(el, o = {}) { css(); if (!q("#rtRCss")) { const s = document.createElement("style"); s.id = "rtRCss"; s.textContent = RCSS; document.head.appendChild(s); }
+    const ui = o.ui || {}; el.classList.add("rt-routes"); el.setAttribute("role", "region"); el.setAttribute("aria-labelledby", "rtRH");
+    const chip = (g, v, label) => `<button type="button" class="rt-chip" data-rt-${g}="${v}" aria-pressed="${(ui[g] || "") === v}">${esc(label)}</button>`;
+    const list = () => { const L0 = routes({ dist: ui.dist, surface: ui.surf, near: ui.near }), L = [...L0.filter((x) => x.T.id === o.picked), ...L0.filter((x) => x.T.id !== o.picked)], show = ui.more ? L : L.slice(0, 3);
+      return `<div class="rt-rh"><h3 id="rtRH">Routes near you</h3><button type="button" class="rt-chip" data-rt-loc aria-pressed="${!!ui.near}">${ui.near ? "Nearest first" : "Use my location"}</button></div>
+        <p class="rt-sub" aria-live="polite">${esc(ui.locMsg || "New York routes with a public meeting spot. Pick one and the route, pace groups and after fill in.")}</p>
+        <div class="rt-chips" role="group" aria-labelledby="rtCD"><span class="rt-cl" id="rtCD">Distance</span>${chip("dist", "", "Any")}${DISTANCES.map(([v, l]) => chip("dist", v, l)).join("")}</div>
+        <div class="rt-chips" role="group" aria-labelledby="rtCS"><span class="rt-cl" id="rtCS">Surface</span>${chip("surf", "", "Any")}${SURFACES.map(([v, l]) => chip("surf", v, l)).join("")}</div>
+        ${show.length ? `<ul class="rt-rl">${show.map(({ T, away }) => { const on = o.picked === T.id; return `<li class="rt-r${on ? " on" : ""}" data-tpl="${T.id}"><b>${esc(T.title)}</b><span>Meet at ${esc(T.spot)}</span><span>${esc([howFar(T), T.surface.map((s) => SURF[s]).join(", "), away != null ? `${(away * 0.621371).toFixed(1)} mi from you` : ""].filter(Boolean).join(" · "))}</span>
+          <span class="rt-ra"><button type="button" class="rt-pick" data-rt-route="${T.id}" aria-pressed="${on}">${on ? "On your invite" : "Use this route"}</button><a class="rt-map" href="${esc(mapUrl(T))}" target="_blank" rel="noopener" aria-label="View the start of ${esc(T.title)} on a map">View on map</a></span></li>`; }).join("")}</ul>`
+          : `<p class="rt-sub">No ${ui.dist === "long" ? "10K plus " : ""}routes like that here yet. Try another filter.</p>`}
+        ${L.length > 3 ? `<button type="button" class="rt-ln" data-rt-more aria-expanded="${!!ui.more}">${ui.more ? "Fewer routes" : `More routes (${L.length - 3})`}</button>` : ""}
+        <p class="rt-fine">Distances are approximate. Check the route before you share it.</p>`; };
+    const own = () => { const r = o.own || {};
+      return `<div class="rt-rh"><h3 id="rtRH">Add your route</h3></div><p class="rt-sub">Where you meet, about how far, and a link to the route if you have one. It goes on the invite.</p>
+        <label class="rt-f">Start spot<input data-rt-o="spot" value="${esc(r.spot || "")}" maxlength="120" placeholder="The main gate of the park" autocomplete="off"></label>
+        <label class="rt-f">About how far<input data-rt-o="dist" value="${esc(r.dist || "")}" maxlength="40" placeholder="5K, or 3 miles" autocomplete="off"></label>
+        <label class="rt-f">Link to your route <small>(optional)</small><input data-rt-o="link" value="${esc(r.link || "")}" inputmode="url" autocapitalize="off" placeholder="https://"></label>
+        <p class="rt-err" role="alert"></p><button type="button" class="rt-go" data-rt-save>${o.own ? "Update the route" : "Add to the invite"}</button>`; };
+    const draw = () => { el.innerHTML = o.nyc ? list() : own(); }; draw();
+    el.onclick = (e) => { const b = e.target.closest("button"); if (!b || !el.contains(b)) return; const d = b.dataset; e.stopPropagation();
+      if ("rtDist" in d) { ui.dist = d.rtDist; draw(); return q(`[data-rt-dist="${d.rtDist}"]`, el)?.focus(); }
+      if ("rtSurf" in d) { ui.surf = d.rtSurf; draw(); return q(`[data-rt-surf="${d.rtSurf}"]`, el)?.focus(); }
+      if ("rtMore" in d) { ui.more = !ui.more; draw(); return q("[data-rt-more]", el)?.focus(); }
+      if ("rtRoute" in d) return o.onPick?.(d.rtRoute);
+      if ("rtLoc" in d) { if (ui.near) { ui.near = null; ui.locMsg = ""; draw(); return; } if (!navigator.geolocation) { ui.locMsg = "This browser can't share your location. The routes are in their usual order."; draw(); return; }
+        b.disabled = true; b.textContent = "Finding you";
+        navigator.geolocation.getCurrentPosition((p) => { ui.near = { lat: p.coords.latitude, lng: p.coords.longitude }; ui.locMsg = "Nearest first, from where you are now."; draw(); q("[data-rt-loc]", el)?.focus(); },
+          () => { ui.near = null; ui.locMsg = "Location is off, so the routes are in their usual order."; draw(); q("[data-rt-loc]", el)?.focus(); }, { timeout: 8000, maximumAge: 600000 }); return; }
+      if ("rtSave" in d) { const v = (k) => String(q(`[data-rt-o="${k}"]`, el)?.value || "").trim(), er = q(".rt-err", el), link = v("link");
+        if (!v("spot")) { er.textContent = "Add where you meet."; return q('[data-rt-o="spot"]', el).focus(); }
+        if (link && !/^https:\/\/[^\s<>"']{3,300}$/i.test(link)) { er.textContent = "The route link starts with https://"; return q('[data-rt-o="link"]', el).focus(); }
+        o.onOwn?.({ spot: v("spot"), dist: v("dist"), link }); } }; }
+  // Potto's picks panel in the create flow (window.PLSuggestPlaces, when it's on the page) takes the routes as its run
+  // provider, so there is one panel, not two. Contract: mount(el, { nyc, city, picked, ui, own, onPick(id), onOwn(route) }).
+  const provider = { kind: "run", title: "Routes near you", mount: (el, c = {}) => mountRoutes(el, { ...c, nyc: c.nyc ?? isNYC(c.city) }), routes, mapUrl, howFar };
+  const register = () => { try { root.PLSuggestPlaces?.register?.("run", provider); } catch {} }; register(); (root.__plSuggestPlacesQ = root.__plSuggestPlacesQ || []).push(register);
 
-  // ---- the Home composer: "easy 5K in Prospect Park Saturday 8" goes straight to its template, a run with no spot
-  // opens the picker with the day and time kept. Anything else (and a run outside New York) is the app's as before.
-  // Knowing the city can take a request, so the send is held and handed back to the app when it isn't ours.
-  function guard(e) { const ta = q("#qsText"); if (!ta || e.__rt) return; const isGo = e.type === "click" ? !!e.target.closest?.("#qsGo") : e.target === ta && e.key === "Enter" && !e.shiftKey && !e.isComposing; if (!isGo) return;
-    const P = parse(ta.value, localIso(new Date())); if (!P) return; e.preventDefault(); e.stopImmediatePropagation();
-    hostInNYC().catch(() => false).then((nyc) => {
-      if (nyc || P.id) { ta.value = ""; const over = { date: P.date || "", time: P.time || "", title: P.title || "", repeat: P.repeat || undefined }; return P.id ? use(P.id, over) : sheet(over); }
-      const again = e.type === "click" ? new MouseEvent("click", { bubbles: true, cancelable: true }) : new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }); again.__rt = 1; (e.type === "click" ? q("#qsGo") : ta)?.dispatchEvent(again); }); }
+  /** Open the create canvas as a run (Routes near you shows there): from the Home line, Potto or a run idea's Host this. */
+  function planRun(o = {}) { const C = root.EventCanvas, t = String(o.title || "").trim().slice(0, 90), pre = { ...(t ? { pubTitle: t, name: t } : {}), ...(ISO.test(o.date || "") ? { date: o.date } : {}), ...(HHMM.test(o.time || "") ? { startTime: o.time } : {}), ...(o.repeat ? { repeat: o.repeat } : {}) };
+    signupSet(pre, "paces", P.mixed); signupSet(pre, "first", true);
+    try { if (C?.isOpen?.() && C.preset) return C.preset(pre); if (C?.open) return C.open({ mode: "new", kind: "run", preset: pre }); } catch (e) { console.warn(e); }
+    location.href = "/?app=1&new=1&kind=run#studio"; }
 
-  function boot() { if (!q("#view-programs")) return; later(); new MutationObserver(later).observe(q("#view-programs"), { childList: true });
-    document.addEventListener("click", guard, true); document.addEventListener("keydown", guard, true);
-    addEventListener("pl:place", () => { const c = q("#rtHome"); if (!c) later(); }); }
-  root.RunTemplates = { ...pure, sheet, use, messageSheet, hostInNYC, pickedCity };
+  // ---- the Home create line: "easy 5K in Prospect Park Saturday 8" goes straight to its route for a New York host; any
+  // other run ("run club Sunday", "tempo Tuesday") opens the canvas as a run, with Routes near you. Anything that isn't a
+  // run is the app's as before. Run templates never show on Home by themselves (owner request, Nov 2026).
+  function guard(e) { if (e.__rt) return; const go = e.type === "click" ? e.target.closest?.("#qsGo") : null; // the app can have more than one create line (Home, the studio): the one in use
+    const ta = e.type === "click" ? (go && (go.closest(".cg-box,form,section,div")?.querySelector("#qsText") || q("#qsText"))) : e.target?.id === "qsText" ? e.target : null;
+    if (!ta || (e.type !== "click" && (e.key !== "Enter" || e.shiftKey || e.isComposing))) return;
+    const raw = ta.value.trim(), P = parse(raw, localIso(new Date())); if (!P) return; e.preventDefault(); e.stopImmediatePropagation(); ta.value = ""; runIntent(raw, P); }
+  function runIntent(raw, P) { const over = { date: P.date || "", time: P.time || "", title: P.title || raw.charAt(0).toUpperCase() + raw.slice(1), repeat: P.repeat || undefined };
+    hostInNYC().catch(() => false).then((nyc) => (nyc && P.id ? use(P.id, over) : planRun(over))); }
+  // the app's own funnel for a typed event (index.html quickStart, behind Potto's Home line and the studio's line): a run goes
+  // to the run canvas instead, so Routes near you shows; everything else is the app's as before
+  function wrapQuickStart() { const f = root.quickStart; if (typeof f !== "function" || f.__rt) return; const w = function (text) { const t = String(text || "").trim(), P = root.__wsPersonal !== false ? parse(t, localIso(new Date())) : null;
+      if (P && root.EventCanvas?.open) { runIntent(t, P); return; } return f.apply(this, arguments); }; w.__rt = 1; root.quickStart = w; }
+
+  function boot() { if (!q("#view-programs")) return; document.addEventListener("click", guard, true); document.addEventListener("keydown", guard, true); wrapQuickStart(); setTimeout(wrapQuickStart, 1500); }
+  root.RunTemplates = { ...pure, sheet, use, messageSheet, hostInNYC, pickedCity, mountRoutes, planRun, provider };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })(typeof window !== "undefined" ? window : globalThis);

@@ -4,7 +4,8 @@
 // sign-up questions (no food question). Server: Potto offers the templates to a New York run host and not to a host
 // elsewhere, and fills one from "easy 5K in Prospect Park Saturday 8"; a guest replies with a pace group and follows
 // with the reply as proof; the host messages followers by email and text. Browser (skipped without Playwright): the
-// Home card shows for New York and not for Chicago, a template opens the canvas filled in with weekly on, and a guest
+// Home never shows the run card; Routes near you show in the canvas once a run is planned (filters, map links, a route
+// fills the canvas with weekly on), Chicago gets Add your route, Message your followers is on the host page, and a guest
 // signs up from the light invite with a pace group, no food question, then follows in one tap.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -75,6 +76,15 @@ test("New York or not, the weekly repeat, and the words a host types", () => {
   assert.match(src("public/canvas.js"), /if \(P.startTime && kt && W.startTime === kt\) W.startTime = P.startTime/, "the Fill in button replaces the kind's default time");
 });
 
+test("Routes near you: every route has a meeting spot, about how far, a surface and a map link; filters and nearest first", () => {
+  for (const T of R.LIST) { assert.ok(T.spot && T.km > 0 && T.surface.length, T.id); assert.ok(T.surface.every((s) => ["park", "waterfront", "bridge", "trail"].includes(s)), T.id);
+    assert.match(R.howFar(T), /^About [\d.]+ mi \([\d.]+ km\)$/); assert.match(R.mapUrl(T), /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=4\d\.\d+%2C-7\d\.\d+$/); }
+  assert.equal(R.routes().length, R.LIST.length); assert.deepEqual(plain(R.routes({ surface: "bridge" }).map((x) => x.T.id)), ["bridge"]); assert.deepEqual(plain(R.routes({ surface: "trail" }).map((x) => x.T.id)), ["van-cortlandt"]);
+  assert.deepEqual(plain(R.routes({ dist: "short" }).map((x) => x.T.id)), ["bridge"]); assert.ok(R.routes({ dist: "mid" }).every((x) => x.T.km >= 5 && x.T.km < 10)); assert.equal(R.routes({ dist: "long" }).length, 0);
+  // from Grand Army Plaza, Prospect Park is nearest and the Bronx is furthest
+  const near = R.routes({ near: { lat: 40.6745, lng: -73.9701 } }); assert.equal(near[0].T.id, "prospect"); assert.ok(near[0].away < 0.2); assert.equal(near.at(-1).T.id, "van-cortlandt");
+  assert.equal(R.howFar(R.byId("prospect")), "About 3.4 mi (5.4 km)");
+});
 test("run sign-up: pace groups, first time, emergency contact and waiver on the host's say, never a food question", () => {
   const ev = { questions: [{ id: "own1", q: "Your Instagram?", type: "instagram" }] };
   R.signupSet(ev, "paces", "Easy\nSteady\n\nQuick"); R.signupSet(ev, "first", true);
@@ -131,34 +141,53 @@ test("a guest replies with a pace group and no food question, follows with the r
   assert.ok([401, 403].includes((await post("/api/host/announce", { eventId: "nycRun1", note: "x" })).status), "hosts only");
 });
 
-test("browser: the Home card for New York, a template into the canvas with weekly on, a guest reply with a pace group and a one-tap follow", { timeout: 240000 }, async (t) => {
+test("browser: no run card on Home, Routes near you once a run is planned, a route into the canvas with weekly on, a guest reply with a pace group and a one-tap follow", { timeout: 240000 }, async (t) => {
   let chromium; try { ({ chromium } = createRequire(import.meta.url)("playwright")); } catch { return t.skip("no playwright"); }
   let br; try { br = await chromium.launch(); } catch { return t.skip("no browser"); }
   const base = srv.base, as = async (cookie) => { const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" }); ctx.setDefaultTimeout(45000); ctx.setDefaultNavigationTimeout(90000);
     if (cookie) { const [k, ...v] = cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: base }, { name: "encore_in", value: "1", url: base }]); } const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.errs = errs; return p; };
   try {
-    // New York host: the card on Home, three templates and the whole list
-    const p = await as(ny); await p.goto(base + "/?app=1"); await p.waitForSelector("#rtHome", { timeout: 30000 }); await p.waitForTimeout(1200);
+    // New York host: nothing about runs on Home until they plan one (owner request, Nov 2026)
+    const p = await as(ny); await p.goto(base + "/?app=1"); await p.waitForSelector("#view-programs", { timeout: 30000 }); await p.waitForTimeout(2500);
     { const th = p.getByRole("button", { name: "Thanks, Potto" }); if (await th.isVisible().catch(() => false)) await th.click(); } // the first-event celebration
-    assert.match(await p.locator("#rtHome").innerText(), /New York runs, ready to go/); assert.equal(await p.locator("#rtHome [data-tpl]").count(), 3); assert.match(await p.locator("#rtHome").innerText(), /2 people follow you/);
-    for (const b of await p.locator("#rtHome button").all()) { const bb = await b.boundingBox(); if (bb) assert.ok(bb.height >= 44, "44px tap targets"); }
-    await p.click("#rtHome [data-all]"); await p.waitForSelector(".rt-sh"); assert.equal(await p.locator(".rt-sh [data-tpl]").count(), R.LIST.length);
+    assert.equal(await p.locator("#rtHome").count(), 0, "no run card on Home"); assert.doesNotMatch(await p.locator("#view-programs").innerText(), /New York runs|See all \d+ New York runs/);
+    // they pick Run in the canvas: Routes near you, with distance and surface filters, the spot, about how far and a map link
+    await p.evaluate(() => window.EventCanvas.open({ mode: "new" })); await p.waitForSelector("#cv #cvTitle"); assert.equal(await p.locator("#cvRoutes").count(), 0, "no routes before a run is being planned");
+    { const m = p.locator("#cv [data-kmore]"); if (await m.isVisible().catch(() => false) && !(await p.locator("#cv [data-kind=run]").isVisible())) await m.click(); } await p.click("#cv [data-kind=run]"); await p.waitForSelector("#cvRoutes .rt-r"); assert.match(await p.locator("#cvRoutes").innerText(), /Routes near you[\s\S]*Use my location/);
+    assert.equal(await p.locator("#cvRoutes .rt-r").count(), 3); assert.match(await p.locator("#cvRoutes .rt-r").first().innerText(), /Meet at Engineers' Gate[\s\S]*About 3\.2 mi \(5\.1 km\) · Park loop/);
+    assert.match(await p.locator("#cvRoutes .rt-map").first().getAttribute("href"), /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=40\.7835%2C-73\.959$/);
+    await p.click('#cvRoutes [data-rt-surf="waterfront"]'); assert.deepEqual(await p.locator("#cvRoutes .rt-r b").allInnerTexts(), ["Tuesday tempo on the Hudson", "East River Esplanade easy run", "Astoria Park and Hell Gate loops"]);
+    await p.click('#cvRoutes [data-rt-dist="short"]'); assert.equal(await p.locator("#cvRoutes .rt-r").count(), 0); await p.click('#cvRoutes [data-rt-dist=""]');
+    for (const b of await p.locator("#cvRoutes button, #cvRoutes a").all()) { const bb = await b.boundingBox(); if (bb) assert.ok(bb.height >= 44, "44px tap targets"); }
     // one tap: the Tuesday tempo, filled in, with Every week on
-    await p.click(".rt-sh [data-tpl=hudson]"); await p.waitForSelector("#cv #cvTitle"); assert.equal(await p.inputValue("#cvTitle"), "Tuesday tempo on the Hudson");
-    assert.match(await p.locator("#cvPlace").innerText(), /Chelsea Piers/); assert.equal(await p.getAttribute("[data-run=repeat]", "aria-checked"), "true");
+    await p.click('#cvRoutes [data-rt-route="hudson"]'); await p.waitForFunction(() => document.querySelector("#cvTitle")?.value === "Tuesday tempo on the Hudson");
+    assert.match(await p.locator("#cvPlace").innerText(), /Chelsea Piers/); assert.equal(await p.getAttribute("[data-run=repeat]", "aria-checked"), "true"); assert.equal(await p.getAttribute('#cvRoutes [data-rt-route="hudson"]', "aria-pressed"), "true");
     assert.match(await p.locator("#cvPage").innerText(), /Pace groups[\s\S]*Tempo, 8:00 to 9:00 a mile/); assert.equal(await p.locator("#cvBlocks [data-addon=bring]").count(), 1);
     const st = await p.evaluate(() => window.EventCanvas.state().W); assert.equal(st.repeat, "weekly"); assert.equal(st.planKind, "run"); assert.equal(st.askDiet, false); assert.deepEqual(st.questions.map((q) => q.id), ["runpace", "runfirst"]);
     // the waiver and emergency contact are the host's call
     await p.click("[data-run=waiver]"); await p.waitForSelector("[data-runwaiver]"); await p.click("[data-run=ice]");
     assert.deepEqual((await p.evaluate(() => window.EventCanvas.state().W.questions.map((q) => q.id))), ["runpace", "runfirst", "runice", "runwaiver"]);
     await p.click("[data-run=repeat]"); assert.equal(await p.evaluate(() => window.EventCanvas.state().W.repeat), "");
-    // another template from the canvas: the spot and route change with it
-    await p.click("[data-cv=nycruns]"); await p.click(".rt-sh [data-tpl=astoria]"); assert.match(await p.locator("#cvPlace").innerText(), /Hell Gate/); assert.equal(await p.inputValue("#cvTitle"), "Astoria Park and Hell Gate loops");
-    // a Potto link opens the canvas straight from the address
+    // another route: the spot and route change with it
+    await p.click('#cvRoutes [data-rt-surf=""]'); await p.click("#cvRoutes [data-rt-more]"); await p.click('#cvRoutes [data-rt-route="astoria"]'); await p.waitForFunction(() => /Hell Gate/.test(document.querySelector("#cvPlace")?.innerText || ""));
+    assert.equal(await p.inputValue("#cvTitle"), "Astoria Park and Hell Gate loops");
+    // a Potto link opens the canvas straight from the address, with the routes
     await p.goto(base + R.urlOf("prospect", { date: day(5), time: "08:00", title: "Easy 5K in Prospect Park" })); await p.waitForSelector("#cv #cvTitle"); assert.equal(await p.inputValue("#cvTitle"), "Easy 5K in Prospect Park"); assert.match(await p.locator("#cvWhen").innerText(), /8:00am/);
-    assert.doesNotMatch(p.url(), /tpl=/, "the address is cleaned"); assert.deepEqual(p.errs, []);
-    // Chicago: no card
+    assert.doesNotMatch(p.url(), /tpl=/, "the address is cleaned"); await p.waitForSelector('#cvRoutes [data-rt-route="prospect"][aria-pressed="true"]');
+    // the Home create line: a run in words opens the run canvas with the routes (not the Home card)
+    await p.goto(base + "/?app=1"); await p.waitForSelector("#qsText"); await p.fill("#qsText", "tempo run club Tuesday 6:30pm"); await p.click("#qsGo");
+    await p.waitForSelector("#cvRoutes .rt-r"); assert.equal(await p.evaluate(() => window.EventCanvas.state().W.planKind), "run"); assert.equal(await p.locator("#rtHome").count(), 0);
+    // Message your followers lives on the host's own page now
+    await p.goto(base + "/@jess-runs"); await p.waitForSelector("#offer [data-own=msg]"); await p.click("#offer [data-own=msg]"); await p.waitForSelector(".rt-sh"); assert.match(await p.locator(".rt-sh").innerText(), /2 people follow you/);
+    assert.deepEqual(p.errs, []);
+    // Chicago: no card, and a run there gets Add your route (a start spot, about how far, a link) instead of New York's list
     const c = await as(chi); await c.goto(base + "/?app=1"); await c.waitForTimeout(3500); assert.equal(await c.locator("#rtHome").count(), 0, "not in New York, no New York card");
+    await c.evaluate(() => window.EventCanvas.open({ mode: "new" })); await c.waitForSelector("#cv #cvTitle"); { const m = c.locator("#cv [data-kmore]"); if (await m.isVisible().catch(() => false) && !(await c.locator("#cv [data-kind=run]").isVisible())) await m.click(); } await c.click("#cv [data-kind=run]"); await c.waitForSelector("#cvRoutes [data-rt-save]");
+    assert.match(await c.locator("#cvRoutes").innerText(), /Add your route/); assert.equal(await c.locator("#cvRoutes .rt-r").count(), 0);
+    await c.fill('#cvRoutes [data-rt-o="spot"]', "Montrose Harbor, by the bait shop"); await c.fill('#cvRoutes [data-rt-o="dist"]', "5K"); await c.fill('#cvRoutes [data-rt-o="link"]', "http://example.com/route");
+    await c.click("#cvRoutes [data-rt-save]"); assert.match(await c.locator("#cvRoutes .rt-err").innerText(), /https/); await c.fill('#cvRoutes [data-rt-o="link"]', "https://example.com/route"); await c.click("#cvRoutes [data-rt-save]");
+    await c.waitForFunction(() => window.EventCanvas.state().W.meetPoint === "Montrose Harbor, by the bait shop");
+    const S2 = await c.evaluate(() => window.EventCanvas.state().W.sections.find((s) => s.title === "The route")?.body); assert.match(S2, /About 5K\.[\s\S]*https:\/\/example\.com\/route/);
     // a guest from the shared link: pace group, no food question, then Follow for the next run in one tap
     const g = await as(""); await g.goto(base + "/e/nycRun1"); await g.waitForSelector("#f");
     assert.equal(await g.locator("#dt").count(), 0, "no food question"); await g.waitForSelector("#qs .tf-opts button"); assert.match(await g.locator("#qs").innerText(), /Which pace group\?/);

@@ -288,7 +288,7 @@
     const ownS = (W.sections || []).filter((s) => !TPL_SECTIONS.includes(String(s.title || "").toLowerCase())), ownQ = (W.questions || []).filter((x) => !Object.values(R?.RUN_Q || {}).includes(x.id));
     Object.assign(W, p, { sections: [...(p.sections || []), ...ownS], questions: [...(p.questions || []), ...ownQ] });
     for (const a of ADDONS) if (addonHas(W, a.k)) S.open.add(a.k); S.open.add("runsignup");
-    try { localStorage.setItem("pl.runCity", "New York"); } catch {} } // a New York run: Home shows the templates from now on
+    if (p.runTpl) try { localStorage.setItem("pl.runCity", "New York"); } catch {} } // a New York route: the next run plan offers New York's routes
   /** A run picked by hand gets the run sign-up too: pace groups and "first time?", no food question. */
   function runDefaults(W) { const R = root.RunTemplates; if (!R) return; if (!R.signup(W).paces.length && !(W.questions || []).some((x) => x.id === R.RUN_Q.first)) { R.signupSet(W, "paces", ["Easy, 11:00 a mile or slower", "Steady, 9:30 to 11:00 a mile", "Quicker, under 9:30 a mile"]); R.signupSet(W, "first", true); } W.askDiet = false; S.open.add("runsignup"); }
   /** From the picker while the canvas is open (RunTemplates.use, "Pick a run"). */
@@ -342,12 +342,20 @@
     return `<section class="cv-blk cv-kind" data-kblock="${b.k}"><header>${SX().svg(b.icon)}<h3>${esc(b.title)}</h3><button type="button" class="cv-rm" data-rmk="${b.k}" aria-label="Remove ${esc(b.title.toLowerCase())}">${I.x}</button></header>${body}</section>`; }
   // "What are you planning?": the most common kinds in two rows, "More" opens the rest in place (fitKinds hides what
   // doesn't fit two rows at this width). "Something else" takes the host's own name for it.
-  // New York run templates (public/runtemplates.js): for a host in New York (their page city, the city picker, Potto),
-  // one row over the kinds: "New York runs, ready to go" opens the picker; a template fills the spot, route, pace groups,
-  // after, what to bring and the run sign-up in one tap.
+  // Routes near you (public/runtemplates.js): only once the host is planning a run (they picked Run, typed a run, or a
+  // Potto link or a run idea opened the canvas). A New York host gets route options with a meeting spot, distance, surface
+  // and a map link; a route fills the spot, route, pace groups, after and the run sign-up in one tap. Anywhere else, a
+  // short Add your route. When Potto's picks panel is on the page (window.PLSuggestPlaces), the routes are its run provider.
   const nycHost = (W) => { const R = root.RunTemplates; if (!R) return false; let c = [PROFILE?.city, PROFILE?.hood, W?.city]; try { c.push(R.pickedCity?.(), localStorage.getItem("pl.runCity")); } catch {} return c.some((x) => R.isNYC(x)); };
-  function nycRow(W) { if (!S.isNew || !nycHost(W) || (W.planKind && W.planKind !== "run")) return ""; const T = W.runTpl && root.RunTemplates.byId(W.runTpl);
-    return `<div class="cv-nyc cv-ed"><span><b>${T ? `From: ${esc(T.title)}` : "New York runs, ready to go"}</b><small>${T ? "Filled in from this run. Pick another spot and the route, pace groups and after follow." : "The spot, route, pace groups and coffee after, filled in."}</small></span><button type="button" data-cv="nycruns">${T ? "Change" : "Pick a run"}</button></div>`; }
+  function nycRow(W) { if (!S.isNew || W.planKind !== "run" || !root.RunTemplates?.mountRoutes || root.PLSuggestPlaces?.has?.("run")) return ""; return `<div class="cv-routes cv-ed" id="cvRoutes"></div>`; }
+  function routesHook() { const el = S?.el && q("#cvRoutes", S.el), R = root.RunTemplates; if (!el || !R?.mountRoutes) return;
+    R.mountRoutes(el, { nyc: nycHost(S.W), picked: S.W.runTpl || "", ui: S.routesUi || (S.routesUi = {}), own: S.W.runRoute || null, onPick: (id) => preset(R.toEvent(id, {})), onOwn: ownRoute }); }
+  /** Add your route (a city with no ready routes): the start spot, about how far, and a link to the host's own route. */
+  function ownRoute(r) { const W = S.W, spot = String(r?.spot || "").trim().slice(0, 120), dist = String(r?.dist || "").trim().slice(0, 40), link = /^https:\/\/[^\s<>"']{3,300}$/i.test(String(r?.link || "").trim()) ? String(r.link).trim() : "";
+    W.runRoute = { spot, dist, link }; if (spot) W.meetPoint = spot;
+    const body = [dist ? `About ${dist.replace(/^about\s+/i, "")}.` : "", link ? `The route: ${link}` : "", "Distances are approximate."].filter(Boolean).join("\n");
+    W.sections = [{ icon: "pin", title: "The route", body }, ...(W.sections || []).filter((s) => String(s.title || "").toLowerCase() !== "the route")];
+    changed(true); say("Your route is on the invite. Change anything."); }
   function kindsRow(W) { if (!S.isNew) return ""; const own = W.planKind === "other";
     if (W.runTpl && W.planKind === "run" && nycHost(W)) return nycRow(W); // a template already says what it is
     return nycRow(W) + `<div class="cv-kinds cv-ed${S.kindsAll ? " all" : ""}" role="group" aria-labelledby="cvKindsH"><div class="cv-kh"><p id="cvKindsH">What are you planning?</p><button type="button" class="cv-kmore" data-kmore aria-expanded="${!!S.kindsAll}" aria-controls="cvKindsL" hidden>${S.kindsAll ? "Fewer" : "More"}</button></div><div id="cvKindsL">${PLAN_KINDS.map((k) => `<button type="button" class="cv-kc" data-kind="${k.k}" aria-pressed="${W.planKind === k.k}" title="${esc(k.line)}">${esc(k.label)}</button>`).join("")}</div>${own ? `<label class="cv-kown"><span>What is it?</span><input id="cvKindOwn" maxlength="24" value="${esc(W.typeLabel || "")}" placeholder="Like: Clothes swap" autocomplete="off"></label>` : ""}</div>`; }
@@ -412,7 +420,7 @@
     root.PLTrendIdeas.mount(el, { key: "canvas", n: 3, lead: "Ideas from Potto", ready: true, onPick: (x) => { const W = S.W;
       if (x.kind && !W.planKind && PLAN_KINDS.some((k) => k.k === x.kind && !k.handoff)) { const r = applyKind(W, x.kind, S.open); S.W = r.d; S.open = r.open; }
       S.W.pubTitle = S.W.name = String(x.title || "").slice(0, 90); changed(true); say(`${x.title}: started. Change anything.`); q("#cvTitle", S.el)?.focus({ preventScroll: true }); } }); } // ---- end trends ----
-  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); root.PLCohost?.drawn?.(cohost()); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); picksHook(); }
+  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); root.PLCohost?.drawn?.(cohost()); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); picksHook(); routesHook(); }
   // the dock says what's on: "Look: Sage", "Effect: Petals"
   function lookName(W) { const L = W.look || {}, LK = root.EncoreLooks, p = (L.palette || [])[0]; if (!p) return "House"; const sw = (LK?.SWATCHES || []).find((x) => x[0] === p); return sw ? sw[3] : LK?.VIBES?.[L.vibe]?.label || "Your colours"; }
   function dockNames() { const W = S?.W, el = S?.el; if (!W || !el) return; for (const [k, ic, word, v] of [["look", I.look, "Look", lookName(W)], ["effect", I.fx, "Effect", effectName(W)]]) { const b = q(`.cv-dock [data-cv=${k}]`, el); if (!b) continue;

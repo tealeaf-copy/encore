@@ -291,7 +291,7 @@ export function makeKinds({ store, C = {}, X = {} } = {}) {
         ...(isHost ? { clashes: roomClashes(A.sessions) } : {}) } : { locked: true, count: A.sessions.length };
       out.speakers = speakers.map((s) => speakerFor(s, { inn, host: isHost, eventId: id })).filter(Boolean);
       out.sponsors = cleanSponsors(ev.sponsors);
-      if (isHost) out.door = { checkin: `/people/event/${encodeURIComponent(id)}`, tags: `/people/event/${encodeURIComponent(id)}#tags` }; }
+      if (isHost) out.door = { checkin: `/contacts/event/${encodeURIComponent(id)}`, tags: `/contacts/event/${encodeURIComponent(id)}#tags` }; } // the invite plan page (server/people.js); /people is Find people
     return out;
   }
 

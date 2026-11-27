@@ -110,6 +110,8 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
    brand kit stays on their name, their events and their own words */
 html.kit-on body :is(h2.sec,#offer>h2,#scrapbook .sb-h h2,#book h2,.recs>h2,#forTeams>h2){font-family:var(--pl-font-display)!important;font-weight:var(--pl-display-weight,600)!important;letter-spacing:-.01em!important}
 html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-font-text)!important}
+/* a photo cover is its full height from the first draw (public/storefront.js adds the same rules later), so the page doesn't jump when it lands */
+.cover.cv-photo{position:relative;overflow:hidden;height:clamp(220px,24vw,320px)}@media (max-width:760px){.cover.cv-photo{height:200px}}
 </style><link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
 <script src="/calm.js"></script><script src="/authguard.js"></script><script src="/placesearch.js"></script>
@@ -175,7 +177,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
   const folBtn = (id, cls) => (PF && !h.showcase ? PF.button({ handle: h.handle, name: short }, { cls, id, on: !!d.viewer?.following }) : "");
   const knownEmail = (() => { try { return localStorage.getItem("encore.email") || ""; } catch { return ""; } })();
   const tastes = (h.tags || []).slice(0, 5), poss = (n) => /s$/i.test(String(n)) ? `${n}'` : `${n}'s`;
-  m.innerHTML = `<div class="cover"></div>
+  m.innerHTML = `<div class="cover${h.theme?.coverUrl ? " cv-photo" : ""}"></div>
   <div class="head"><span class="av">${esc(h.emoji || "🎉")}</span><div><div class="name-row"><h1>${esc(h.name || "@" + h.handle)}</h1></div>${d.rising ? `<span class="rising" style="display:inline-block;margin:2px 0 4px;padding:2px 9px;border-radius:999px;background:#E3F1DD;border:1.5px solid var(--pl-ink);font-size:13px;font-weight:700">Rising in ${esc(d.rising.city)}${d.rising.rank === 1 ? " · #1" : ""}</span>` : ""}<div class="handle">@${esc(h.handle)}${h.hood || h.city ? " · " + esc([h.hood, h.city].filter(Boolean).join(", ")) : ""}</div>
     <div class="stats"><span id="fcw"${d.followers ? "" : " hidden"}><b id="fc" data-pl-followers="${esc(h.handle)}" data-pl-fmt="count">${d.followers || 0}</b> <span id="fcl">follower${d.followers === 1 ? "" : "s"}</span></span>${d.past.length ? `<span><b>${d.past.length}</b> ${d.past.length === 1 ? "event" : "events"} hosted</span>` : ""}${d.upcoming.length > 1 ? `<span><b>${d.upcoming.length}</b> coming up</span>` : ""}</div><div class="gigs" id="hGigs" hidden></div>${h.bio ? `<p class="bio">${esc(h.bio)}</p>` : ""}${tastes.length ? `<div class="tags">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}</div></div>
   <section class="next-up" id="nextUp" hidden></section>

@@ -257,10 +257,13 @@ export function makePlans({ store, C, X, kinds = () => null }) {
   /** The host's own events and their to-dos. */
   function hostItems(ws, from) {
     const S = scopeStore(store, ws), all = S.list("rsvps"), out = [];
-    for (const d of S.list("events")) { const ev = d.data, id = d.id; if (!ev || !ID.test(id) || ev.example || ev.sample || ev.cancelled || ev.parentId || !ISO.test(ev.date || "") || lastDay(ev) < from) continue;
+    for (const d of S.list("events")) { const ev = d.data, id = d.id;
+      // a drop that takes orders any time has no date: it shows on its next pickup day, as it does for the people who ordered
+      const pickDay = ev?.drop && !ISO.test(ev.date || "") ? slotDay(slotLabel((ev.slots || [])[0] || ""), from) : "";
+      if (!ev || !ID.test(id) || ev.example || ev.sample || ev.cancelled || ev.parentId || (!ISO.test(ev.date || "") && !pickDay) || (!pickDay && lastDay(ev) < from)) continue;
       const mine = all.filter((x) => x.data?.eventId === id), going = Math.round(seatsTaken(ev, mine)), asking = mine.filter((x) => x.data?.response === "requested").length, orders = mine.filter((x) => x.data?.response === "going" && (x.data.orderLines || []).length).length;
       const ep = episode(id, ws, true), status = statusOf("hosting", ev, null, { going, asking, orders });
-      const it = itemOf({ id, ev, kind: "hosting", status, place: placeOf(ev, { exact: true }), href: `/plans/${encodeURIComponent(id)}`,
+      const it = itemOf({ id, ev, kind: "hosting", status, place: placeOf(ev, { exact: true }), href: `/plans/${encodeURIComponent(id)}`, ...(pickDay ? { date: pickDay } : {}),
         extra: { draft: status === "Draft", ...(ep ? { classNo: ep.n } : {}), ...(multiDay(ev) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) } });
       if (ev.drop) { const lab = (ev.slots || [])[0] || ""; if (lab) { it.time = slotStart(lab) || it.time; } }
       out.push(it);

@@ -346,8 +346,10 @@ export function createApp({ store, dataDir }) {
 
   app.disable("x-powered-by");
   // ---- speed and robustness at the HTTP layer (server/perf.js) ----
-  // every HTML page sent as a string gets versioned script/style URLs and local fonts
-  app.use((req, res, next) => { const send = res.send; res.send = function (body) { if (typeof body === "string" && (/^text\/html/.test(this.get("Content-Type") || "") || (!this.get("Content-Type") && /^\s*<(!doctype|html|head)/i.test(body)))) body = optimizeHtml(body, PUBLIC_DIR); return send.call(this, body); }; next(); });
+  // every HTML page sent as a string gets versioned script/style URLs and local fonts, and the app tags every full page
+  // has (server/appstore.js pwaHead: the page-fade opt-in and its quiet handler, netguard, the manifest), so a page sent
+  // straight from a route (the brand and admin pages) moves between pages the same way as the rest
+  app.use((req, res, next) => { const send = res.send; res.send = function (body) { if (typeof body === "string" && (/^text\/html/.test(this.get("Content-Type") || "") || (!this.get("Content-Type") && /^\s*<(!doctype|html|head)/i.test(body)))) body = optimizeHtml(pwaHead(body, req.path), PUBLIC_DIR); return send.call(this, body); }; next(); });
   app.use("/api", compressJson());
   const idem = idempotency({ who: (req) => (/(?:^|;\s*)encore_auth=([^;]+)/.exec(req.headers.cookie || "") || [])[1] || req.get("x-encore-key") || req.ip || "" }); app.locals.idempotency = idem; app.use(idem);
   // fonts: the families our pages ask Google for, served from public/fonts (font files never change name in place)

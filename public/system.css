@@ -294,6 +294,9 @@ html body :is(article.fc small,article.fc .chip,.lg-more,article.prog small){fon
 html body :is(article.fc small,article.prog small,.prog-k){font-size:13px!important}
 @media (max-width:860px){html body :is(header a:not([class]),header nav a:not([class]),.pg-cap a,.top>a:not([class]),.brand-foot a){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}
 @media (max-width:860px){html body :is(.fv-end a,.fside h3 a){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}
+/* click audit: a short footer word (Hosts, Terms) is 44px wide as well as tall; the host page's calendar link and the invite's Made with line reach 44px too; a footer line of links that wraps keeps its lines 44px apart, so a tap on one line never lands on the next */
+@media (max-width:860px){html body footer a:not([class]){min-width:44px;justify-content:center;text-align:center}html body footer:has(> a:not([class])){line-height:44px}}
+@media (max-width:860px){html body :is(p.sr-sub>a,p.note>a){display:inline-block;padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}
 html body .pub-side{box-shadow:none!important;border:1.5px solid var(--line,var(--pl-line))!important}
 
 

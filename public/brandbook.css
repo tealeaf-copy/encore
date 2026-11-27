@@ -254,7 +254,7 @@ body.bb[data-top]:not(:has(> .bb-top)){padding-top:57px}
 .bb-cal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
 .bb-cal .wd{font:500 12px var(--bb-mono);color:var(--bb-soft);padding:4px 0}
 .bb-cal .d{all:unset;box-sizing:border-box;height:40px;display:grid;place-items:center;font:400 14px var(--bb-mono);border-radius:var(--bb-r);color:var(--bb-muted);text-decoration:line-through;text-decoration-color:var(--bb-line)}
-.bb-cal .d.open{color:var(--bb-ink);text-decoration:none;cursor:pointer;border:1px solid transparent}
+.bb-cal .d.open{color:var(--bb-ink);text-decoration:none;border:1px solid transparent}.bb-cal button.d.open{cursor:pointer}
 .bb-cal .d.open:hover{border-color:var(--bb-ink)}
 .bb-cal .d.open[aria-pressed=true]{background:var(--bb-ink);color:var(--bb-page)}
 .bb-cal .d.booked{text-decoration:none;background:repeating-linear-gradient(45deg,transparent 0 4px,var(--bb-raised) 4px 8px)}

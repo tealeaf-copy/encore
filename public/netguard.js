@@ -54,6 +54,22 @@
   addEventListener("pagereveal", (e) => { quiet(e.viewTransition); cap(e.viewTransition); }); addEventListener("pageswap", (e) => quiet(e.viewTransition));
   // a dropped connection rejects fetch with a TypeError; pages catch most of them, the rest shouldn't read as crashes
   addEventListener("unhandledrejection", (e) => { const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(String(r.message))) { e.preventDefault(); if (!window.__plNetNoted) { window.__plNetNoted = 1; console.warn("[net] a request failed:", r.message); } } });
+  // a sheet that says aria-modal keeps Tab inside it, whichever script drew it: Tab from the last control goes to the
+  // first, Shift+Tab from the first to the last, and a Tab while focus is still on the page behind goes into the sheet
+  // (public/savelist.js does the same on the light invite, which doesn't load this file)
+  window.__plTrap = 1;
+  addEventListener("keydown", (e) => { if (e.key !== "Tab" || e.defaultPrevented) return;
+    const D = [...document.querySelectorAll('[aria-modal="true"]')].filter((d) => d.getClientRects().length && getComputedStyle(d).visibility !== "hidden"), d = D[D.length - 1]; if (!d) return;
+    const F = [...d.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter((x) => x.getClientRects().length && !x.closest("[hidden],[inert]"));
+    if (!F.length) return; const i = F.indexOf(document.activeElement);
+    if (!d.contains(document.activeElement) || (e.shiftKey ? i <= 0 : i === F.length - 1)) { e.preventDefault(); (e.shiftKey ? F[F.length - 1] : F[0]).focus(); } });
+  // and when that sheet goes away and leaves focus nowhere (on the page body), it goes back to what had it before
+  let back = null, had = false; addEventListener("focusin", (e) => { const t = e.target; if (t && t !== document.body && t.closest && !t.closest('[aria-modal="true"]')) back = t; }, true);
+  const watchModal = () => new MutationObserver(() => { const now = [...document.querySelectorAll('[aria-modal="true"]')].some((d) => d.getClientRects().length); /* a sheet that hides instead of leaving counts as gone */ if (had && !now && (!document.activeElement || document.activeElement === document.body) ) { /* what had focus may have been drawn again meanwhile (a form that became a ticket): then the page's heading, or its first control */ let t = back?.isConnected && back.getClientRects().length ? back : [...document.querySelectorAll("main h1, h1, main h2, h2")].find((h) => h.getClientRects().length && !h.closest("[aria-modal]")) || [...document.querySelectorAll("a[href], button")].find((x) => x.getClientRects().length && !x.closest("nav, header, [aria-modal]")); if (t && t !== back && !t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1"); try { t?.focus({ preventScroll: true }); } catch {} } had = now; }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "class", "open"] });
+  if (document.body) watchModal(); else addEventListener("DOMContentLoaded", watchModal);
+  // sheets lock the page's scroll while they're open (overflow: hidden on the body); on a desktop with classic
+  // scrollbars that took the scrollbar away and slid the whole page sideways under the sheet. Keep its gutter.
+  try { document.documentElement.style.scrollbarGutter = "stable"; } catch {}
 })();
 
 // "Read more" on a clamped intro (.pl-intro in public/system.css): a [data-pl-more] button opens the intro it names

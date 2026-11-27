@@ -401,7 +401,7 @@ export function createApp({ store, dataDir }) {
   app.get("/verify", (req, res) => { const email = VF.confirm(String(req.query.t || "")); res.set("Cache-Control", "no-store").redirect(302, email ? "/feed?verified=1" : "/settings?verify=expired"); });
   app.post("/api/me/verify", small, async (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." });
     if (emailVerified(u.email)) return res.json({ ok: true, verified: true });
-    const k = "vr:" + lc(u.email), n = (verifyHits.get(k) || 0) + 1; verifyHits.set(k, n); if (n > 5) return res.status(429).json({ code: "rate_limited", message: "We've sent a few already. Check your spam folder." });
+    const k = "vr:" + String(u.email || "").toLowerCase(), n = (verifyHits.get(k) || 0) + 1; verifyHits.set(k, n); if (n > 5) return res.status(429).json({ code: "rate_limited", message: "We've sent a few already. Check your spam folder." });
     await VF.send(req, u.email, u.name); res.json({ ok: true, sent: true, message: `Sent. Check ${u.email}.` }); });
   const verifyHits = new Map(); setInterval(() => verifyHits.clear(), 3600_000).unref?.();
   // One way to make an account, for the password form (/api/signup) and the passwordless sign-in (server/signin.js):
@@ -1911,6 +1911,8 @@ export function createApp({ store, dataDir }) {
       const line = (typeof req.hostLine === "function" && req.hostLine(now, who, title)) || { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.${after.paid ? " They had paid." : after.paidClaim ? " They said they paid." : ""}` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
       // review round 7: a pre-order reply says what they ordered
       if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: now === "going" && after.order ? `🛍 ${who} ordered ${String(after.order).slice(0, 160)} (${title}).` : line, link: studio, eventId });
+      // the first yes on an event also reaches the host's own inbox, once: a host planning their first dinner is rarely in the app when it lands (review round 18). Every reply after it stays in the bell.
+      if (now === "going" && was !== "going" && !after.order && !ev.drop && !ev.example && X.canEmail(owner) && String(after.email || "").toLowerCase() !== String(owner).toLowerCase() && St.list("rsvps").filter((d) => d.data?.eventId === eventId && d.data?.response === "going").length === 1) { try { await mailWs(ws, { to: owner, subject: `${who} is in for ${title}`, text: `${who} said I'm in. That's the first yes for ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nSee who's coming: ${originOf(req)}${studio}\n\nThe next replies wait in your bell, not your inbox.\n`, eventId, kind: "firstyes" }); } catch {} }
       if (now === "requested" && X.canEmail(owner)) { try { await mailWs(ws, { to: owner, subject: `${who} asked to join ${title}`, text: `${String(after.name || who).slice(0, 80)} asked to join ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nLet in or Not this time: ${originOf(req)}${studio}\n`, eventId, kind: "ask" }); } catch {} }
     }
     // the host let someone in: tell the guest by email, text and their bell

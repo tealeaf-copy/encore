@@ -38,7 +38,7 @@
 .pin-city input{min-height:48px;border:2px solid var(--pl-ink);border-radius:16px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
 .pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid var(--pl-ink);background:var(--pl-surface);border-radius:999px;padding:4px 12px;font:600 14px "IBM Plex Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
 .pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,var(--pl-page) 30%);padding:14px 0 4px;margin-top:4px}
-.pin-main{min-height:52px;padding:0 24px;border:2.5px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 17px "IBM Plex Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 var(--pl-ink)}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
+.pin-main{min-height:52px;padding:0 24px;border:1.5px solid var(--pl-accent);border-radius:var(--pl-r-btn,6px);background:var(--pl-accent);color:#fff;font:600 17px "IBM Plex Sans",system-ui;cursor:pointer;box-shadow:none}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
 .pin-skip{background:none;border:0;color:var(--pl-soft);text-decoration:underline;font:500 15px "IBM Plex Sans",system-ui;cursor:pointer;min-height:44px}
 .pin-n{font:600 14px "IBM Plex Sans",system-ui;color:var(--pl-soft)}
 .pin h3{font:600 20px var(--pl-font-text);margin:18px 0 8px}

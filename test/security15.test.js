@@ -28,6 +28,7 @@ test("a new account confirms its email before it can share an invite or report; 
   assert.equal((await put("events/s15a", ev, cookie)).status, 200, "a draft saves");
   const pub = await put("events/s15a", { ...ev, published: true, discoverable: true }, cookie); assert.equal(pub.status, 403); assert.equal((await pub.json()).code, "verify_email");
   assert.equal((await post("/api/report", { type: "event", target: "event:s15a", reason: "spam" }, cookie)).status, 403, "no reports yet");
+  { const again = await post("/api/me/verify", {}, cookie); assert.equal(again.status, 200, "asking for the link again, before confirming, sends it (this was a 500)"); assert.equal((await again.json()).sent, true); }
   const link = linkFor("vee.s15@example.com"); assert.ok(link, "the link was emailed");
   const v = await fetch(link.replace(/^https?:\/\/[^/]+/, srv.base), { redirect: "manual" }); assert.equal(v.status, 302); assert.match(v.headers.get("location"), /verified=1/);
   assert.equal((await (await fetch(srv.base + "/api/me", { headers: { cookie } })).json()).emailVerified, true);

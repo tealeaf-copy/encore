@@ -24,17 +24,25 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 const text = async (p) => JSON.stringify(await (await fetch(srv.base + p)).json());
 
-test("previews never appear in the feed, stories, deck, Discover or the hosts list by default", async () => {
+test("previews can be kept out of the feed, stories, deck, Discover and the hosts list (ENCORE_FEED_PREVIEWS=none)", async () => {
+  process.env.ENCORE_FEED_PREVIEWS = "none"; try {
   for (const p of ["/api/public/feed", "/api/public/deck?city=", "/api/public/deck?city=Brooklyn", "/api/feed/stories", "/api/public/discover", "/api/public/hosts", "/api/v1/hosts?limit=100"]) {
     const t = await text(p); for (const h of PREVIEWS) assert.doesNotMatch(t, new RegExp(`"(handle|ref)":"${h}"`), `${h} is not in ${p}`);
     assert.doesNotMatch(t, /From a host's page/, p);
   }
   assert.equal(previewListed("tram", {}), false); assert.equal(previewListed("sweetpea-sorrel", { example: true }), true, "made-up examples can stay");
+  } finally { delete process.env.ENCORE_FEED_PREVIEWS; }
+});
+
+test("by default every preview page is listed again (owner decision), and one can be taken out", async () => {
+  assert.equal(previewListed("tram", {}), true); assert.equal(previewListed("atbo", {}), true);
+  for (const p of ["/api/public/discover"]) { const t = await text(p); for (const h of PREVIEWS) assert.match(t, new RegExp(`"handle":"${h}"`), `${h} is in ${p}`); }
+  process.env.ENCORE_HIDE_PREVIEWS = "@ken"; try { assert.equal(previewListed("ken", {}), false); assert.equal(previewListed("tram", {}), true); } finally { delete process.env.ENCORE_HIDE_PREVIEWS; }
 });
 
 test("ENCORE_FEED_PREVIEWS lets the ones with consent back in", async () => {
   process.env.ENCORE_FEED_PREVIEWS = "tram, @ken";
-  try { assert.equal(previewListed("tram", {}), true); assert.equal(previewListed("ken", {}), true); assert.equal(previewListed("atbo", {}), false); }
+  try { assert.equal(previewListed("tram", {}), true); assert.equal(previewListed("ken", {}), true); assert.equal(previewListed("atbo", {}), false, "a list lists only those"); }
   finally { delete process.env.ENCORE_FEED_PREVIEWS; }
 });
 

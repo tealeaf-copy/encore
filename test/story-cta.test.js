@@ -51,7 +51,7 @@ test("CTA per story type: events go to /e with the right word, past events to th
   for (const i of items) { assert.notEqual(i.cta.label, "See page"); assert.notEqual(i.cta.label, "See invite"); if (i.cta.label !== "Follow") assert.doesNotMatch(i.cta.url, /^\/@/, JSON.stringify(i)); }
   // prepared (preview) pages stay out by default (owner decision); one with consent (ENCORE_FEED_PREVIEWS) fills a quiet
   // feed, and every item is "I'm interested", on that thing's own page
-  assert.ok(!F.stories.some((s) => s.showcase && !s.example), "no preview rings by default");
+  { process.env.ENCORE_FEED_PREVIEWS = "none"; let F0; try { F0 = await (await get("/api/public/feed?consent=1&n=0")).json(); } finally { delete process.env.ENCORE_FEED_PREVIEWS; } assert.ok(!F0.stories.some((s) => s.showcase && !s.example), "no preview rings when previews are off"); }
   process.env.ENCORE_FEED_PREVIEWS = "tram"; let F2; try { F2 = await (await get("/api/public/feed?consent=1")).json(); } finally { delete process.env.ENCORE_FEED_PREVIEWS; }
   const sc = F2.stories.filter((s) => s.showcase); assert.ok(sc.length, "preview rings");
   for (const s of sc) for (const i of s.items) { assert.equal(i.cta.label, "I'm interested"); assert.match(i.cta.url, /^\/x\/[a-z0-9-]+\/(x\d|g\d|any|shop\/\d)/); }

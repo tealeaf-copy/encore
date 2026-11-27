@@ -85,7 +85,7 @@ test("Public feed only includes public media; Ask to join and link-only moments 
   const soon = F.upcoming.find((e) => e.id === "fvSoon"); assert.ok(soon); assert.equal(soon.look.coverFit, "poster"); assert.deepEqual(soon.look.palette, ["#C4DDF3", "#1E4E86", "#D94357"]); assert.equal(soon.url, "/g#rsvp-fvSoon");
   // showcase pages fill it out, with their shipped covers: recent ones on the wall, older ones as ideas below it (review 7)
   // owner decision: preview pages of businesses that haven't joined stay out of the feed; only made-up examples remain
-  assert.ok(F.showcase.every((p) => p.example), "no previews in the feed");
+  assert.ok(F.showcase.some((p) => !p.example), "previews are listed again by default (owner decision, Nov 2026)");
   // the host page shows open events' photos only, until the host allows the link-only ones
   const page = async () => (await (await get("/api/public/host/mai-fv")).json()).past;
   let P = await page(); assert.ok(P.find((e) => e.id === "fvOpen")?.photos?.length); assert.ok(!P.find((e) => e.title === "Link supper")?.photos?.length);

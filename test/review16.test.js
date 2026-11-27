@@ -4,6 +4,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { startServer } from "./helpers.js";
+import { createRequire } from "node:module";
 
 const read = (f) => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
 let srv;
@@ -88,4 +89,60 @@ test("Team bookings setup: four short steps, every step kept in the page so Save
   for (const k of ["pkgs", "about", "policy", "live"]) assert.match(h, new RegExp(`<div data-step="${k}"`));
   assert.match(h, /el\.hidden = el\.dataset\.step !== STEPS\[step\]\[0\]/, "steps hide, never unmount");
   assert.match(h, /Still to add: /, "Go live says what's missing");
+});
+
+test("The editor leads to the plan: an itinerary or agenda, day by day, for a weekend away or a summit", () => {
+  const cv = read("public/canvas.js");
+  assert.match(cv, /\["plan", "The plan, day by day"/, "a Settings row");
+  assert.match(cv, /location\.href = `\/plans\/\$\{encodeURIComponent\(id\)\}\?edit=1`/, "it opens the plan's editor once saved");
+  assert.match(cv, /Save the event first, then lay out the plan\./);
+  assert.match(read("public/plan.html"), /\[\?&\]edit=1\\b\/\.test\(location\.search\)\) setTimeout\(\(\) => m\.querySelector\("\.it-ed"\)/);
+});
+
+test("A whole plan typed into the title fills in the date, time, place and spots in one tap", () => {
+  const require = createRequire(import.meta.url); require("../public/sections.js"); require("../public/canvas.js"); const C = globalThis.EventCanvas, now = new Date(2026, 10, 26); // a Thursday
+  const p = C.planFromLine("Dinner at my place Saturday 7pm, 6 friends, I'm making dumplings", now);
+  assert.deepEqual(p, { title: "Dinner at my place", date: "2026-11-28", startTime: "19:00", meetPoint: "My place", headcount: 6, why: "I'm making dumplings." });
+  assert.equal(C.planLineLabel(p), "Fill in Sat, Nov 28, 7pm, My place and 6 spots");
+  assert.equal(C.planFromLine("Easy 5k run Sat 8am at McCarren Park", now).meetPoint, "McCarren Park");
+  assert.equal(C.planFromLine("Birthday drinks tomorrow 8pm at The Long Room", now).date, "2026-11-27");
+  assert.equal(C.planFromLine("Board game night Friday at 7, bring a snack", now).startTime, "19:00", "'at 7' in the evening");
+  assert.equal(C.planFromLine("Dumpling night", now), null, "a plain title stays a title");
+  assert.equal(C.planFromLine("Pottery class for 8 to 20, $55 a person", now), null);
+  const cv = read("public/canvas.js"); assert.match(cv, /id="cvFromLine" hidden/); assert.match(cv, /if \(b\.id === "cvFromLine"\)/);
+  assert.match(cv, /for \(const k of \["date", "startTime", "meetPoint"\]\) if \(P\[k\] && !W\[k\]\)/, "never overwrites what the host already set");
+});
+
+test("A weekend away: the editor takes a last day, the invite and the editor say both days, guests get endDate", () => {
+  const require = createRequire(import.meta.url); require("../public/sections.js"); require("../public/canvas.js"); const C = globalThis.EventCanvas;
+  assert.equal(C.whenSentence({ date: "2026-12-05", endDate: "2026-12-07", startTime: "16:00", endTime: "11:00" }), "Saturday, Dec 5 to Monday, Dec 7 · 4:00pm");
+  assert.equal(C.whenSentence({ date: "2026-12-05", endDate: "2026-12-01", startTime: "19:00" }), "Saturday, Dec 5 · 7:00pm", "a last day before the first is ignored");
+  const cv = read("public/canvas.js"); assert.match(cv, /id="cvEndDate"/); assert.match(cv, /if \(d2 && d2 > d\) W\.endDate = d2; else delete W\.endDate;/);
+  assert.match(read("public/invite.html"), /e\.endDate > e\.date \? `\$\{day\} to /, "the light invite shows the last day");
+  assert.match(read("server/app.js"), /PUBLIC_FIELDS\.push\("endDate", "included"\)/);
+});
+
+test("After you reply on /g, the sticky bar's room goes with the bar", () => {
+  const css = read("public/slots.css");
+  assert.match(css, /html body:has\(#gBar\) #view-guest#view-guest\.ev2\{padding-bottom:calc\(var\(--inv-bar-h\)/, "the bar's room only while the bar is on the page");
+  assert.doesNotMatch(css, /@media \(max-width:759px\)\{html body #view-guest#view-guest\.ev2\{padding-bottom:calc/, "never unconditionally");
+  assert.match(css, /html body #m#m\{max-width:600px;padding:max\(8px,env\(safe-area-inset-top\)\) 16px calc\(var\(--inv-safe-b\) \+ 32px\)/, "the light invite's own padding leaves out the bar");
+  assert.doesNotMatch(read("public/replybar.js"), /document\.body\.style\.paddingBottom = on/, "the bar never pads the body by hand");
+});
+
+test("A drop's page: the bar says Order and goes to the order form; the host's first name never reads Bo's", () => {
+  const rb = read("public/replybar.js");
+  assert.match(rb, /const formNow = \(\) => \{ const og = document\.getElementById\("oGo"\)/); assert.match(rb, /document\.getElementById\("oGo"\)\?\.textContent\.trim\(\) \|\|/);
+  assert.match(read("public/invite.html"), /first = \(String\(e\.hostName \|\| ""\)[^;]*\.replace\(\/\['’\]s\$\/i, ""\)/);
+  assert.equal((read("public/invite-order.js").match(/\.replace\(\/\['’\]s\$\/i, ""\)/g) || []).length, 2);
+  assert.match(read("public/calm.js"), /addEventListener\("pagereveal", \(e\) => quiet\(e\.viewTransition\)\)/, "a dropped page transition isn't a page error");
+});
+
+test("What's included: a workshop's materials as an add-on, cleaned for guests and shown on both invites", async () => {
+  const require = createRequire(import.meta.url); require("../public/sections.js"); require("../public/canvas.js"); const C = globalThis.EventCanvas, X = globalThis.EventSections;
+  assert.ok(C.ADDONS.some((a) => a.k === "included" && a.title === "What's included"));
+  const d = C.addonSet({}, "included", "Clay and glazes\nAn apron\n\nFiring and pickup in two weeks"); assert.deepEqual(d.included, ["Clay and glazes", "An apron", "Firing and pickup in two weeks"]);
+  assert.equal(C.addonText(d, "included"), "Clay and glazes\nAn apron\nFiring and pickup in two weeks"); assert.ok(C.addonHas(d, "included"));
+  const h = X.html({ included: ["Clay and glazes", "<b>An apron</b>"] }); assert.match(h, /What&#39;s included/); assert.match(h, /&lt;b&gt;An apron/); assert.match(X.html({ included: ["Clay"] }, { full: true }), /Clay/);
+  const { publicExtras } = await import("../server/app.js"); assert.deepEqual(publicExtras({ included: ["  Clay ", "", 5] }).included, ["Clay", "5"]);
 });

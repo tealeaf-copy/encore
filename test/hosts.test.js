@@ -125,7 +125,6 @@ test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Er
   const L = (await (await get("/api/host/orders", er.cookie)).json()).orders; assert.equal(L.length, 1); assert.equal(L[0].totalText, "$82");
   assert.equal((await post("/api/host/orders/" + L[0].id, { status: "paid" }, er.cookie)).status, 200);
   assert.ok((await (await get("/api/me/inbox", er.cookie)).json()).items.some((n) => n.kind === "order"));
-  assert.ok((await (await get("/api/public/shops")).json()).shops.some((s) => s.handle === "eric-bakes"));
   // a new batch resets the counts
   await post("/api/host/shop/new-drop", {}, er.cookie); assert.equal((await (await get("/api/public/shop/eric-bakes")).json()).shop.items[0].left, 3);
   // companies book an experience
@@ -135,6 +134,10 @@ test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Er
   const inq = (await (await get("/api/host/inquiries", er.cookie)).json()).inquiries[0]; assert.equal(inq.experience.name, "Private omakase for your team"); assert.equal(inq.people, 12);
   // link previews
   const html = await (await get("/@eric-bakes")).text(); assert.match(html, /og:title" content="[^"]*"/); assert.match(html, /Order Whole cake/);
+  // Discover's "Order from hosts" lists what can be ordered now and links straight to it: the old shop becomes its drop
+  const sh = (await (await get("/api/public/shops")).json()).shops.find((s) => s.handle === "eric-bakes");
+  assert.ok(sh, "listed"); assert.match(sh.url, /^\/e\/[A-Za-z0-9_-]+$/, "links to the drop, never to a page with nothing to order");
+  assert.equal((await get(sh.url)).status, 200); assert.ok(sh.items.some((x) => /^Whole cake/.test(x.name)));
 });
 
 test("Brands book experience hosts: browse by category, describe it to Potto, request, get a quote, accept", async () => {

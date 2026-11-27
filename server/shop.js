@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { slotLabel } from "./preorder.js";
+import { shopToDrop, liveDrops, publicDrop, soldOf } from "./drops.js";
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -47,7 +48,17 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
     return { title: s.title, note: s.note, where: s.where, slots: s.slots, payUrl: !!s.payUrl, items: s.items.map((x) => ({ id: x.id, name: x.name, desc: x.desc, emoji: x.emoji, photo: x.photo, price: money(x.cents), cents: x.cents, max: x.max, left: x.stock ? Math.max(0, x.stock - (S[x.id] || 0)) : null })) }; };
   app.get("/api/public/shop/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle), ev = ws && C.profileOf(ws)?.shop?.eventId; res.json({ shop: ws ? publicShop(ws) : null, ...(ev ? { drop: { id: ev, url: `/e/${encodeURIComponent(ev)}` } } : {}) }); });
   // Discover: every open shop
-  app.get("/api/public/shops", (req, res) => { const out = []; for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws), p = h?.handle && publicShop(ws); if (!p) continue; out.push({ handle: h.handle, name: h.name, emoji: h.emoji, city: h.city, hood: h.hood, accent: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", title: p.title, items: p.items.slice(0, 3), soldOut: p.items.every((x) => x.left === 0) }); } res.json({ shops: out }); });
+  // Discover's "Order from hosts near you" (review 16): the drops people can order from now, each linking to the drop
+  // itself. A host's old shop becomes its drop the first time it's listed (drops.js shopToDrop), so the row never leads
+  // to a page with nothing to order (the old shop no longer shows on host pages).
+  app.get("/api/public/shops", (req, res) => { const out = [];
+    for (const ws of allWorkspaceIds()) { if (ws === DEFAULT_WS) continue; const h = C.profileOf(ws); if (!h?.handle) continue;
+      try { if (h.shop && !h.shop.eventId) shopToDrop(store, C, ws); } catch {}
+      const S0 = scopeStore(store, ws);
+      for (const { id, e } of liveDrops(store, ws)) { if (e.ordersPaused || e.published === false || e.example) continue; const p = publicDrop(id, e, soldOf(S0, id, e), null); if (!p.items?.length) continue;
+        out.push({ handle: h.handle, name: h.name, emoji: h.emoji, city: e.city || h.city, hood: e.hood || h.hood, accent: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", title: p.title, url: p.url,
+          items: p.items.slice(0, 3).map((x) => ({ name: x.name, price: x.priceText, left: x.left })), soldOut: p.items.every((x) => x.left === 0) }); } }
+    res.json({ shops: out.slice(0, 60) }); });
   app.post("/api/public/order/:handle", small, async (req, res) => { if (limited(req, 15)) return bad(res, "Too many orders from here. Try again later.", 429, "rate_limited");
     const ws = C.wsOfHandle(req.params.handle), h = ws && C.profileOf(ws), s = h?.shop; if (!s?.open || s.eventId) return bad(res, s?.eventId ? "This shop moved. Order from the drop on their page." : "This shop isn't taking orders right now.", 404, "not_found");
     const b = req.body || {}, name = clean(b.name, 80), email = lc(clean(b.email, 200)), phone = clean(b.phone, 24), slot = clean(b.slot, 60);

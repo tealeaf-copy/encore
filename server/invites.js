@@ -131,7 +131,7 @@ export function makeInvites({ store, C, X, P, F = null, seats = null, now: clock
     const ch = []; const acct = p.email ? getDbUser(p.email) : null;
     if (acct) { try { X?.notify?.(p.email, { kind: "invite", key: `inv-${kind}-${id}`, text: T.bell, link: kind === "thanks" ? `/g#rsvp-${id}` : link, eventId: id }); ch.push("bell"); } catch {} }
     if (emailOk(ws, p)) { const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true);
-      if (cfg) { const r = await sendEmail(cfg, { list: "guest", origin: base, brandWs: ws, to: p.email, fromName: hostName, subject: T.subj, text: `${T.body}\n${base}${kind === "thanks" ? `/e/${encodeURIComponent(id)}` : link}\n` }); if (r.ok) ch.push("email"); } }
+      if (cfg) { const r = await sendEmail(cfg, { list: "guest", origin: base, brandWs: ws, to: p.email, fromName: hostName, subject: T.subj, text: `${T.body}\n${base}${kind === "thanks" ? `/e/${encodeURIComponent(id)}` : link}\n${kind !== "thanks" && when ? `\nPut it in your calendar: ${base}/e/${encodeURIComponent(id)}.ics\n` : ""}` }); if (r.ok) ch.push("email"); } }
     if (!ch.length) return { ok: false, skipped: p.unsubscribed ? "Unsubscribed" : isBrandWs(ws) && p.email && !emailOk(ws, p) ? "No email opt-in" : "No way to reach them here", link };
     spend(ws); return { ok: true, ch, link };
   }

@@ -27,8 +27,8 @@ test("one type scale for the invite, as tokens in system.css", () => {
   const css = read("public/slots.css");
   assert.match(css, /:is\(html body #m#m>\.why,html body #view-guest#view-guest\.ev2 \.in>\.pp-why\)\{[^}]*font:var\(--inv-body\)!important;color:var\(--pl-ink\)!important/, "the body is 17/27 in ink on both invites");
   assert.match(css, /font-family:var\(--lk-title,var\(--inv-title-face\)\)!important;font-weight:600!important;font-size:var\(--inv-title-size\)!important;line-height:var\(--inv-title-lh\)!important/);
-  assert.match(css, /html body #m#m\{[^}]*padding:[^;]*calc\(var\(--inv-bar-h\) \+ var\(--inv-safe-b\) \+ 32px\)/, "the light invite ends above the sticky bar and the safe area");
-  assert.match(css, /html body #view-guest#view-guest\.ev2\{padding-bottom:calc\(var\(--inv-bar-h\) \+ var\(--inv-safe-b\) \+ 24px\)!important\}/, "so does the full invite");
+  assert.match(css, /html body:has\(\.prb\) #m#m\{padding-bottom:calc\(var\(--inv-bar-h\) \+ var\(--inv-safe-b\) \+ 32px\)\}/, "the light invite ends above the sticky bar and the safe area, while the bar is there");
+  assert.match(css, /html body:has\(#gBar\) #view-guest#view-guest\.ev2\{padding-bottom:calc\(var\(--inv-bar-h\) \+ var\(--inv-safe-b\) \+ 24px\)!important\}/, "so does the full invite");
   assert.match(css, /html body #gBar\.g-bar b\{font:var\(--inv-bar-date\)!important/); assert.match(css, /html body #gBar\.g-bar small\{font:var\(--inv-bar-sub\)!important/);
   assert.match(read("public/replybar.js"), /font:var\(--inv-bar-date/);
   for (const f of ["public/slots.css", "public/replybar.js", "public/invite.html", "public/looks.js", "public/brandkit.js"]) assert.doesNotMatch(read(f), /—/, f + ": no em dashes");

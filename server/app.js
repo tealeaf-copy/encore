@@ -179,11 +179,13 @@ PUBLIC_FIELDS.push("priceTiers");
 // the create canvas (public/canvas.js): the host's own sections, links, an accessibility note and co-hosts, cleaned in
 // publicEvent below and drawn on both invites by public/sections.js
 PUBLIC_FIELDS.push("sections", "links", "accessNote", "cohosts");
+PUBLIC_FIELDS.push("endDate", "included"); // review 16: a weekend away's last day; what's included (a workshop's materials)
 const cleanStr = (v, n) => String(v ?? "").replace(/\r/g, "").trim().slice(0, n);
 export function publicExtras(e) {
   if (e.sections != null) e.sections = (Array.isArray(e.sections) ? e.sections : []).map((s) => ({ icon: /^[a-z]{2,12}$/.test(String(s?.icon || "")) ? s.icon : "note", title: cleanStr(s?.title, 80), body: cleanStr(s?.body, 1200) })).filter((s) => s.title || s.body).slice(0, 12);
   if (e.links != null) e.links = (Array.isArray(e.links) ? e.links : []).map((l) => ({ label: cleanStr(l?.label, 60), url: cleanStr(l?.url, 500) })).filter((l) => /^https:\/\/[^\s"'<>]+$/.test(l.url)).slice(0, 6);
   if (e.accessNote != null) e.accessNote = cleanStr(e.accessNote, 300);
+  if (e.included != null) e.included = (Array.isArray(e.included) ? e.included : []).map((x) => cleanStr(x, 120)).filter(Boolean).slice(0, 20);
   // co-hosts: a Pottery Lab handle and the name the host typed, never an email
   if (e.cohosts != null) e.cohosts = (Array.isArray(e.cohosts) ? e.cohosts : []).map((c) => ({ handle: /^@?[a-z0-9][a-z0-9-]{1,29}$/i.test(String(c?.handle || "")) ? String(c.handle).replace(/^@/, "").toLowerCase() : "", name: /@.*\./.test(String(c?.name || "")) ? "" : cleanStr(c?.name, 60) })).filter((c) => c.handle || c.name).slice(0, 6);
   return e;

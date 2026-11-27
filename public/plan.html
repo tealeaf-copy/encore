@@ -64,6 +64,7 @@
       m.querySelector(".pc").style.position = "relative"; m.querySelector(".pc").appendChild(mn); more.setAttribute("aria-expanded", "true");
       mn.querySelector("[data-copy]").onclick = async (ev) => { try { await navigator.clipboard.writeText(location.origin + "/e/" + P.id); ev.target.textContent = "Copied"; } catch {} }; };
     if (P.editable) wireEditor();
+    if (P.editable && /[?&]edit=1\b/.test(location.search)) setTimeout(() => m.querySelector(".it-ed")?.scrollIntoView({ block: "start" }), 60); // from the editor's Settings: "The plan, day by day"
   }
   // ---- the host lays out the plan ----
   let rows = P.days.flatMap((d) => d.items.map((x) => ({ ...x })));

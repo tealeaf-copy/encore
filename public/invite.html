@@ -30,7 +30,7 @@
   // "7pm", "7:30am"
   const clock = (t) => HHMM.test(t || "") ? new Date("2000-01-01T" + t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : "";
   // "Sat, Dec 12 · 7pm to 10pm", the one format on both invites
-  const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? e.date === ltd ? "Today" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [day, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
+  const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? e.date === ltd ? "Today" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; const d2 = day && /^\d{4}-\d\d-\d\d$/.test(e.endDate || "") && e.endDate > e.date ? `${day} to ${new Date(e.endDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}` : day; return [d2, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
   // review round 13: a group price alone ("$40 a pair") is a paid event too
   const gpOf = (e) => { const m = String(e.groupPrice ?? "").replace(/,/g, "").match(/(\d+(?:\.\d{1,2})?)/); return m && +m[1] > 0 && Math.floor(+e.groupSize) > 1 ? +m[1] : 0; };
   const paidOf = (e) => !!((e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim())) || (e.price !== "chip" && e.free !== true && gpOf(e)));
@@ -93,7 +93,7 @@
     const again = !mine && last?.response === "going" && last.name ? last : null; if (!courseNext && !pastOf && !again) return; more("/invite-repeat.js", () => window.InviteRepeat?.(e, courseNext, pastOf, when, { again, prevId: pastOf?.id || e.prevId, ls })); }
 
   function render(e, ws, H, A, back) {
-    const h = H.host || {}, first = String(e.hostName || "").trim().split(/\s+/)[0] || H.person || String(h.name || "your host").split(" ")[0].replace(/['’]s$/i, ""), ask = !!e.approvalRequired, title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = foodyOf(e), paid = paidOf(e);
+    const h = H.host || {}, first = (String(e.hostName || "").trim().split(/\s+/)[0] || H.person || String(h.name || "your host").split(" ")[0]).replace(/['’]s$/i, ""), ask = !!e.approvalRequired, title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = foodyOf(e), paid = paidOf(e);
     document.title = `${title} · Pottery Lab`;
     const cover = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(e.coverPhoto || "") || /^https:\/\/[^\s"'<>()]+$/.test(e.coverPhoto || "") ? `<img src="${esc(e.coverPhoto)}" alt="">` : window.EventArt ? (window.EventArt.ensureCss?.(), window.EventArt.cover(e, { title: "", label: "" })) : "";
     const LK = window.EncoreLooks, look = LK ? LK.lookOf(e) : {}, flyer = !!(LK && LK.safeSrc(e.coverPhoto));

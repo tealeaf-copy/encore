@@ -22,7 +22,7 @@ before(async () => { process.env.ENCORE_SIGNUP = "1"; process.env.SESSION_SECRET
 after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_FAKE_EMAIL"]) delete process.env[k]; await srv.close(); });
 
 test("Add-on chips map to the fields guests already see", () => {
-  assert.deepEqual(C.ADDONS.map((a) => a.label), ["Link", "Playlist", "What to bring", "Dress code", "Food", "Parking", "Accessibility"]);
+  assert.deepEqual(C.ADDONS.map((a) => a.label), ["Link", "Playlist", "What to bring", "What's included", "Dress code", "Food", "Parking", "Accessibility"]);
   const d = {};
   C.addonSet(d, "bring", "Chili oil, Something to drink"); assert.deepEqual(d.bring, ["Chili oil", "Something to drink"]);
   C.addonSet(d, "parking", "Street parking on Elm\nThe 2 train"); assert.deepEqual(d.getThere.map((x) => x.x), ["Street parking on Elm", "The 2 train"]);

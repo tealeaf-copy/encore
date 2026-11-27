@@ -14,11 +14,14 @@
 @media (prefers-reduced-motion:reduce){.prb{transition:none}}`;
   document.head.appendChild(css);
   let bar = null, io = null, form = null;
-  const pick = (v) => { const r = form?.querySelector(`input[name=r][value="${v}"]`); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change", { bubbles: true })); }
+  const pick = (v) => { if (document.getElementById("oGo")) { form?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth", block: "start" }); setTimeout(() => form?.querySelector("input:not([type=hidden])")?.focus({ preventScroll: true }), 450); return; }
+    const r = form?.querySelector(`input[name=r][value="${v}"]`); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change", { bubbles: true })); }
     form?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth", block: "start" }); setTimeout(() => form?.querySelector("#nm")?.focus({ preventScroll: true }), 450); };
-  const show = (on) => { if (!bar) return; bar.classList.toggle("on", on); document.body.style.paddingBottom = on ? bar.offsetHeight + "px" : ""; };
-  function mount() { const f = document.getElementById("f"); if (f === form) return; form = f; io?.disconnect(); bar?.remove(); bar = null; document.body.style.paddingBottom = ""; if (!f) return;
-    const goL = f.querySelector('input[name=r][value="going"]')?.closest("label")?.textContent.trim() || f.querySelector("#send")?.textContent.trim() || "I'm in";
+  const show = (on) => { if (!bar) return; bar.classList.toggle("on", on); }; // its room is in slots.css (body:has(.prb)), so nothing jumps and nothing stays behind
+  // a drop's order form (public/invite-order.js) stands in for the reply form: the bar says Order and goes there
+  const formNow = () => { const og = document.getElementById("oGo"); if (og) return og.closest("form") || og.parentElement; return document.getElementById("f"); };
+  function mount() { const f = formNow(); if (f === form) return; form = f; io?.disconnect(); bar?.remove(); bar = null; document.body.style.paddingBottom = ""; if (!f) return;
+    const goL = document.getElementById("oGo")?.textContent.trim() || f.querySelector('input[name=r][value="going"]')?.closest("label")?.textContent.trim() || f.querySelector("#send")?.textContent.trim() || "I'm in";
     const txt = (q) => (document.querySelector(q)?.textContent || "").trim(), when = txt("#m .facts > div:first-child b").replace(/ to [^·]+$/, ""), sub = txt("#spots span") || txt("#price span");
     bar = document.createElement("div"); bar.className = "prb"; bar.setAttribute("role", "region"); bar.setAttribute("aria-label", "Reply");
     bar.innerHTML = `<div class="prb-t"><b></b><small></small></div><button type="button" class="prb-go"></button>`; bar.querySelector(".prb-t b").textContent = when; bar.querySelector(".prb-t small").textContent = sub; bar.querySelector(".prb-t small").hidden = !sub; bar.querySelector(".prb-go").textContent = goL.replace(/\p{Extended_Pictographic}\uFE0F?\s*/gu, "").trim() || "I'm in";

@@ -37,3 +37,37 @@ What we compared against: Partiful makes the invite and the reply feel effortles
 - **Brand account rollup** on /teams/bookings: booked and committed this year, people hosted, open requests, next up, hosts used and who on the team booked (`rollupOf()` in server/brandbook.js).
 - **Campaigns and the invite planner are one guest list.** A booked campaign event gets its own invite page in the brand's workspace (`events/cg<booking>`), with the city's time zone, a day-before reminder, add to calendar and the waitlist. Its guests go into People (consent "in" only for people who agreed to hear from the brand) and onto the event's plan, so smart lists, waves and the status board work. Sends go through the plan for people who agreed and through the campaign's own consent-asking link for everyone else. The campaign's record (sent, yes, no, checked in) is mirrored onto the board, and replies on the invite page come back to the campaign. A "Nudge N who haven't replied" button uses the plan's reminders. The Run tab has a run of show in the event's local time, editable, and one tap sends it to the host. c.guests keeps its shape, so Measure, the report and the CRM export are unchanged.
 - **Settings signed out** no longer asks for passkeys (public/passkeys.js).
+
+## Round 2
+
+Compared again: Partiful lets you type an event like a text and fixes the details later; Eventbrite always says what you're buying and where to get it. Our gaps were where a person types or taps the obvious thing and nothing follows.
+
+| Persona | Use | Joy | Ease | Intu | Pick | Notes (what moved) |
+|---|---|---|---|---|---|---|
+| Engineer | 9 | 8 | 9 | 9 | 8 | Zero crawl problems at 390 and 1280. A dropped page transition no longer throws an unhandled rejection. |
+| Product designer | 9 | 8 | 9 | 9 | 8 | The reply bar's empty band after you reply on /g is gone; a drop's bar says Order, not I'm in. |
+| Product manager | 9 | 8 | 9 | 9 | 8 | Discover's "Order from hosts" led to a host page with nothing to order. It now lists live drops and opens the drop. |
+| Field marketer (brand) | 9 | 8 | 9 | 9 | 8 | One guest list, nudges, a run of show in local time and "send it to the host" are in. Still wants a calendar file in the invite email and a per-city view of times on Home. |
+| Supper club host | 9 | 8 | 9 | 9 | 9 | Typing the whole plan in the title fills the date, time, place and spots. |
+| Game or hack night host | 9 | 8 | 9 | 9 | 8 | "Friday at 7" reads as 7pm; the monthly guide is one tap from the path. |
+| Run club host | 9 | 8 | 9 | 9 | 9 | Public spot pin, weekly repeat, and the meet point with a line pin on /g. |
+| Pottery or cooking workshop host | 8 | 8 | 8 | 8 | 8 | No change this round; materials still read as a "bring" list. |
+| Weekend getaway host | 9 | 8 | 9 | 8 | 8 | The editor takes a last day; the invite says "Sat, Dec 12 to Mon, Dec 14"; Settings has "The plan, day by day", which opens the itinerary editor. |
+| Small summit host | 8 | 8 | 8 | 8 | 8 | The same plan editor lays out talks by day. Still no badge printing or bulk check-in. |
+| Coffee pop-up business | 9 | 8 | 9 | 9 | 9 | Drops show up in Discover again, with pickup windows on the drop page. |
+| Casual planner | 9 | 9 | 9 | 9 | 9 | "Dinner at my place Saturday 7pm, 6 friends" becomes a filled-in invite in one tap; sharing is the next screen. |
+| Hobbyist seller | 9 | 9 | 9 | 9 | 9 | The drop page says "Bo is hosting" and "So Bo can tell you it's ready", never "Bo's". |
+| City explorer / guest | 9 | 8 | 9 | 9 | 9 | Save to list from anywhere; the drop row in Discover goes somewhere real. |
+
+### Fixed in round 2
+
+- **A whole plan typed into the title** (`planFromLine()` in public/canvas.js): "Dinner at my place Saturday 7pm, 6 friends, I'm making dumplings" offers "Fill in Sat, Nov 28, 7pm, My place and 6 spots", which fills only what's empty and moves the rest into the description.
+- **Multi-day events:** a "Last day" in the editor's When sheet (`endDate`), shown in the editor and on the light invite; `endDate` is now a public field.
+- **The plan, day by day:** a Settings row in the editor opens the itinerary editor (`/plans/<id>?edit=1`, which scrolls to it).
+- **Discover's "Order from hosts"** lists live drops (server/shop.js), converting an old shop into its drop the first time, and links to the drop itself.
+- **/g after replying:** the sticky bar's bottom padding applies only while the bar is on the page (public/slots.css).
+- **Drops:** the reply bar reads "Order" and goes to the order form (public/replybar.js); the host's first name drops a trailing "'s" (public/invite.html, public/invite-order.js).
+- **Page transitions:** a transition the browser drops no longer surfaces as a page error (public/calm.js).
+- **What's included** as an add-on in the editor (`included`), shown on both invites: a workshop's clay, glazes and firing, a trip's meals.
+- **Invite emails carry a calendar file link** (`/e/<id>.ics`) for invites, nudges and "you're on the list" sends from the invite plan, so campaign guests and everyone else can put it in their calendar from the email.
+- **The light invite's bottom padding** holds the reply bar's room only while the bar is on the page (`body:has(.prb)`), and the bar no longer pads the body by hand, so nothing is left behind after you reply.

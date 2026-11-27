@@ -14,6 +14,7 @@
     { k: "link", label: "Link", title: "Link", field: "links", icon: "link" },
     { k: "playlist", label: "Playlist", title: "Playlist", field: "playlistUrl", icon: "music" },
     { k: "bring", label: "What to bring", title: "What to bring", field: "bring", icon: "gift" },
+    { k: "included", label: "What's included", title: "What's included", field: "included", icon: "star" }, // review 16: a workshop's materials, a trip's meals
     { k: "dress", label: "Dress code", title: "Dress code", field: "dress", icon: "shirt" },
     { k: "food", label: "Food", title: "Food", field: "courses", icon: "food" },
     { k: "parking", label: "Parking", title: "Parking and getting there", field: "getThere", icon: "car" },
@@ -31,6 +32,7 @@
       case "food": return (Array.isArray(d.courses) ? d.courses : []).join("\n");
       case "parking": return (Array.isArray(d.getThere) ? d.getThere : []).map((s) => s?.x || "").filter(Boolean).join("\n");
       case "access": return d.accessNote || "";
+      case "included": return (Array.isArray(d.included) ? d.included : []).join("\n");
     } return ""; }
   /** Write what the host typed into the add-on's field. Links: [{label,url}]; lists: one per line. */
   function addonSet(d, k, v) {
@@ -42,6 +44,7 @@
       case "food": d.courses = lines(v).slice(0, 12).map((x) => x.slice(0, 120)); break;
       case "parking": d.getThere = lines(v).slice(0, 8).map((x) => ({ t: "", x: x.slice(0, 200) })); break;
       case "access": d.accessNote = String(v ?? "").trim().slice(0, 300); break;
+      case "included": d.included = lines(v).slice(0, 20).map((x) => x.slice(0, 120)); break;
     } return d; }
   const addonHas = (d, k) => k === "link" ? (Array.isArray(d?.links) && d.links.some((l) => l && (l.url || l.label))) : !!addonText(d, k).trim();
   /** Links and the playlist read as https links on save ("open.spotify.com/x" becomes "https://open.spotify.com/x"); a bad one is an error. */
@@ -81,7 +84,8 @@
   const isFeeler = (d) => d?.stage === "interest" && !d.date;
   function whenSentence(d) { d = d || {}; if (isFeeler(d)) { const o = (d.dateOptions || []).map(shortDay).filter(Boolean); return o.length ? `Asking friends · ${o.join(", ")}` : ""; }
     const day = dayLine(d.date); if (!day) return ""; const s = clock(d.startTime), e = s && d.endTime && d.endTime !== d.startTime ? clock(d.endTime) : "";
-    return day + (s ? ` · ${s}${e ? ` to ${e}` : ""}` : ""); }
+    const two = /^\d{4}-\d{2}-\d{2}$/.test(d.endDate || "") && d.endDate > d.date ? ` to ${dayLine(d.endDate)}` : "";
+    return day + two + (s ? ` · ${s}${e && !two ? ` to ${e}` : ""}` : ""); }
   const TIMES = (() => { const T = []; for (let i = 0; i < 48; i++) { const m = (i * 30 + 6 * 60) % 1440; T.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`); } return T; })();
 
   // what Save checks first
@@ -96,7 +100,32 @@
   /** The event as a guest page gets it: no address, no guest list, no host notes; sections cleaned. */
   function guestOf(d) { const e = JSON.parse(JSON.stringify(d || {})); for (const k of ["venueAddr", "guests", "notes", "budget", "tasks", "lastVis", "id"]) delete e[k]; if (root.EventSections) e.sections = root.EventSections.clean(e.sections); return e; }
 
-  const pure = { ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, effectOf, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
+  // review 16: a whole plan typed into the title ("Dinner at my place Saturday 7pm, 6 friends, I'm making dumplings")
+  // can fill the date, time, place and spots in one tap, the way you'd text it to a friend. Pure; null when there's
+  // too little to read. Dates are the next one on or after today, in the browser's own calendar.
+  const WD = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  function planFromLine(text, now = new Date()) { const t = String(text || "").replace(/\s+/g, " ").trim(); if (t.length < 16) return null; const lo = t.toLowerCase(), o = {}, cut = [];
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const wd = /\b(?:this |next )?(sun|mon|tue|wed|thu|fri|sat)(?:day|s|nes|nesday|rs|rsday|ur|urday|sday)?\b(?: night| morning| afternoon| evening)?/i.exec(t);
+    const rel = /\b(tonight|tomorrow(?: night)?)\b/i.exec(t);
+    if (wd) { const k = WD.indexOf(wd[1].toLowerCase()), d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); let add = (k - d.getDay() + 7) % 7; if (/^next /i.test(wd[0]) && add < 7) add += add ? 0 : 7; d.setDate(d.getDate() + add); o.date = iso(d); cut.push(wd.index); }
+    else if (rel) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (/^tomorrow/i.test(rel[1]) ? 1 : 0)); o.date = iso(d); cut.push(rel.index); }
+    const tm = /\b(?:at )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i.exec(t) || /\bat (\d{1,2})(?::(\d{2}))?\b(?!\s*(?:people|friends|guests|seats))/i.exec(t);
+    if (tm) { let h = +tm[1]; const m = tm[2] || "00", ap = (tm[3] || "").toLowerCase(); if (h >= 1 && h <= 23) { if (ap === "pm" && h < 12) h += 12; if (ap === "am" && h === 12) h = 0; if (!ap && h < 8) h += 12; o.startTime = `${String(h).padStart(2, "0")}:${m}`; cut.push(tm.index); if (/^tonight/i.test(rel?.[1] || "") && !o.date) o.date = iso(now); } }
+    const pl = /\bat (my|our) (place|apartment|flat|house|home)\b/i.exec(t) || /\b(?:at|in) ((?:the )?[A-Z][\w'&-]*(?: [A-Z][\w'&-]*){0,3})/.exec(t);
+    if (pl) o.meetPoint = pl[2] ? `${pl[1][0].toUpperCase() + pl[1].slice(1).toLowerCase()} ${pl[2].toLowerCase()}` : pl[1];
+    const n = /\b(\d{1,3})\s*(?:friends|people|guests|seats|spots)\b/i.exec(t); if (n && +n[1] >= 2) o.headcount = +n[1];
+    if ((o.date ? 1 : 0) + (o.startTime ? 1 : 0) + (o.meetPoint ? 1 : 0) + (o.headcount ? 1 : 0) < 2) return null;
+    // the title: what comes before the first date, time or comma; the rest, if it says something, is the description
+    const first = Math.min(...cut.filter((x) => x > 3), lo.indexOf(",") > 3 ? lo.indexOf(",") : Infinity);
+    let title = (Number.isFinite(first) ? t.slice(0, first) : t).replace(/[\s,.-]+(?:on|at|this|next)?$/i, "").trim(); if (title.length < 3) title = t.split(",")[0].trim();
+    const rest = t.split(",").slice(1).map((x) => x.trim()).filter((x) => x && !/^\d{1,3}\s*(friends|people|guests|seats|spots)$/i.test(x) && !/^(?:on )?(sun|mon|tue|wed|thu|fri|sat)/i.test(x) && !/^\d{1,2}(:\d{2})?\s*(am|pm)$/i.test(x));
+    return { title: title.charAt(0).toUpperCase() + title.slice(1), ...o, ...(rest.length ? { why: rest.join(". ").replace(/^./, (c) => c.toUpperCase()).replace(/([^.!?])$/, "$1.") } : {}) }; }
+  /** The button's words: "Fill in Sat, Dec 5, 7pm and My place". */
+  function planLineLabel(p) { if (!p) return ""; const bits = [p.date ? new Date(p.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "", p.startTime ? clock(p.startTime).replace(":00", "") : "", p.meetPoint || "", p.headcount ? `${p.headcount} spots` : ""].filter(Boolean);
+    return "Fill in " + (bits.length > 1 ? bits.slice(0, -1).join(", ") + " and " + bits[bits.length - 1] : bits[0]); }
+
+  const pure = { planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, effectOf, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
   root.EventCanvas = { ...pure };
   if (typeof document === "undefined") return;
 
@@ -161,7 +190,7 @@
       body = L.map((l, i) => `<div class="cv-two"><input data-link="${i}" data-lf="label" value="${esc(l.label)}" placeholder="What it is, like Group chat" maxlength="60" aria-label="Link name"><input data-link="${i}" data-lf="url" value="${esc(l.url)}" placeholder="https://" inputmode="url" autocapitalize="off" aria-label="Link address"></div>`).join("") + (L.length < 3 ? `<button type="button" class="cv-text-btn" data-cv="link-more">${I.plus}<span>Another link</span></button>` : ""); }
     else if (a.k === "playlist") body = `<input data-af="playlist" value="${esc(W.playlistUrl || "")}" placeholder="Paste a Spotify or Apple Music link" inputmode="url" autocapitalize="off" aria-label="Playlist link">`;
     else if (a.k === "dress") body = `<input data-af="dress" value="${esc(W.dress || "")}" placeholder="Come as you are, or something green" maxlength="80" aria-label="Dress code">`;
-    else { const ph = { bring: "One per line. Snacks, a drink to share", food: "One per line. Starter: Pandan madeleines", parking: "Street parking on Elm. The 2 train stops a block away.", access: "Step-free entry, an elevator to the third floor" }[a.k];
+    else { const ph = { bring: "One per line. Snacks, a drink to share", food: "One per line. Starter: Pandan madeleines", parking: "Street parking on Elm. The 2 train stops a block away.", access: "Step-free entry, an elevator to the third floor", included: "One per line. Clay and glazes, an apron, firing and pickup in two weeks" }[a.k];
       body = `<textarea data-af="${a.k}" rows="2" placeholder="${esc(ph)}" aria-label="${esc(a.title)}">${esc(addonText(W, a.k))}</textarea>`; }
     return `<section class="cv-blk" data-addon="${a.k}"><header>${ic}<h3>${esc(a.title)}</h3>${rm}</header>${body}</section>`; }
   function sectionBlock(s, i) { return `<section class="cv-blk cv-own" data-sec="${i}"><header>${SX().svg(s.icon)}<h3>${esc(s.title || "A note")}</h3><button type="button" class="cv-rm cv-ed" data-secedit="${i}" aria-label="Edit ${esc(s.title || "section")}">${I.pen}</button></header>${s.body ? `<p>${esc(s.body).replace(/\n/g, "<br>")}</p>` : ""}</section>`; }
@@ -179,7 +208,7 @@
       <p class="cv-tag"><span class="cv-dot g"></span>Guests see this page. Tap anything to change it.<button type="button" class="cv-text-btn" data-mode="guest">Preview as guest</button></p>
       <div class="cv-cover cv-ed" id="cvCover">${coverHTML(W)}<button type="button" class="cv-pen" data-cv="cover" aria-label="Change the cover">${I.pen}<span>Cover</span></button></div>
       <div class="cv-ed cv-tw"><label class="vh" for="cvTitle">Event title</label><textarea id="cvTitle" class="cv-title" rows="1" maxlength="90" placeholder="Untitled event" enterkeyhint="done">${esc(W.pubTitle || W.name || "")}</textarea></div>
-      <p class="cv-err" id="cvTitleErr" role="alert"></p>
+      <p class="cv-err" id="cvTitleErr" role="alert"></p><button type="button" class="cv-fromline cv-ed" id="cvFromLine" hidden></button>
       <div class="cv-styles" role="radiogroup" aria-label="Title style">${TITLE_STYLES.map(([k, l, f]) => { const ff = f ? root.EncoreLooks?.FONTS?.[f]?.css : KF?.display || "var(--pl-font-display)"; return `<button type="button" role="radio" aria-checked="${st === k}" data-style="${k}" style="font-family:${esc(ff || "inherit")}">${f ? l : KF ? "Your kit" : l}</button>`; }).join("")}</div>
       <button type="button" class="cv-when cv-ed${when ? "" : " empty"}" data-cv="when" id="cvWhen">${when ? (F ? `<small>A feeler. Nothing's booked yet.</small><b>Friends pick a date</b><span>${esc(when.replace(/^Asking friends · /, ""))}</span>` : `<b>${esc(wd)}</b>${wt ? `<span>${esc(wt)}</span>` : ""}`) : `<b>Pick a date and time</b><span>Or ask friends which date works first</span>`}</button>
       <div class="cv-rows">
@@ -237,7 +266,8 @@
 
   function wire(el) {
     el.addEventListener("input", (e) => { const t = e.target, W = S.W;
-      if (t.id === "cvTitle") { pvFlash = "title"; W.pubTitle = t.value.replace(/\n/g, " "); W.name = W.pubTitle; if (t.value.includes("\n")) t.value = W.pubTitle; grow(t); q("#cvTitleErr", el).textContent = ""; const cov = q("#cvCover", el); if (cov && !W.coverPhoto && !W.coverArt?.kind) { clearTimeout(t.__c); t.__c = setTimeout(() => { const pen = q(".cv-pen", cov); cov.innerHTML = coverHTML(W); cov.appendChild(pen); }, 500); } }
+      if (t.id === "cvTitle") { pvFlash = "title"; W.pubTitle = t.value.replace(/\n/g, " "); W.name = W.pubTitle; if (t.value.includes("\n")) t.value = W.pubTitle; grow(t); q("#cvTitleErr", el).textContent = "";
+        { const fb = q("#cvFromLine", el); clearTimeout(fb?.__t); if (fb) fb.__t = setTimeout(() => { const P = planFromLine(t.value); fb.hidden = !P || (!!W.date && !!W.startTime && !!(W.meetPoint || W.venueName)); if (P) { fb.textContent = planLineLabel(P); fb.__p = P; } }, 400); } const cov = q("#cvCover", el); if (cov && !W.coverPhoto && !W.coverArt?.kind) { clearTimeout(t.__c); t.__c = setTimeout(() => { const pen = q(".cv-pen", cov); cov.innerHTML = coverHTML(W); cov.appendChild(pen); }, 500); } }
       else if (t.id === "cvDesc") { W.why = t.value; grow(t); pvFlash = "desc"; }
       else if (t.dataset.af) { addonSet(W, t.dataset.af, t.value); grow(t); pvFlash = "sections"; }
       else if (t.dataset.link) { const L = (W.links || []).length ? W.links.map((x) => ({ ...x })) : [{ label: "", url: "" }]; while (L.length <= +t.dataset.link) L.push({ label: "", url: "" }); L[+t.dataset.link][t.dataset.lf] = t.value; W.links = L.map((l) => ({ label: l.label.slice(0, 60), url: l.url.slice(0, 500) })); }
@@ -251,6 +281,8 @@
       if (b.dataset.add) { S.open.add(b.dataset.add); pvFlash = "sections"; changed(true); const blk = q(`[data-addon="${b.dataset.add}"]`, el); blk?.scrollIntoView({ block: "center", behavior: "smooth" }); blk?.classList.add("new"); setTimeout(() => q("input,textarea", blk)?.focus({ preventScroll: true }), 250); return; }
       if (b.dataset.rm) { const k = b.dataset.rm; S.open.delete(k); addonSet(W, k, k === "link" ? [] : ""); changed(true); return; }
       if (b.dataset.secedit) return sectionSheet(+b.dataset.secedit);
+      if (b.id === "cvFromLine") { const P = b.__p || planFromLine(W.pubTitle); if (!P) return; W.pubTitle = W.name = P.title; for (const k of ["date", "startTime", "meetPoint"]) if (P[k] && !W[k]) W[k] = P[k]; if (P.headcount && !+W.headcount) W.headcount = P.headcount; if (P.why && !String(W.why || "").trim()) W.why = P.why;
+        try { app("applyPlace")?.(W); } catch {} changed(true); say("Filled in. Tap anything to change it."); return; }
       if (b.dataset.qa) return quick(b.dataset.qa);
       switch (b.dataset.cv) {
         case "close": return tryClose();
@@ -301,7 +333,8 @@
       <div class="cv-seg" role="group" aria-label="When"><button type="button" data-wm="date" aria-pressed="${!feel}">Set the date</button><button type="button" data-wm="feel" aria-pressed="${feel}">Ask friends first</button></div>
       <div data-wp="date"${feel ? " hidden" : ""}>
         <div class="cv-quick" role="group" aria-label="Soon">${nextDays().map(([d, l]) => `<button type="button" class="cv-chip${W.date === d ? " on" : ""}" data-day="${d}">${esc(l)}</button>`).join("")}</div>
-        <label class="cv-f">Date<input type="date" id="cvDate" value="${esc(W.date || "")}"></label></div>
+        <label class="cv-f">Date<input type="date" id="cvDate" value="${esc(W.date || "")}"></label>
+        <label class="cv-f">Last day <small>Optional. For a weekend away or anything over a few days.</small><input type="date" id="cvEndDate" value="${esc(W.endDate && W.endDate > (W.date || "") ? W.endDate : "")}"></label></div>
       <div data-wp="feel"${feel ? "" : " hidden"}><p class="cv-hint">Not sure of the date, or if enough people will come? Friends say if they'd come and tap the dates that work. Nothing's booked until you call it.</p>
         ${opts.map((o, i) => `<label class="cv-f">Date option ${i + 1}${i ? " <small>Optional</small>" : ""}<input type="date" data-opt="${i}" value="${esc(o)}"></label>`).join("")}</div>
       <div class="cv-two"><label class="cv-f">Starts${timeSel("cvStart", W.startTime || "19:00")}</label><label class="cv-f">Ends${timeSel("cvEnd", W.endTime || "", "No end time")}</label></div>
@@ -313,7 +346,7 @@
       if (en && en <= s && !(s >= "18:00" && en <= "04:00")) return err("The end time is before the start.");
       if (mode === "feel") { const O = [...new Set(Sh.$$("[data-opt]").map((x) => x.value).filter(Boolean))].sort(); if (!O.length) return err("Add at least one date for friends to pick from.");
         Object.assign(W, { stage: "interest", dateOptions: O, date: "", startTime: s, endTime: en }); }
-      else { const d = Sh.$("#cvDate").value; if (!d) return err("Pick a date first."); Object.assign(W, { date: d, startTime: s, endTime: en }); if (W.stage === "interest") { W.stage = ""; W.dateOptions = []; } }
+      else { const d = Sh.$("#cvDate").value, d2 = Sh.$("#cvEndDate").value; if (!d) return err("Pick a date first."); if (d2 && d2 < d) return err("The last day is before the first."); Object.assign(W, { date: d, startTime: s, endTime: en }); if (d2 && d2 > d) W.endDate = d2; else delete W.endDate; if (W.stage === "interest") { W.stage = ""; W.dateOptions = []; } }
       Sh.close(); changed(true); pulse("#cvWhen", "when"); }; }
 
   function placeSheet() { const W = S.W;
@@ -384,12 +417,14 @@
     if (k === "repeat") { const Sh = sheet({ title: "Repeat", sub: "Pottery Lab drafts the next one for you to check. Nothing goes out on its own.", body: `<div class="cv-opts" role="radiogroup" aria-label="Repeat">${[["", "Just once"], ["weekly", "Every week"], ["biweekly", "Every two weeks"], ["monthly", "Every month"]].map(([v, l]) => `<button type="button" role="radio" aria-checked="${(W.repeat || "") === v}" data-rep="${v}"><b>${l}</b></button>`).join("")}</div>`, foot: done() });
       Sh.$$("[data-rep]").forEach((b) => (b.onclick = () => { W.repeat = b.dataset.rep; Sh.$$("[data-rep]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); changed(); })); Sh.$("[data-done]").onclick = Sh.close; return; }
     if (k === "drop") { const D = root.EncoreDrop; if (!D?.setup) return say("That isn't ready yet. Try again in a moment."); leave(() => D.setup({ onDone: () => location.reload() })); return; }
+    if (k === "plan") { const id = S.orig?.id || W.id; if (!S.orig?.id || !id) return say("Save the event first, then lay out the plan."); leave(() => { location.href = `/plans/${encodeURIComponent(id)}?edit=1`; }); return; }
     if (k === "tools") { const H = root.HostEvent; leave(() => H?.openTools?.(getDraft())); return; }
     if (k === "classic") { leave(() => { root.__hvClassic = true; const h = document.getElementById("hv"); if (h) h.hidden = true; try { root.HostEvent?.useDraft?.(getDraft()); app("renderStep")?.(); } catch {} }); return; }
     if (k === "questions" || k === "reminders" || k === "approval") return quick(k); }
   function settingsSheet() { const W = S.W, saved = !!S.orig?.id, n = (W.questions || []).length;
     const R = [["questions", "Questions for guests", n ? `${n} question${n > 1 ? "s" : ""}` : "None yet"], ["reminders", "Reminders", W.autoRemind !== false ? "The day before" : "Off"], ["approval", "Require approval", W.approvalRequired ? "You let each guest in" : "Anyone with the link can say yes"],
       ["price", "Price and tickets", priceLine(W)], ["spots", "Spots and waitlist", +W.headcount ? `${+W.headcount} spots` : "No limit"], ["plus", "Plus-ones", +W.plusOnes ? `Up to ${+W.plusOnes} each` : "None"], ["repeat", "Repeat", ({ weekly: "Every week", biweekly: "Every two weeks", monthly: "Every month" })[W.repeat] || "Just once"],
+      ["plan", "The plan, day by day", (W.itinerary || []).length ? `${W.itinerary.length} ${W.itinerary.length === 1 ? "item" : "items"}` : saved ? "An itinerary or agenda guests can follow" : "Save first, then lay out the days"],
       ...(saved ? [["tools", "More tools", "Check-in, tables, slots, texting the invite"], ["classic", "Every setting", "The full planner, with every option."]] : [])];
     const V = visKey(W, S.club); const Sh = sheet({ title: "Settings", body: `<label class="cv-f">Who can find this event?<select id="cvVis2">${visList(CLUB?.on).map(([k, l]) => `<option value="${k}"${k === V ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label><div class="cv-rowlist">${rows(R)}</div>`, onClose: () => draw() });
     Sh.$("#cvVis2").onchange = (e) => setVis(e.target.value);
@@ -515,6 +550,7 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-uf{display:grid;grid-template-columns:96px minmax(0,1fr);border-radius:14px;overflow:hidden;background:#fff;border:1px solid var(--cv-line2);font-weight:400}
 #cv .cv-uf img{width:96px;height:100%;min-height:84px;object-fit:cover;background:var(--pl-raised,#ECE6DB)}#cv .cv-uf div{display:grid;align-content:center;gap:2px;padding:10px 12px;min-width:0}
 #cv .cv-uf b{font-size:16px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cv .cv-uf span{font-size:14px;color:var(--cv-soft);line-height:1.35}#cv .cv-uf small{font-size:13px;color:var(--cv-soft)}
+#cv .cv-fromline{display:block;margin:-2px 0 10px;padding:10px 14px;min-height:44px;border:1.5px dashed var(--cv-line2)!important;border-radius:6px!important;background:var(--cv-card)!important;color:inherit;font:600 15px/1.35 var(--cv-sans);text-align:left;cursor:pointer;width:100%}#cv .cv-fromline[hidden]{display:none}
 #cv .cv-qa{display:grid;gap:10px}#cv .cv-qa-h{font-weight:600;font-size:16px}#cv .cv-pills{display:flex;flex-wrap:wrap;gap:8px}
 #cv .cv-pill{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:999px!important;border:1px solid var(--cv-line2)!important;background:#fff!important;font-size:15px;font-weight:600;margin:0}#cv .cv-pill svg{width:16px;height:16px}
 #cv .cv-pill.on{border-color:var(--cv-ink)!important;box-shadow:inset 0 0 0 1px var(--cv-ink)}

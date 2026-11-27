@@ -117,9 +117,10 @@
   try { new MutationObserver((M) => { for (const m of M) for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.hasAttribute?.("data-calm")) watch(n); else if (n.querySelector?.("[data-calm]")) scan(n); } }).observe(document.documentElement, { childList: true, subtree: true }); } catch {}
 
   /** Change a view in place with a soft fade where the browser supports it; otherwise just change it. Never waits. */
-  // a transition the browser skips (a hidden tab, another one already running, a page mid-navigation) rejects its
-  // promises: those are caught here, so a skipped fade is never an error (the change itself still happens)
-  function swap(fn) { try { if (document.startViewTransition && !still() && !document.hidden) { const t = document.startViewTransition(fn); for (const k of ["ready", "finished", "updateCallbackDone"]) t?.[k]?.catch?.(() => {}); return t; } } catch {} fn(); return null; }
+  // a transition the browser drops (the page changed under it) rejects its promises; that's not an error worth a console line
+  const quiet = (t) => { try { for (const k of ["ready", "finished", "updateCallbackDone"]) t?.[k]?.catch?.(() => {}); } catch {} return t; };
+  try { addEventListener("pagereveal", (e) => quiet(e.viewTransition)); addEventListener("pageswap", (e) => quiet(e.viewTransition)); } catch {}
+  function swap(fn) { try { if (document.startViewTransition && !still() && !document.hidden) return quiet(document.startViewTransition(fn)); } catch {} fn(); return null; }
 
   window.PLCalm = { DELAY, FADE, LINES, lineOf, html, show, around, watch, scan, swap, still };
 })();

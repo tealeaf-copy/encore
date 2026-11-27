@@ -11,6 +11,7 @@ import { seedBrandIntel } from "./brand-intel-seed.js";
 import { defaultRunOfShow, cleanRunOfShow, statusFromRsvp } from "../server/campaigns.js";
 import { scopeStore } from "../server/workspaces.js";
 import fs from "node:fs";
+import { fakeOutbox } from "../server/email.js";
 
 let srv, S;
 const ENV = { ENCORE_SIGNUP: "1", SESSION_SECRET: "campaign-guestlist-0123456789", ENCORE_SIGNUP_PER_HOUR: "1000", ENCORE_FAKE_EMAIL: "1", ENCORE_FAKE_SMS: "1", ENCORE_INSIGHTS_CACHE_MS: "0" };
@@ -58,7 +59,9 @@ test("one guest list: a booked event gets an invite page, People and a plan; sen
   assert.ok(book.every((p) => !(p.tags || []).some((t) => t.length > 30)), "the campaign tag fits");
   // send: Ada through the plan, Ben with the campaign's own link (it asks him for consent)
   const sent = await ok(await req("POST", `/api/campaigns/${id}/invites`, { event: ev.id }, O));
-  assert.ok(sent.viaPlan >= 1, "Ada's invite went through the plan"); assert.ok(sent.links.some((l) => l.name === "Ben"), "Ben gets the campaign link");
+  assert.ok(sent.viaPlan >= 1, "Ada's invite went through the plan");
+  const mail = fakeOutbox.filter((m) => JSON.stringify(m.to).includes("ada.yes@guest.example")).pop(); assert.ok(mail, "Ada got an email: " + JSON.stringify(fakeOutbox.slice(-2).map((m) => [m.to, m.subject])));
+  assert.match(mail.text, new RegExp(`Put it in your calendar: .*/e/${P.eventId}\\.ics`), "with a calendar file link"); assert.ok(sent.links.some((l) => l.name === "Ben"), "Ben gets the campaign link");
   // Ada says yes on the event's own page; the campaign reads it back
   const doc = await (await req("GET", "/api/db/doc?path=events/" + P.eventId, null, null, { "x-encore-guest": "1" })).json();
   const r = await req("POST", "/api/db/collection?path=rsvps", { eventId: P.eventId, response: "going", name: "Ada Yes", email: "ada.yes@guest.example", code: "CADA01", createdAt: Date.now(), via: "invite-lite" }, null, { "x-encore-guest": "1", "x-encore-key": "kadayesguest1", "x-encore-workspace": doc.workspace });

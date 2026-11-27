@@ -6,7 +6,7 @@
 // (orderQty), never its own text or prices: the server writes the order and the total from the event (server/preorder.js).
 window.InviteOrder = function (e, ws, H, U) {
   const $ = (s, el = document) => el.querySelector(s), esc = U.esc, f0 = $("#f"); if (!f0 || $("#ord")) return;
-  const first = String(e.hostName || "").trim().split(/\s+/)[0] || H.person || "your host", handle = H.host?.handle || "", eid = e.id || (location.pathname.match(/^\/e\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "";
+  const first = (String(e.hostName || "").trim().split(/\s+/)[0] || H.person || "your host").replace(/['’]s$/i, ""), handle = H.host?.handle || "", eid = e.id || (location.pathname.match(/^\/e\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "";
   const money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0), slotLabel = window.InviteOrder.slotLabel, slots = (e.slots || []).filter(Boolean).slice(0, 8);
   const css = document.createElement("style"); css.textContent = `.ord h2{margin:18px 0 8px}.ord .it{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,#EADFCF)}.ord .it span{flex:1}.ord .it small{display:block;color:var(--muted,#6b5d52)}.ord .st{display:flex;align-items:center;gap:6px}.ord .st button{width:44px;height:44px;border-radius:999px;border:1.5px solid var(--ink,var(--pl-ink));background:#fff;font:700 20px system-ui;cursor:pointer;color:var(--ink,var(--pl-ink))}.ord .st b{min-width:22px;text-align:center}.ord .sl{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}.ord .sl label{border:1.5px solid var(--line,var(--pl-line-strong));border-radius:999px;padding:9px 14px;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px}.ord .sl label:has(input:checked){border-color:var(--ink,var(--pl-ink));background:var(--pl-sand)}.ord .tot{font-weight:700;margin:10px 0 4px}`; document.head.appendChild(css);
   const form = document.createElement("form"); form.id = "ord"; form.className = "ord"; form.noValidate = true;
@@ -71,7 +71,7 @@ window.InviteOrder = function (e, ws, H, U) {
 // shop, where, paid, paidClaim }; el is replaced.
 window.InviteOrder.ticket = function (e, ws, H, U, M, el) {
   const $ = (s) => document.querySelector(s), esc = U.esc, eid = e.id || (location.pathname.match(/^\/e\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "";
-  const first = String(e.hostName || "").trim().split(/\s+/)[0] || H?.person || "your host", money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
+  const first = (String(e.hostName || "").trim().split(/\s+/)[0] || H?.person || "your host").replace(/['’]s$/i, ""), money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
   const total = +M.total > 0 ? +M.total : (() => { const m = String(M.order || "").match(/·\s*\$(\d+(?:\.\d{1,2})?)\s*$/); return m ? Math.round(+m[1] * 100) : 0; })();
   const pay = M.pay || (total && /^https:\/\//.test(e.ticketUrl || "") && U.payLinkOf ? U.payLinkOf(e.ticketUrl, money(total), [M.name, e.pubTitle || e.name].filter(Boolean).join(" · ")) : "");
   const tapped = (() => { try { return !!U.ls.get("encore-paytap-" + eid); } catch { return false; } })(), rid = M.rid || "";

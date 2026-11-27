@@ -43,10 +43,11 @@
       if (https(e.playlistUrl)) out.push(block("music", "Playlist", `<p><a href="${esc(https(e.playlistUrl))}" target="_blank" rel="noopener nofollow">Open the playlist</a></p>`));
       const gt = (Array.isArray(e.getThere) ? e.getThere : []).map((s) => str(s?.x, 200)).filter(Boolean); if (gt.length) out.push(block("car", "Parking and getting there", gt.map((x) => `<p>${esc(x)}</p>`).join(""))); }
     const L = linksOf(e); if (L.length) out.push(block("link", L.length > 1 ? "Links" : L[0].label || "Link", L.map((l) => `<p><a href="${esc(l.url)}" target="_blank" rel="noopener nofollow">${esc(l.label || l.url.replace(/^https:\/\//, "").replace(/\/$/, ""))}</a></p>`).join("")));
+    const inc = (Array.isArray(e.included) ? e.included : []).map((x) => str(x, 120)).filter(Boolean); if (inc.length) out.push(block("star", "What's included", `<ul class="evs-inc">${inc.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`));
     if (str(e.accessNote, 300)) out.push(block("access", "Accessibility", `<p>${para(str(e.accessNote, 300))}</p>`));
     for (const s of clean(e.sections)) out.push(block(s.icon, s.title || "A note from the host", s.body ? `<p>${para(s.body)}</p>` : ""));
     return out.length ? `<div class="evs" id="evSections">${out.join("")}</div>` : ""; }
-  const CSS = `.evs{display:grid;gap:4px;margin:16px 0 8px}.evs-b{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
+  const CSS = `.evs-inc{margin:0;padding-left:20px}.evs-inc li{margin:2px 0}.evs{display:grid;gap:4px;margin:16px 0 8px}.evs-b{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
 .evs-b:first-child{border-top:0}.evs-ic{width:20px;height:20px;margin-top:2px;opacity:.8}.evs .evs-b h3{margin:0 0 4px;font:600 17px/1.3 var(--sys-title,"IBM Plex Sans"),system-ui,sans-serif!important;letter-spacing:-.005em}
 .evs-b p{margin:0 0 6px;font-size:16px;line-height:1.55;overflow-wrap:anywhere}.evs-b p:last-child{margin-bottom:0}.evs-b a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .evs-co{display:flex;gap:10px;align-items:center;margin:0 0 4px;font-weight:500}.evs-co .evs-ic{margin:0}`;

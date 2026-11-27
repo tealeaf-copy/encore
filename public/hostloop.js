@@ -18,10 +18,10 @@
 .hl-card .hl-k{font:500 12px/1.3 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft);margin:0 0 10px}
 .hl-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center}
 .hl-num{font:400 44px/1 var(--pl-font-display);min-width:52px;text-align:center}
-.hl-num small{display:block;font:500 11px/1.2 var(--pl-font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--pl-soft);margin-top:4px}
+.hl-num small{display:block;font:500 12px/1.2 var(--pl-font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--pl-soft);margin-top:4px}
 .hl-line{margin:0;font-size:15px;line-height:1.45}
 .hl-passes{display:flex;gap:6px;margin-top:8px;align-items:center;font:500 12px var(--pl-font-mono);color:var(--pl-soft)}
-.hl-pass{width:18px;height:18px;border:1.5px solid var(--pl-ink);border-radius:4px;display:inline-grid;place-items:center;font-size:10px}.hl-pass.off{border-style:dashed;border-color:var(--pl-line-strong)}
+.hl-pass{width:20px;height:20px;border:1.5px solid var(--pl-ink);border-radius:4px;display:inline-grid;place-items:center;font-size:12px}.hl-pass.off{border-style:dashed;border-color:var(--pl-line-strong)}
 .hl-rule{border:0;border-top:1px dashed var(--pl-line-strong);margin:14px 0}
 .hl-move{display:grid;gap:10px}
 .hl-move b{display:block;font-weight:600}.hl-move span{display:block;font-size:14px;color:var(--pl-soft)}

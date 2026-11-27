@@ -40,6 +40,8 @@ h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;
 .pv-dayh small{display:block;font:400 14px var(--pl-font-text);color:var(--pl-soft);margin-top:2px}
 .pv-calwrap{display:grid;gap:16px}#ppDay .tl-dh{display:none}
 @media (min-width:900px){.pv-calwrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+/* hosts you follow are listed once on this page, with what each has next (the section below the passport) */
+.pp h3:has(+ .pp-hosts),.pp .pp-hosts{display:none}
 </style><link rel="stylesheet" href="/playful.css">
 </head><body>
 <div class="wrap">

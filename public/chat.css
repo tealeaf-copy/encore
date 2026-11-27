@@ -47,7 +47,7 @@ body.ch-open .ch-list{display:none}body.ch-open .ch-thread{display:flex}
 .ch-thumb .ch-faces{position:absolute;right:-2px;bottom:-2px;display:flex}
 .ch-av{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font:600 12px var(--ch-sans);color:var(--ch-ink);background:var(--t,#F6D7A7);overflow:hidden;box-sizing:border-box}
 .ch-av img,.ch-av svg{width:100%;height:100%;object-fit:cover;display:block}
-.ch-faces .ch-av{width:22px;height:22px;font-size:10px;border:2px solid var(--pl-surface);margin-left:-8px}
+.ch-faces .ch-av{width:24px;height:24px;font-size:12px;border:2px solid var(--pl-surface);margin-left:-8px}
 .ch-rmain{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
 .ch-rtop{min-width:0}.ch-row{max-width:100%}
 .ch-hint{font:400 14px/1.5 var(--ch-sans);color:var(--ch-smoke);margin:20px 10px 6px}.ch-hint a{color:var(--pl-accent-text);font-weight:600}

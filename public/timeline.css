@@ -81,7 +81,7 @@ a.tl-a:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
 .cal-nav{width:44px;height:44px;display:grid;place-items:center;background:none;border:1px solid transparent;border-radius:var(--tl-r);color:var(--pl-ink);cursor:pointer}
 .cal-nav:hover{border-color:var(--pl-line)}.cal-nav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-.cal-wd{text-align:center;font:500 11px/1 var(--tl-mono);color:var(--pl-soft);padding:4px 0 6px}
+.cal-wd{text-align:center;font:500 12px/1 var(--tl-mono);color:var(--pl-soft);padding:4px 0 6px}
 .cal-d{min-height:48px;display:grid;grid-template-rows:auto 8px;align-content:center;justify-items:center;gap:4px;background:none;border:1px solid transparent;border-radius:var(--tl-r);font:500 15px/1 var(--pl-font-text);font-variant-numeric:tabular-nums;color:var(--pl-ink);cursor:pointer;padding:6px 0}
 .cal-d:hover{border-color:var(--pl-line)}
 .cal-d.is-out{color:var(--pl-soft);opacity:.55}

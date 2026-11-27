@@ -204,7 +204,7 @@ export function fit(facts, { tags = [], city = "", budgetCents = 0, guests = new
   H.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
   return { audience: { tags: A.tags, known: A.known, unknown: A.unknown, enough: audPeople >= K.people, peopleBand: band(audPeople) }, city: city || "", budgetCents, kinds, hosts: H.slice(0, 12), thresholds: K };
 }
-const audLabel = (A) => { const t = A.tags.length ? A.tags.slice(0, 2).map(lc).join(" and ") : "people"; return t.charAt(0).toUpperCase() + t.slice(1); };
+const audLabel = (A) => { const t = A.tags.length > 2 ? "your buyers" /* three or more groups: naming two would leave the others out */ : A.tags.length ? A.tags.slice(0, 2).map(lc).join(" and ") : "people"; return t.charAt(0).toUpperCase() + t.slice(1); };
 const moneyRound = (c) => "$" + Math.round((+c || 0) / 100).toLocaleString("en-US");
 const topKind = (F) => { const n = {}; for (const f of F) if (f.kind) n[f.kind] = (n[f.kind] || 0) + 1; return Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0] || null; };
 

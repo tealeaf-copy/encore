@@ -69,7 +69,7 @@ test("kinds and statuses: going, hosting, pickup, class, waitlist and asks, save
   assert.equal(statusOf("hosting", {}, null), "Draft"); assert.equal(statusOf("hosting", { published: true, drop: true }, null, { orders: 1 }), "Pickup window · 1 order");
   assert.equal(statusOf("waitlist", {}, { response: "waitlist" }, { pos: 2 }), "Waitlist #2"); assert.equal(statusOf("waitlist", {}, { response: "requested" }, { hostFirst: "Mina" }), "Asked · waiting on Mina");
   assert.equal(statusOf("pickup", {}, { pickupLabel: "10-11", code: "abc123x" }), "Pickup 10am to 11am · #ABC123");
-  assert.equal(statusOf("going", {}, { response: "going" }), "Going"); assert.equal(statusOf("class", {}, { response: "going" }, { episode: { n: 3, total: 6 } }), "Class 3 of 6");
+  assert.equal(statusOf("going", {}, { response: "going" }), "Going"); assert.equal(statusOf("going", { date: "2026-09-28", price: "$60" }, { response: "going" }, { today: "2026-11-27" }), "Went", "a past plan never says Almost in, pay $60"); assert.equal(statusOf("class", {}, { response: "going" }, { episode: { n: 3, total: 6 } }), "Class 3 of 6");
   assert.equal(statusOf("going", { price: "$20" }, { response: "going", paidClaim: true }, { hostFirst: "Ada" }), "Going · Paid? Ada will confirm");
   assert.equal(statusOf("going", { price: "$20", ticketNote: "x" }, { response: "going" }), "Going · Pay $20 at the door");
   assert.equal(bringLine("Pumpkin pie"), "Bring pumpkin pie"); assert.equal(bringLine("A dessert"), "Bring a dessert"); assert.equal(bringLine("IPA"), "Bring IPA");

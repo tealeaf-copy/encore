@@ -84,8 +84,8 @@ export function kindOf(ev, reply = null, { hosting = false, saved = false, episo
 }
 
 /** The short status on an item's sub-line ("Going", "Hosting · 12 in", "Waitlist #2", "Pickup 10 to 11am"). Pure. */
-export function statusOf(kind, ev, reply = null, { going = 0, asking = 0, orders = 0, pos = 0, hostFirst = "", episode = null } = {}) {
-  const host = hostFirst || "the host";
+export function statusOf(kind, ev, reply = null, { going = 0, asking = 0, orders = 0, pos = 0, hostFirst = "", episode = null, today = "" } = {}) {
+  const host = hostFirst || "the host", over = !!today && !!ev?.date && (ev.endDate || ev.date) < today; // a past plan says "Went", and never asks for money
   if (kind === "hosting") { if (!ev?.published && !ev?.discoverable) return "Draft";
     if (ev?.drop) return `Pickup window · ${orders} order${orders === 1 ? "" : "s"}`;
     return [`Hosting · ${going} in`, asking ? `${asking} asking` : ""].filter(Boolean).join(" · "); }
@@ -93,6 +93,7 @@ export function statusOf(kind, ev, reply = null, { going = 0, asking = 0, orders
   if (kind === "waitlist") return reply?.response === "requested" ? `Asked · waiting on ${host}` : pos ? `Waitlist #${pos}` : "On the waitlist";
   if (kind === "pickup") { const s = slotLabel(reply?.pickupLabel || reply?.slot || ""); const code = String(reply?.code || "").slice(0, 6).toUpperCase(); return [s ? `Pickup ${s}` : "Pickup", code ? `#${code}` : ""].filter(Boolean).join(" · "); }
   if (reply?.response === "maybe") return reply.interest === "in" ? "In · waiting on the date" : "Maybe";
+  if (over && reply?.response === "going" && kind !== "class") return "Went";
   const pay = reply?.response === "going" && priced(ev) && !reply.paid ? (reply.paidClaim ? `Paid? ${host} will confirm` : ev.ticketNote ? `Pay ${ev.price} at the door` : `Almost in · pay ${ev.price}`) : "";
   const base = kind === "class" && episode ? `Class ${episode.n}${episode.total > episode.n ? ` of ${episode.total}` : ""}` : "Going";
   return [base, pay].filter(Boolean).join(" · ");
@@ -220,7 +221,7 @@ export function replyRule(ev, r, want, { host = "the host", today = todayIn(even
 export function makePlans({ store, C, X, kinds = () => null }) {
   const K = kinds;
   const profile = (ws) => { try { return C.profileOf?.(ws) || null; } catch { return null; } };
-  const hostFirstOf = (ws, ev) => first(profile(ws)?.name || ev?.hostName || getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || "");
+  const hostFirstOf = (ws, ev) => first(profile(ws)?.name || ev?.hostName || getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || "").replace(/['’]s$/i, ""); // "with Claire", never "with Claire's" (from Claire's Run Crew)
   const episode = (id, ws, host = false) => { try { return episodeOf(store, id, ws, { host }); } catch { return null; } };
 
   /** The reply items for one event: the main item, and its to-dos. */
@@ -230,7 +231,7 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     let date = ev.date || "", time = "";
     if (kind === "pickup") { const lab = r.pickupLabel || r.slot || ""; time = slotStart(lab); if (!date) date = slotDay(slotLabel(lab), today); }
     const pos = kind === "waitlist" ? waitlistPos(S.list("rsvps").filter((d) => d.data?.eventId === id), rid) : 0;
-    const status = statusOf(kind, ev, r, { pos, hostFirst: host, episode: ep });
+    const status = statusOf(kind, ev, r, { pos, hostFirst: host, episode: ep, today });
     const main = itemOf({ id, ev, kind, status, place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), host, date: date !== ev.date ? date : "", time, extra: { rid, in: inn, ...(multiDay(ev) && inn && !((ev.agenda?.sessions || []).length && (ev.planKind === "summit" || ev.kind === "summit")) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) /* a summit's guests get their own agenda, not the run of show */ } });
     if (multiDay(ev) || ev.itinerary?.length) main.href = `/plans/${encodeURIComponent(id)}`;
     const out = [main];
@@ -238,7 +239,7 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     if (inn && r.slot && !ev.drop && (ev.slots || []).includes(r.slot)) out.push(itemOf({ id, ev, kind: "todo", key: `todo:bring:${id}`, title: bringLine(r.slot), status: `For ${titleOf(ev)}`, date: main.date, time: main.time, ord: -1 }));
     // a summit: the sessions this guest saved, each on its own row, so Plans is their personal agenda
     if (inn) { try { for (const x of K()?.savedSessions(ws, id, ev, rid) || []) out.push(itemOf({ id, ev, kind: "session", key: `session:${id}:${x.id}`, title: x.title, status: [x.conflict ? "Overlaps another saved session" : "On your agenda", x.room, x.track].filter(Boolean).join(" · "), date: x.day, time: x.time, href: `/plans/${encodeURIComponent(id)}#agenda`, extra: { endMs: zonedMs(x.day, x.end, eventTz(ev)) } })); } catch {} }
-    if (inn && priced(ev) && !r.paid && !r.paidClaim && !ev.ticketNote && !ev.drop) out.push(itemOf({ id, ev, kind: "todo", key: `todo:pay:${id}`, title: `Pay ${ev.price} to finish`, status: `For ${titleOf(ev)}`, date: main.date, time: main.time, ord: -2 }));
+    if (inn && priced(ev) && !r.paid && !r.paidClaim && !ev.ticketNote && !ev.drop && !(today && (ev.endDate || ev.date) < today)) out.push(itemOf({ id, ev, kind: "todo", key: `todo:pay:${id}`, title: `Pay ${ev.price} to finish`, status: `For ${titleOf(ev)}`, date: main.date, time: main.time, ord: -2 }));
     return out;
   }
 

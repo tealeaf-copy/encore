@@ -73,13 +73,14 @@
     mine?.rid && mine.code ? (() => { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`, j = (r) => (r.ok ? r.json() : null);
       return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null])
     .then(async ([doc, H, A, st]) => { const e = doc?.data, ws = doc?.workspace;
+      if (e?.drop) return more("/pickup.js", () => more("/droppage.js", () => window.DropPage({ id, e, ws, H, mine, st, ls, gkey, esc, payLinkOf }))); // a drop: the order page (public/droppage.js)
       // ---- repeats: a past date shows the next date's form ----
       let courseNext = "";
       if (e && ws && e.casual && !pastOf && e.date && e.date < today && (e.repeat || +e.sessions > 1)) { const J = await fetch("/api/public/next/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), n = J?.next;
         if (n?.same && n.date) courseNext = n.date;
         else if (n?.id && n.id !== id) { pastOf = { id, e, past: J.past || null }; id = n.id; mine = null; try { mine = JSON.parse(ls.get("encore-rsvp-" + id) || "null"); } catch {} return load(); } }
       // ---- end repeats ----
-      if (!e || !ws || ((e.sample || e.example) && !e.drop) || !e.casual || e.discreet || e.stage === "interest" || (!e.date && !e.drop) || (e.date && e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
+      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date && e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
       render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (paidOf(e) || e.preorder) more("/paymethods.js"); /* Get paid: the host's buttons once in */ if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
       // a returning pre-order guest sees their order
@@ -99,7 +100,7 @@
     // ---- end per-event looks ----
     const where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(" · "), route = httpsUrl(e.routeUrl), bring = bringOf(e);
     // the kicker over the title: "MADISON IS HOSTING · HACK NIGHT"
-    const kw = (() => { try { const w = LK?.cornerWord?.(e) || ""; return /^event$/i.test(w) ? "" : w; } catch { return ""; } })(), hn = esc(e.drop && h.name || first), who = h.name || e.hostName ? `${e.drop ? "Order from " : ""}${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${hn}</a>` : hn}${e.drop ? "" : " is hosting"}` : "";
+    const kw = (() => { try { const w = LK?.cornerWord?.(e) || ""; return /^event$/i.test(w) ? "" : w; } catch { return ""; } })(), hn = esc(first), who = h.name || e.hostName ? `${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${hn}</a>` : hn} is hosting` : "";
     const kicker = who || kw ? `<p class="kicker">${[who, esc(kw)].filter(Boolean).join(" · ")}</p>` : "";
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
@@ -172,7 +173,7 @@
       ${yes && chat ? `<p style="margin:0">💬 <a href="${esc(chat)}" target="_blank" rel="noopener">Join the group chat</a></p>` : ""}
       <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, amtP, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(amtP)}</a>${+e.passPrice > 0 && +e.passCount > 1 ? `<a class="btn pay" id="payPass" href="${esc(payLinkOf(pay, "$" + (+e.passPrice), [data.name, e.pubTitle || e.name, e.passCount + " classes"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.passPrice)} for ${esc(+e.passCount)}</a>` : ""}${+e.dropIn > 0 && +e.sessions > 1 ? `<a class="btn pay" id="payDrop" href="${esc(payLinkOf(pay, "$" + (+e.dropIn), [data.name, e.pubTitle || e.name, "one class"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.dropIn)} for one class</a>` : ""}<button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="${yes ? "/chats/" : "/g#rsvp-"}${encodeURIComponent(eid)}">${yes ? "Open the group chat" : wait ? "See who's coming" : "Change reply"}</a>`}</div>
       ${(yes || wait || asked || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>
-      ${e.drop ? "" : `<a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">Who's coming, polls and more.</p>`}
+      <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">Who's coming, polls and more.</p>
       ${yes ? `<p class="yourturn muted" id="yourTurn"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(eid)}">Your turn? Hosting friends is free.</a></p>` : ""}`;
     if (!S.back) document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
     // a guest who steps out frees their spot and hears it went through

@@ -24,8 +24,8 @@ export function sniffType(buf) {
   if (buf.toString("latin1", 0, 4) === "GIF8") return "image/gif";
   return ""; }
 export const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
-export const PHOTO_FOR = ["cover", "page", "avatar"];
-export const PHOTO_MAX = { cover: 10 * 1048576, page: 10 * 1048576, avatar: 5 * 1048576 };
+export const PHOTO_FOR = ["cover", "page", "avatar", "item"]; // item: a photo of something a drop sells (public/drop.js), up to 4 an item
+export const PHOTO_MAX = { cover: 10 * 1048576, page: 10 * 1048576, avatar: 5 * 1048576, item: 10 * 1048576 };
 export const PHOTO_MIN_SIDE = 64;
 const BLOB = /^\/_blob\/([A-Za-z0-9]{20})$/;
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -122,7 +122,7 @@ export function mountPhotos(app, { store, assetsDir, currentUser, C, raw, small 
 
   // put a photo (or a template, or nothing) on the profile picture, the page cover or an event's cover
   app.post("/api/photos/use", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, kind = PHOTO_FOR.includes(b.for) ? b.for : "";
-    if (!kind) return bad(res, "Say which photo: cover, page or avatar.");
+    if (!kind || kind === "item") return bad(res, "Say which photo: cover, page or avatar."); // an item photo is saved with its drop (server/drops.js)
     const url = String(b.url || ""), source = String(b.source || ""), focus = b.focus ? cleanFocus(b.focus) : null, template = String(b.template || "").slice(0, 40);
     if (url && !ownsBlob(u.ws, url)) return bad(res, "Pick one of your own photos.", 403, "not_yours");
     if (source && !ownsBlob(u.ws, source)) return bad(res, "Pick one of your own photos.", 403, "not_yours");

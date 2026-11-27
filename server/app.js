@@ -31,7 +31,7 @@ import { mountPhotos, guardEventPhotos } from "./photos.js";
 import { makeVerify, verifyRequired, emailVerified, founderGate } from "./verify.js"; // email verification, founder-code limits // the "Change photo" sheet: event covers, page covers, profile pictures
 import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
-import { mountDrops, dropOrderError, soldOf } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
+import { mountDrops, dropOrderError, soldOf, ordersBySlot, addressOpen } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
 import { mountCover } from "./cover.js"; // the host page cover photo
 import { mountIgImport } from "./igimport.js"; // "Start from your Instagram": a draft of the host page from their own Instagram (server/igimport.js)
 import { mountMarket } from "./market.js";
@@ -124,7 +124,7 @@ const GUEST_RSVP_RESPONSES = new Set(["going", "maybe", "declined", "no", "reque
 const GUEST_WALL_STATUSES = new Set(["going", "maybe", "hidden", "cancelled"]);
 // The only fields a guest's reply may carry (what the light and full invites send). Everything else on a reply
 // (paid, let in, checked in, promoted, the device keys) is the host's or the server's and is never taken from a guest.
-const GUEST_TEXT = { name: 80, title: 120, company: 120, email: 200, phone: 30, guestType: 20, topic: 500, dietary: 500, access: 500, ea: 200, slot: 120, ride: 60, order: 300, code: 12, via: 30, interest: 10, introducedBy: 120, linkedin: 300, eventId: 80, response: 20, status: 20, contactVia: 12 };
+const GUEST_TEXT = { name: 80, title: 120, company: 120, email: 200, phone: 30, guestType: 20, topic: 500, dietary: 500, access: 500, ea: 200, slot: 120, ride: 60, order: 300, orderNote: 300, code: 12, via: 30, interest: 10, introducedBy: 120, linkedin: 300, eventId: 80, response: 20, status: 20, contactVia: 12 };
 const GUEST_FLAGS = ["plusOne", "severe", "showOnWall", "showMe", "smsOk"];
 export const GUEST_RSVP_KEYS = new Set([...Object.keys(GUEST_TEXT), ...GUEST_FLAGS, "party", "guestIndex", "createdAt", "changedAt", "photo", "dates", "answers", "utm", "source", "tiers"]);
 // A guest's whole reply, photo included, fits in this many bytes; real replies are a few hundred.
@@ -181,7 +181,7 @@ PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
 // (so the light invite can say "You were in last week. In again?")
 PUBLIC_FIELDS.push("preorder", "orderItems", "prevId", "seriesId");
 // a drop (server/drops.js): an order-ahead pre-order, and whether it's always available (no date)
-PUBLIC_FIELDS.push("drop", "always");
+PUBLIC_FIELDS.push("drop", "always", "windows", "allergens", "orderByTime", "ordersPaused"); // a drop's pickup windows, its allergen note and its cutoff time (server/drops.js)
 // review round 11: when orders close ("Order by Thu"), and pairs and groups counted as such ("6 pairs", "3 groups")
 PUBLIC_FIELDS.push("orderBy", "orderByDate", "orderDeadline", "headUnit", "unitCount", "groupCount", "stockUnit");
 // ---- per-event looks: the flyer fit, colours, effect, title font and reply button (server/looks.js cleans it on save) ----
@@ -700,13 +700,15 @@ export function createApp({ store, dataDir }) {
     // the create canvas's live guest preview (public/canvas.js): the real invite page, fed the draft by postMessage
     if (id === "_preview") { const page = invitePage(); res.set("Cache-Control", "no-store"); return page ? res.type("html").send(page.replace("<!--META-->", () => '<title>Guest preview · Pottery Lab</title><meta name="robots" content="noindex">')) : res.sendStatus(404); }
     if (!ev) { res.status(404); return sendStatic(res, "404.html", "<p>This invite isn't here.</p>"); } // a cut-off or deleted link: a real not-found page, not a blank invite
-    if (ev.example) return res.redirect(302, to);
+    if (ev.example && !ev.drop) return res.redirect(302, to); // an example drop is still an order page (public/droppage.js)
     const U = app.locals.fanclub?.visibility?.(ws, id) === "members" ? null : (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)
     const h = C.profileOf(ws), clubOnly = app.locals.fanclub?.visibility?.(ws, id) === "members", title = clubOnly ? `A members-only event${h?.name ? ` from ${h.name}` : ""}` : (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
-      desc = [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", U?.spots || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
+      desc = ev.drop ? ["Order ahead", globalThis.PLPickup.line(ev), ev.hood || ev.city || "", h?.name ? `From ${h.name}` : ""].filter(Boolean).join(" · ") // a drop's preview says pickup, never an event date (public/pickup.js)
+        : [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", U?.spots || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
       card = !clubOnly && /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.ogCard || "") ? base + ev.ogCard : "", // the link card the host's share sheet drew (public/sharekit.js): cover, title, date, area, mark
-      img = card || (clubOnly ? ogCardFor(ev, base) : /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base));
+      dropPhoto = ev.drop && !ev.coverPhoto ? ((ev.orderItems || []).find((x) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(x?.photo || ""))?.photo || "") : "",
+      img = card || (clubOnly ? ogCardFor(ev, base) : dropPhoto ? base + dropPhoto : /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base));
     // the invite itself, in a page small enough to open instantly on a phone (public/invite.html); it hands anything
     // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
@@ -869,7 +871,7 @@ export function createApp({ store, dataDir }) {
   app.get("/api/public/reply/:eventId", (req, res) => { const eventId = String(req.params.eventId || "").slice(0, 80), P = X.rsvpProof(eventId, req.query.rid, req.query.code);
     if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." });
     const all = P.S.list("rsvps").filter((x) => x.data?.eventId === eventId), ev = P.ev || {}, seats = +ev.headcount || 0, waiting = waitlistOf(all).length;
-    res.json({ response: P.r.response || "", party: seatsOf(P.r, ev), paid: !!P.r.paid, paidClaim: !!P.r.paidClaim, decidedAt: P.r.decidedAt || null, ...(P.r.response === "waitlist" ? { waitlistPos: waitlistPos(all, P.rid) } : {}), waiting, seats, ...(seats && ev.autoWait !== false ? { left: waiting ? 0 : Math.max(0, seats - seatsTaken(ev, all)) } : {}) }); });
+    res.json({ response: P.r.response || "", party: seatsOf(P.r, ev), paid: !!P.r.paid, paidClaim: !!P.r.paidClaim, decidedAt: P.r.decidedAt || null, ...(ev.preorder ? { order: P.r.order || "", orderLines: P.r.orderLines || [], orderTotal: +P.r.orderTotal || 0, slot: P.r.slot || "", orderStatus: P.r.orderStatus || "", name: P.r.name || "" } : {}) /* their own order, proved by its code (public/droppage.js) */, ...(P.r.response === "waitlist" ? { waitlistPos: waitlistPos(all, P.rid) } : {}), waiting, seats, ...(seats && ev.autoWait !== false ? { left: waiting ? 0 : Math.max(0, seats - seatsTaken(ev, all)) } : {}) }); });
   // review round 13: the one-line reply the Terminal look shows (curl). A guest who has replied once changes it with that
   // reply's id and code, through the same write as the invite's own change (seats, waitlist, the host's bell); the answer
   // says only where their own reply landed.
@@ -1594,12 +1596,15 @@ export function createApp({ store, dataDir }) {
         // review round 11: past the order-by date (where the event is), new orders and changes are closed; Can't go still works
         if (evO && ordersClosed(evO) && String(b.response || "").toLowerCase() !== "no" && (raw0.orderQty != null || raw0.order != null || String(b.response || "").toLowerCase() === "going")) {
           res.status(409).json({ code: "orders_closed", message: evO.orderBy ? `Orders closed. The last day to order was ${evO.orderBy}.` : "Orders closed." }); return false; }
+        // a drop with one pickup window: that one is the pickup time even when the order didn't name it
+        if (evO?.drop && !b.slot && (raw0.orderQty != null || raw0.order != null)) { const W = globalThis.PLPickup.windowsOf(evO); if (W.length === 1) b.slot = globalThis.PLPickup.label(W[0]); }
         if (evO?.preorder && (raw0.orderQty != null || raw0.order != null)) { const O = buildOrder(evO, { orderQty: raw0.orderQty, order: raw0.order, slot: b.slot });
           if (O.error) { res.status(400).json({ code: "invalid_order", message: O.error }); return false; }
           if (O.order) { b.order = O.order; if (O.orderLines) { b.orderLines = O.orderLines; b.orderTotal = O.orderTotal; } }
           // a drop (server/drops.js): paused, the per-order max and what's left this batch (the guest's own earlier order doesn't count against them)
           if (evO.drop && O.orderLines) { const sold = soldOf(S(req), eid0, evO); if (cur0?.eventId === eid0) for (const l of cur0.orderLines || []) sold[l.name] = Math.max(0, (sold[l.name] || 0) - (+l.qty || 0));
-            const er = dropOrderError(evO, O.orderLines, sold); if (er) { res.status(409).json({ code: evO.ordersPaused ? "orders_paused" : "sold_out", message: er }); return false; }
+            const bySlot = ordersBySlot(S(req), eid0, evO); if (cur0?.eventId === eid0 && cur0.slot) bySlot[cur0.slot] = Math.max(0, (bySlot[cur0.slot] || 0) - 1);
+            const er = dropOrderError(evO, O.orderLines, sold, b.slot, bySlot); if (er) { res.status(/^Pick a pickup/.test(er) ? 400 : 409).json({ code: evO.ordersPaused ? "orders_paused" : /full\./.test(er) ? "window_full" : /^Pick a pickup/.test(er) ? "invalid_order" : "sold_out", message: er }); return false; }
             b.orderAt = cur0?.orderAt || Date.now(); } }
         else if (evO?.preorder && cur0?.order && req.method === "PUT") b.order = cur0.order; }
       // ---- end review round 8 pre-orders ----
@@ -1901,9 +1906,11 @@ export function createApp({ store, dataDir }) {
       if (L.length) O.push(...L.map((x) => `${x.qty} × ${x.name}${+x.price > 0 ? ` (${orderMoney(x.price * x.qty)})` : ""}`)); else O.push(String(r.order).split(" · ")[0]);
       if (cents) O.push(`Total: ${orderMoney(cents / 100)}`);
       O.push("");
-      if (r.slot) O.push(`Pickup: ${slotLabel(r.slot)}${when ? `, ${when.split(" · ")[0]}` : ""}`); else if (when) O.push(`Pickup: ${when}`);
-      // a drop's buyer gets the exact pickup address here (and on their order): nowhere public ever shows it
-      if (ev.drop && String(ev.venueAddr || "").trim()) O.push(`Pickup address: ${String(ev.venueAddr).trim()}${ev.hood ? ` (${ev.hood})` : ""}`);
+      // a drop's pickup is the window they picked, in the same words as every page (public/pickup.js)
+      if (ev.drop) { const w = globalThis.PLPickup.windowOfSlot(ev, r.slot); O.push(`Pickup: ${w ? globalThis.PLPickup.label(w) : globalThis.PLPickup.line(ev, { prefix: "" })}${ev.hood ? ` in ${ev.hood}` : ""}`); }
+      else if (r.slot) O.push(`Pickup: ${slotLabel(r.slot)}${when ? `, ${when.split(" · ")[0]}` : ""}`); else if (when) O.push(`Pickup: ${when}`);
+      // a drop's buyer gets the exact pickup address once it's close (the day before, or when orders close); nowhere public ever shows it
+      if (ev.drop && String(ev.venueAddr || "").trim()) O.push(addressOpen(ev, r.slot) ? `Pickup address: ${String(ev.venueAddr).trim()}${ev.hood ? ` (${ev.hood})` : ""}` : "We'll send the exact spot the day before.");
       else if (where) O.push(`Where: ${where}${pe.addrHidden ? " (the exact address is on your invite)" : ""}`);
       if (cents && url) O.push("", `Pay ${orderMoney(cents / 100)} here: ${payLink(url, cents, [String(r.name || "").trim(), title].filter(Boolean).join(" · "))}`);
       else if (cents && ev.ticketNote) O.push("", `Pay ${orderMoney(cents / 100)} at pickup.`);

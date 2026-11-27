@@ -8,6 +8,9 @@
 import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, updateWorkspace, claimEvent, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
+import { foreignBlob } from "./photos.js";
+import "../public/pickup.js"; // the one reader of pickup windows, shared with every page (window.PLPickup)
+const P = () => globalThis.PLPickup;
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").replace(/[<>]/g, "").trim().slice(0, n);
 const BLOB_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "");
@@ -21,6 +24,37 @@ export const priceOf = (v) => { const m = String(v ?? "").replace(/[,\s$]/g, "")
  * A drop as the host set it up, checked. Returns { error } (a sentence the host reads) or { drop }.
  * Prices are required: an item without one is refused, never shown as "$0".
  */
+const HM = /^\d{2}:\d{2}$/, WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const PHOTO_OK = (u) => BLOB_OK(u) || /^\/presets\/[\w./-]{1,80}$/.test(u || "");
+/** A drawn cover ("Describe it and Potto draws it"): an <svg> with no script, handler or link in it. */
+const svgOk = (s) => typeof s === "string" && /^<svg[\s>]/.test(s) && s.length < 40000 && !/<script|<foreign|\bon[a-z]+\s*=|javascript:|href\s*=/i.test(s);
+const focusOf = (f) => (f && typeof f === "object" && Number.isFinite(+f.x) && Number.isFinite(+f.y) ? { x: Math.max(0, Math.min(100, Math.round(+f.x))), y: Math.max(0, Math.min(100, Math.round(+f.y))) } : null);
+/** The cover as a drop keeps it: a photo (with its original and focal point) or a drawn cover. */
+function coverOf(b, cur) { const has = (k) => Object.prototype.hasOwnProperty.call(b, k), pick = (k) => (has(k) ? b[k] : cur[k]);
+  const photo = pick("coverPhoto"), art = pick("coverArt");
+  return { coverPhoto: PHOTO_OK(photo) ? photo : "", coverSource: BLOB_OK(pick("coverSource")) ? pick("coverSource") : "", coverFocus: focusOf(pick("coverFocus")),
+    coverArt: art && typeof art === "object" && /^[a-z+-]{2,40}$/.test(String(art.kind || "")) ? { kind: art.kind, tone: clean(art.tone, 20), ...(art.kind === "custom" && svgOk(art.svg) ? { svg: art.svg, prompt: clean(art.prompt, 120) } : {}) } : null }; }
+/**
+ * Pickup windows: a date and a time ("Sun, Dec 6, 9 to 10am"), or a weekday for a drop that runs every week. Drops made
+ * before windows existed send free words in slots ("Sat 9 to 10am"), read by the shared reader (public/pickup.js).
+ */
+export function cleanWindows(raw, { date = "", always = true } = {}) {
+  const src = Array.isArray(raw) ? raw : [];
+  const out = [];
+  for (const w of src.slice(0, 8)) { if (!w || typeof w !== "object") continue;
+    const d = DAY_OK(w.date) ? w.date : "", day = WEEKDAYS.includes(w.day) ? w.day : "", start = HM.test(w.start || "") ? w.start : "", end = HM.test(w.end || "") && (!start || w.end > w.start) ? w.end : "";
+    if (!d && !day) return { error: "Pick a day for each pickup window." };
+    if (!start) return { error: "Pick a start time for each pickup window." };
+    const id = /^[a-z0-9]{4,12}$/.test(w.id || "") ? w.id : crypto.randomBytes(3).toString("hex");
+    out.push({ id, date: d, day: d ? "" : day, start, end, cap: Math.max(0, Math.min(500, Math.round(+w.cap || 0))) }); }
+  return { windows: out };
+}
+const windowsFromSlots = (slots, date, always) => P().windowsOf({ slots, date, always }).filter((w) => w.start).map((w) => ({ id: crypto.randomBytes(3).toString("hex"), date: w.date || "", day: w.date ? "" : w.day || "", start: w.start, end: w.end || "", cap: 0 }));
+
+/**
+ * A drop as the host set it up, checked. Returns { error } (a sentence the host reads) or { drop }.
+ * Prices are required: an item without one is refused, never shown as "$0".
+ */
 export function cleanDrop(b = {}, cur = {}) {
   const raw = Array.isArray(b.items) ? b.items : cur.items || [];
   const items = [];
@@ -29,61 +63,101 @@ export function cleanDrop(b = {}, cur = {}) {
     if (!name && !anyPrice) continue; // an empty row the host never filled
     if (!name) return { error: `Item ${i + 1} needs a name.` };
     if (!price) return { error: anyPrice ? `Check the price for ${name}. Use a number like 12 or 12.50.` : `Add a price for ${name}.` };
+    // up to 4 photos an item, the first is its main one (an old item kept one photo)
+    const photos = [...new Set([...(Array.isArray(x?.photos) ? x.photos : []), ...(x?.photo ? [x.photo] : [])].filter(BLOB_OK))].slice(0, 4);
     items.push({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name, price, desc: clean(x?.desc, 160),
-      stock: Math.max(0, Math.min(999, Math.round(+x?.stock || 0))), max: Math.max(1, Math.min(50, Math.round(+x?.max || 6))), photo: BLOB_OK(x?.photo) ? x.photo : "" });
+      stock: Math.max(0, Math.min(999, Math.round(+x?.stock || 0))), max: Math.max(1, Math.min(50, Math.round(+x?.max || 6))), photo: photos[0] || "", photos });
   }
   if (!items.length) return { error: "Add at least one thing to sell, with a price." };
-  const slots = (Array.isArray(b.slots) ? b.slots : cur.slots || []).map((s) => clean(s, 60)).filter(Boolean).filter((s, i, A) => A.indexOf(s) === i).slice(0, 8);
-  if (!slots.length) return { error: "Add at least one pickup time." };
+  const date0 = DAY_OK(b.date) ? b.date : DAY_OK(cur.date) ? cur.date : "", always0 = b.always != null ? !!b.always : cur.always != null ? !!cur.always : true;
+  let windows;
+  if (Array.isArray(b.windows)) { const r = cleanWindows(b.windows); if (r.error) return r; windows = r.windows; }
+  else if (Array.isArray(b.slots)) windows = windowsFromSlots(b.slots.map((s) => clean(s, 60)).filter(Boolean), date0, always0);
+  else windows = (cur.windows || []).length ? cleanWindows(cur.windows).windows || [] : windowsFromSlots(cur.slots || [], date0, always0);
+  // words that never read as a time ("after church") stay as the host wrote them, as before
+  const loose = !Array.isArray(b.windows) && Array.isArray(b.slots) ? b.slots.map((s) => clean(s, 60)).filter((s) => s && !P().parseSlot(s)) : [];
+  if (!windows.length && !loose.length) return { error: "Add at least one pickup time." };
+  const cap = Math.max(0, Math.min(500, Math.round(+(b.windowCap ?? cur.windowCap ?? 0) || 0)));
+  if (cap) windows = windows.map((w) => ({ ...w, cap: w.cap || cap }));
+  const dated = windows.filter((w) => w.date).sort((a, z) => a.date.localeCompare(z.date) || a.start.localeCompare(z.start));
+  const always = windows.length ? !dated.length : always0, date = dated[0]?.date || (always ? "" : date0);
+  if (!always && !date) return { error: "Pick the pickup day, or make it always available." };
+  const slots = [...windows.map((w) => P().label(w)), ...loose].filter((s, i, A) => A.indexOf(s) === i).slice(0, 8);
   const area = clean(b.area ?? cur.area, 80);
   if (!area) return { error: "Add the neighborhood people see, like Midtown or Greenpoint." };
-  const always = b.always != null ? !!b.always : cur.always != null ? !!cur.always : true;
-  const date = DAY_OK(b.date) ? b.date : DAY_OK(cur.date) ? cur.date : "";
-  if (!always && !date) return { error: "Pick the pickup day, or make it always available." };
   const pay = ["link", "pickup"].includes(b.pay) ? b.pay : cur.pay || "pickup", payUrl = String(b.payUrl ?? cur.payUrl ?? "").trim();
   if (pay === "link" && !/^https:\/\/[^\s<>"]{3,300}$/i.test(payUrl)) return { error: "Payment links start with https://. Or pick Pay at pickup." };
   const title = clean(b.title ?? cur.title, 80) || (items.length === 1 ? items[0].name : `${items[0].name} and more`);
-  return { drop: { title, note: clean(b.note ?? cur.note, 240), items, slots, area, address: clean(b.address ?? cur.address, 160), always, date: always ? "" : date,
-    orderBy: clean(b.orderBy ?? cur.orderBy, 40), orderByDate: DAY_OK(b.orderByDate) ? b.orderByDate : "", pay, payUrl: pay === "link" ? payUrl : "",
-    open: b.open != null ? !!b.open : cur.open != null ? !!cur.open : true, repeatWeekly: !always && (b.repeatWeekly != null ? !!b.repeatWeekly : !!cur.repeatWeekly) } };
+  const byDate = DAY_OK(b.orderByDate) ? b.orderByDate : b.orderByDate === "" ? "" : DAY_OK(cur.orderByDate) ? cur.orderByDate : "", byTime = HM.test(b.orderByTime ?? cur.orderByTime ?? "") ? (b.orderByTime ?? cur.orderByTime) : "";
+  return { drop: { title, note: clean(b.note ?? cur.note, 240), items, slots, windows, windowCap: cap, area, address: clean(b.address ?? cur.address, 160), always, date: always ? "" : date,
+    orderBy: clean(b.orderBy ?? cur.orderBy, 40), orderByDate: byDate, orderByTime: byDate ? byTime : "", pay, payUrl: pay === "link" ? payUrl : "", allergens: clean(b.allergens ?? cur.allergens, 200),
+    open: b.open != null ? !!b.open : cur.open != null ? !!cur.open : true, repeatWeekly: !always && (b.repeatWeekly != null ? !!b.repeatWeekly : !!cur.repeatWeekly), ...coverOf(b, cur) } };
 }
 
-/** The drop as the event it is under the hood. The exact address goes in venueAddr, which a casual event keeps for guests who are in. */
+/** The drop as the event it is under the hood. The exact address goes in venueAddr, which a casual event keeps for guests who are in.
+ *  Its date and time are the first pickup window's, so every view that reads an event's date shows the pickup day. */
 export function dropEvent(d, host = {}, cur = {}) {
-  return { ...cur, name: d.title, pubTitle: d.title, why: d.note, drop: true, preorder: true, casual: true, always: d.always, date: d.date, startTime: "",
-    slots: d.slots, orderItems: d.items, priceUnit: "each", price: "", headcount: 0, hood: d.area, meetPoint: "", venueName: "", venueAddr: d.address, city: cur.city || host.city || "",
-    ticketUrl: d.payUrl, ticketNote: d.pay === "pickup" ? "Pay at pickup" : "", orderBy: d.orderBy, orderByDate: d.orderByDate, ordersPaused: !d.open, repeat: d.repeatWeekly ? "weekly" : "",
+  const first = (d.windows || []).filter((w) => w.date).sort((a, z) => a.date.localeCompare(z.date) || a.start.localeCompare(z.start))[0];
+  return { ...cur, name: d.title, pubTitle: d.title, why: d.note, drop: true, preorder: true, casual: true, planKind: "drop", always: d.always, date: first?.date || d.date, startTime: first?.start || "", endTime: first?.end || "",
+    slots: d.slots, windows: d.windows || [], windowCap: d.windowCap || 0, orderItems: d.items, priceUnit: "each", price: "", headcount: 0, hood: d.area, meetPoint: "", venueName: "", venueAddr: d.address, city: cur.city || host.city || "",
+    ticketUrl: d.payUrl, ticketNote: d.pay === "pickup" ? "Pay at pickup" : "", orderBy: d.orderBy || (d.orderByDate ? P().day(d.orderByDate) + (d.orderByTime ? " " + P().span({ start: d.orderByTime }) : "") : ""), orderByDate: d.orderByDate, orderByTime: d.orderByTime || "",
+    allergens: d.allergens || "", ordersPaused: !d.open, repeat: d.repeatWeekly ? "weekly" : "",
+    coverPhoto: d.coverPhoto || "", coverSource: d.coverSource || "", coverFocus: d.coverFocus || null, coverArt: d.coverArt || null,
     hostName: host.name || cur.hostName || "", published: true, discoverable: true, unlisted: cur.unlisted ?? false, batchAt: cur.batchAt || Date.now(), updatedAt: Date.now(), createdAt: cur.createdAt || Date.now() };
 }
 /** Back from the event to what the setup sheet edits. */
 export function dropOf(id, e) {
-  return { id, title: e.pubTitle || e.name || "", note: e.why || "", items: (e.orderItems || []).map((x) => ({ id: x.id || "", name: x.name, price: +x.price || 0, desc: x.desc || "", stock: +x.stock || 0, max: +x.max || 6, photo: x.photo || "" })),
-    slots: e.slots || [], area: e.hood || e.meetPoint || "", address: e.venueAddr || "", always: !!e.always, date: e.date || "", orderBy: e.orderBy || "", orderByDate: e.orderByDate || "",
-    pay: e.ticketUrl ? "link" : "pickup", payUrl: e.ticketUrl || "", open: !e.ordersPaused, repeatWeekly: e.repeat === "weekly", batchAt: e.batchAt || 0 };
+  const windows = (e.windows || []).length ? e.windows : windowsFromSlots(e.slots || [], e.date, e.always);
+  return { id, title: e.pubTitle || e.name || "", note: e.why || "", items: (e.orderItems || []).map((x) => ({ id: x.id || "", name: x.name, price: +x.price || 0, desc: x.desc || "", stock: +x.stock || 0, max: +x.max || 6, photo: x.photo || "", photos: (x.photos || []).length ? x.photos : x.photo ? [x.photo] : [] })),
+    slots: e.slots || [], windows, windowCap: +e.windowCap || 0, area: e.hood || e.meetPoint || "", address: e.venueAddr || "", always: !!e.always, date: e.date || "", orderBy: e.orderBy || "", orderByDate: e.orderByDate || "", orderByTime: e.orderByTime || "",
+    pay: e.ticketUrl ? "link" : "pickup", payUrl: e.ticketUrl || "", allergens: e.allergens || "", open: !e.ordersPaused, repeatWeekly: e.repeat === "weekly", batchAt: e.batchAt || 0,
+    coverPhoto: e.coverPhoto || "", coverSource: e.coverSource || "", coverFocus: e.coverFocus || null, coverArt: e.coverArt || null };
 }
 
+const live = (r, eventId, since) => r.eventId === eventId && r.response === "going" && r.orderStatus !== "cancelled" && (+r.orderAt || +r.createdAt || 0) >= since;
 /** How many of each item this batch's orders hold (cancelled ones and replies from before the batch don't count). */
 export function soldOf(S, eventId, ev) {
   const n = {}; const since = +ev?.batchAt || 0;
-  for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== eventId || r.response !== "going" || r.orderStatus === "cancelled" || (+r.orderAt || +r.createdAt || 0) < since) continue;
+  for (const d of S.list("rsvps")) { const r = d.data || {}; if (!live(r, eventId, since)) continue;
     for (const l of r.orderLines || []) n[l.name] = (n[l.name] || 0) + (Math.max(0, Math.floor(+l.qty) || 0)); }
   return n;
 }
-/** Can this order go through? Paused, over an item's per-order max, or past what's left this batch: a sentence; else "". */
-export function dropOrderError(ev, lines, sold) {
+/** How many orders each pickup window holds this batch, by the window's words. */
+export function ordersBySlot(S, eventId, ev) {
+  const n = {}; const since = +ev?.batchAt || 0;
+  for (const d of S.list("rsvps")) { const r = d.data || {}; if (!live(r, eventId, since) || !(r.orderLines || []).length) continue; const k = String(r.slot || ""); n[k] = (n[k] || 0) + 1; }
+  return n;
+}
+/** Can this order go through? Paused, over an item's per-order max, past what's left this batch, or a full window: a sentence; else "". */
+export function dropOrderError(ev, lines, sold, slot = "", bySlot = {}) {
   if (!ev?.drop) return "";
   if (ev.ordersPaused) return "Orders are paused right now. Follow the host to hear when they open.";
   for (const l of lines || []) { const it = (ev.orderItems || []).find((x) => x.name === l.name); if (!it) continue;
     if (+it.max && l.qty > +it.max) return `Up to ${it.max} ${it.name} per order.`;
     if (+it.stock) { const left = Math.max(0, +it.stock - (sold[it.name] || 0)); if (l.qty > left) return left ? `Only ${left} ${it.name} left.` : `Sold out. No ${it.name} left.`; } }
+  const W = P().windowsOf(ev);
+  if (W.length && W.some((w) => w.start)) { const w = P().windowOfSlot(ev, slot);
+    if (!w) return "Pick a pickup time.";
+    if (+w.cap && (bySlot[P().label(w)] || 0) >= +w.cap) return `${P().label(w)} is full. Pick another pickup time.`; }
   return "";
 }
+/** The day before a pickup, or once orders close: when someone who ordered gets the exact address. */
+export function addressOpen(ev, slot, now = Date.now()) {
+  if (!ev?.drop) return true;
+  const today = new Date(now).toISOString().slice(0, 10), tomorrow = new Date(now + 864e5).toISOString().slice(0, 10);
+  if (DAY_OK(ev.orderByDate) && today > ev.orderByDate) return true;
+  const w = P().windowOfSlot(ev, slot), day = w ? P().dateFor(w, today) : P().firstDate(ev, today);
+  return !day || day <= tomorrow;
+}
 /** What guests see of a drop: never the exact address. */
-export function publicDrop(id, ev, sold, host) {
-  return { id, url: `/e/${encodeURIComponent(id)}`, title: ev.pubTitle || ev.name || "", note: ev.why || "", area: ev.hood || "", slots: ev.slots || [], always: !!ev.always, date: ev.date || "",
-    orderBy: ev.orderBy || "", paused: !!ev.ordersPaused, payAtPickup: !ev.ticketUrl, payOnline: !!ev.ticketUrl, hasAddress: !!String(ev.venueAddr || "").trim(),
-    items: (ev.orderItems || []).map((x, i) => ({ i, name: x.name, price: +x.price || 0, priceText: money(Math.round((+x.price || 0) * 100)), desc: x.desc || "", photo: x.photo || "", max: +x.max || 6, left: +x.stock ? Math.max(0, +x.stock - (sold[x.name] || 0)) : null })),
-    ...(host ? { host: { handle: host.handle, name: host.name } } : {}) };
+export function publicDrop(id, ev, sold, host, bySlot = {}) {
+  const items = (ev.orderItems || []).map((x, i) => ({ i, name: x.name, price: +x.price || 0, priceText: money(Math.round((+x.price || 0) * 100)), desc: x.desc || "", photo: x.photo || "", photos: (x.photos || []).length ? x.photos : x.photo ? [x.photo] : [], max: +x.max || 6, stock: +x.stock || 0, left: +x.stock ? Math.max(0, +x.stock - (sold[x.name] || 0)) : null }));
+  const windows = P().windowsOf(ev).map((w) => { const label = P().label(w), n = bySlot[label] || 0; return { id: w.id, date: w.date || "", day: w.day || "", start: w.start || "", end: w.end || "", label, full: !!(+w.cap && n >= +w.cap), ...(+w.cap ? { left: Math.max(0, +w.cap - n) } : {}) }; });
+  return { id, url: `/e/${encodeURIComponent(id)}`, title: ev.pubTitle || ev.name || "", note: ev.why || "", area: ev.hood || "", slots: ev.slots || [], windows, always: !!ev.always, date: ev.date || "",
+    pickup: P().line(ev), left: P().leftLine(items), cover: PHOTO_OK(ev.coverPhoto) ? ev.coverPhoto : items.find((x) => x.photo)?.photo || "", coverPhoto: PHOTO_OK(ev.coverPhoto) ? ev.coverPhoto : "", coverArt: ev.coverArt || null,
+    allergens: ev.allergens || "", orderBy: ev.orderBy || "", orderByDate: ev.orderByDate || "", paused: !!ev.ordersPaused, payAtPickup: !ev.ticketUrl, payOnline: !!ev.ticketUrl, hasAddress: !!String(ev.venueAddr || "").trim(),
+    city: ev.city || "", example: !!(ev.example || ev.sample), items,
+    ...(host ? { host: { handle: host.handle, name: host.name, avatarUrl: host.theme?.avatarUrl || "" } } : {}) };
 }
 export const dropsOf = (store, ws) => scopeStore(store, ws).list("events").filter((d) => d.data?.drop && !d.data.cancelled).map((d) => ({ id: d.id, e: d.data }));
 const today = () => new Date().toISOString().slice(0, 10);
@@ -109,6 +183,11 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
   const counts = (S, id, ev) => { let orders = 0, items = 0, cents = 0; const since = +ev.batchAt || 0;
     for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || r.response !== "going" || r.orderStatus === "cancelled" || (+r.orderAt || +r.createdAt || 0) < since || !(r.orderLines || []).length) continue; orders++; for (const l of r.orderLines) { items += +l.qty || 0; cents += Math.round((+l.price || 0) * 100) * (+l.qty || 0); } }
     return { orders, items, total: money(cents) }; };
+  // a drop wears only its owner's own uploads (server/photos.js): someone else's photo url is dropped from the save
+  const ownPhotos = (b, ws) => { if (!b || typeof b !== "object") return b; const o = { ...b };
+    if (foreignBlob(ws, o.coverPhoto)) delete o.coverPhoto; if (foreignBlob(ws, o.coverSource)) delete o.coverSource;
+    if (Array.isArray(o.items)) o.items = o.items.map((x) => (x && typeof x === "object" ? { ...x, photo: foreignBlob(ws, x.photo) ? "" : x.photo, photos: Array.isArray(x.photos) ? x.photos.filter((u) => !foreignBlob(ws, u)) : x.photos } : x));
+    return o; };
   const mine = (u) => { const S = scopeStore(store, u.ws), h = C.profileOf(u.ws) || {}; return { S, h }; };
 
   app.get("/api/host/drops", (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u);
@@ -118,14 +197,14 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
       drops: dropsOf(store, u.ws).sort((a, b) => (b.e.createdAt || 0) - (a.e.createdAt || 0)).map(({ id, e }) => ({ ...dropOf(id, e), url: `${publicOrigin(req)}/e/${encodeURIComponent(id)}`, path: `/e/${encodeURIComponent(id)}`, batch: counts(S, id, e) })) }); });
 
   app.post("/api/host/drops", small, (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u); if (!h.handle) return bad(res, "Set up your page first.");
-    const r = cleanDrop(req.body || {}); if (r.error) return bad(res, r.error);
+    const r = cleanDrop(ownPhotos(req.body || {}, u.ws)); if (r.error) return bad(res, r.error);
     const id = newId(); if (!claimEvent(id, u.ws)) return bad(res, "Try that again.", 409, "conflict");
     S.set("events/" + id, { id, ...dropEvent(r.drop, h) });
     try { req.app?.locals?.fanclub?.onPublish?.(req, u.ws, id); } catch {} // members first, then followers (server/fanclub.js)
     res.json({ ok: true, id, path: `/e/${encodeURIComponent(id)}`, url: `${publicOrigin(req)}/e/${encodeURIComponent(id)}`, drop: dropOf(id, S.get("events/" + id).data) }); });
 
   app.post("/api/host/drops/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u), id = clean(req.params.id, 80), cur = S.get("events/" + id)?.data; if (!cur?.drop) return bad(res, "No such drop.", 404, "not_found");
-    const r = cleanDrop(req.body || {}, dropOf(id, cur)); if (r.error) return bad(res, r.error);
+    const r = cleanDrop(ownPhotos(req.body || {}, u.ws), dropOf(id, cur)); if (r.error) return bad(res, r.error);
     S.set("events/" + id, { id, ...dropEvent(r.drop, h, cur) });
     res.json({ ok: true, id, path: `/e/${encodeURIComponent(id)}`, drop: dropOf(id, S.get("events/" + id).data) }); });
 
@@ -134,7 +213,8 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
     let nid = id;
     if (cur.always || !cur.date) S.update("events/" + id, { batchAt: Date.now(), ordersPaused: false });
     else { const nd = new Date(cur.date + "T12:00:00Z"); nd.setUTCDate(nd.getUTCDate() + 7); nid = newId(); while (!claimEvent(nid, u.ws)) nid = newId();
-      S.set("events/" + nid, { ...cur, id: nid, date: nd.toISOString().slice(0, 10), orderByDate: "", prevId: id, batchAt: Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ordersPaused: false }); }
+      const wk = (d) => (DAY_OK(d) ? new Date(Date.parse(d + "T12:00:00Z") + 7 * 864e5).toISOString().slice(0, 10) : d), W2 = (cur.windows || []).map((w) => ({ ...w, date: wk(w.date) }));
+      S.set("events/" + nid, { ...cur, id: nid, date: nd.toISOString().slice(0, 10), ...(W2.length ? { windows: W2, slots: W2.map((w) => P().label(w)) } : {}), orderByDate: "", prevId: id, batchAt: Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ordersPaused: false }); }
     let told = 0;
     if (req.body?.tell !== false) { const ev = S.get("events/" + nid).data, F = C.followersOf(u.ws), cfg = emailConfig(u.ws, false) || emailConfig(DEFAULT_WS, true), link = `${publicOrigin(req)}/e/${encodeURIComponent(nid)}`;
       for (const f of F) { if (!f.email) continue; try { X.notify(f.email, { kind: "drop", key: `drop-${nid}-${ev.batchAt}`, text: `${h.name}: ${ev.pubTitle} is open for orders`, link: `/e/${encodeURIComponent(nid)}`, eventId: nid }); } catch {}
@@ -144,10 +224,10 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
   // guests: one drop's menu, with what's left this batch. Never the exact address.
   app.get("/api/public/drop/:id", (req, res) => { const id = clean(req.params.id, 80); if (!/^[A-Za-z0-9_-]{2,80}$/.test(id)) return res.status(404).json({ code: "not_found", message: "No such drop." });
     const ws = workspaceOfEvent(id), S = scopeStore(store, ws), ev = ws && ws !== DEFAULT_WS ? S.get("events/" + id)?.data : null; if (!ev?.drop || ev.cancelled) return res.status(404).json({ code: "not_found", message: "No such drop." });
-    res.json({ drop: publicDrop(id, ev, soldOf(S, id, ev), C.profileOf(ws)) }); });
+    res.json({ drop: { ...publicDrop(id, ev, soldOf(S, id, ev), C.profileOf(ws), ordersBySlot(S, id, ev)), ws } }); });
   // a host's open drops, for their page's "What I offer"
   app.get("/api/public/drops/:handle", (req, res) => { const ws = C.wsOfHandle(clean(req.params.handle, 40).toLowerCase()); if (!ws) return res.json({ drops: [] }); const S = scopeStore(store, ws);
-    res.json({ drops: liveDrops(store, ws).filter(({ e }) => e.discoverable).map(({ id, e }) => publicDrop(id, e, soldOf(S, id, e))) }); });
+    res.json({ drops: liveDrops(store, ws).filter(({ e }) => e.discoverable).map(({ id, e }) => publicDrop(id, e, soldOf(S, id, e), null, ordersBySlot(S, id, e))) }); });
 
   // the old shop links (/x/<handle>/shop/<i>, from shares and the feed) open the drop that replaced the shop
   app.get(/^\/x\/([a-z0-9][a-z0-9-]{1,39})\/shop\/([A-Za-z0-9_-]{1,20})$/, (req, res, next) => { const ws = C.wsOfHandle(req.params[0]); if (!ws) return next();
@@ -159,7 +239,7 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
     for (const d of S.list("rsvps")) { const r = d.data || {}, ev = D.get(r.eventId); if (!ev || !(r.orderLines || []).length || !["going", "no"].includes(r.response)) continue;
       const cents = (r.orderLines || []).reduce((a, l) => a + Math.round((+l.price || 0) * 100) * (+l.qty || 0), 0);
       const status = r.orderStatus || (r.response === "no" ? "cancelled" : r.checkedInAt ? "picked" : r.paid ? "paid" : "new");
-      out.push({ id: d.id, src: "drop", eventId: r.eventId, drop: ev.pubTitle || ev.name || "", code: String(r.code || d.id).slice(0, 6).toUpperCase(), name: r.name || "", email: r.email || "", phone: r.phone || "", slot: r.pickupLabel || r.slot || "",
+      out.push({ id: d.id, src: "drop", eventId: r.eventId, drop: ev.pubTitle || ev.name || "", code: String(r.code || d.id).slice(0, 6).toUpperCase(), name: r.name || "", email: r.email || "", phone: r.phone || "", slot: r.slot || r.pickupLabel || "", note: r.orderNote || "",
         lines: r.orderLines.map((l) => ({ name: l.name, qty: +l.qty || 0, cents: Math.round((+l.price || 0) * 100) })), total: cents, totalText: money(cents), status, at: +r.orderAt || +r.createdAt || 0, current: (+r.orderAt || +r.createdAt || 0) >= (+ev.batchAt || 0) }); }
     return out; };
   app.locals.dropOrders = dropOrders;

@@ -18,7 +18,7 @@
   // ---------- small pieces ----------
   const t12 = (t) => /^\d{1,2}:\d\d$/.test(t || "") ? (([h, m]) => { h = +h; return (h % 12 || 12) + (+m ? ":" + m : "") + (h < 12 ? "am" : "pm"); })(t.split(":")) : "";
   const dayOf = (d, o) => { const x = /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00") : null; return x && !isNaN(x) ? x.toLocaleDateString("en-US", o) : ""; };
-  const when = (e) => [dayOf(e.date, { weekday: "short", month: "short", day: "numeric" }), t12(e.startTime)].filter(Boolean).join(" · ");
+  const when = (e) => (e.drop && e.pickup ? e.pickup : [dayOf(e.date, { weekday: "short", month: "short", day: "numeric" }), t12(e.startTime)].filter(Boolean).join(" · ")); // a drop: "Pickup Sun, Dec 6 · 9 to 10am"
   const short = (e) => [dayOf(e.date, { weekday: "short" }), t12(e.startTime)].filter(Boolean).join(" · ");
   const where = (e) => e.hood || e.city || e.place || "";
   const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
@@ -232,7 +232,7 @@
       ${P.line ? `<p class="fb-proof">${stack(P.faces, P.sketches)}<span>${esc(P.line)}</span></p>` : ""}
       <a class="fb-media" href="${esc(e.cta.url)}" tabindex="-1" aria-hidden="true">${media}</a>
       <h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
-      ${meta([when(e), e.free ? "Free" : e.price, st])}
+      ${e.drop && e.pickup ? meta(["Order ahead", e.pickup.replace(/^Pickup /, "Pickup "), e.left || e.price]) /* a drop: pickup, never an event date (public/pickup.js) */ : meta([when(e), e.free ? "Free" : e.price, st])}
       <a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a>${actRow(e)}</article>`; }
   function recapCard(r) { const key = "fb:" + r.id;
     REG.set(key, { host: r.host, items: (r.photos || []).map((p, i) => ({ id: "m:" + (p.id || i) + ":" + r.id, type: p.type === "video" ? "video" : "image", url: p.url, poster: p.poster, caption: [r.title, dayOf(r.date, { weekday: "short" })].filter(Boolean).join(" · "), note: p.caption, by: p.by, past: true, cta: r.next ? { label: "I'm in", url: r.next.url } : { label: "Share", url: r.share.url } })) });

@@ -31,6 +31,8 @@ import { scopeStore, getWorkspace, DEFAULT_WS } from "./workspaces.js";
 import { seriesKey, episodeNumber } from "./episodes.js";
 import { streakOf } from "./recognition.js";
 import { makeCommentStore } from "./feedcomments.js";
+import { soldOf } from "./drops.js";
+import "../public/pickup.js"; // a drop's pickup words, the same on every page (globalThis.PLPickup)
 
 const DAY = 864e5;
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -125,6 +127,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       const p = X.person(em), nm = first(r.name) || first(p.name); if (nm) named.push(face(p, nm)); }
     const n = Math.max(+going || 0, named.length), shown = named.slice(0, 2).map((p) => p.name), others = n - shown.length;
     const are = (k) => (k === 1 ? "is" : "are"), oth = `${others} other${others === 1 ? "" : "s"}`;
+    if (e.drop) return { line: "", faces: [], sketches: [], n: 0 }; // a drop is ordered, never "going"; its card says what is left instead, and buyers stay private
     const line = !shown.length ? (n >= 2 ? `${n} are going` : n === 1 ? "1 is going" : "")
       : shown.length === 1 ? (others ? `${shown[0]} and ${oth} are going` : `${shown[0]} ${are(1)} going`)
       : others ? `${shown[0]}, ${shown[1]} and ${oth} are going` : `${shown[0]} and ${shown[1]} are going`;
@@ -143,17 +146,24 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   const chatOf = (v, x) => (v.email && V.wasThere(v.I, x.id, v.email) ? `/g#rsvp-${encodeURIComponent(x.id)}` : "");
 
   const earlyFor = (v, x) => { const fc = app?.locals?.fanclub; try { return !!fc && fc.visibility(x.ws, x.id) === "early" && !(v.email && fc.isMember(x.ws, v.email)); } catch { return false; } };
+  // a drop's card: pickup in the shared words, what's left of the batch, its cover or its best item photo, Order
+  const dropBits = (x) => { const e = x.e, P = globalThis.PLPickup, items = (e.orderItems || []).map((it) => ({ name: it.name, stock: +it.stock || 0 })); let left = "";
+    try { left = P.leftLine(items, soldOf(scopeStore(store, x.ws), x.id, e)); } catch {}
+    const photo = /^\/_blob\/[A-Za-z0-9]{20}$/.test(e.coverPhoto || "") ? e.coverPhoto : (e.orderItems || []).map((it) => ((it.photos || [])[0] || it.photo || "")).find((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)) || "";
+    const P0 = (e.orderItems || []).map((it) => +it.price || 0).filter((n) => n > 0), lo = P0.length ? Math.min(...P0) : 0;
+    return { pickup: P.line(e), left, free: false, price: lo ? `${new Set(P0).size > 1 ? "From " : ""}$${lo % 1 ? lo.toFixed(2) : lo}` : "", ...(photo ? { cover: photo } : {}), cta: { label: "Order", url: `/e/${encodeURIComponent(x.id)}` } }; };
   // ---------- events ----------
   function events(v, now = Date.now()) { const I = v.I, t = today(now), once = new Set(), M = memberEvents(v);
     const early = (x) => earlyFor(v, x) && !(v.email && lc(x.owner) === v.email); // a members-first date is still on its own host's feed (it was missing there: review round 19)
-    const L = [...I.events.values()].filter((x) => (V.cardPublic(x.e) || M.has(x.id)) && !early(x) && (x.e.date || "") >= t && hostOK(I, x.ws) && !v.blocks.has("host:" + lc(V.hostOf(x.ws, I).handle)) && !v.blocks.has("event:" + x.id));
+    const dayOf = (x) => (x.e.drop ? globalThis.PLPickup.firstDate(x.e, t) : x.e.date || "");
+    const L = [...I.events.values()].filter((x) => (V.cardPublic(x.e) || M.has(x.id)) && !early(x) && dayOf(x) >= t && !(x.e.drop && x.e.ordersPaused) && hostOK(I, x.ws) && !v.blocks.has("host:" + lc(V.hostOf(x.ws, I).handle)) && !v.blocks.has("event:" + x.id));
     const local = (x) => (v.city && lc(`${x.e.city || ""} ${x.e.hood || ""}`).includes(v.city) ? 1 : 0);
-    const score = (x) => (v.followed.has(x.ws) ? 100 : 0) + (v.known.has(lc(x.owner)) ? 60 : 0) + local(x) * 20 + ((x.e.createdAt || x.e.updatedAt || 0) > now - 4 * DAY ? 6 : 0) - Math.min(30, Math.max(0, (Date.parse(x.e.date) - now) / DAY));
-    return L.sort((a, b) => score(b) - score(a) || String(a.e.date).localeCompare(String(b.e.date)))
+    const score = (x) => (v.followed.has(x.ws) ? 100 : 0) + (v.known.has(lc(x.owner)) ? 60 : 0) + local(x) * 20 + ((x.e.createdAt || x.e.updatedAt || 0) > now - 4 * DAY ? 6 : 0) - Math.min(30, Math.max(0, (Date.parse(dayOf(x)) - now) / DAY));
+    return L.sort((a, b) => score(b) - score(a) || String(dayOf(a)).localeCompare(String(dayOf(b))))
       .filter((x) => { const k = x.ws + "|" + (seriesKey(x.e.pubTitle || x.e.name) || x.id); if (once.has(k)) return false; once.add(k); return true; }).slice(0, 12)
       .map((x) => { const c = V.card(I, x, { email: v.email }), h = hostLead(v, x.ws, c.host);
         return { kind: "event", key: "e:" + x.id, id: x.id, host: h, title: c.title, line: descOf(x.e, x.ws), date: c.date, startTime: c.startTime, where: placeOf(x.e), city: c.city, cover: c.cover, coverArt: c.coverArt, look: { palette: c.look?.palette || [] },
-          members: M.has(x.id), free: c.free, price: c.price, drop: !!(x.e.preorder || x.e.drop), going: c.going || 0, ...(c.spotsLeft != null ? { spotsLeft: c.spotsLeft } : {}), proof: proofOf(v, x, c.going), approvalRequired: c.approvalRequired,
+          members: M.has(x.id), free: c.free, price: c.price, drop: !!(x.e.preorder || x.e.drop), ...(x.e.drop ? dropBits(x) : {}), going: c.going || 0, ...(c.spotsLeft != null ? { spotsLeft: c.spotsLeft } : {}), proof: proofOf(v, x, c.going), approvalRequired: c.approvalRequired,
           cta: c.cta?.own ? c.cta : V.eventCta(x.e, x.id) /* the event's own page; the host's own card says Manage */, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), chat: chatOf(v, x), kudos: kudosOf(v, "e:" + x.id), comments: commentsOf(v, "e:" + x.id), followed: v.followed.has(x.ws) }; }); }
 
   // ---------- recaps ----------
@@ -286,7 +296,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     const ids = new Set([...(I.att.get(email) || []).map((a) => a.eventId), ...[...I.events.values()].filter((x) => x.ws === ws).map((x) => x.id)]), past = [];
     for (const id of ids) { const x = I.events.get(id); if (!x || !x.e.date || x.e.date >= t || x.e.cancelled || x.e.example || Date.parse(x.e.date) < now - 60 * DAY) continue; past.push({ id, title: clean(x.e.pubTitle || x.e.name || "Your event", 80), date: x.e.date }); }
     past.sort((a, b) => b.date.localeCompare(a.date));
-    const tiles = ["event", ...(host ? ["drop"] : []), ...(past.length ? ["photos"] : []), ...(club ? ["club"] : [])];
+    const tiles = ["event", ...(prof?.handle ? ["drop"] : []) /* anyone with a page can open a drop, even before their first event */, ...(past.length ? ["photos"] : []), ...(club ? ["club"] : [])];
     return { signedIn: true, name: first(p.name) || first(prof?.name) || "", face: { name: first(p.name), emoji: p.emoji || "", color: p.color || "", handle: p.handle || "" }, host, club, past: past.slice(0, 6), tiles }; }
   return { composeOptions, blend, decorate, arrange, follows, peopleFor, viewerOf, milestones, recaps, events, giveKudos, kudosDoc, dismiss, dismissed, kudosTarget, cardOf, kudosFor, kudosLine, comments: CS };
 }

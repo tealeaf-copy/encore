@@ -64,7 +64,7 @@ const WHY = (host) => ({ maybe: `The chat is for guests who are in. Tap I'm in t
   cant_go: `You said Can't go, so you can read the chat but not send.`, removed: `${host} took you out of this chat.`, not_member: `This chat is for the host and guests who are in.` });
 
 /** The day and time the way Pottery Lab writes them: "Sat, Dec 12 · 7pm". */
-export function whenLine(ev) { const d = /^\d{4}-\d{2}-\d{2}$/.test(ev?.date || "") ? new Date(ev.date + "T12:00:00Z") : null;
+export function whenLine(ev) { if (ev?.drop && globalThis.PLPickup) return globalThis.PLPickup.line(ev); /* a drop: its pickup windows (public/pickup.js) */ const d = /^\d{4}-\d{2}-\d{2}$/.test(ev?.date || "") ? new Date(ev.date + "T12:00:00Z") : null;
   const day = d ? d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "";
   return [day, clock(ev?.startTime)].filter(Boolean).join(" · "); }
 export function clock(t) { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || "")); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}${m[2] !== "00" ? ":" + m[2] : ""}${ap}`; }

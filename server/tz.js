@@ -13,7 +13,8 @@ export const todayIn = (tz, now = Date.now()) => {
   return new Intl.DateTimeFormat("en-CA", { timeZone: z, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
 };
 /** A pre-order whose order-by date has passed where the event is. */
-export const ordersClosed = (ev, now = Date.now()) => !!ev?.preorder && /^\d{4}-\d{2}-\d{2}$/.test(String(ev.orderByDate || "")) && todayIn(ev.tz || tzOfCity(ev.city), now) > ev.orderByDate;
+export const ordersClosed = (ev, now = Date.now()) => { if (!ev?.preorder || !/^\d{4}-\d{2}-\d{2}$/.test(String(ev.orderByDate || ""))) return false; const tz = ev.tz || tzOfCity(ev.city), t = todayIn(tz, now);
+  return t > ev.orderByDate || (t === ev.orderByDate && /^\d{2}:\d{2}$/.test(ev.orderByTime || "") && now >= zonedMs(ev.orderByDate, ev.orderByTime, tz)); }; // a drop's cutoff can have a time ("Fri 8pm")
 // ---- review round 11: the time zone an event runs on, for every job that means "the morning after" or "tomorrow" ----
 /** The event's own tz, else its city's, else the host's (Potto settings), else ENCORE_TZ, else "" (the server's). */
 export const eventTz = (ev, hostTz = "") => { for (const z of [ev?.tz, tzOfCity(ev?.city), tzOfCity(ev?.hood), hostTz, process.env.ENCORE_TZ]) if (z && tzOk(z)) return z; return ""; };

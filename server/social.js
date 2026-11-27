@@ -11,6 +11,7 @@ import { smsConfig, sendSms, useSmsStop } from "./sms.js";
 import { holdsOf, togetherOf, friendTerms } from "./comewith.js"; // "Come with me?": held spots, pairs joined, who came together
 import { eventTz, zonedMs, hourIn } from "./tz.js";
 import { pottoSettings } from "./reminders.js";
+import { addressOpen } from "./drops.js";
 import { newWithHost } from "./tables.js"; // review round 13: the one "New" (first time with this host)
 import { momentKind, momentMaxBytes, videoSeconds, sniffedAs, unreadVideoMaxBytes, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
@@ -383,7 +384,10 @@ export function makeSocial(store, { C, saveBlob }) {
           const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true), when = `${new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${e.startTime ? " at " + new Date("2000-01-01T" + e.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}`, where = e.meetPoint || e.venueName || "", link = `${origin}/g#rsvp-${x.id}`;
           let sent = 0; const seen = new Set();
           for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== x.id || r.response !== "going") continue; const who = lc(r.email || r.phone || d.id); if (seen.has(who)) continue; seen.add(who); let got = false;
-            if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { list: "guest", origin, brandWs: x.ws, to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap Can't go so ${hostName} knows: ${link}` }).catch(() => {}); got = true; }
+            // a drop: the pickup window they picked and, now that it's the day before, the exact spot (server/drops.js addressOpen)
+            if (e.drop && cfg && r.email && canEmail(r.email)) { const w = globalThis.PLPickup.windowOfSlot(e, r.slot), spot = [String(e.venueAddr || "").trim(), e.hood].filter(Boolean).join(", ");
+              sendEmail(cfg, { list: "guest", origin, brandWs: x.ws, to: r.email, subject: `Pickup tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nYour order from ${hostName} is ready tomorrow.\nPickup: ${w ? globalThis.PLPickup.label(w) : globalThis.PLPickup.line(e, { prefix: "" })}\n${spot ? `Pickup spot: ${spot}\n` : ""}${r.order ? `Your order: ${String(r.order).split(" · ")[0]}\n` : ""}\nCan't make it? Open your order: ${origin}/e/${x.id}` }).catch(() => {}); got = true; }
+            else if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { list: "guest", origin, brandWs: x.ws, to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap Can't go so ${hostName} knows: ${link}` }).catch(() => {}); got = true; }
             if (sms && PHONE_OK(r.phone) && r.smsOk !== false) { const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name) || "there"}. Tomorrow: ${title}, ${when}${where ? ` at ${where}` : ""}. Can't go? ${link} Reply STOP to opt out.` }); if (ok.ok) { out.texts++; got = true; } }
             if (got) sent++; }
           out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Reminded ${sent} ${sent === 1 ? "guest" : "guests"} about ${title}.`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id }); } }
@@ -719,6 +723,8 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const isNew = C.follow(P.ws, { email: /@/.test(email) ? email : "", name: clean(P.r.name, 80), via: "rsvp", phone }); res.json({ ok: true, isNew, followers: C.followersOf(P.ws).length }); });
   // the exact address, for guests who are in
   app.get("/api/public/address/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going" || !P.ev) return res.json({ ok: false });
+    // a drop's buyer gets the exact spot the day before their pickup, or once orders close (server/drops.js addressOpen)
+    if (P.ev.drop && !addressOpen(P.ev, P.r.slot)) return res.json({ ok: false, later: true });
     // guests read "Mina's place", never the host's own "my place" (as on the invite itself)
     const mine = guestPlace(P.ws);
     res.json({ ok: true, meetPoint: mine(P.ev.meetPoint), venueName: mine(P.ev.venueName), venueAddr: mine(P.ev.venueAddr) }); });

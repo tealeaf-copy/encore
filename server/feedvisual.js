@@ -18,6 +18,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { scopeStore, getWorkspace, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
 import { cleanLook } from "./looks.js";
+import "../public/pickup.js"; // a drop's pickup words (globalThis.PLPickup)
 import { kitJson } from "./brandkit.js"; // a host's brand kit, for story cards
 import { interestsOf, cleanInterests } from "./hooks.js";
 
@@ -145,7 +146,8 @@ export function makeFeedVisual(store, { C, X }) {
     const came = G(I).came.get(x.id) || 0;
     const cap = +e.headcount || 0;
     return { id: x.id, title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
-      approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", coverArt: artOf(e), look: lookOf(e), host: h, url: `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
+      ...(e.drop ? { drop: true, pickup: globalThis.PLPickup.line(e), free: false } : {}), // a drop reads Pickup, never an event date
+      approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : e.drop ? (e.orderItems || []).map((it) => (it.photos || [])[0] || it.photo || "").find(MEDIA_OK) || "" : "", coverArt: artOf(e), look: lookOf(e), host: h, url: e.drop ? `/e/${encodeURIComponent(x.id)}` : `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
       ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
       ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
         const T = togetherOf(scopeStore(store, x.ws).listShared("rsvps"), e, x.id); /* read only: parsed once per change (server/db.js) */ return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),

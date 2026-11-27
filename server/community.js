@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { cleanShop } from "./shop.js";
+import "../public/pickup.js"; // a drop's pickup words (globalThis.PLPickup)
 import { cleanFocus, guardTheme } from "./photos.js";
 import { registerSearch } from "./search.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser, putDbUser } from "./workspaces.js";
@@ -177,7 +178,7 @@ export function makeCommunity(store) {
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
     if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood && sameCity(e.city, host.city)) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; const priceLine = (() => { try { return priceOf(e) || ""; } catch { return ""; } })();
     const episode = (() => { try { return episodeNumber(store, id); } catch { return null; } })(); // review round 13: "Hack night #14" (server/episodes.js)
-    return { id, ...o, ...(priceLine ? { priceLine } : {}), ...(episode ? { episode } : {}), title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
+    return { id, ...o, ...(priceLine ? { priceLine } : {}), ...(episode ? { episode } : {}), ...(e.drop ? { pickup: globalThis.PLPickup.line(e), always: !!e.always } : {}) /* a drop's pickup, in the shared words */, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
   // onPage: the host's own page shows every event they published there; "unlisted" only keeps it off Discover.
   // privateToo: link-only events that were shared (published). Past ones belong in the scrapbook (title, date, cover,
   // photos and kudos; never the place or who came); upcoming ones are only ever shown to the host themselves.

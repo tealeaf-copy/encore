@@ -26,6 +26,8 @@ import { localDay } from "./hooks.js";
 import { episodeOf } from "./episodes.js";
 import { vevent, calendar, publicCopy } from "./hooksout.js";
 import { slotLabel } from "./preorder.js";
+import { addressOpen } from "./drops.js";
+import "../public/pickup.js"; // a drop's pickup windows, read the same way as every page (globalThis.PLPickup)
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/, HHMM = /^\d{2}:\d{2}$/, ID = /^[A-Za-z0-9_-]{2,80}$/;
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -87,10 +89,11 @@ export function kindOf(ev, reply = null, { hosting = false, saved = false, episo
 export function statusOf(kind, ev, reply = null, { going = 0, asking = 0, orders = 0, pos = 0, hostFirst = "", episode = null, today = "" } = {}) {
   const host = hostFirst || "the host", over = !!today && !!ev?.date && (ev.endDate || ev.date) < today; // a past plan says "Went", and never asks for money
   if (kind === "hosting") { if (!ev?.published && !ev?.discoverable) return "Draft";
-    if (ev?.drop) return `Pickup window · ${orders} order${orders === 1 ? "" : "s"}`;
+    if (ev?.drop) return `${globalThis.PLPickup ? globalThis.PLPickup.line(ev) : "Pickup"} · ${orders} order${orders === 1 ? "" : "s"}`;
     return [`Hosting · ${going} in`, asking ? `${asking} asking` : ""].filter(Boolean).join(" · "); }
   if (kind === "saved") return "Saved";
   if (kind === "waitlist") return reply?.response === "requested" ? `Asked · waiting on ${host}` : pos ? `Waitlist #${pos}` : "On the waitlist";
+  if (kind === "pickup" && ev?.drop) { const P = globalThis.PLPickup, w = P.windowOfSlot(ev, reply?.slot), code = String(reply?.code || "").slice(0, 6).toUpperCase(); return [w ? `Pickup ${w.date ? P.span(w) : P.label(w)}` : P.line(ev), code ? `#${code}` : ""].filter(Boolean).join(" · "); }
   if (kind === "pickup") { const s = slotLabel(reply?.pickupLabel || reply?.slot || ""); const code = String(reply?.code || "").slice(0, 6).toUpperCase(); return [s ? `Pickup ${s}` : "Pickup", code ? `#${code}` : ""].filter(Boolean).join(" · "); }
   if (reply?.response === "maybe") return reply.interest === "in" ? "In · waiting on the date" : "Maybe";
   if (over && reply?.response === "going" && kind !== "class") return "Went";
@@ -187,7 +190,7 @@ export function typeChip(ev) {
 // ---------- the peek ----------
 const clock12 = (t) => { const m = /^(\d{2}):(\d{2})$/.exec(t || ""); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}${m[2] === "00" ? "" : ":" + m[2]}${ap}`; };
 /** "Fri, Dec 5 · 7pm"; a trip is "Fri, Dec 5 to Sun, Dec 7". Pure. */
-export function whenLine(ev) { if (!ISO.test(ev?.date || "")) return "Date to come"; if (multiDay(ev)) return `${short(ev.date)} to ${short(lastDay(ev))}`;
+export function whenLine(ev) { if (ev?.drop && globalThis.PLPickup) return globalThis.PLPickup.line(ev); /* a drop: its pickup windows (public/pickup.js) */ if (!ISO.test(ev?.date || "")) return "Date to come"; if (multiDay(ev)) return `${short(ev.date)} to ${short(lastDay(ev))}`;
   const t = clock12(ev.startTime); return t ? `${short(ev.date)} · ${t}` : short(ev.date); }
 /** No Maybe on this invite (the host's "No Maybe option"; dinners and summits leave it off unless the host turns it on). Same rule as the invite. Pure. */
 export const noMaybe = (ev) => (ev?.noMaybe != null ? !!ev.noMaybe : ["dinner", "summit"].includes(String(ev?.kind || "")));
@@ -229,10 +232,12 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     if (!ev || ev.example || ev.cancelled || ev.parentId) return [];
     const S = scopeStore(store, ws), ep = episode(id, ws), kind = kindOf(ev, r, { episode: ep }), host = hostFirstOf(ws, ev), inn = r.response === "going";
     let date = ev.date || "", time = "";
-    if (kind === "pickup") { const lab = r.pickupLabel || r.slot || ""; time = slotStart(lab); if (!date) date = slotDay(slotLabel(lab), today); }
+    const w = ev.drop ? globalThis.PLPickup.windowOfSlot(ev, r.slot) : null; // a drop: the window they picked (its own date, or its next weekday)
+    if (w) { date = globalThis.PLPickup.dateFor(w, today) || date; time = w.start || ""; }
+    else if (kind === "pickup") { const lab = r.pickupLabel || r.slot || ""; time = slotStart(lab); if (!date) date = slotDay(slotLabel(lab), today); }
     const pos = kind === "waitlist" ? waitlistPos(S.list("rsvps").filter((d) => d.data?.eventId === id), rid) : 0;
     const status = statusOf(kind, ev, r, { pos, hostFirst: host, episode: ep, today });
-    const main = itemOf({ id, ev, kind, status, place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), host, date: date !== ev.date ? date : "", time, extra: { rid, in: inn, ...(multiDay(ev) && inn && !((ev.agenda?.sessions || []).length && (ev.planKind === "summit" || ev.kind === "summit")) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) /* a summit's guests get their own agenda, not the run of show */ } });
+    const main = itemOf({ id, ev, kind, status, place: placeOf(ev, { exact: inn && (!ev.drop || addressOpen(ev, r.slot)) /* a drop's exact spot comes the day before */, say: guestPlace(ws) }), host, date: date !== ev.date ? date : "", time, extra: { rid, in: inn, ...(multiDay(ev) && inn && !((ev.agenda?.sessions || []).length && (ev.planKind === "summit" || ev.kind === "summit")) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) /* a summit's guests get their own agenda, not the run of show */ } });
     if (multiDay(ev) || ev.itinerary?.length) main.href = `/plans/${encodeURIComponent(id)}`;
     const out = [main];
     if (!main.date) return out;
@@ -438,14 +443,17 @@ export function mountPlans(app, { store, small, currentUser, C, X, sendStatic, p
   // one plan as a calendar file: Apple and iPhone open it in Calendar. The place is what this viewer may see; a reminder
   // two hours before; a multi-day plan is one all-day span, plus each part of the itinerary with ?itinerary=1
   app.get(/^\/plans\/ics\/([A-Za-z0-9_-]{2,80})\.ics$/, (req, res) => { const id = req.params[0], u = me(req), ws = workspaceOfEvent(id), S = ws && scopeStore(store, ws), ev = S?.get("events/" + id)?.data;
-    if (!ev || ev.example || ev.cancelled || !ISO.test(ev.date || "")) return res.status(404).type("text").send("No such plan.");
+    if (!ev || ev.example || ev.cancelled || !(ISO.test(ev.date || "") || ev.drop)) return res.status(404).type("text").send("No such plan.");
     const isHost = !!u?.ws && u.ws === ws, proof = req.query.rid ? X.rsvpProof?.(id, String(req.query.rid).slice(0, 80), String(req.query.code || "").slice(0, 40))?.r : null;
     const mine = proof || (u?.email ? S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === id && lc(r.email) === lc(u.email)).sort((a, b) => (b.changedAt || b.at || 0) - (a.changedAt || a.at || 0))[0] : null);
     if (!isHost && !mine && !(ev.discoverable && ev.published !== false)) return res.status(404).type("text").send("No such plan.");
     const inn = isHost || mine?.response === "going", say = guestPlace(ws), url = `${publicOrigin(req)}/e/${encodeURIComponent(id)}`;
-    const location = inn ? clean([isHost ? ev.venueName || ev.meetPoint : say(ev.meetPoint || ev.venueName), isHost ? ev.venueAddr : say(ev.venueAddr)].filter(Boolean).join(", "), 200) || areaOf(ev) : areaOf(ev);
-    const host = clean(C.profileOf?.(ws)?.name, 80), span = multiDay(ev) ? { ...ev, startTime: "", endTime: "" } : ev;
-    const L = [withAlarm(vevent({ id, ev: span, title: titleOf(ev), url, location, host }), multiDay(ev) ? 0 : 120)];
+    const location = ev.drop && !isHost && !addressOpen(ev, mine?.slot) ? areaOf(ev) : inn ? clean([isHost ? ev.venueName || ev.meetPoint : say(ev.meetPoint || ev.venueName), isHost ? ev.venueAddr : say(ev.venueAddr)].filter(Boolean).join(", "), 200) || areaOf(ev) : areaOf(ev);
+    // a drop's calendar entry is the pickup window this buyer picked; the exact spot only once it's shared (the day before)
+    const P = globalThis.PLPickup, w = ev.drop ? P.windowOfSlot(ev, mine?.slot) || P.windowsOf(ev)[0] : null, wd = w ? P.dateFor(w, new Date().toISOString().slice(0, 10)) : "";
+    if (ev.drop && !wd) return res.status(404).type("text").send("No such plan.");
+    const host = clean(C.profileOf?.(ws)?.name, 80), span = w ? { ...ev, date: wd, startTime: w.start || "", endTime: w.end || "" } : multiDay(ev) ? { ...ev, startTime: "", endTime: "" } : ev;
+    const L = [withAlarm(vevent({ id, ev: span, title: ev.drop ? `Pickup: ${titleOf(ev)}` : titleOf(ev), url, location, host }), multiDay(ev) ? 0 : 120)];
     if (req.query.itinerary === "1" && (inn || ev.itineraryPublic)) L.push(...itineraryEvents(id, ev, itineraryFor(ev, { exact: inn }), { url, location }).map((x) => withAlarm(x, 120)));
     res.set({ "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${titleOf(ev).replace(/[^a-z0-9-]+/gi, "-").slice(0, 40) || "plan"}.ics"` }).send(calendar(titleOf(ev), L)); });
   app.get(/^\/plans\/([A-Za-z0-9_-]{2,80})$/, (req, res) => sendStatic(res, "plan.html", "<p>Plan page missing.</p>"));

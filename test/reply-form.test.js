@@ -32,5 +32,5 @@ test("reply form: hidden stays hidden, a 22px checkbox with a centred tick and a
 test("reply form: the button says Send my reply on both invites, and the light invite stays small", () => {
   const inv = read("public/invite.html"), spa = read("index.html");
   assert.match(inv, /\(v !== "no" && e\.qStyle\?\.button\?\.trim\(\)\) \|\| "Send my reply"/); assert.ok(inv.length < 40000, "invite.html: " + inv.length);
-  assert.match(spa, /id="g-send">Send my reply<\/button>/); assert.match(spa, /full\?"Join waitlist":"Send my reply"/);
+  assert.match(spa, /id="g-send">Send my reply<\/button>/); assert.match(spa, /full\?"Join waitlist":\(v!=="no"&&String\(e\.qStyle\?\.button\|\|""\)\.trim\(\)\)\|\|"Send my reply"/, "the host's own button words, else Send my reply");
 });

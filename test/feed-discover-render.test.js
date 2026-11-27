@@ -59,7 +59,7 @@ test("Copy on the feed and Discover: no em dashes", () => {
 
 test("Discover: a drop card says Order ahead, its price and Order, and opens the drop", () => {
   const d = read("discover.html");
-  assert.match(d, /drop \? "Order ahead"/); assert.match(d, /drop \? "Order any time" : "Date coming soon"/); assert.match(d, /\$\{drop \? "Order" : "See the event"\}<\/a>/);
+  assert.match(d, /drop \? "Order ahead"/); assert.match(d, /e\.drop && e\.pickup \? e\.pickup : drop \? "Order any time" : /); // a drop: its pickup window, or Order any time; never a date assert.match(d, /\$\{drop \? "Order" : "See the event"\}<\/a>/);
   assert.match(d, /url = drop \? `\/e\/\$\{encodeURIComponent\(e\.id\)\}`/);
 });
 

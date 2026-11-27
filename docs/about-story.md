@@ -21,42 +21,64 @@ experienced hosts and a booking they can run end to end.
   Trusted host badge, Quick book, campaigns from the brief to the report) and insights with their privacy rule (a
   number shows only with at least 10 people and 3 events behind it, `K` in server/insights.js).
 
-## Three options
+## Hero, narrative first (owner, late Nov 2026)
 
-**A. Name the work**
-- Headline: Hosts do the work. They should get the credit.
-- Deck: Pottery Lab is for the people who run the supper club, the game night and the Saturday run. It makes the job easier, gets you paid, and helps the right people find you.
+The owner said the hero still didn't land: it had to open on a scene or a feeling the reader recognizes in themselves,
+so they think "this is for me" before they know what the product is. Five options:
 
-**B. Start with the scene**
-- Headline: Every good night out starts with a host.
-- Earlier headline, retired as too abstract: Somebody carried the chairs.
-- Alternatives on file: The people who make the plans deserve more. / Hosting is work. We help it pay. / Find the people behind your favorite nights.
-- Deck (live, Nov 2026): Before the first guest replies, the host has already bought the groceries. Pottery Lab is built for that person. It takes the admin off their plate, rewards every night they host, and helps new people find them.
-- Earlier deck: Behind every supper club, game night and Saturday run is a host doing work nobody sees. Pottery Lab makes that work easier, gets it paid, and helps the right people find it.
+1. **The friend who always plans (live).**
+   You're the one who always makes the plan.
+   You pick the date, chase the replies and send the address twice. Pottery Lab does that part for you, so you get to enjoy the night too.
+2. **The group chat.**
+   The group chat says "we should" every month.
+   Eleven hearts and two replies is not a plan. Write one sentence, Potto drafts the invite, and your friends reply I'm in with one tap.
+3. **The would-be host.**
+   You'd host more if it were only the fun part.
+   The cooking, the playlist, the people. Not the head count, the reminders or the nine payment requests. Pottery Lab takes those, and you keep the night.
+4. **The night a city felt like home.**
+   One good night can make a city feel like home.
+   Six strangers at a table, a run that ends at a bakery, a game night where you learned everyone's name. Pottery Lab helps you host that night, or find it.
+5. **Small nights.**
+   Small nights, with people you'll see again.
+   A table of six, a Sunday run, a hack night with friends of friends. Pottery Lab is where you plan them and find them, without the admin.
 
-**C. Name the reader**
-- Headline: For the one who started the group chat.
-- Deck: You plan it, chase it, pay for it up front and tidy up after. Pottery Lab is the tool for that job, and a way to be thanked, paid and found for it.
+**The pick: 1.** It names a role the reader already plays in their friend group, so they see themselves in the first
+line, and the deck ends on what they never get to do (enjoy the night). Guests know that friend too. 2 is the close
+second but repeats the MON line of the week below. 4 is warm but reads as a slogan, and 5 describes the product before
+it describes the reader.
 
-## The pick: B
+Retired: "Every good night out starts with a host." (said the point but nobody saw themselves in it), "Somebody
+carried the chairs." (too abstract), "Hosts do the work. They should get the credit.", "For the one who started the
+group chat."
 
-The pick began as "Somebody carried the chairs". The owner found it too abstract, so the headline now says the point
-outright: "Every good night out starts with a host." The deck carries the concrete scene (the groceries bought before
-anyone replies) and then says plainly what Pottery Lab does. The deck does the explaining, so a brand marketer or an engineer still knows what this is in one line. A reads like a slogan
-and C narrows the reader to people who already host, when guests and brands read this page too.
+## The primary action
 
-## Section order
+Every primary button on the page reads "Plan your first event" and goes to /start. Not everyone wants to plan a
+dinner. Signed in (the `encore_in` cookie hint the shell also reads), the same buttons read "Plan an event". The shell
+says the same thing: the signed-out tab and the "New here?" line on the feed. /start keeps "Plan a dinner" as its own
+heading because its default template is a dinner and the heading changes with the template.
 
-1. Kicker WHY WE EXIST, the headline, the deck, Plan a dinner (/start, no account needed) and Explore what's on.
-2. The night: the week behind one dinner, day by day.
-3. The problem: the work nobody sees, and tools made to sell tickets to strangers.
-4. A pull quote in the team's own words (not a testimonial).
-5. For hosts: four pillars, two lines each, all built today (easier, paid, a following, found).
-6. Who it's for: a short hosts card (start with one dinner), then guests, then brands with insights.
-7. What's on right now (live, public events).
-8. House rules (eight beats eighty, private unless you say so, no ads), ending on the tagline, word for word.
-9. The close, one step per reader: Plan a dinner (/start), Find something this weekend (/feed), Book a host for your
-   team (/teams/discover).
+## Section order (one story)
+
+1. Hero: WHY WE EXIST, the friend who always makes the plan, Plan your first event and Explore what's on.
+2. 01 The night: one good night takes a week, day by day.
+3. 02 The problem: the work nobody sees, and tools made to sell tickets to strangers. Then the team's own pull quote.
+4. 03 For hosts: "So we took that week apart." Four pillars, all built today (less admin, rewarded, a following, found).
+5. 04 Who it's for: hosts (start with one event), guests, brands with insights. Then what's on right now.
+6. 05 Community rules, in this order:
+   - **Trust and quality over quantity.** Eight people you'll see again beat eighty you won't. Hosts make the night, and guests send kudos and an honest note, so every night makes the next one better for all of us.
+   - **Safety first.** Your events are private unless you list them, and only guests who are in get the exact address. You can report or block wherever you see something, and we look at every report within 24 hours.
+   - **Made for you.** Pick what you're into and follow the hosts you like, and your feed shows those first. Potto drafts invites and sends reminders, so you spend less time planning and more with the people you love.
+   - Under them: "No ads. We don't sell ads or your guest list." and the tagline, word for word.
+7. The close, one line that answers the hero ("This time, let Pottery Lab chase the replies.") and one step per
+   reader: Plan your first event (/start), Find something this weekend (/feed), Book a host for your team (/teams/discover).
+
+What the rules rest on: invites are link only and show on Discover only when listed; for host events the exact address
+goes only through the RSVP-checked address endpoint (server/app.js); report and block live in server/safety.js, which
+answers "We look at every report within 24 hours"; kudos and the private "what to try next" note; the "What are you
+into?" picker (public/interests.js, interests and a city) and follows order the feed (server/feedvisual.js,
+server/feedblend.js). The guest quiz does not change the feed, so the page doesn't say it does. "Curated" is off the
+word list, so the page says what happens instead.
 
 ## The Nov 2026 edit
 

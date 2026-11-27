@@ -60,9 +60,21 @@ test("Discover and the homepage reserve space for late sections", () => {
 });
 
 // /about tells why Pottery Lab exists (docs/about-story.md): the host first, then guests, then brands, in the house voice.
-test("/about: the host's story, four host pillars, three readers, the tagline word for word, and plain words", () => {
+test("/about: the host's story, four host pillars, three readers, three community rules, the tagline word for word, and plain words", () => {
   const home = read("public/home.html"), text = home.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "");
-  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>Every good night out starts with a host\.<\/h1>/);
+  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>You're the one who always makes the plan\.<\/h1>/);
+  // one primary action, worded for a first event; signed in (encore_in) it reads Plan an event
+  assert.equal((home.match(/href="\/start" data-plan>Plan your first event<\/a>/g) || []).length, 3, "hero, hosts card and close");
+  assert.doesNotMatch(text, /Plan a dinner/);
+  assert.match(home, /encore_in=1[^\n]*\[data-plan\][^\n]*"Plan an event"/);
+  const shell = read("public/shell.js"); // the shell says the same thing: the signed-out tab and the "New here?" line
+  assert.match(shell, /<span class="nl-full">Plan your first event<\/span>/); assert.match(shell, /Why we exist<\/a> · <a href="\/start">Plan your first event<\/a>/); assert.doesNotMatch(shell, /Plan a dinner/);
+  // community rules: trust first, then safety, then made for you, and only what the product does
+  const rules = [...text.matchAll(/<li><p><b>([^<]+)<\/b>/g)].map((m) => m[1]);
+  assert.deepEqual(rules, ["Trust and quality over quantity.", "Safety first.", "Made for you."]);
+  assert.match(text, /<span class="kick">05 · Community rules<\/span>/);
+  assert.match(text, /private unless you list them[^<]*only guests who are in get the exact address[^<]*report or block[^<]*within 24 hours/);
+  assert.match(text, /No ads\. We don't sell ads or your guest list\./);
   assert.equal((home.match(/<li><div><span class="n">0\d · /g) || []).length, 4, "four host pillars");
   assert.match(home, /<span class="kick">03 · For hosts<\/span>\s*<h2 id="changes">What it does for hosts\.<\/h2>/);
   const order = ["For hosts", "For guests", "For brands"].map((k) => text.indexOf(`<span class="kick">${k}</span>`));
@@ -73,7 +85,8 @@ test("/about: the host's story, four host pillars, three readers, the tagline wo
   for (const h of ["/start", "/feed", "/teams/discover"]) assert.match(text, new RegExp(`<section class="sec end"[\\s\\S]*href="${h}"`), `the close links ${h}`);
   assert.doesNotMatch(text.replace(/<!doctype[^>]*>/i, ""), /—|!|seamless|effortless|unlock|elevate|curated|magical|marketplace|empower|attendees|\bseats\b|per person|journey|ecosystem|game-changer|vibrant|community-driven|we believe/i);
   assert.match(home, /<meta name="description" content="[^"]*host[^"]*">/);
-  assert.match(home, /<meta property="og:title" content="Every good night out starts with a host/);
+  assert.match(home, /<meta property="og:title" content="You're the one who always makes the plan/);
+  assert.match(home, /<title>About Pottery Lab · For the one who always makes the plan<\/title>/);
 });
 
 test("host pages keep their full width when a series loads the invite stylesheet", () => {

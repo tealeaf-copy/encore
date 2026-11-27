@@ -227,6 +227,12 @@ Every issue that held a page under 9, highest severity and most-visited pages fi
 | Light invite | both | served page | The head style pushed the served /e to 40,016 characters (caught by test/perf-robustness) | High | The light invite gets the rules from system.css instead | Fixed |
 | Side menu | 1280 | `.es-rail a` | 10px corners on the selected row | Low | 6px | Fixed |
 | Admin reports | both | buttons | system-ui | Low | Plex Sans, fonts from here | Fixed |
+| Every page on system.css | 390 | load | With the faces served from here, system.css waited on its own @import before applying: Settings and the leaderboard shifted on load (0.2 to 0.4 in the crawl) | Medium | public/authguard.js asks for the same fonts file at the same moment | Fixed |
+| Leaderboard | 390 | `#how`, `.foot` | "How it's ranked" and the footer painted first, then jumped down a screen when the board landed | Medium | They stay unseen until the board has drawn | Fixed |
+| /start | 390 | `#plan` | On a cold load the card grew from 88 to 270px and the heading changed length after paint (0.29) | Medium | The plan shows once filled for its kind (2.5 seconds at most) | Fixed |
+| Settings | 390 | `#signin` | Sign-in methods appeared when the passkey list arrived and pushed every section down 220px | Medium | Shown at once for a signed-in person | Fixed |
+| /hosts/book, /teams | 1280 | `header.top` | authguard.js loaded at the end of the page, so the header painted and then vanished under the side menu, a 66px jump on a cold load (0.31) | Medium | authguard.js in the head, like the other side-menu pages | Fixed |
+| Plan page | 390 | `.pv-acts` | Three buttons on two rows ("Edit in the studio" wrapped below) | Medium | One row: Add to calendar, See the invite, a pencil square for Edit (Print is in the ··· menu) | Fixed |
 
 ## In flight elsewhere
 
@@ -309,3 +315,17 @@ Pages that follow it now:
 Not yet on it, for a next pass: the host page's sections (its kudos and offers blocks are in flight elsewhere), the
 light invite (its 40,000-character budget leaves little room; it already loads system.css, so it can use the classes
 without new CSS), and the brand package page (`/teams/x/...`), whose facts are still a list with icons.
+
+## Verified
+
+- `node scripts/crawl-pages.mjs --width 390` and `--width 1280`, one after the other on the final code: 0 problems
+  at each. Four layout shifts the crawl found along the way (Settings, the leaderboard, /start, /hosts/book) were
+  fixed above; on main the same pages measure 0.16 to 0.42 on a busy machine.
+- `npm test`: the machine was running other agents' suites at the same time (load average 130 to 185), and a full
+  run there fails about 180 tests in 45 files with "fetch failed" while their seed hooks talk to a local server, on
+  main as well. Those 45 files, run one at a time on the final code: 438 of 438 pass. The rest of the suite passed in
+  the full run (1,110), and the 19 files touching the pages changed last pass on the final code (185 of 185). Tests
+  changed here: the token block's fonts come from /fonts/css2 (test/brand-tokens.test.js) and /start's button is
+  "Get my link" (test/hostloop-flow.test.js).
+- public/invite.html is unchanged (38,810 characters); the served light invite stays under 40,000.
+- The "Come with me?" loader is still the last script in index.html.

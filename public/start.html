@@ -3,6 +3,8 @@
 <meta name="description" content="Plan a dinner in a minute. No account until you want to save it and send the link.">
 <meta property="og:title" content="Plan a dinner on Pottery Lab"><meta property="og:description" content="Four people and a night. That's an event.">
 <script src="/authguard.js"></script>
+<!-- the plan, its card and its form show once they are filled for this kind (?t=), so nothing jumps as the heading and the card change (at most 2.5 seconds) -->
+<style>html:not(.st-ready) #plan{visibility:hidden}</style><script>setTimeout(()=>document.documentElement.classList.add("st-ready"),2500)</script>
 <style>
 /* /start: the first win. A visitor plans a dinner before signing up; the draft lives on this phone until they save it.
    Brand tokens only (public/system.css). Copy: docs/potto-voice.md. */
@@ -155,7 +157,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   F.addEventListener("input", () => { d.title = F.title.value; d.date = F.date.value; d.time = F.time.value; d.place = F.place.value; d.note = F.note.value; if (d.endDate && d.date && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); draw(); keep(); });
   const seat = (n) => { const was = d.seats; d.seats = Math.max(2, Math.min(200, d.seats + n)); if (d.seats !== was) { fx.tick ? fx.tick($("#seatsOut"), d.seats, 180) : 0; fx.haptic?.("light"); fx.sound?.("tap"); } draw(); keep(); };
   $("#less").onclick = () => seat(-1); $("#more").onclick = () => seat(1);
-  fill(); draw(); copy(); if (ls.get(KEY)) $("#saved").textContent = "Saved on this phone";
+  fill(); draw(); copy(); document.documentElement.classList.add("st-ready"); if (ls.get(KEY)) $("#saved").textContent = "Saved on this phone";
   // a "same crew" draft from a past event (signed in): its name
   if (q.get("from") && /^[A-Za-z0-9_-]{2,80}$/.test(q.get("from"))) fetch("/api/db/doc?path=" + encodeURIComponent("events/" + q.get("from")), { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { const n = j?.data?.pubTitle || j?.data?.name; if (n && t === "again" && d.title === T.again.title) { d.title = n; d.seats = +j.data.headcount || d.seats; d.place = j.data.venueName || j.data.hood || d.place; fill(); draw(); keep(); } }).catch(() => {});
 

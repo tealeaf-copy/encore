@@ -128,6 +128,8 @@ export function makeInvites({ store, C, X, P, F = null, seats = null, now: clock
       reminder: { subj: `Still thinking? ${title}`, bell: `${hostName} saved you a spot at ${title}. Reply when you can.`, body: `Hi ${first(p.name) || "there"},\n\nA quick nudge from ${hostName}: ${title}${when ? ` is ${when}` : ""}. A reply either way helps them plan.\n\nReply here:` },
       thanks: { subj: `Thanks for coming to ${title}`, bell: `${hostName} says thanks for coming to ${title}.`, body: `Hi ${first(p.name) || "there"},\n\nThanks for coming to ${title}. It was better with you there.\n\nPhotos and the next one:` },
       next: { subj: `${hostName}: you're on the list for ${title}`, bell: `${hostName} wants you at ${title}.`, body: `Hi ${first(p.name) || "there"},\n\nYou came last time, so ${hostName} is asking you first: ${title}${when ? ` on ${when}` : ""}.\n\nReply here:` } }[kind];
+    // co-host hook (server/cohost.js): the line the host wrote for this person, or the reminder they read, opens the message
+    { const extra = kind === "invite" || kind === "reminder" ? clean(plan(ws, id).people?.[p.id]?.[kind === "invite" ? "line" : "nudge"], 300) : ""; if (extra) { T.bell = `${hostName}: ${extra}`; T.body = kind === "invite" ? T.body.replace(/^(Hi [^\n]*\n\n)/, `$1${extra}\n\n`) : T.body.replace(/^(Hi [^\n]*\n\n)[\s\S]*?(\n\n[^\n]*:)$/, `$1${extra}$2`); } }
     const ch = []; const acct = p.email ? getDbUser(p.email) : null;
     if (acct) { try { X?.notify?.(p.email, { kind: "invite", key: `inv-${kind}-${id}`, text: T.bell, link: kind === "thanks" ? `/g#rsvp-${id}` : link, eventId: id }); ch.push("bell"); } catch {} }
     if (emailOk(ws, p)) { const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true);

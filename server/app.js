@@ -56,6 +56,7 @@ import { mountErrors, noteServerError } from "./errors.js";
 import { mountLaunch } from "./launch.js";
 import { mountInbox, inboxPrefsOf } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
 import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
+import { mountCohost } from "./cohost.js"; // Potto as a co-host before the event: Here's your night, a time that works, a line per friend, the rescue (server/cohost.js)
 import { mountPottoText } from "./pottotext.js"; import { mountFriendInvites } from "./friendinvites.js"; // Potto by text, friend invites by text
 import { mountPayMethods } from "./paymethods.js"; // Get paid: Venmo, PayPal, Cash App on a person's profile, shown to guests who are in
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
@@ -867,6 +868,7 @@ export function createApp({ store, dataDir }) {
   // ---- Potto by text and friend invites by text (server/pottotext.js, server/friendinvites.js) ----
   mountPottoText(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
   mountFriendInvites(app, { store, small, currentUser, C, X, sendStatic: (...a) => sendStatic(...a), publicOrigin: (req) => originOf(req), emailConfig: () => signinEmailConfig(), textOnce: (p, t) => app.locals.pottoText.textOnce(p, t) });
+  mountCohost(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) }); // co-host (server/cohost.js): after invites, the host loop and Potto by text, which it uses
   // ---- end Potto by text ----
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
   const HK = mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });

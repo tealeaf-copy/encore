@@ -268,7 +268,15 @@
     if (pre) applyPreset(pre, false);
     else if (!editing && S.W.planKind === "run") runDefaults(S.W);
     if (insp) { const W = S.W; W.inspiredBy = insp.id; if (insp.title) { W.pubTitle = insp.title; W.name = insp.title; } if (insp.date) W.date = insp.date; if (insp.place) W.venueName = insp.place; if (insp.hood) W.hood = insp.hood; if (insp.city) W.city = insp.city; if (insp.cover) W.coverArt = { ...(W.coverArt || {}), kind: insp.cover }; S.dirty = true; } // ---- end inspiration ----
-    build(); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
+    build(); root.PLCohost?.opened?.(cohost()); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
+  // ---- co-host hook (public/cohost.js): "Here's your night" from one sentence, the card under the title. Looks good
+  // fills the title, kind, day, time, spots and the drawn cover in one go; the host still saves. ----
+  const cohost = () => ({ el: () => S?.el, isNew: () => !!S && !S.orig, setTitle: (t) => { if (!S) return; S.W.pubTitle = S.W.name = String(t).slice(0, 90); changed(true); },
+    apply: (P) => { if (!S) return; let W = S.W; W.pubTitle = W.name = String(P.title || "").slice(0, 90);
+      if (P.kind && P.kind !== W.planKind && PLAN_KINDS.some((x) => x.k === P.kind && !x.handoff)) { const r = applyKind(W, P.kind, S.open); S.W = W = r.d; S.open = r.open; }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(P.date || "")) W.date = P.date; if (/^\d{2}:\d{2}$/.test(P.startTime || "")) W.startTime = P.startTime; if (+P.headcount > 0) W.headcount = Math.min(200, +P.headcount);
+      if (P.place && !W.meetPoint && !W.venueName) W.meetPoint = String(P.place).slice(0, 80); if (P.cover && !W.coverPhoto && root.EventArt?.valid?.(P.cover)) W.coverArt = { kind: P.cover };
+      try { app("applyPlace")?.(W); } catch {} changed(true); try { root.PLFx?.haptic?.("light"); } catch {} } }); // ---- end co-host hook ----
   // ---- New York run templates (public/runtemplates.js) ----
   const TPL_SECTIONS = ["the route", "pace groups", "after", "good to know"];
   /** Fill the canvas from a template. keep: the host's own title, date and time stay when they've set them. */
@@ -366,7 +374,7 @@
       <p class="cv-tag"><span class="cv-dot g"></span>Guests see this page. Tap anything to change it.<button type="button" class="cv-text-btn" data-mode="guest">Preview as guest</button></p>
       <div class="cv-cover cv-ed" id="cvCover">${coverHTML(W)}<button type="button" class="cv-pen" data-cv="cover" aria-label="Change the cover">${I.pen}<span>Cover</span></button></div>
       <div class="cv-ed cv-tw"><label class="vh" for="cvTitle">Event title</label><textarea id="cvTitle" class="cv-title" rows="1" maxlength="90" placeholder="Untitled event" enterkeyhint="done">${esc(W.pubTitle || W.name || "")}</textarea></div>
-      <p class="cv-err" id="cvTitleErr" role="alert"></p><button type="button" class="cv-fromline cv-ed" id="cvFromLine" hidden></button>
+      <p class="cv-err" id="cvTitleErr" role="alert"></p><button type="button" class="cv-fromline cv-ed" id="cvFromLine" hidden></button><div id="cvNight" class="cv-ed" hidden></div>
       <div class="cv-styles" role="radiogroup" aria-label="Title style">${TITLE_STYLES.map(([k, l, f]) => { const ff = f ? root.EncoreLooks?.FONTS?.[f]?.css : KF?.display || "var(--pl-font-display)"; return `<button type="button" role="radio" aria-checked="${st === k}" data-style="${k}" style="font-family:${esc(ff || "inherit")}">${f ? l : KF ? "Your kit" : l}</button>`; }).join("")}</div>
       <button type="button" class="cv-when cv-ed${when ? "" : " empty"}" data-cv="when" id="cvWhen">${when ? (F ? `<small>A feeler. Nothing's booked yet.</small><b>Friends pick a date</b><span>${esc(when.replace(/^Asking friends · /, ""))}</span>` : `<b>${esc(wd)}</b>${wt ? `<span>${esc(wt)}</span>` : ""}`) : `<b>Pick a date and time</b><span>Or ask friends which date works first</span>`}</button>
       <div class="cv-rows">
@@ -403,7 +411,7 @@
     root.PLTrendIdeas.mount(el, { key: "canvas", n: 3, lead: "Ideas from Potto", ready: true, onPick: (x) => { const W = S.W;
       if (x.kind && !W.planKind && PLAN_KINDS.some((k) => k.k === x.kind && !k.handoff)) { const r = applyKind(W, x.kind, S.open); S.W = r.d; S.open = r.open; }
       S.W.pubTitle = S.W.name = String(x.title || "").slice(0, 90); changed(true); say(`${x.title}: started. Change anything.`); q("#cvTitle", S.el)?.focus({ preventScroll: true }); } }); } // ---- end trends ----
-  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); }
+  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); root.PLCohost?.drawn?.(cohost()); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); }
   // the dock says what's on: "Look: Sage", "Effect: Petals"
   function lookName(W) { const L = W.look || {}, LK = root.EncoreLooks, p = (L.palette || [])[0]; if (!p) return "House"; const sw = (LK?.SWATCHES || []).find((x) => x[0] === p); return sw ? sw[3] : LK?.VIBES?.[L.vibe]?.label || "Your colours"; }
   function dockNames() { const W = S?.W, el = S?.el; if (!W || !el) return; for (const [k, ic, word, v] of [["look", I.look, "Look", lookName(W)], ["effect", I.fx, "Effect", effectName(W)]]) { const b = q(`.cv-dock [data-cv=${k}]`, el); if (!b) continue;
@@ -456,6 +464,7 @@
   function wire(el) {
     el.addEventListener("input", (e) => { const t = e.target, W = S.W;
       if (t.id === "cvTitle") { pvFlash = "title"; W.pubTitle = t.value.replace(/\n/g, " "); W.name = W.pubTitle; if (t.value.includes("\n")) t.value = W.pubTitle; grow(t); q("#cvTitleErr", el).textContent = "";
+        root.PLCohost?.typed?.(t.value, cohost()); // co-host: Here's your night (public/cohost.js)
         { const fb = q("#cvFromLine", el); clearTimeout(fb?.__t); if (fb) fb.__t = setTimeout(() => { const P = planFromLine(t.value); fb.hidden = !P || (!!W.date && !!W.startTime && !!(W.meetPoint || W.venueName)); if (P) { fb.textContent = planLineLabel(P); fb.__p = P; } }, 400); } const cov = q("#cvCover", el); if (cov && !W.coverPhoto && !W.coverArt?.kind) { clearTimeout(t.__c); t.__c = setTimeout(() => { const pen = q(".cv-pen", cov); cov.innerHTML = coverHTML(W); cov.appendChild(pen); }, 500); } }
       else if (t.id === "cvKindOwn") { const v = t.value.replace(/\s+/g, " ").trimStart().slice(0, 24); W.typeLabel = v.trim(); W.activity = v.trim().toLowerCase(); pvFlash = "title"; }
       else if (t.id === "cvDesc") { W.why = t.value; grow(t); pvFlash = "desc"; }

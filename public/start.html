@@ -79,6 +79,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 
     <form id="f" autocomplete="off" novalidate>
       <label>What is it<input name="title" maxlength="80" placeholder="Dinner for 4"></label>
+      <div id="stNight" hidden></div><!-- co-host: Here's your night from one sentence (public/cohost.js) -->
       <div class="two"><label>When<input name="date" type="date"></label><label>Time<input name="time" type="time" step="900"></label></div>
       <label id="placeL">Where <small>A neighbourhood is enough for now</small><input name="place" maxlength="80" placeholder="My place, Greenpoint"></label>
       <div><span id="seatsL" style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Spots</span><div class="step"><button type="button" id="less" aria-label="One fewer spot">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more spot">+</button></div></div>
@@ -167,6 +168,11 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   F.addEventListener("input", () => { d.title = F.title.value; d.date = F.date.value; d.time = F.time.value; d.place = F.place.value; d.note = F.note.value; if (d.endDate && d.date && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); draw(); keep(); });
   const seat = (n) => { const was = d.seats; d.seats = Math.max(2, Math.min(200, d.seats + n)); if (d.seats !== was) { fx.tick ? fx.tick($("#seatsOut"), d.seats, 180) : 0; fx.haptic?.("light"); fx.sound?.("tap"); } draw(); keep(); };
   $("#less").onclick = () => seat(-1); $("#more").onclick = () => seat(1);
+  // co-host hook (public/cohost.js): "Here's your night" fills the form from one sentence; the line for guests stays theirs
+  const NIGHT_T = { dinner: "dinner4", drinks: "drinks", brunch: "coffee", game: "game", potluck: "potluck", picnic: "picnic", run: "run", book: "bookclub", hack: "series" };
+  window.PLStart = { apply(P) { const k = NIGHT_T[P.kind]; if (k && k !== t) { const keepPlace = d.place; t = k; d = { ...fresh(t), place: keepPlace, note: "" }; copy(); }
+    d.title = String(P.title || d.title).slice(0, 80); if (/^\d{4}-\d{2}-\d{2}$/.test(P.date || "")) d.date = P.date; if (/^\d{2}:\d{2}$/.test(P.startTime || "")) d.time = P.startTime; if (+P.headcount >= 2) d.seats = Math.min(200, +P.headcount); if (P.place && !String(d.place || "").trim()) d.place = String(P.place).slice(0, 80);
+    if (d.endDate && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); fill(); draw(); keep(); } };
   fill(); draw(); copy(); document.documentElement.classList.add("st-ready"); if (ls.get(KEY)) $("#saved").textContent = "Saved on this phone";
   // a "same crew" draft from a past event (signed in): its name
   if (q.get("from") && /^[A-Za-z0-9_-]{2,80}$/.test(q.get("from"))) fetch("/api/db/doc?path=" + encodeURIComponent("events/" + q.get("from")), { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { const n = j?.data?.pubTitle || j?.data?.name; if (n && t === "again" && d.title === T.again.title) { d.title = n; d.seats = +j.data.headcount || d.seats; d.place = j.data.venueName || j.data.hood || d.place; fill(); draw(); keep(); } }).catch(() => {});
@@ -223,5 +229,5 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => { P.attach(F.title, { kind: "idea", onPick: pickIdea }); P.attach(F.place, { kind: "place" }); });
 })();
 </script>
-<script src="/autocomplete.js" defer></script>
+<script src="/autocomplete.js" defer></script><script src="/eventart.js" defer></script><script src="/cohost.js" defer></script>
 </body></html>

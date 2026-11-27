@@ -1,0 +1,114 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Potto, your co-host · Pottery Lab</title>
+<meta name="description" content="A time that works, a line for each friend, and a hand when replies are slow.">
+<meta name="robots" content="noindex">
+<script src="/authguard.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* /cohost/<event>: Potto as a co-host, for the host only (server/cohost.js). Field Notes kit tokens (public/system.css). */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:17px/1.55 var(--pl-font-text);-webkit-font-smoothing:antialiased}
+main{max-width:600px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom))}
+@media (max-width:860px){body.es-has-tabs main{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
+.top{display:flex;align-items:center;min-height:52px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--pl-ink);text-decoration:none;font:500 15px var(--pl-font-text)}
+.back svg{flex:none}
+.kick{display:block;font:500 12px/1.4 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin:12px 0 6px}
+h1{font:600 28px/1.15 var(--pl-font-display);letter-spacing:var(--pl-display-track);margin:0 0 6px;text-wrap:balance}
+.potto{display:flex;gap:10px;align-items:flex-start;margin:0 0 18px;color:var(--pl-soft);font-size:16px}.potto svg{flex:none;color:var(--pl-ink);margin-top:2px}.potto p{margin:0}
+.card{background:var(--pl-surface);border:1.5px solid var(--pl-ink);border-radius:6px;padding:14px;margin:0 0 12px}
+.card h2{font:600 17px/1.35 var(--pl-font-text);margin:0 0 4px;overflow-wrap:anywhere}
+.card p{margin:0 0 4px}.soft{color:var(--pl-soft);font-size:15px}
+.opt{display:grid;gap:10px}.opt .who{font-size:16px;overflow-wrap:anywhere}
+.tag{display:inline-block;font:500 12px/1.3 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;background:var(--pl-sand);color:var(--pl-ink);padding:3px 6px;border-radius:6px;margin-left:6px;vertical-align:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:6px;border:1.5px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:600 16px/1.2 var(--pl-font-text);text-decoration:none;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
+.btn.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}.btn[disabled]{opacity:.6;cursor:default}
+.btn:focus-visible,textarea:focus-visible,input:focus-visible,.back:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+@media (hover:hover){.btn:not(.pri):not([disabled]):hover{background:var(--pl-raised)}.btn.pri:not([disabled]):hover{background:var(--pl-accent-press)}}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.acts .btn{flex:1 1 180px}
+.person{display:grid;gap:6px;padding:12px 0;border-top:1px dashed var(--pl-line)}.person:first-child{border-top:0;padding-top:0}
+.person label{font:600 16px/1.3 var(--pl-font-text);overflow-wrap:anywhere}
+.person small{color:var(--pl-soft);font-size:14px}
+textarea{width:100%;min-height:76px;border:1px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:16px/1.45 var(--pl-font-text);padding:10px 12px;resize:vertical}
+input[type=date]{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;width:100%;border:1px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:16px/44px var(--pl-font-text);padding:0 12px;margin:0;display:block}
+input[type=date]::-webkit-date-and-time-value{text-align:left;line-height:44px}
+.dates{display:grid;gap:8px;margin:10px 0 0}.dates label{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:8px;font:500 12px/1.3 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
+.msg{min-height:22px;margin:8px 0 0;font-size:15px}.msg.err{color:var(--pl-danger)}.msg.ok{color:var(--pl-success)}
+.empty{padding:6px 0}
+.sticky{position:sticky;bottom:0;background:var(--pl-page);padding:12px 0 calc(8px + env(safe-area-inset-bottom));border-top:1px dashed var(--pl-line);margin-top:8px}
+@media (max-width:860px){body.es-has-tabs .sticky{bottom:var(--ch-tabs,64px)}}
+.sticky .btn{width:100%}
+</style>
+</head><body>
+<main id="main">
+  <header class="top"><a class="back" id="back" href="/?app=1#studio"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span id="backT">Back to your event</span></a></header>
+  <div id="view" aria-live="polite"><p class="soft">Getting what I know…</p></div>
+</main>
+<script src="/shell.js" defer></script>
+<script>
+(function () {
+  const $ = (s, el) => (el || document).querySelector(s), $$ = (s, el) => [...(el || document).querySelectorAll(s)];
+  const E = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const id = decodeURIComponent(location.pathname.split("/")[2] || ""), q = new URLSearchParams(location.search), m = ["time", "lines", "rescue"].includes(q.get("m")) ? q.get("m") : "time";
+  const view = $("#view"), base = "/api/cohost/" + encodeURIComponent(id);
+  $("#back").href = "/?app=1&open=" + encodeURIComponent(id) + "#studio";
+  const FACE = `<svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2"/><circle cx="11.6" cy="15.6" r=".9" fill="currentColor" stroke="none"/><circle cx="16.4" cy="15.6" r=".9" fill="currentColor" stroke="none"/><path d="M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg>`;
+  const potto = (t) => `<div class="potto">${FACE}<p>${E(t)}</p></div>`;
+  async function api(url, body, method) { const r = await fetch(url, { method: method || (body ? "POST" : "GET"), credentials: "same-origin", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined }); let j = {}; try { j = await r.json(); } catch {} if (!r.ok) { const e = new Error(j.message || "That didn't work. Try again."); e.status = r.status; throw e; } return j; }
+  const patch = (body) => api("/api/db/doc?path=" + encodeURIComponent("events/" + id), body, "PATCH");
+  const mark = (event, p = {}) => fetch("/api/cohost/mark", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event, via: "page", ...p }), keepalive: true }).catch(() => {});
+  const say = (el, t, ok) => { if (!el) return; el.textContent = t; el.className = "msg " + (ok ? "ok" : "err"); };
+  const fmt = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
+  const fail = (e) => { view.innerHTML = e.status === 401 ? `<h1>Sign in to see this</h1>${potto("This page is for the host. Sign in and I'll bring you back here.")}<a class="btn pri" href="/login?next=${encodeURIComponent(location.pathname + location.search)}">Sign in</a>` : `<h1>I can't find that event</h1>${potto("It may have been deleted, or it belongs to someone else's page.")}<a class="btn" href="/?app=1#studio">Go to your events</a>`; };
+  // the sticky button rides just above the app's tab bar on phones (public/shell.js draws it)
+  const fitTabs = () => { const n = document.querySelector(".es-tabs"), h = n && getComputedStyle(n).display !== "none" ? n.offsetHeight : 0; if (h) document.documentElement.style.setProperty("--ch-tabs", h + "px"); };
+  addEventListener("load", fitTabs); addEventListener("resize", fitTabs); setTimeout(fitTabs, 1200);
+
+  // ---------------- a time that works ----------------
+  async function time() { let t; try { t = await api(base + "/times"); } catch (e) { return fail(e); }
+    const noInfo = t.noInfo.length ? `<p class="soft">No info yet: ${E(t.noInfo.slice(0, 8).join(", "))}${t.noInfo.length > 8 ? ` and ${t.noInfo.length - 8} more` : ""}.</p>` : "";
+    if (!t.enough) { view.innerHTML = `<span class="kick">A time that works</span><h1>Let friends pick the date</h1>${potto(t.people ? `I don't know enough about when your people are free yet, so a quick poll is the honest way. Here are three dates. Change any of them.` : `Nobody's on this event yet. Add people on the Invite tab and I can look for a time, or ask with a quick poll.`)}
+        <section class="card"><h2>Three dates to pick from</h2><p class="soft">Friends tap the ones they can do. The date comes off the invite until you pick one.</p>
+        <div class="dates">${t.poll.map((d, i) => `<label>Date ${i + 1}<input type="date" data-poll="${i}" value="${E(d)}"></label>`).join("")}</div>${noInfo}<p class="msg" id="pm"></p></section>
+        <div class="sticky"><button type="button" class="btn pri" id="poll">Ask friends these dates</button></div>`;
+      $("#poll").onclick = async (ev) => { const b = ev.currentTarget, dates = [...new Set($$("[data-poll]").map((x) => x.value).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)))].sort().slice(0, 3); if (dates.length < 2) return say($("#pm"), "Pick at least two dates.");
+        b.disabled = true; try { await patch({ stage: "interest", dateOptions: dates, date: "" }); mark("cohost_poll_started", { count: dates.length }); say($("#pm"), `Done. Friends now pick from ${dates.map(fmt).join(", ")}.`, true); b.textContent = "Poll is on"; } catch (e) { say($("#pm"), e.message); b.disabled = false; } };
+      return; }
+    view.innerHTML = `<span class="kick">A time that works</span><h1>Times that suit most people</h1>${potto("From what I know about your people: when they've come before, what they've told you, and what else they're in for. Pick one, or leave it as it is.")}
+      ${t.options.map((o, i) => `<section class="card opt"><div><h2>${E(o.label)}${o.current ? `<span class="tag">Current</span>` : ""}</h2><p class="who">${E(o.line.slice(o.label.length + 2).replace(/^./, (c) => c.toUpperCase()))}</p>${o.unsure.length ? `<p class="soft">Can't say for ${E(o.unsure.slice(0, 6).join(", "))}${o.unsure.length > 6 ? " and others" : ""}.</p>` : ""}</div>
+        ${o.current ? `<p class="soft">This is the time on the invite now.</p>` : `<div class="acts"><button type="button" class="btn${i === t.options.findIndex((x) => !x.current) ? " pri" : ""}" data-move="${i}">Move it here</button></div>`}<p class="msg" data-mm="${i}"></p></section>`).join("")}
+      ${noInfo ? `<section class="card">${noInfo}<p class="soft">They aren't counted above. A reply to one of your invites teaches me more.</p></section>` : ""}`;
+    $$("[data-move]").forEach((b) => (b.onclick = async () => { const o = t.options[+b.dataset.move], msg = $(`[data-mm="${b.dataset.move}"]`); b.disabled = true;
+      try { await patch({ date: o.date, startTime: o.time, ...(t.current ? {} : { stage: "" }) }); mark("cohost_time_applied", { count: o.cant.length }); say(msg, `Moved to ${o.label}. It's on the invite now.`, true); b.textContent = "Moved"; $$("[data-move]").forEach((x) => { if (x !== b) x.disabled = true; }); }
+      catch (e) { say(msg, e.message); b.disabled = false; } })); }
+
+  // ---------------- a line per friend ----------------
+  const BASIS = { brought: "From what they brought last time", kudos: "From the kudos they sent you", regular: "From how often they come", last: "From the last time they came", plain: "No history together yet, so they get the plain invite" };
+  async function lines() { let L; try { L = await api(base + "/lines"); } catch (e) { return fail(e); } const I = L.items;
+    if (!I.length) { view.innerHTML = `<span class="kick">A line for each friend</span><h1>No one waiting for an invite</h1>${potto("Everyone on the list has been sent the invite, or the list is empty. Add people on the Invite tab and I'll write a line for each.")}<a class="btn pri" href="/?app=1&open=${encodeURIComponent(id)}&step=6#studio">Open the Invite tab</a>`; return; }
+    const personal = I.filter((x) => x.line).length;
+    view.innerHTML = `<span class="kick">A line for each friend</span><h1>${E(L.event.title)}</h1>${potto(personal ? `I wrote ${personal === 1 ? "a line" : "a line each"} from what you've done together. Each person only sees their own. Edit anything. Nothing goes out until you tap Send.` : "You haven't hosted these people before, so they get the plain invite. Add a line for anyone you like. Nothing goes out until you tap Send.")}
+      <section class="card">${I.map((x, i) => `<div class="person"><label for="ln${i}">${E(x.name || x.first)}</label><textarea id="ln${i}" data-ln="${i}" maxlength="280" rows="2" placeholder="The plain invite">${E(x.line)}</textarea><small>${E(BASIS[x.basis] || BASIS.plain)}</small></div>`).join("")}</section>
+      <p class="msg" id="lm"></p><div class="sticky"><button type="button" class="btn pri" id="send">Send ${I.length} ${I.length === 1 ? "invite" : "invites"}</button></div>`;
+    $("#send").onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; b.textContent = "Sending…";
+      try { const r = await api(base + "/lines/send", { items: I.map((x, i) => ({ id: x.id, line: $(`[data-ln="${i}"]`).value })) }); say($("#lm"), r.sent ? `Sent to ${r.sent}.${r.held ? ` ${r.held} more go out within the hour.` : ""}${r.skipped ? ` ${r.skipped} couldn't be reached here.` : ""}` : r.held ? `${r.held} go out within the hour.` : "No one could be reached here. Copy their links on the Invite tab.", !!(r.sent || r.held)); b.textContent = "Sent"; }
+      catch (e) { say($("#lm"), e.message); b.disabled = false; b.textContent = `Send ${I.length} ${I.length === 1 ? "invite" : "invites"}`; } }; }
+
+  // ---------------- the rescue ----------------
+  async function rescue() { let r; try { r = await api(base + "/rescue"); } catch (e) { return fail(e); } const ev = r.event, filled = ev.spots ? `${r.going} of ${ev.spots} spots filled` : `${r.yes} in so far`;
+    if (ev.past) { view.innerHTML = `<span class="kick">Replies</span><h1>${E(ev.title)} has happened</h1>${potto("Nothing to chase now. Thank the people who came on the event page.")}`; return; }
+    if (!r.low) { view.innerHTML = `<span class="kick">Replies</span><h1>${E(ev.title)}</h1>${potto(`Replies look fine: ${filled}. Nothing to chase.`)}`; return; }
+    view.innerHTML = `<span class="kick">${r.days === 2 ? "Two days to go" : r.days === 1 ? "Tomorrow" : "Replies"}</span><h1>${E(ev.title)}</h1>${potto(`${filled}. Quiet weeks happen. Here are two things that could help. Use one, both or neither.`)}
+      ${r.better ? `<section class="card"><h2>A time that may suit more people</h2><p class="who">${E(r.better.line)}</p><div class="acts"><button type="button" class="btn" id="mv">Move it to ${E(r.better.label)}</button></div><p class="msg" id="mvm"></p></section>` : ""}
+      <section class="card"><h2>A friendlier reminder</h2><p class="soft">${r.waiting ? `Goes to the ${r.waiting === 1 ? "1 person" : r.waiting + " people"} you invited who haven't replied.` : "Copy it into your group chat."} Change anything first.</p><textarea id="rt" aria-label="Reminder" maxlength="300" rows="3">${E(r.draft)}</textarea>
+        <p class="msg" id="rm"></p></section>
+      <div class="sticky"><button type="button" class="btn pri" id="rs">${r.waiting ? `Send to ${r.waiting}` : "Copy the reminder"}</button></div>`;
+    $("#rs").onclick = async (e) => { const b = e.currentTarget, text = $("#rt").value.trim(); if (text.length < 10) return say($("#rm"), "Write a line first.");
+      if (!r.waiting) { try { await navigator.clipboard.writeText(text); say($("#rm"), "Copied. Paste it in your group chat.", true); mark("cohost_rescue_acted", { kind: "copy" }); } catch { say($("#rm"), "Select the text above to copy it."); } return; }
+      b.disabled = true; try { const x = await api(base + "/rescue/remind", { text }); say($("#rm"), x.reminded ? `Sent to ${x.reminded}.` : x.tooSoon ? "They got a reminder in the last day. Try again tomorrow." : "Nobody to remind right now.", !!x.reminded); b.textContent = x.reminded ? "Sent" : b.textContent; if (!x.reminded) b.disabled = false; } catch (er) { say($("#rm"), er.message); b.disabled = false; } };
+    const mv = $("#mv"); if (mv) mv.onclick = async () => { mv.disabled = true; try { await patch({ date: r.better.date, startTime: r.better.time }); mark("cohost_rescue_acted", { kind: "move" }); say($("#mvm"), `Moved to ${r.better.label}. It's on the invite now.`, true); mv.textContent = "Moved"; } catch (er) { say($("#mvm"), er.message); mv.disabled = false; } }; }
+
+  ({ time, lines, rescue })[m]();
+})();
+</script>
+</body></html>

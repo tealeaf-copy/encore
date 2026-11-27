@@ -79,7 +79,7 @@ test("a new Google identity needs an invite code; the code survives the OAuth ro
   // no code: not created, back to the code step with the kind message
   const J0 = jar(), to0 = await oauth(J0, "google", { email: "nocode@example.com", name: "No Code" });
   assert.equal(to0, "/signup?why=invite"); assert.equal(await me(J0), null);
-  const page = await (await fetch(srv.base + "/signup?why=invite")).text(); assert.match(page, /You'll need an invite to join for now\. Ask a friend who hosts, or join the waitlist\./);
+  const page = await (await fetch(srv.base + "/signup?why=invite")).text(); assert.match(page, /Pottery Lab is invite-only for now\. Enter the code a friend sent you\./); assert.match(page, /No code\? Join the waitlist/);
   // a bad code is refused at the code step
   const J = jar(); assert.equal((await J.post("/api/auth/join", { code: "NOPE-NOPE" })).status, 403);
   const ok = await J.post("/api/auth/join", { code: H.code.toLowerCase().replace("-", " ") }); assert.equal(ok.status, 200); assert.equal((await ok.json()).from, "Maya", "who invited you");
@@ -160,9 +160,9 @@ test("the magic link in the email signs in after one tap, once", async () => {
 
 test("/join?code= prefills the code step, /login has the password and SSO fallbacks", async () => {
   const H = await host(); const r = await fetch(srv.base + "/join?code=" + H.code, { redirect: "manual" }); assert.equal(r.headers.get("location"), "/signup?code=" + H.code);
-  const page = await (await fetch(srv.base + "/signup?code=" + H.code)).text(); assert.match(page, /if \(code\) \{ \$\("codeIn"\)\.value = code\.toUpperCase\(\); show\("code"\); return sendCode\(code, true\); \}/);
+  const page = await (await fetch(srv.base + "/signup?code=" + H.code)).text(); assert.match(page, /if \(code\) \{ \$\("codeIn"\)\.value = code\.toUpperCase\(\); show\("start"\); return sendInvite\(code, true\); \}/);
   const login = await (await fetch(srv.base + "/login")).text();
-  for (const re of [/Small events, your people\./, /Sign in or join with an invite\./, /Continue with Apple/, /Continue with Google/, /Continue with a passkey/, /Continue with email/, /Use a password instead/, /type="password"/, /href="\/sso\/start"/, /href="\/signup"/, /By continuing, you agree to the <a href="\/terms">Terms<\/a> and <a href="\/privacy">Privacy Policy<\/a>\./]) assert.match(login, re);
+  for (const re of [/Welcome in/, /Sign in or join with your email or phone number\./, /<label for="idIn">Email or phone number<\/label>/, /Continue with Apple/, /Continue with Google/, /Continue with a passkey/, /Use a password instead/, /type="password"/, /href="\/sso\/start"/,/By continuing, you agree to the <a href="\/terms">Terms<\/a> and <a href="\/privacy">Privacy Policy<\/a>\./]) assert.match(login, re);
   assert.doesNotMatch(login, /—/, "no em dashes");
   // brands and prepared storefronts keep the longer form
   assert.match(await (await fetch(srv.base + "/signup?mode=work")).text(), /Start your free trial|\/api\/signup/);

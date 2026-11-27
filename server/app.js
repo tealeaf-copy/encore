@@ -351,7 +351,7 @@ export function createApp({ store, dataDir }) {
   app.get("/signup", (req, res, next) => { const n = signedInAs(req); if (n) return res.type("html").send(signedInPage(n, "/signup" + (req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : ""))); next(); });
   // ---- end review round 8 signed in ----
   // ---- sign in and join without a password: Apple, Google, a passkey, an email code (server/signin.js, public/signin.html) ----
-  const SI = mountSignin(app, { store, createAccount: (...a) => createAccount(...a), needInvite: () => inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== ""), checkCode: (c) => C.checkCode(c), publicOrigin: (req) => originOf(req), sendStatic: (...a) => sendStatic(...a) });
+  const SI = mountSignin(app, { store, createAccount: (...a) => createAccount(...a), needInvite: () => inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== ""), checkCode: (c) => C.checkCode(c), publicOrigin: (req) => originOf(req), sendStatic: (...a) => sendStatic(...a), addWaitlist: (w) => C.addWaitlist(w) });
   app.get("/login", (req, res) => (isAuthed(req) && !req.query.switch ? res.redirect(302, String(req.query.next || "").startsWith("/") && !String(req.query.next).startsWith("//") ? String(req.query.next) : "/?app=1") : signupEnabled() ? SI.page(req, res) : res.type("html").send(loginPage()))); // already signed in: go where you were headed
   // ---- forgot password: always the same answer, so nobody learns which emails have accounts ----
   const resetHits = new Map(); const resetLimited = (k, n) => { const now = Date.now(), h = (resetHits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); resetHits.set(k, h); return h.length > n; };
@@ -1122,7 +1122,7 @@ export function createApp({ store, dataDir }) {
     const workspace = { id: ws, company: W?.company || "", plan: W?.plan || "self-hosted", trial: T.trial, trialEnded: T.trialEnded, daysLeft: T.daysLeft };
     // review round 8: crm is true only for a team workspace with a CRM connected (the brand request form's CRM fields)
     const crm = !!u && W?.plan !== "friends" && (listConnections(ws).some((c) => c.connected && ["hubspot", "salesforce", "attio"].includes(c.provider)) || !!(process.env.HUBSPOT_TOKEN || process.env.SF_ACCESS_TOKEN));
-    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, emailVerified: emailVerified(u.email), ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
+    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, emailVerified: emailVerified(u.email), ...(getDbUser(u.email)?.phone ? { phone: getDbUser(u.email).phone } : {}), ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
   const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|chatmembers|chatreports|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;

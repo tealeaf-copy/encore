@@ -1,74 +1,122 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Sign in · Pottery Lab</title>
-<meta name="description" content="Sign in to Pottery Lab, or join with an invite.">
+<meta name="description" content="Sign in to Pottery Lab, or join, with your email or phone number.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/system.css">
 <style>
-  /* One calm sign-in screen for /login and /signup (server/signin.js). Mobile first: one column, 16px gutters,
-     48px+ tap targets. Brand tokens from public/system.css. */
+  /* One calm sign-in screen for /login and /signup (server/signin.js). Field Notes tokens from public/system.css, light
+     only. Mobile first: one column, 16px gutters, 44px+ tap targets. The display face only at 24px and up. */
+  :root{color-scheme:light}
   html,body{background:var(--pl-page)}
-  body{margin:0;min-height:100vh;min-height:100dvh;color:var(--pl-ink);font:16px/1.45 var(--sys-sans);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
-  main{width:100%;max-width:400px;padding-top:max(48px,calc(env(safe-area-inset-top,0px) + 32px))}
+  body{margin:0;min-height:100vh;min-height:100dvh;color:var(--pl-ink);font:400 17px/1.5 var(--sys-sans);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+  main{width:100%;max-width:400px;padding-top:max(32px,calc(env(safe-area-inset-top,0px) + 24px))}
   @media (min-height:760px){main{padding-top:8vh}}
-  .mark{display:inline-flex;align-items:center;gap:8px;color:var(--pl-ink);text-decoration:none;font:600 20px/1 var(--sys-title);letter-spacing:var(--pl-title-track);margin:0 0 32px;min-height:44px}
+  .mark{display:inline-flex;align-items:center;gap:8px;color:var(--pl-ink);text-decoration:none;font:600 19px/1 var(--sys-title);letter-spacing:var(--pl-title-track);margin:0 0 28px;min-height:44px}
   .mark svg{width:26px;height:26px}
-  h1{font:400 34px/1.1 var(--sys-display);letter-spacing:var(--pl-display-track);margin:0 0 8px}
-  .sub{margin:0 0 28px;color:var(--pl-soft);font-size:17px}
+  .kicker{margin:0 0 8px;font:500 13px/1.3 var(--sys-mono);letter-spacing:var(--pl-kicker-track);text-transform:uppercase;color:var(--pl-accent-text)}
+  h1{font:600 32px/1.12 var(--sys-display);letter-spacing:var(--pl-display-track);margin:0 0 8px}
+  .sub{margin:0 0 24px;color:var(--pl-soft);font-size:17px}
   [hidden]{display:none!important}
   .stack{display:grid;gap:12px}
-  /* provider buttons: full-width outline pills, the icon at the left edge, the label centered */
-  html body .prov{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;padding:0 52px;box-sizing:border-box;border:1px solid var(--pl-ink)!important;border-radius:999px;background:#fff!important;color:var(--pl-ink)!important;
-    font:500 17px/1.2 -apple-system,BlinkMacSystemFont,var(--sys-title)!important;letter-spacing:0;cursor:pointer;text-decoration:none;box-shadow:none!important;-webkit-tap-highlight-color:transparent}
-  html body .prov svg{position:absolute;left:20px;top:50%;transform:translateY(-50%);width:20px;height:20px}
-  /* Sign in with Apple, "white with outline": black logo, black title, black outline (Apple's button rules) */
-  html body .prov.apple{border-color:#000!important;color:#000!important}
-  html body .prov.apple svg{width:18px;height:22px;left:21px}
-  @media (hover:hover){html body .prov:hover{background:var(--pl-surface)!important}}
-  html body .prov:active{background:var(--pl-raised)!important}
-  html body .prov[aria-busy=true]{opacity:.6;pointer-events:none}
-  :is(a,button,input):focus-visible{outline:2px solid var(--pl-accent)!important;outline-offset:3px!important}
   /* fields and the main action */
-  label{display:block;font:600 14px/1.3 var(--sys-title);margin:0 0 6px}
-  html body input.field{display:block;width:100%;box-sizing:border-box;min-height:52px;border:1px solid var(--pl-line-strong);border-radius:12px;background:#fff;padding:0 16px;font:400 17px var(--sys-sans);color:var(--pl-ink)}
-  html body input.field::placeholder{color:var(--pl-muted);opacity:1}
-  html body input.field:focus{outline:none!important;border-color:var(--pl-ink)!important;box-shadow:0 0 0 3px var(--pl-focus)!important}
-  html body input.code{font:500 24px/1 var(--sys-mono);letter-spacing:.32em;text-align:center;padding:0 0 0 .32em}
+  label{display:block;font:600 15px/1.3 var(--sys-title);margin:0 0 8px}
+  html body input.field{display:block;width:100%;box-sizing:border-box;min-height:52px;border:var(--pl-bw) solid var(--pl-ink);border-radius:var(--pl-r-sm);background:var(--pl-surface);padding:0 16px;font:400 17px var(--sys-sans);color:var(--pl-ink)}
+  html body input.field::placeholder{color:var(--pl-muted);opacity:.85}
+  html body #main input.field:focus{outline:none!important;border-color:var(--pl-ink)!important;box-shadow:0 0 0 3px var(--pl-focus)!important}
+  html body input.code{font:500 26px/1 var(--sys-mono);letter-spacing:.34em;text-align:center;padding:0 0 0 .34em;font-variant-numeric:tabular-nums}
   html body input.invite{text-transform:uppercase;letter-spacing:.08em;font-family:var(--sys-mono)}
   html body input.invite::placeholder{text-transform:none;letter-spacing:0;font-family:var(--sys-sans)}
-  html body .go{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:0;border-radius:999px;background:var(--pl-accent);color:var(--pl-on-accent);font:600 17px var(--sys-title);cursor:pointer;margin-top:16px}
+  html body .go{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:var(--pl-bw) solid var(--pl-ink);border-radius:var(--pl-r-btn);background:var(--pl-accent);color:var(--pl-on-accent);font:600 17px var(--sys-title);cursor:pointer;margin-top:16px}
   @media (hover:hover){html body .go:hover{background:var(--pl-accent-press)}}
   html body .go:disabled{opacity:.6;cursor:default}
+  /* the other ways in: outline buttons, the icon at the left edge, the label centered */
+  .or{display:flex;align-items:center;gap:12px;margin:24px 0 16px;color:var(--pl-soft);font-size:15px}
+  .or::before,.or::after{content:"";flex:1;border-top:var(--pl-rule-dashed)}
+  html body .prov{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;padding:0 48px;box-sizing:border-box;border:var(--pl-bw) solid var(--pl-ink)!important;border-radius:var(--pl-r-btn);background:var(--pl-surface)!important;color:var(--pl-ink)!important;
+    font:500 16px/1.2 var(--sys-title)!important;letter-spacing:0;cursor:pointer;text-decoration:none;box-shadow:none!important;-webkit-tap-highlight-color:transparent}
+  html body .prov svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:20px;height:20px}
+  /* Sign in with Apple, "white with outline": black logo, black title, black outline (Apple's button rules) */
+  html body .prov.apple{border-color:#000!important;color:#000!important;background:#fff!important}
+  html body .prov.apple svg{width:17px;height:21px;left:19px}
+  @media (hover:hover){html body .prov:hover{background:var(--pl-raised)!important}}
+  html body .prov[aria-busy=true]{opacity:.6;pointer-events:none}
+  :is(a,button,input):focus-visible{outline:2px solid var(--pl-accent)!important;outline-offset:3px!important}
   /* quiet links */
-  .links{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:20px}
-  .lnk{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 8px;color:var(--pl-accent-text);font:500 15px var(--sys-title);text-decoration:none;background:none;border:0;cursor:pointer}
-  .lnk.small{font-size:14px;color:var(--pl-soft)}
-  .lnk b{font-weight:600;color:var(--pl-accent-text);margin-left:4px}
-  .switch{color:var(--pl-soft)}
-  .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:-8px 0 16px -8px;padding:0 8px;background:none;border:0;color:var(--pl-soft);font:500 15px var(--sys-title);cursor:pointer}
-  .terms{margin:28px 0 0;text-align:center;color:var(--pl-muted);font-size:13px;line-height:1.5}
+  .links{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:16px}
+  .lnk{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 8px;color:var(--pl-accent-text);font:500 16px var(--sys-title);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;background:none;border:0;cursor:pointer}
+  .lnk.small{font-size:15px;color:var(--pl-soft)}
+  .lnk:disabled{opacity:.6;cursor:default}
+  .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:-8px 0 12px -8px;padding:0 8px;background:none;border:0;color:var(--pl-soft);font:500 15px var(--sys-title);cursor:pointer}
+  .terms{margin:28px 0 0;text-align:center;color:var(--pl-soft);font-size:14px;line-height:1.5}
   .terms a{color:var(--pl-soft);text-decoration:underline;text-underline-offset:2px}
   /* notes */
-  .note{margin:0 0 20px;padding:14px 16px;border-radius:12px;background:var(--pl-sand-soft);color:var(--pl-ink);font-size:15px;line-height:1.45}
-  .note a,.note button{color:var(--pl-accent-text);font-weight:600;text-decoration:underline;text-underline-offset:2px;background:none;border:0;padding:0;font:inherit;cursor:pointer}
-  .err{margin:10px 0 0;color:var(--pl-danger);font-size:14px}.err:empty{display:none}
-  .chip{display:inline-flex;align-items:center;gap:8px;margin:-12px 0 24px;padding:8px 14px;border-radius:999px;background:var(--pl-success-soft);color:var(--pl-success);font:600 14px var(--sys-title)}
+  .note{margin:16px 0 0;padding:14px 16px;border:var(--pl-bw) solid var(--pl-ink);border-radius:var(--pl-r-sm);background:var(--pl-sand-soft);color:var(--pl-ink);font-size:16px;line-height:1.45}
+  .note.top{margin:0 0 20px}
+  .note .lnk{min-height:44px;padding:0;margin-top:4px;font-weight:600;color:var(--pl-accent-text)}
+  .err{margin:10px 0 0;color:var(--pl-danger);font-size:15px}.err:empty{display:none}
+  .chip{display:inline-flex;align-items:center;gap:8px;margin:-8px 0 20px;padding:6px 12px;border:var(--pl-bw) solid var(--pl-ink);border-radius:var(--pl-r-sm);background:var(--pl-success-soft);color:var(--pl-success);font:600 15px var(--sys-title)}
   .chip svg{width:16px;height:16px}
-  .hint{margin:12px 0 0;color:var(--pl-soft);font-size:14px}
-  .row2{display:flex;justify-content:center;flex-wrap:wrap;gap:0 8px;margin-top:12px}
-  .done{text-align:left}
-  .who{font-weight:600;color:var(--pl-ink);word-break:break-all}
+  .hint{margin:12px 0 0;color:var(--pl-soft);font-size:15px}
+  .row2{display:flex;justify-content:center;flex-wrap:wrap;gap:0 16px;margin-top:8px}
+  .who{font-weight:600;color:var(--pl-ink);overflow-wrap:anywhere}
+  @media (min-width:600px){h1{font-size:36px}}
 </style>
 </head>
 <body>
 <main id="main">
   <a class="mark" href="/" aria-label="Pottery Lab home"><svg viewBox="0 0 28 28" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>pottery lab</a>
 
-  <!-- 1. the invite code, for a new person when hosting is invite-only -->
+  <!-- 1. one field: an email or a phone number -->
+  <section data-step="start" hidden aria-labelledby="hStart">
+    <h1 id="hStart">Welcome in</h1>
+    <p class="sub" id="startSub">Sign in or join with your email or phone number. We'll send you a code.</p>
+    <p class="chip" id="held" hidden><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg><span id="heldTxt">Invite accepted</span></p>
+    <p class="note top" id="startNote" hidden role="status"></p>
+    <form id="idForm" novalidate>
+      <label for="idIn">Email or phone number</label>
+      <input class="field" id="idIn" type="text" name="username" placeholder="you@example.com or (555) 123-4567" autocomplete="username" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="200" required>
+      <p class="err" id="idErr" role="alert"></p>
+      <div class="note" id="smsOff" hidden role="status"><span id="smsOffTxt">Text sign-in isn't on yet. Use your email instead.</span><br><button type="button" class="lnk" id="useEmail">Use my email</button></div>
+      <button class="go" type="submit" id="idGo">Continue</button>
+    </form>
+    <div class="row2"><button type="button" class="lnk small" id="kbSwap">Use a phone number</button></div>
+    <div id="others" hidden>
+      <p class="or"><span>or</span></p>
+      <div class="stack">
+        <button type="button" class="prov" data-p="passkey" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7.5" r="3.5"/><path d="M2.5 20.5c0-3.7 2.9-6.3 6.5-6.3 1.4 0 2.6.4 3.6 1"/><circle cx="18" cy="12.5" r="2.6"/><path d="M18 15.1v6.2m0-2.4h2.2"/></svg>Continue with a passkey</button>
+        <button type="button" class="prov" data-p="google" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continue with Google</button>
+        <button type="button" class="prov apple" data-p="apple" hidden><svg viewBox="0 0 17 21" aria-hidden="true" fill="currentColor"><path d="M14.1 11.1c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9C3.6 5.3 2 6.3 1 7.9c-1.9 3.3-.5 8.2 1.4 10.9.9 1.3 2 2.8 3.4 2.8 1.4-.1 1.9-.9 3.5-.9s2.1.9 3.5.9c1.5 0 2.4-1.3 3.3-2.7 1-1.5 1.5-3 1.5-3.1-.1 0-2.8-1.1-2.9-4.3zM11.5 3.4C12.2 2.5 12.7 1.3 12.6.1c-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.1 1.1.1 2.3-.6 3-1.4z"/></svg>Continue with Apple</button>
+      </div>
+    </div>
+    <p class="err" id="btnErr" role="alert"></p>
+    <div class="links">
+      <button type="button" class="lnk small" id="pwLink" data-goto="password">Use a password instead</button>
+      <a class="lnk small" id="toJoin" href="/signup" data-goto="code" hidden>Have an invite code?</a>
+    </div>
+  </section>
+
+  <!-- 2. the 6-digit code -->
+  <section data-step="otp" hidden aria-labelledby="hOtp">
+    <button type="button" class="back" data-goto="start" id="otpBack"><span aria-hidden="true">&larr;</span> <span id="otpBackTxt">Use a different email</span></button>
+    <h1 id="hOtp">Check your email</h1>
+    <p class="sub">Enter the code we sent to <span class="who" id="otpTo"></span>. It works for 10 minutes.</p>
+    <form id="otpForm" novalidate>
+      <label for="otpIn">6-digit code</label>
+      <input class="field code" id="otpIn" name="one-time-code" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
+      <p class="err" id="otpErr" role="alert"></p>
+      <button class="go" type="submit" id="otpGo">Continue</button>
+    </form>
+    <p class="hint" id="otpHint">No email yet? Check your spam folder, or tap the link in the email.</p>
+    <div class="row2"><button type="button" class="lnk small" id="resend">Send a new code</button></div>
+  </section>
+
+  <!-- 3. new people only, when hosting is invite-only: the invite code, after the 6-digit code -->
   <section data-step="code" hidden aria-labelledby="hCode">
-    <h1 id="hCode">Got an invite?</h1>
-    <p class="sub">Enter the code from the host who invited you.</p>
-    <p class="note" id="noInvite" hidden></p>
+    <h1 id="hCode">Got an invite code?</h1>
+    <p class="sub" id="codeSub">Pottery Lab is invite-only for now. Enter the code a friend sent you.</p>
+    <p class="note top" id="noInvite" hidden></p>
     <form id="codeForm" novalidate>
       <label for="codeIn">Invite code</label>
       <input class="field invite" id="codeIn" name="code" placeholder="e.g. OINK-OINK" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required>
@@ -76,55 +124,9 @@
       <button class="go" type="submit" id="codeGo">Continue</button>
     </form>
     <div class="links">
-      <button type="button" class="lnk" data-goto="waitlist">No code? Join the waitlist</button>
-      <a class="lnk switch" href="/login">Have an account?<b>Sign in</b></a>
+      <button type="button" class="lnk" id="toWait">No code? Join the waitlist</button>
+      <button type="button" class="lnk small" data-goto="start" id="codeBack">Back</button>
     </div>
-  </section>
-
-  <!-- 2. the sign-in buttons -->
-  <section data-step="buttons" hidden aria-labelledby="hMain">
-    <h1 id="hMain">Small events, your people.</h1>
-    <p class="sub" id="mainSub">Sign in or join with an invite.</p>
-    <p class="chip" id="held" hidden><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg><span id="heldTxt">Invite accepted</span></p>
-    <p class="note" id="btnNote" hidden role="status"></p>
-    <div class="stack">
-      <button type="button" class="prov apple" data-p="apple" hidden><svg viewBox="0 0 17 21" aria-hidden="true" fill="currentColor"><path d="M14.1 11.1c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9C3.6 5.3 2 6.3 1 7.9c-1.9 3.3-.5 8.2 1.4 10.9.9 1.3 2 2.8 3.4 2.8 1.4-.1 1.9-.9 3.5-.9s2.1.9 3.5.9c1.5 0 2.4-1.3 3.3-2.7 1-1.5 1.5-3 1.5-3.1-.1 0-2.8-1.1-2.9-4.3zM11.5 3.4C12.2 2.5 12.7 1.3 12.6.1c-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.1 1.1.1 2.3-.6 3-1.4z"/></svg>Continue with Apple</button>
-      <button type="button" class="prov" data-p="google" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continue with Google</button>
-      <button type="button" class="prov" data-p="passkey" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7.5" r="3.5"/><path d="M2.5 20.5c0-3.7 2.9-6.3 6.5-6.3 1.4 0 2.6.4 3.6 1"/><circle cx="18" cy="12.5" r="2.6"/><path d="M18 15.1v6.2m0-2.4h2.2"/></svg>Continue with a passkey</button>
-      <button type="button" class="prov" data-p="email" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="m4 7.5 8 5.5 8-5.5"/></svg>Continue with email</button>
-    </div>
-    <p class="err" id="btnErr" role="alert"></p>
-    <div class="links">
-      <button type="button" class="lnk small" id="pwLink" data-goto="password" hidden>Use a password instead</button>
-      <a class="lnk switch" id="toJoin" href="/signup" hidden>New here?<b>Join with an invite</b></a>
-      <a class="lnk switch" id="toSignIn" href="/login" hidden>Have an account?<b>Sign in</b></a>
-    </div>
-  </section>
-
-  <!-- 3. email: the address, then the 6-digit code -->
-  <section data-step="email" hidden aria-labelledby="hEmail">
-    <button type="button" class="back" data-goto="buttons"><span aria-hidden="true">&larr;</span> Back</button>
-    <h1 id="hEmail">Continue with email</h1>
-    <p class="sub">We'll send you a 6-digit code. No password needed.</p>
-    <form id="emailForm" novalidate>
-      <label for="emailIn">Email</label>
-      <input class="field" id="emailIn" type="email" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
-      <p class="err" id="emailErr" role="alert"></p>
-      <button class="go" type="submit" id="emailGo">Send code</button>
-    </form>
-  </section>
-  <section data-step="otp" hidden aria-labelledby="hOtp">
-    <button type="button" class="back" data-goto="email"><span aria-hidden="true">&larr;</span> Use a different email</button>
-    <h1 id="hOtp">Check your email</h1>
-    <p class="sub">Enter the code we sent to <span class="who" id="otpTo"></span>. It works for 10 minutes.</p>
-    <form id="otpForm" novalidate>
-      <label for="otpIn">6-digit code</label>
-      <input class="field code" id="otpIn" name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
-      <p class="err" id="otpErr" role="alert"></p>
-      <button class="go" type="submit" id="otpGo">Continue</button>
-    </form>
-    <p class="hint">Or tap the link in the email.</p>
-    <div class="row2"><button type="button" class="lnk small" id="resend">Send a new code</button></div>
   </section>
 
   <!-- 4. a name, when the sign-in didn't bring one -->
@@ -142,10 +144,10 @@
 
   <!-- 5. a password, for accounts that have one -->
   <section data-step="password" hidden aria-labelledby="hPw">
-    <button type="button" class="back" data-goto="buttons"><span aria-hidden="true">&larr;</span> Back</button>
+    <button type="button" class="back" data-goto="start"><span aria-hidden="true">&larr;</span> Back</button>
     <h1 id="hPw">Sign in with a password</h1>
     <p class="sub">For accounts that have one.</p>
-    <p class="note" id="pwNote" hidden role="alert"></p>
+    <p class="note top" id="pwNote" hidden role="alert"></p>
     <form method="post" action="/api/login" id="pwForm">
       <input type="hidden" name="next" id="nextIn">
       <label for="pwEmail">Email</label>
@@ -162,20 +164,21 @@
 
   <!-- 6. the waitlist -->
   <section data-step="waitlist" hidden aria-labelledby="hWl">
-    <button type="button" class="back" data-goto="code"><span aria-hidden="true">&larr;</span> I have a code</button>
     <div id="wlAsk">
+      <button type="button" class="back" data-goto="code"><span aria-hidden="true">&larr;</span> I have a code</button>
       <h1 id="hWl">Join the waitlist</h1>
-      <p class="sub">Pottery Lab is invite-only for now. Leave your email and we'll write when there's room.</p>
+      <p class="sub">Pottery Lab is invite-only for now. Leave your email or phone number and we'll reach out when there's room.</p>
       <form id="wlForm" novalidate>
-        <label for="wlIn">Email</label>
-        <input class="field" id="wlIn" type="email" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+        <label for="wlIn">Email or phone number</label>
+        <input class="field" id="wlIn" type="text" name="username" placeholder="you@example.com" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="200" required>
         <p class="err" id="wlErr" role="alert"></p>
         <button class="go" type="submit" id="wlGo">Join the waitlist</button>
       </form>
     </div>
-    <div id="wlDone" class="done" hidden>
+    <div id="wlDone" hidden>
       <h1 tabindex="-1" id="hWlDone">You're on the list</h1>
-      <p class="sub">We'll email <span class="who" id="wlTo"></span> when there's room. A friend who hosts can also send you a code any time.</p>
+      <p class="sub">We'll reach out at <span class="who" id="wlTo"></span> when there's room. A friend who hosts can send you a code any time.</p>
+      <div class="links"><a class="lnk" href="/">Look around Pottery Lab</a><button type="button" class="lnk small" data-goto="code">I got a code</button></div>
     </div>
   </section>
 
@@ -194,21 +197,22 @@
   "use strict";
   const $ = (id) => document.getElementById(id), q = new URLSearchParams(location.search);
   const joinMode = location.pathname.startsWith("/signup"), next = (() => { const n = q.get("next") || ""; return n.charAt(0) === "/" && n.charAt(1) !== "/" ? n : ""; })();
-  let cfg = { providers: {}, held: null }, email = "";
+  let cfg = { providers: {}, held: null }, ident = "", kind = "email", pending = null, timer = 0;
   try { if (next) $("nextIn").value = next; } catch (e) {}
 
   function show(step) {
     document.querySelectorAll("[data-step]").forEach((s) => { s.hidden = s.dataset.step !== step; });
-    $("terms").hidden = step === "password" || step === "link" || step === "waitlist";
+    $("terms").hidden = step !== "start" && step !== "otp";
     const t = document.querySelector('[data-step="' + step + '"] input:not([type=hidden])');
-    if (t && step !== "buttons" && matchMedia("(hover:hover)").matches) setTimeout(() => t.focus(), 30);
-    document.title = ({ code: "Join · Pottery Lab", waitlist: "Waitlist · Pottery Lab", name: "Your name · Pottery Lab" })[step] || "Sign in · Pottery Lab";
+    if (t && (step === "otp" || matchMedia("(hover:hover)").matches)) setTimeout(() => { try { t.focus(); } catch (e) {} }, 30);
+    document.title = ({ code: "Invite code · Pottery Lab", waitlist: "Waitlist · Pottery Lab", name: "Your name · Pottery Lab", otp: "Your code · Pottery Lab" })[step] || (joinMode ? "Join · Pottery Lab" : "Sign in · Pottery Lab");
+    window.scrollTo(0, 0);
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-goto]"); if (b) { e.preventDefault(); show(b.dataset.goto); } });
 
   const post = async (url, body) => { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body || {}) }); let j = {}; try { j = await r.json(); } catch (e) {} return { r, j }; };
-  const offline = "Can't reach Pottery Lab. Check your connection.";
-  // what a sign-in answers: go in, add a name, or (a new person without an invite) back to the code step
+  const offline = "Can't reach Pottery Lab. Check your connection and try again.";
+  // what a sign-in answers: go in, the invite code (new people, invite-only), a name, or single sign-on
   function after(j, errEl) {
     if (j.ok && j.redirect) { location.href = j.redirect; return true; }
     if (j.need === "name") { loadPending(); show("name"); return true; }
@@ -218,19 +222,28 @@
     return false;
   }
   function inviteNeeded(msg) {
-    const n = $("noInvite"); n.innerHTML = ""; n.append(document.createTextNode((msg || "You'll need an invite to join for now. Ask a friend who hosts, or join the waitlist.").replace(/join the waitlist\.?$/, "")));
-    if (/join the waitlist\.?$/.test(msg || "join the waitlist.")) { const a = document.createElement("button"); a.type = "button"; a.textContent = "join the waitlist"; a.dataset.goto = "waitlist"; n.append(a, document.createTextNode(".")); }
-    n.hidden = false; $("codeIn").value = ""; show("code");
+    const n = $("noInvite"); n.textContent = msg && !/join the waitlist\.?$/.test(msg) ? msg : ""; n.hidden = !n.textContent;
+    $("codeIn").value = ""; $("codeErr").textContent = ""; loadPending(); show("code");
   }
 
-  // ---- the buttons ----
+  // ---- the first screen: one field, plus the other ways in when they're set up ----
+  const looksPhone = (v) => /^[\s+(]*\d/.test(v) && !/@/.test(v) && !/[a-z]/i.test(v);
+  function setKeyboard(mode) {
+    const i = $("idIn"); i.setAttribute("inputmode", mode); i.setAttribute("autocomplete", mode === "tel" ? "tel" : "username");
+    $("kbSwap").textContent = mode === "tel" ? "Use an email" : "Use a phone number";
+  }
+  $("kbSwap").addEventListener("click", () => { const i = $("idIn"), tel = i.getAttribute("inputmode") !== "tel"; setKeyboard(tel ? "tel" : "email"); i.value = ""; $("smsOff").hidden = true; $("idErr").textContent = ""; i.blur(); setTimeout(() => i.focus(), 30); });
+  $("idIn").addEventListener("input", () => { const v = $("idIn").value; $("idErr").textContent = ""; if (!$("smsOff").hidden && !looksPhone(v)) $("smsOff").hidden = true; if (v.length === 1 && looksPhone(v) && $("idIn").getAttribute("inputmode") === "email") setKeyboard("tel"); });
+  $("useEmail").addEventListener("click", () => { const i = $("idIn"); $("smsOff").hidden = true; i.value = ""; setKeyboard("email"); i.blur(); setTimeout(() => i.focus(), 30); });
   function setup() {
     const P = cfg.providers || {}, pk = !!(window.PublicKeyCredential && navigator.credentials);
-    const on = { apple: P.apple, google: P.google, passkey: P.passkey && pk && !joinMode, email: P.email };
+    const on = { apple: !!P.apple, google: !!P.google, passkey: !!(P.passkey && pk && !joinMode) };
     document.querySelectorAll(".prov").forEach((b) => { b.hidden = !on[b.dataset.p]; });
-    $("pwLink").hidden = joinMode; $("toJoin").hidden = joinMode || !cfg.signup; $("toSignIn").hidden = !joinMode;
-    if (cfg.held && joinMode) { $("held").hidden = false; $("heldTxt").textContent = cfg.held.from ? "Invite from " + cfg.held.from : cfg.held.vouch ? "Invited from an event" : "Invite accepted"; $("mainSub").textContent = "Pick how you'd like to join."; }
-    if (!Object.values(on).some(Boolean)) { $("btnNote").textContent = "Sign in with your password for now."; $("btnNote").hidden = false; }
+    $("others").hidden = !Object.values(on).some(Boolean);
+    if (joinMode) { $("hStart").textContent = "Join Pottery Lab"; $("startSub").textContent = "Start with your email or phone number. We'll send you a code."; }
+    $("toJoin").hidden = !cfg.inviteOnly || !!cfg.held;
+    if (cfg.held) { $("held").hidden = false; $("heldTxt").textContent = cfg.held.from ? "Invite from " + cfg.held.from : cfg.held.vouch ? "Invited from an event" : "Invite accepted"; }
+    if (P.email === false && P.sms === false) { $("startNote").textContent = "Email codes are paused for a moment. Sign in with your password for now."; $("startNote").hidden = false; }
   }
   const native = () => window.EncoreNative || null;
   async function social(p, btn) {
@@ -241,7 +254,7 @@
       const path = "/auth/" + p + "/start" + (next ? "?next=" + encodeURIComponent(next) : "");
       if (N && N.openAuth) { const c = await post("/api/auth/carry"); await N.openAuth(path + (next ? "&" : "?") + "native=1&carry=" + encodeURIComponent(c.j.t || "")); btn.removeAttribute("aria-busy"); return; }
       location.href = path;
-    } catch (e) { btn.removeAttribute("aria-busy"); if (!/cancel/i.test(String(e && e.message || e))) $("btnErr").textContent = "That didn't work. Try again, or pick another way."; }
+    } catch (e) { btn.removeAttribute("aria-busy"); if (!/cancel/i.test(String(e && e.message || e))) $("btnErr").textContent = "That didn't work. Try again, or use your email."; }
   }
   const b64 = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
   const u64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -254,57 +267,89 @@
         response: { clientDataJSON: u64(cred.response.clientDataJSON), authenticatorData: u64(cred.response.authenticatorData), signature: u64(cred.response.signature), userHandle: cred.response.userHandle ? u64(cred.response.userHandle) : undefined } };
       const v = await post("/api/auth/passkey/verify", { response: resp, next });
       if (!after(v.j, $("btnErr"))) btn.removeAttribute("aria-busy");
-    } catch (e) { btn.removeAttribute("aria-busy"); if (e && e.name !== "NotAllowedError" && e.name !== "AbortError") $("btnErr").textContent = e.message && e.message.length > 3 ? e.message : "That passkey didn't work here. Try another way."; }
+    } catch (e) { btn.removeAttribute("aria-busy"); if (e && e.name !== "NotAllowedError" && e.name !== "AbortError") $("btnErr").textContent = e.message && e.message.length > 3 ? e.message : "That passkey didn't work here. Try your email instead."; }
   }
-  document.querySelectorAll(".prov").forEach((b) => b.addEventListener("click", () => { const p = b.dataset.p; if (p === "email") show("email"); else if (p === "passkey") passkey(b); else social(p, b); }));
+  document.querySelectorAll(".prov").forEach((b) => b.addEventListener("click", () => { if (b.dataset.p === "passkey") passkey(b); else social(b.dataset.p, b); }));
 
-  // ---- invite code ----
-  async function sendCode(code, auto) {
-    const err = $("codeErr"), go = $("codeGo"); err.textContent = ""; go.disabled = true;
-    try { const { r, j } = await post("/api/auth/join", { code, ref: q.get("ref") || "", regularOf: q.get("regularOf") || "", template: q.get("template") || "", plan: q.get("plan") || "" });
-      go.disabled = false;
-      if (!r.ok) { err.textContent = r.status === 429 ? "Too many tries. Take a breather and try again later." : j.message || "That code doesn't work. Check it with the host who sent it."; if (auto) show("code"); return; }
-      cfg.held = { code: true, from: j.from || "" }; $("noInvite").hidden = true; setup(); show("buttons");
-    } catch (e) { go.disabled = false; err.textContent = offline; show("code"); }
+  // ---- send the code ----
+  function otpScreen(j) {
+    kind = j.kind === "phone" ? "phone" : "email";
+    $("hOtp").textContent = kind === "phone" ? "Check your texts" : "Check your email";
+    $("otpTo").textContent = j.to || ident;
+    $("otpBackTxt").textContent = kind === "phone" ? "Use a different number" : "Use a different email";
+    $("otpHint").textContent = kind === "phone" ? "No text yet? It can take a minute." : "No email yet? Check your spam folder, or tap the link in the email.";
+    $("otpIn").value = ""; $("otpErr").textContent = ""; show("otp"); cooldown(); webOtp();
   }
-  $("codeForm").addEventListener("submit", (e) => { e.preventDefault(); const c = $("codeIn").value.trim(); if (!c) { $("codeErr").textContent = "Add your invite code."; $("codeIn").focus(); return; } sendCode(c); });
-
-  // ---- email code ----
-  async function startEmail() {
-    const err = $("emailErr"), go = $("emailGo"); err.textContent = "";
-    email = $("emailIn").value.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = "That email doesn't look right."; $("emailIn").focus(); return false; }
+  async function startCode() {
+    const err = $("idErr"), go = $("idGo"), v = $("idIn").value.trim(); err.textContent = ""; $("smsOff").hidden = true;
+    if (!v) { err.textContent = "Enter your email or phone number."; $("idIn").focus(); return; }
+    if (/@/.test(v) ? !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) : !looksPhone(v) || v.replace(/\D/g, "").length < (v.startsWith("+") ? 8 : 10)) { err.textContent = /@/.test(v) ? "That email doesn't look right." : "That doesn't look like an email or a phone number."; $("idIn").focus(); return; }
     go.disabled = true;
-    try { const { r, j } = await post("/api/auth/email/start", { email, next }); go.disabled = false;
-      if (!r.ok) { err.textContent = j.message || "Couldn't send a code. Try again."; return false; }
-      $("otpTo").textContent = email; $("otpIn").value = ""; $("otpErr").textContent = ""; show("otp"); return true;
-    } catch (e) { go.disabled = false; err.textContent = offline; return false; }
+    try { const { r, j } = await post("/api/auth/code/start", { id: v, next }); go.disabled = false;
+      if (j.code === "sms_off" || j.code === "sms_failed") { $("smsOffTxt").textContent = j.message || "Text sign-in isn't on yet. Use your email instead."; $("smsOff").hidden = false; $("useEmail").focus(); return; }
+      if (!r.ok) { err.textContent = j.message || "Couldn't send a code. Try again."; return; }
+      ident = v; try { sessionStorage.setItem("encore.loginEmail", /@/.test(v) ? v : ""); } catch (x) {}
+      otpScreen(j);
+    } catch (e) { go.disabled = false; err.textContent = offline; }
   }
-  $("emailForm").addEventListener("submit", (e) => { e.preventDefault(); startEmail(); });
-  $("resend").addEventListener("click", async () => { const b = $("resend"); b.disabled = true; const { r, j } = await post("/api/auth/email/start", { email, next }).catch(() => ({ r: { ok: false }, j: {} })); b.disabled = false; $("otpErr").textContent = r.ok ? "" : j.message || offline; if (r.ok) { b.textContent = "Sent. Check your inbox."; setTimeout(() => { b.textContent = "Send a new code"; }, 4000); } });
+  $("idForm").addEventListener("submit", (e) => { e.preventDefault(); startCode(); });
+  function cooldown() { const b = $("resend"); let n = 30; clearInterval(timer); b.disabled = true; b.textContent = "Send a new code in " + n + "s";
+    timer = setInterval(() => { n--; if (n <= 0) { clearInterval(timer); b.disabled = false; b.textContent = "Send a new code"; } else b.textContent = "Send a new code in " + n + "s"; }, 1000); }
+  $("resend").addEventListener("click", async () => { const b = $("resend"); b.disabled = true;
+    const { r, j } = await post("/api/auth/code/start", { id: ident, next }).catch(() => ({ r: { ok: false }, j: {} }));
+    $("otpErr").textContent = r.ok ? "" : j.message || offline; if (r.ok) { $("otpIn").value = ""; cooldown(); b.textContent = kind === "phone" ? "Sent. Check your texts." : "Sent. Check your inbox."; } else b.disabled = false; });
+
+  // ---- check the code: typed, pasted whole ("123 456" or the whole message), or offered by the phone ----
+  let checking = false;
   async function verifyOtp() {
     const err = $("otpErr"), go = $("otpGo"), code = $("otpIn").value.replace(/\D/g, ""); err.textContent = "";
     if (code.length !== 6) { err.textContent = "Enter all 6 digits."; $("otpIn").focus(); return; }
-    go.disabled = true;
-    try { const { j } = await post("/api/auth/email/verify", { email, code }); go.disabled = false; if (!after(j, err)) { if (j.code === "too_many" || j.code === "expired") $("otpIn").value = ""; } }
-    catch (e) { go.disabled = false; err.textContent = offline; }
+    if (checking) return; checking = true; go.disabled = true;
+    try { const { j } = await post("/api/auth/code/verify", { id: ident, code }); go.disabled = false; checking = false;
+      if (!after(j, err)) { if (j.code === "too_many" || j.code === "expired") { $("otpIn").value = ""; $("resend").disabled = false; clearInterval(timer); $("resend").textContent = "Send a new code"; } else $("otpIn").select(); } }
+    catch (e) { go.disabled = false; checking = false; err.textContent = offline; }
   }
   $("otpForm").addEventListener("submit", (e) => { e.preventDefault(); verifyOtp(); });
+  const fill = (txt) => { const d = String(txt || "").replace(/\D/g, ""); const six = d.length > 6 ? (String(txt).match(/(?:^|\D)(\d{6})(?:\D|$)/) || [])[1] || d.slice(0, 6) : d; $("otpIn").value = six.slice(0, 6); if ($("otpIn").value.length === 6) verifyOtp(); };
+  $("otpIn").addEventListener("paste", (e) => { const t = (e.clipboardData || window.clipboardData)?.getData("text"); if (t) { e.preventDefault(); fill(t); } });
   $("otpIn").addEventListener("input", () => { const v = $("otpIn").value.replace(/\D/g, "").slice(0, 6); $("otpIn").value = v; if (v.length === 6) verifyOtp(); });
+  let otpAbort = null;
+  function webOtp() { try { if (otpAbort) otpAbort.abort(); if (kind !== "phone" || !("OTPCredential" in window)) return; otpAbort = new AbortController();
+    navigator.credentials.get({ otp: { transport: ["sms"] }, signal: otpAbort.signal }).then((c) => { if (c && c.code && !$("otpIn").value) fill(c.code); }).catch(() => {}); } catch (e) {} }
+
+  // ---- the invite code: after the 6-digit code it finishes the sign-in; from a /join link it's held for later ----
+  async function sendInvite(code, auto) {
+    const err = $("codeErr"), go = $("codeGo"); err.textContent = ""; go.disabled = true;
+    try { const { r, j } = await post("/api/auth/join", { code, ref: q.get("ref") || "", regularOf: q.get("regularOf") || "", template: q.get("template") || "", plan: q.get("plan") || "" });
+      go.disabled = false;
+      if (!r.ok) { err.textContent = r.status === 429 ? "Too many tries. Take a breather and try again later." : j.message || "That code doesn't work. Check it with the friend who sent it."; if (auto) show("code"); return; }
+      if (j.redirect || j.need) { after(j, err); return; }
+      cfg.held = { code: true, from: j.from || "" }; $("noInvite").hidden = true; setup(); show("start");
+    } catch (e) { go.disabled = false; err.textContent = offline; if (auto) show("code"); }
+  }
+  $("codeForm").addEventListener("submit", (e) => { e.preventDefault(); const c = $("codeIn").value.trim(); if (!c) { $("codeErr").textContent = "Add your invite code."; $("codeIn").focus(); return; } sendInvite(c); });
+
+  // ---- waitlist: the email or phone they just proved, in one tap; else they type one ----
+  function wlDone(to) { $("wlTo").textContent = to; $("wlAsk").hidden = true; $("wlDone").hidden = false; show("waitlist"); setTimeout(() => $("hWlDone").focus(), 40); }
+  $("toWait").addEventListener("click", async () => {
+    if (!(pending && pending.pending)) { $("wlAsk").hidden = false; $("wlDone").hidden = true; show("waitlist"); return; }
+    const b = $("toWait"); b.disabled = true;
+    try { const { r, j } = await post("/api/auth/waitlist", {}); b.disabled = false; if (r.ok) return wlDone(j.to || pending.email || pending.phone); $("codeErr").textContent = j.message || "Couldn't add you. Try again."; }
+    catch (e) { b.disabled = false; $("codeErr").textContent = offline; }
+  });
+  $("wlForm").addEventListener("submit", async (e) => { e.preventDefault(); const err = $("wlErr"), go = $("wlGo"), v = $("wlIn").value.trim(); err.textContent = "";
+    if (!v || (/@/.test(v) ? !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) : !looksPhone(v))) { err.textContent = "Enter your email or phone number."; $("wlIn").focus(); return; }
+    go.disabled = true; try { const { r, j } = await post("/api/auth/waitlist", { id: v }); go.disabled = false;
+      if (!r.ok) { err.textContent = j.message || "Couldn't add you. Try again."; return; } wlDone(j.to || v);
+    } catch (x) { go.disabled = false; err.textContent = offline; } });
 
   // ---- name ----
-  async function loadPending() { try { const j = await (await fetch("/api/auth/pending", { credentials: "same-origin" })).json(); if (j.pending && j.email) { $("nameAs").textContent = "Joining as " + j.email; $("nameAs").hidden = false; } } catch (e) {} }
+  async function loadPending() { try { pending = await (await fetch("/api/auth/pending", { credentials: "same-origin" })).json(); const who = pending.pending ? pending.email || pending.phone : "";
+    $("codeBack").textContent = who ? "Use a different email or number" : "Back";
+    if (who) { $("nameAs").textContent = "Joining as " + who; $("nameAs").hidden = false; const s = $("codeSub"), w = document.createElement("span"); w.className = "who"; if (!pending.email) w.style.whiteSpace = "nowrap"; w.textContent = who; s.textContent = "Pottery Lab is invite-only for now. Enter the code a friend sent you to join as "; s.append(w, document.createTextNode(".")); } } catch (e) {} }
   $("nameForm").addEventListener("submit", async (e) => { e.preventDefault(); const err = $("nameErr"), go = $("nameGo"), name = $("nameIn").value.trim(); err.textContent = "";
     if (!name) { err.textContent = "Add your name."; $("nameIn").focus(); return; }
     go.disabled = true; try { const { j } = await post("/api/auth/finish", { name }); go.disabled = false; after(j, err); } catch (x) { go.disabled = false; err.textContent = offline; } });
-
-  // ---- waitlist ----
-  $("wlForm").addEventListener("submit", async (e) => { e.preventDefault(); const err = $("wlErr"), go = $("wlGo"), em = $("wlIn").value.trim(); err.textContent = "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = "That email doesn't look right."; $("wlIn").focus(); return; }
-    go.disabled = true; try { const { r, j } = await post("/api/waitlist", { email: em, via: "signin" }); go.disabled = false;
-      if (!r.ok) { err.textContent = j.message || "Couldn't add you. Try again."; return; }
-      $("wlTo").textContent = em; $("wlAsk").hidden = true; $("wlDone").hidden = false; document.querySelector('[data-step="waitlist"] .back').hidden = true; $("hWlDone").focus();
-    } catch (x) { go.disabled = false; err.textContent = offline; } });
 
   // ---- magic link ----
   $("linkGo").addEventListener("click", async () => { const go = $("linkGo"), err = $("linkErr"); go.disabled = true; err.textContent = "";
@@ -313,26 +358,24 @@
 
   // ---- where to start ----
   const PW_ERR = { 1: "That email and password don't match.", 2: "That email and password don't match.", 3: "Too many tries. Take a breather and try again later.", 4: "Your company uses single sign-on. Sign in with SSO instead.", sso: "Single sign-on didn't work. Try again, or ask your admin." };
-  const OAUTH_ERR = { expired: "That took too long, or started in another browser. Try again.", failed: "That sign-in didn't work. Try again, or pick another way.", no_email: "We couldn't confirm an email with that sign-in. Try another way.", no_account: "We couldn't find an account for that. Try another way." };
-  try { const v = sessionStorage.getItem("encore.loginEmail"); if (v) { $("pwEmail").value = v; $("emailIn").value = v; } $("pwForm").addEventListener("submit", () => { try { sessionStorage.setItem("encore.loginEmail", $("pwEmail").value); } catch (x) {} }); } catch (e) {}
+  const OAUTH_ERR = { expired: "That took too long, or started in another browser. Try again.", failed: "That sign-in didn't work. Try again, or use your email.", no_email: "We couldn't confirm an email with that sign-in. Use your email or phone number instead.", no_account: "We couldn't find an account for that. Use your email or phone number instead." };
+  try { const v = sessionStorage.getItem("encore.loginEmail"); if (v) { $("pwEmail").value = v; $("idIn").value = v; } $("pwForm").addEventListener("submit", () => { try { sessionStorage.setItem("encore.loginEmail", $("pwEmail").value); } catch (x) {} }); } catch (e) {}
   async function start() {
     try { cfg = await (await fetch("/api/auth/config", { credentials: "same-origin" })).json(); } catch (e) {}
     setup();
     if (location.pathname === "/auth/email") return show("link");
     const err = q.get("error");
-    if (err === "oauth") { $("btnNote").textContent = OAUTH_ERR[q.get("why")] || OAUTH_ERR.failed; $("btnNote").hidden = false; return show("buttons"); }
+    if (err === "oauth") { $("startNote").textContent = OAUTH_ERR[q.get("why")] || OAUTH_ERR.failed; $("startNote").hidden = false; return show("start"); }
     if (err) { $("pwNote").textContent = PW_ERR[err] || PW_ERR[1]; $("pwNote").hidden = false; return show("password"); }
-    if (q.get("why") === "collab") { $("btnNote").textContent = "Sign in to suggest a collab. Hosts only."; $("btnNote").hidden = false; }
+    if (q.get("why") === "collab") { $("startNote").textContent = "Sign in to suggest a collab. Hosts only."; $("startNote").hidden = false; }
     if (q.get("step") === "name") { loadPending(); return show("name"); }
     if (q.get("why") === "invite") return inviteNeeded();
-    if (!joinMode) return show("buttons");
-    // joining: a code in the link (/join?code=…) is checked at once; an event (?ref=) or a host page (?regularOf=) vouches instead
+    // a code in the link (/join?code=…) is checked at once and held; an event (?ref=) or a host page (?regularOf=) vouches instead
     const code = (q.get("code") || "").trim();
-    if (code) { $("codeIn").value = code.toUpperCase(); show("code"); return sendCode(code, true); }
-    if (q.get("ref") || q.get("regularOf") || q.get("template") || q.get("plan")) { const { r, j } = await post("/api/auth/join", { ref: q.get("ref") || "", regularOf: q.get("regularOf") || "", template: q.get("template") || "", plan: q.get("plan") || "" }).catch(() => ({ r: { ok: false }, j: {} }));
-      if (r.ok && (q.get("ref") || q.get("regularOf"))) { cfg.held = { vouch: true }; setup(); return show("buttons"); } }
-    if (cfg.inviteOnly && !(cfg.held && (cfg.held.code || cfg.held.vouch))) return show("code");
-    show("buttons");
+    if (code) { $("codeIn").value = code.toUpperCase(); show("start"); return sendInvite(code, true); }
+    if (q.get("ref") || q.get("regularOf") || q.get("template") || q.get("plan")) { const { r } = await post("/api/auth/join", { ref: q.get("ref") || "", regularOf: q.get("regularOf") || "", template: q.get("template") || "", plan: q.get("plan") || "" }).catch(() => ({ r: { ok: false }, j: {} }));
+      if (r.ok && (q.get("ref") || q.get("regularOf"))) { cfg.held = { vouch: true }; setup(); } }
+    show("start");
   }
   start();
 })();

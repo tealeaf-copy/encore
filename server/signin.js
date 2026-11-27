@@ -1,10 +1,19 @@
-// Sign in and join, without a password: Sign in with Apple, Google (OpenID Connect), a passkey (WebAuthn) or a 6-digit
-// code by email (with a magic link in the same email). Password sign-in (/api/login) keeps working for current users.
-// One screen for /login and /signup: public/signin.html. See docs/sign-in-setup.md for the keys.
+// Sign in and join, without a password: a 6-digit code by email (with a magic link in the same email) or by text
+// message, Sign in with Apple, Google (OpenID Connect) or a passkey (WebAuthn). Password sign-in (/api/login) keeps
+// working for current users. One screen for /login and /signup: public/signin.html. See docs/sign-in-setup.md for the keys.
 //
-// Invite-only (ENCORE_INVITE_ONLY=1): a new person enters their invite code first (POST /api/auth/join). The code is
-// checked with the same rules as /api/signup and held server-side (system/join-<hash>), behind a signed cookie that
-// lasts 30 minutes. An OAuth start copies it into the OAuth state record, so the round trip to Apple or Google keeps it.
+// The first screen is one field, "Email or phone number" (POST /api/auth/code/start, then /api/auth/code/verify).
+// Email codes go out through the same sender as every other Pottery Lab email (server/email.js); text codes through
+// server/smscode.js (Twilio). An account can hold a phone number (an identity system/ident-phone-<hash>), so either
+// the email or the phone on the account signs in. A phone-only account gets a placeholder address on the reserved
+// .invalid domain (PHONE_EMAIL_DOMAIN), which server/email.js never mails.
+//
+// Invite-only (ENCORE_INVITE_ONLY=1): a new person proves their email, phone, Apple or Google first; then, only when
+// there is no account behind it, the invite step asks for a code (POST /api/auth/join continues the held sign-in), with
+// "No code? Join the waitlist" (POST /api/auth/waitlist saves the proven email or phone). Returning people never see it.
+// A code can also come first (/join?code=…): it's checked with the same rules as /api/signup and held server-side
+// (system/join-<hash>), behind a signed cookie that lasts 30 minutes. An OAuth start copies it into the OAuth state
+// record, so the round trip to Apple or Google keeps it.
 // Accounts are made by the same createAccount as /api/signup (server/app.js): the per-IP limit, the code check, the
 // founder-code gate, vouches and logs are shared, not copied.
 //
@@ -22,9 +31,11 @@
 import crypto from "node:crypto";
 import express from "express";
 import { currentUser, startSession, users } from "./auth.js";
-import { DEFAULT_WS, getDbUser, putDbUser, signupEnabled } from "./workspaces.js";
+import { DEFAULT_WS, getDbUser, getWorkspace, putDbUser, signupEnabled } from "./workspaces.js";
 import { ssoForEmail } from "./sso.js";
 import { emailConfig, sendEmail } from "./email.js";
+import { codeSmsConfig, sendCodeText, toE164, maskPhone } from "./smscode.js";
+import { isAdmin } from "./metrics.js";
 
 const env = process.env;
 // WebAuthn (@simplewebauthn/server), loaded on the first passkey request so the server starts as fast as before
@@ -63,7 +74,24 @@ export function appleConfig() {
   if (servicesId && team && keyId && key) return { servicesId, team, keyId, key, bundleId, authorize: "https://appleid.apple.com/auth/authorize", token: "https://appleid.apple.com/auth/token", revoke: "https://appleid.apple.com/auth/revoke", jwks: "https://appleid.apple.com/auth/keys", iss: ["https://appleid.apple.com"] };
   return fakeOAuth() ? { fake: true, servicesId: "fake.apple.services", bundleId: "fake.apple.bundle", iss: [FAKE_ISS + "apple"] } : null;
 }
-const emailOn = () => !!emailConfig(DEFAULT_WS, true);
+/**
+ * The sender for sign-in codes: the server's own email (ENCORE_EMAIL_KEY / ENCORE_EMAIL_FROM, or the default workspace's
+ * connection), else the sending service an admin (ENCORE_ADMIN_EMAILS) connected in their own workspace's Setup, the
+ * way host emails already go out. So codes work with whatever email the server already sends.
+ */
+export function signinEmailConfig() {
+  const own = emailConfig(DEFAULT_WS, true); if (own) return own;
+  for (const e of String(env.ENCORE_ADMIN_EMAILS || "").split(/[\s,]+/).map(lc).filter(Boolean)) {
+    if (!isAdmin(e)) continue; const ws = getDbUser(e)?.ws; if (!ws || ws === DEFAULT_WS) continue;
+    const c = emailConfig(ws, false); if (c) return { ...c, fromName: "Pottery Lab" };
+  }
+  return null;
+}
+const emailOn = () => !!signinEmailConfig();
+/** Phone-only accounts: a stand-in address on the reserved .invalid domain. server/email.js never sends to it. */
+export const PHONE_EMAIL_DOMAIN = "phone.potterylab.invalid";
+export const phoneEmail = (e164) => "ph-" + crypto.createHmac("sha256", "pl-phone-account").update(String(e164)).digest("hex").slice(0, 20) + "@" + PHONE_EMAIL_DOMAIN;
+export const isPhoneEmail = (e) => String(e || "").toLowerCase().endsWith("@" + PHONE_EMAIL_DOMAIN);
 /** The app's URL scheme (Info.plist CFBundleURLSchemes): a sign-in in the browser sheet returns to the app on it. */
 const appScheme = () => (/^[a-z][a-z0-9+.-]{1,30}$/.test(String(env.ENCORE_APP_SCHEME || "")) ? env.ENCORE_APP_SCHEME : "potterylab");
 
@@ -159,7 +187,7 @@ const deviceOf = (ua = "") => /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "
 
 export const NO_INVITE = "You'll need an invite to join for now. Ask a friend who hosts, or join the waitlist.";
 
-export function mountSignin(app, { store, createAccount, needInvite, checkCode, publicOrigin, sendStatic, fetchFn = (...a) => globalThis.fetch(...a) }) {
+export function mountSignin(app, { store, createAccount, needInvite, checkCode, publicOrigin, sendStatic, addWaitlist = null, fetchFn = (...a) => globalThis.fetch(...a) }) {
   const json = express.json({ limit: "16kb" }), form = express.urlencoded({ extended: false, limit: "16kb" });
   const limited = makeLimiter();
   const tooMany = (res, message = "Too many tries. Take a breather and try again later.") => res.status(429).json({ code: "rate_limited", message });
@@ -183,6 +211,9 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     res.append("Set-Cookie", cookieOut(req, JOIN, `${id}.${hmac("join:" + id)}`, JOIN_TTL / 1000));
   }
   const clearJoin = (req, res) => res.append("Set-Cookie", cookieOut(req, JOIN, "", 0));
+  // ---- a proven sign-in waiting for its invite code or a name (finish() holds it): system/pend-<hash> behind pl_pend ----
+  function readPending(req) { const [id, sig] = readCookie(req, "pl_pend").split("."); const d = id && sig && same(sig, hmac("pend:" + id)) ? take("system/pend-" + h40(id), true) : null; return d ? { id, d } : null; }
+  const dropPending = (req, res, id) => { store.delete("system/pend-" + h40(id)); res.append("Set-Cookie", cookieOut(req, "pl_pend", "", 0)); };
   const cleanJoin = (b = {}) => { const o = {}; for (const k of ["ref", "regularOf", "template", "plan"]) { const v = String(b[k] ?? "").trim(); if (/^[A-Za-z0-9_@.-]{1,80}$/.test(v)) o[k] = v; } return o; };
 
   // ---- who an email belongs to ----
@@ -197,6 +228,8 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     store.set(p, { kind: "identity", provider: idn.provider, sub: idn.sub, email: lc(acctEmail), idEmail: lc(idn.email), privateRelay: !!idn.privateRelay, createdAt: cur.createdAt || Date.now(), lastUsedAt: Date.now(),
       ...(idn.appleToken ? { appleToken: seal(idn.appleToken), appleClient: idn.appleClient } : cur.appleToken ? { appleToken: cur.appleToken, appleClient: cur.appleClient } : {}) });
   }
+  /** Where a returning person lands without a ?next=: a brand team's home, else the app. */
+  function homeOf(ws) { const W = ws && ws !== DEFAULT_WS ? getWorkspace(ws) : null; return W && W.plan !== "friends" && W.plan !== "self-hosted" && !W.regularOnly ? "/teams/home" : "/"; }
   function markVerified(email) { const u = getDbUser(lc(email)); if (u && u.emailVerified === false) putDbUser({ ...u, emailVerified: true, verifiedAt: Date.now() }); }
 
   /**
@@ -208,10 +241,10 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     const signIn = (acct, isNew, redirect) => {
       const sso = ssoBlock(acct); if (sso) return { error: "sso_required", message: "Your company uses single sign-on. Sign in with SSO instead.", sso };
       if (idn.provider !== "passkey") linkIdentity(acct.email, idn); if (idn.emailVerified && lc(idn.email) === lc(acct.email)) markVerified(acct.email);
-      const to = redirect || next || "/";
+      const to = redirect || next || homeOf(acct.ws);
       if (ctx.native) { const t = crypto.randomBytes(24).toString("base64url"); put("system/handoff-" + h40(t), { email: acct.email, ws: acct.ws, to }, 2 * MIN); clearJoin(req, res); return { ok: true, redirect: `${appScheme()}://auth/app?t=${t}`, isNew }; } // the browser sheet hands back to the app
       startSession(req, res, acct.email, acct.ws); clearJoin(req, res);
-      console.log(`[signin] ${idn.provider} ${isNew ? "joined" : "signed in"}: ${maskEmail(acct.email)}`);
+      console.log(`[signin] ${idn.provider} ${isNew ? "joined" : "signed in"}: ${idn.phone ? maskPhone(idn.phone) : maskEmail(acct.email)}`);
       return { ok: true, redirect: to, isNew };
     };
     // 0. a passkey names its account itself
@@ -219,17 +252,21 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     // 1. an identity we know
     const known = store.get(identPath(idn.provider, idn.sub))?.data;
     if (known) { const acct = accountFor(known.email); if (acct) return signIn(acct, false); store.delete(identPath(idn.provider, idn.sub)); }
-    const email = lc(idn.email);
-    // 2. a verified email that has an account: link and sign in (no invite needed)
-    if (email && idn.emailVerified) { const acct = accountFor(email); if (acct) return signIn(acct, false); }
+    const phone = idn.provider === "phone" ? idn.phone : "", email = phone ? phoneEmail(phone) : lc(idn.email);
+    // 2. a verified email that has an account: link and sign in (no invite needed). A phone is found by its identity (1.)
+    if (!phone && email && idn.emailVerified) { const acct = accountFor(email); if (acct) return signIn(acct, false); }
+    if (phone) { const acct = accountFor(email); if (acct) return signIn(acct, false); } // a phone-only account whose identity went missing
     // 3. a new account
     if (!signupEnabled()) return { error: "no_account", message: "We couldn't find an account for that. Try another way to sign in." };
-    if (!email || !idn.emailVerified || !EMAIL_OK(email)) return { error: "no_email", message: "We couldn't confirm an email address with that sign-in. Try another way." };
-    if (needInvite() && !join.code && !join.ref && !join.regularOf) return { need: "invite", message: NO_INVITE };
+    if (!phone && (!email || !idn.emailVerified || !EMAIL_OK(email))) return { error: "no_email", message: "We couldn't confirm an email address with that sign-in. Try another way." };
+    // the sign-in is proven and held for 15 minutes, so the invite and name steps continue it without a new code
+    const hold = (need, message = "") => { const id = crypto.randomBytes(18).toString("base64url"); put("system/pend-" + h40(id), { need, idn: { ...idn, appleToken: idn.appleToken ? seal(idn.appleToken) : "" }, ctx: { join, next, native: !!ctx.native } }, 15 * MIN); res.append("Set-Cookie", cookieOut(req, "pl_pend", `${id}.${hmac("pend:" + id)}`, 15 * 60)); return { need, ...(message ? { message } : {}) }; };
+    if (needInvite() && !join.code && !join.ref && !join.regularOf) return hold("invite", NO_INVITE);
     const name = String(idn.name || "").trim().slice(0, 120);
-    if (!name) { const id = crypto.randomBytes(18).toString("base64url"); put("system/pend-" + h40(id), { idn: { ...idn, appleToken: idn.appleToken ? seal(idn.appleToken) : "" }, ctx: { join, next, native: !!ctx.native } }, 15 * MIN); res.append("Set-Cookie", cookieOut(req, "pl_pend", `${id}.${hmac("pend:" + id)}`, 15 * 60)); return { need: "name" }; }
+    if (!name) return hold("name");
     const r = createAccount(req, { name, email, mode: "friends", ...join }, { password: null, verified: true, via: idn.provider });
-    if (r.error) { if (r.error.body?.code === "invite_required") { clearJoin(req, res); return { need: "invite", message: join.code ? r.error.body.message : NO_INVITE }; } return { error: r.error.body?.code || "failed", message: r.error.body?.message || "Couldn't make your account. Try again.", status: r.error.status }; }
+    if (r.error) { if (r.error.body?.code === "invite_required") { clearJoin(req, res); return hold("invite", join.code ? r.error.body.message : NO_INVITE); } return { error: r.error.body?.code || "failed", message: r.error.body?.message || "Couldn't make your account. Try again.", status: r.error.status }; }
+    if (phone) { const u = getDbUser(r.email); if (u) putDbUser({ ...u, phone, phoneVerifiedAt: Date.now() }); }
     return signIn({ email: r.email, ws: r.W.id }, true, r.redirect);
   }
   // JSON answer for the in-page flows
@@ -240,7 +277,7 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
   // ---------- config and the invite code ----------
   app.get("/api/auth/config", (req, res) => {
     const g = googleConfig(), a = appleConfig(), held = heldJoin(req);
-    res.set("Cache-Control", "no-store").json({ signup: signupEnabled(), inviteOnly: signupEnabled() && needInvite(), providers: { apple: !!a, google: !!g, email: emailOn(), passkey: true, password: true }, fake: fakeOAuth(),
+    res.set("Cache-Control", "no-store").json({ signup: signupEnabled(), inviteOnly: signupEnabled() && needInvite(), providers: { apple: !!a, google: !!g, email: emailOn(), sms: !!codeSmsConfig(), passkey: true, password: true }, fake: fakeOAuth(),
       held: held ? { code: !!held.code, from: held.from || "", vouch: !!(held.ref || held.regularOf) } : null, native: { google: g ? { webClientId: g.id } : null, apple: a ? { servicesId: a.servicesId } : null } });
   });
   app.post("/api/auth/join", json, (req, res) => {
@@ -252,7 +289,18 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     if (!code && !Object.keys(extra).length) return res.status(400).json({ code: "invalid", message: "Add your invite code." });
     let from = "";
     if (code) { const r = checkCode(code); if (!r.ok) { console.log(`[signin] invite code refused from ${sha(ipOf(req)).slice(0, 8)}`); return res.status(403).json({ code: "invite_invalid", message: r.message }); } from = firstName(r.c?.ownerName); }
-    holdJoin(req, res, { ...(code ? { code } : {}), ...extra, from });
+    const join = { ...(code ? { code } : {}), ...extra, from };
+    // a sign-in that's already proven and waiting for this code: carry on with it (the invite step after the 6-digit code)
+    const pend = readPending(req);
+    if (pend && pend.d.need === "invite") {
+      dropPending(req, res, pend.id);
+      const out = finish(req, res, { ...pend.d.idn, appleToken: pend.d.idn.appleToken ? unseal(pend.d.idn.appleToken) : "" }, { ...pend.d.ctx, join: { ...cleanJoin(join), ...(code ? { code } : {}) } });
+      if (out.need) holdJoin(req, res, join);
+      if (out.ok) return res.json({ ok: true, redirect: out.redirect, isNew: !!out.isNew, from });
+      if (out.need) return res.json({ ok: false, need: out.need, message: out.message || "", from });
+      return answer(res, out);
+    }
+    holdJoin(req, res, join);
     res.json({ ok: true, from });
   });
   app.post("/api/auth/join/clear", (req, res) => { clearJoin(req, res); res.json({ ok: true }); });
@@ -363,44 +411,81 @@ ${Object.entries(q).map(([k, v]) => `<input type="hidden" name="${k}" value="${S
   /** Tests: a fake provider's id_token for these claims (native flows). */
   app.locals.fakeIdToken = (provider, claims) => { const cfg = provider === "google" ? googleConfig() : appleConfig(), now = Math.floor(Date.now() / 1000); return signJwt({ iss: cfg.iss[0], aud: provider === "google" ? cfg.id : cfg.servicesId, iat: now, exp: now + 600, ...claims }, fakeKeys().privateKey, "fake-1"); };
 
-  // ---------- email: a 6-digit code, and a magic link in the same email ----------
-  const OTP_TTL = 10 * MIN, OTP_TRIES = 5;
-  const otpPath = (email) => "system/otp-" + h40("otp:" + lc(email)), linkPath = (t) => "system/otplink-" + h40(t);
-  const codeHash = (salt, code) => sha(salt + ":" + code);
-  app.post("/api/auth/email/start", json, async (req, res) => {
-    const email = lc(req.body?.email).slice(0, 200);
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
-    if (limited("otp-ip:" + ipOf(req), 20, 60 * MIN) || limited("otp-em:" + email, 5, 60 * MIN)) return tooMany(res, "We've sent a few codes already. Check your inbox, or try again in a bit.");
-    const cfg = emailConfig(DEFAULT_WS, true); if (!cfg) return res.status(503).json({ code: "email_off", message: "We can't send email right now. Try another way to sign in." });
-    const code = String(crypto.randomInt(0, 1e6)).padStart(6, "0"), salt = crypto.randomBytes(8).toString("hex"), link = crypto.randomBytes(24).toString("base64url");
-    const old = store.get(otpPath(email))?.data; if (old?.link) store.delete(linkPath(old.link));
+  // ---------- a 6-digit code by email (with a magic link in the same email) or by text ----------
+  // One record per email or phone: system/otp-<hash>, holding a salted HMAC of the code (never the code), the tries
+  // and the expiry. 10 minutes, 5 tries, then a new code. Sends are limited per address or number and per IP, and
+  // answer the same whether or not there's an account behind them.
+  const OTP_TTL = 10 * MIN, OTP_TRIES = 5, SENDS_PER_ID = 5, SENDS_PER_IP = 20;
+  const otpPath = (key) => "system/otp-" + h40("otp:" + key), linkPath = (t) => "system/otplink-" + h40(t);
+  const codeHash = (salt, code) => crypto.createHmac("sha256", secret()).update("pl-otp:" + salt + ":" + code).digest("hex");
+  const SMS_OFF = "Text sign-in isn't on yet. Use your email instead.";
+  /** "Email or phone number": { kind: "email", key } | { kind: "phone", key: E.164 } | null. */
+  function readId(raw) {
+    const s = String(raw || "").trim().slice(0, 200); if (!s) return null;
+    if (s.includes("@")) { const e = lc(s); return EMAIL_OK(e) ? { kind: "email", key: e } : null; }
+    const p = toE164(s); return p ? { kind: "phone", key: p } : null;
+  }
+  const prettyPhone = (p) => (/^\+1\d{10}$/.test(p) ? `(${p.slice(2, 5)}) ${p.slice(5, 8)}-${p.slice(8)}` : p);
+  async function sendCode(req, res, id, { next = "", purpose = "signin", account = "" } = {}) {
+    const isPhone = id.kind === "phone";
+    const mail = isPhone ? null : signinEmailConfig(), sms = isPhone ? codeSmsConfig() : null;
+    if (isPhone && !sms) return res.status(503).json({ code: "sms_off", message: SMS_OFF });
+    if (!isPhone && !mail) return res.status(503).json({ code: "email_off", message: "We can't send email codes right now. Try your password, or come back a little later." });
+    if (limited("otp-ip:" + ipOf(req), SENDS_PER_IP, 60 * MIN) | limited("otp-id:" + purpose + ":" + id.key, SENDS_PER_ID, 60 * MIN))
+      return tooMany(res, isPhone ? "We've sent a few texts already. Check your messages, or try again in a bit." : "We've sent a few codes already. Check your inbox, or try again in a bit.");
+    const code = String(crypto.randomInt(0, 1e6)).padStart(6, "0"), salt = crypto.randomBytes(8).toString("hex"), link = isPhone || purpose !== "signin" ? "" : crypto.randomBytes(24).toString("base64url");
+    const key = purpose === "signin" ? id.key : `${purpose}:${account}:${id.key}`;
+    const old = store.get(otpPath(key))?.data; if (old?.link) store.delete(linkPath(old.link));
     const held = heldJoin(req) || {}, join = { ...cleanJoin(held), ...(held.code ? { code: held.code } : {}) };
-    put(otpPath(email), { email, salt, hash: codeHash(salt, code), tries: 0, link: h40(link), join, next: SAFE_NEXT(req.body?.next) }, OTP_TTL);
-    put(linkPath(h40(link)), { email }, OTP_TTL);
-    const url = `${origin(req)}/auth/email?t=${link}`;
-    if (cfg.service === "fake") console.log(`[signin] email code for ${email}: ${code} ${url}`); // demos: the code shows in the server log
+    put(otpPath(key), { kind: id.kind, key: id.key, ...(isPhone ? {} : { email: id.key }), salt, hash: codeHash(salt, code), tries: 0, ...(link ? { link: h40(link) } : {}), join, next: SAFE_NEXT(next) }, OTP_TTL);
+    if (isPhone) {
+      // the last line lets a phone offer the code above the keyboard (WebOTP and iOS autofill read "@host #code")
+      let host = ""; try { host = new URL(origin(req)).host; } catch {}
+      const r = await sendCodeText(sms, { to: id.key, text: `${code} is your Pottery Lab code. It works for 10 minutes.${host ? `\n\n@${host} #${code}` : ""}` }, fetchFn);
+      if (!r.ok) { console.warn(`[signin] text code to ${maskPhone(id.key)} failed: ${r.error}`); store.delete(otpPath(key)); return res.status(502).json({ code: "sms_failed", message: "We couldn't text that number. Check it, or use your email instead." }); }
+      return res.json({ ok: true, kind: "phone", to: prettyPhone(id.key), message: `We texted a code to ${prettyPhone(id.key)}.` });
+    }
+    if (link) put(linkPath(h40(link)), { email: id.key }, OTP_TTL);
+    const url = link ? `${origin(req)}/auth/email?t=${link}` : "";
     // the same work and the same answer for every address, so nobody learns which emails have accounts
-    sendEmail(cfg, { to: email, subject: `${code} is your Pottery Lab code`, text: `Your Pottery Lab code is ${code}\n\nIt works for 10 minutes. Or tap this link to continue:\n${url}\n\nIf you didn't ask for this, you can ignore this email. Nobody can sign in without the code.` }).then((x) => { if (x && x.ok === false) console.warn("[signin] email code failed", x.error || ""); }).catch((e) => console.warn("[signin] email code failed", e?.message));
-    res.json({ ok: true, message: `We sent a code to ${email}.` });
-  });
-  function checkOtp(req, email, code) {
-    const p = otpPath(email), d = store.get(p)?.data;
+    sendEmail(mail, { to: id.key, subject: `${code} is your Pottery Lab code`, text: `Your Pottery Lab code is ${code}\n\nIt works for 10 minutes.${url ? ` Or tap this link to continue:\n${url}` : ""}\n\nIf you didn't ask for this, you can ignore this email. Nobody can sign in without the code.` }).then((x) => { if (x && x.ok === false) console.warn("[signin] email code failed", x.error || ""); }).catch((e) => console.warn("[signin] email code failed", e?.message));
+    res.json({ ok: true, kind: "email", to: id.key, message: `We sent a code to ${id.key}.` });
+  }
+  function checkOtp(key, code) {
+    const p = otpPath(key), d = store.get(p)?.data;
     if (!d || d.exp < Date.now()) { if (d) store.delete(p); return { error: "expired", message: "That code has expired. Get a new one." }; }
     if (!/^\d{6}$/.test(code) || !same(codeHash(d.salt, code), d.hash)) {
       const tries = (d.tries || 0) + 1;
-      if (tries >= OTP_TRIES) { store.delete(p); store.delete(linkPath(d.link)); return { error: "too_many", message: "That's too many tries for this code. Get a new one." }; }
+      if (tries >= OTP_TRIES) { store.delete(p); if (d.link) store.delete(linkPath(d.link)); return { error: "too_many", message: "That's too many tries for this code. Get a new one." }; }
       store.set(p, { ...d, tries }); return { error: "wrong", message: `That code isn't right. ${OTP_TRIES - tries} ${OTP_TRIES - tries === 1 ? "try" : "tries"} left.` };
     }
-    store.delete(p); store.delete(linkPath(d.link)); return { ok: true, rec: d };
+    store.delete(p); if (d.link) store.delete(linkPath(d.link)); return { ok: true, rec: d };
   }
   const emailIdent = (email) => ({ provider: "email", sub: lc(email), email: lc(email), emailVerified: true, name: "" });
+  const phoneIdent = (phone) => ({ provider: "phone", sub: phone, phone, email: "", emailVerified: false, name: "" });
   const joinNow = (req, rec) => { const h = heldJoin(req); return h ? { ...cleanJoin(h), ...(h.code ? { code: h.code } : {}) } : rec.join || {}; };
-  app.post("/api/auth/email/verify", json, (req, res) => {
+  const codeOf = (b) => String(b?.code || "").replace(/\D/g, "").slice(0, 12);
+  function verifyAnswer(req, res, id, code) {
     if (limited("otpv-ip:" + ipOf(req), 30, 15 * MIN)) return tooMany(res);
-    const email = lc(req.body?.email), code = String(req.body?.code || "").replace(/\D/g, "");
-    const r = checkOtp(req, email, code); if (!r.ok) return res.status(r.error === "too_many" ? 429 : 400).json({ code: r.error, message: r.message });
-    answer(res, finish(req, res, emailIdent(email), { join: joinNow(req, r.rec), next: r.rec.next }));
+    const r = checkOtp(id.key, code); if (!r.ok) return res.status(r.error === "too_many" ? 429 : 400).json({ code: r.error, message: r.message });
+    answer(res, finish(req, res, id.kind === "phone" ? phoneIdent(id.key) : emailIdent(id.key), { join: joinNow(req, r.rec), next: r.rec.next }));
+  }
+  // the first screen: one field for an email or a phone number
+  app.post("/api/auth/code/start", json, (req, res) => {
+    const id = readId(req.body?.id); if (!id) return res.status(400).json({ code: "invalid", message: "Enter an email or a phone number." });
+    return sendCode(req, res, id, { next: req.body?.next });
   });
+  app.post("/api/auth/code/verify", json, (req, res) => {
+    const id = readId(req.body?.id); if (!id) return res.status(400).json({ code: "invalid", message: "Enter an email or a phone number." });
+    verifyAnswer(req, res, id, codeOf(req.body));
+  });
+  // the email-only routes the app and older pages call
+  app.post("/api/auth/email/start", json, (req, res) => {
+    const email = lc(req.body?.email).slice(0, 200);
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
+    return sendCode(req, res, { kind: "email", key: email }, { next: req.body?.next });
+  });
+  app.post("/api/auth/email/verify", json, (req, res) => verifyAnswer(req, res, { kind: "email", key: lc(req.body?.email) }, codeOf(req.body)));
   // the magic link: a page with one button, so a mail scanner that opens links doesn't use it up
   app.get("/auth/email", (req, res) => { res.set("Cache-Control", "no-store"); sendStatic(res, "signin.html"); });
   app.post("/api/auth/email/link", json, (req, res) => {
@@ -410,16 +495,51 @@ ${Object.entries(q).map(([k, v]) => `<input type="hidden" name="${k}" value="${S
     answer(res, finish(req, res, emailIdent(l.email), { join: joinNow(req, d), next: d.next }));
   });
 
-  // ---------- a name, for a new account whose sign-in didn't bring one ----------
-  app.get("/api/auth/pending", (req, res) => { const [id, sig] = readCookie(req, "pl_pend").split("."); const d = id && sig && same(sig, hmac("pend:" + id)) ? take("system/pend-" + h40(id), true) : null;
-    res.set("Cache-Control", "no-store").json(d ? { pending: true, email: d.idn.email, provider: d.idn.provider } : { pending: false }); });
+  // ---------- a phone number on an account (signed in): a text code proves it, then it signs in too ----------
+  const phoneIdentPath = (p) => identPath("phone", p);
+  app.post("/api/me/phone/start", json, (req, res) => {
+    const u = me(req, res); if (!u) return; const p = toE164(req.body?.phone); if (!p) return res.status(400).json({ code: "invalid", message: "That number doesn't look right." });
+    const other = store.get(phoneIdentPath(p))?.data; if (other && other.email !== lc(u.email)) return res.status(409).json({ code: "conflict", message: "That number is on another account." });
+    return sendCode(req, res, { kind: "phone", key: p }, { purpose: "phone", account: lc(u.email) });
+  });
+  app.post("/api/me/phone/verify", json, (req, res) => {
+    const u = me(req, res); if (!u) return; if (limited("otpv-ip:" + ipOf(req), 30, 15 * MIN)) return tooMany(res);
+    const p = toE164(req.body?.phone); if (!p) return res.status(400).json({ code: "invalid", message: "That number doesn't look right." });
+    const r = checkOtp(`phone:${lc(u.email)}:${p}`, codeOf(req.body)); if (!r.ok) return res.status(r.error === "too_many" ? 429 : 400).json({ code: r.error, message: r.message });
+    const other = store.get(phoneIdentPath(p))?.data; if (other && other.email !== lc(u.email)) return res.status(409).json({ code: "conflict", message: "That number is on another account." });
+    const rec = getDbUser(u.email); if (rec?.phone && rec.phone !== p) store.delete(phoneIdentPath(rec.phone));
+    linkIdentity(u.email, phoneIdent(p)); if (rec) putDbUser({ ...rec, phone: p, phoneVerifiedAt: Date.now() });
+    res.json({ ok: true, phone: prettyPhone(p) });
+  });
+  app.delete("/api/me/phone", (req, res) => {
+    const u = me(req, res); if (!u) return; const rec = getDbUser(u.email); if (!rec?.phone) return res.json({ ok: true });
+    if (isPhoneEmail(u.email)) return res.status(409).json({ code: "conflict", message: "This account signs in with this number. Add an email first." });
+    store.delete(phoneIdentPath(rec.phone)); const { phone, phoneVerifiedAt, ...rest } = rec; putDbUser(rest); res.json({ ok: true });
+  });
+
+  // ---------- after the code: an invite (new people, invite-only), a name ----------
+  app.get("/api/auth/pending", (req, res) => { const P = readPending(req), d = P?.d;
+    res.set("Cache-Control", "no-store").json(d ? { pending: true, need: d.need || "name", email: d.idn.phone ? "" : d.idn.email, phone: d.idn.phone ? prettyPhone(d.idn.phone) : "", provider: d.idn.provider } : { pending: false }); });
   app.post("/api/auth/finish", json, (req, res) => {
-    const [id, sig] = readCookie(req, "pl_pend").split("."); const d = id && sig && same(sig, hmac("pend:" + id)) ? take("system/pend-" + h40(id), true) : null;
-    if (!d) return res.status(400).json({ code: "expired", message: "That took too long. Start again." });
+    const P = readPending(req); if (!P) return res.status(400).json({ code: "expired", message: "That took too long. Start again." });
+    const { id, d } = P;
     const name = String(req.body?.name || "").replace(/[\u0000-\u001f<>]/g, " ").trim().slice(0, 80); if (name.length < 1) return res.status(400).json({ code: "invalid", message: "Add your name." });
-    const out = finish(req, res, { ...d.idn, appleToken: d.idn.appleToken ? unseal(d.idn.appleToken) : "", name }, d.ctx);
-    if (out.ok || out.need === "invite") { store.delete("system/pend-" + h40(id)); res.append("Set-Cookie", cookieOut(req, "pl_pend", "", 0)); }
-    answer(res, out);
+    const h = heldJoin(req), ctx = h ? { ...d.ctx, join: { ...cleanJoin(h), ...(h.code ? { code: h.code } : {}) } } : d.ctx;
+    dropPending(req, res, id);
+    answer(res, finish(req, res, { ...d.idn, appleToken: d.idn.appleToken ? unseal(d.idn.appleToken) : "", name }, ctx));
+  });
+  // "No code? Join the waitlist": the email or phone they just proved, or one they type
+  app.post("/api/auth/waitlist", json, (req, res) => {
+    if (limited("wait:" + ipOf(req), 5, 60 * MIN)) return tooMany(res);
+    const P = readPending(req), idn = P?.d?.idn, typed = readId(req.body?.id);
+    const phone = idn ? idn.phone || "" : typed?.kind === "phone" ? typed.key : "", email = idn ? (idn.phone ? "" : lc(idn.email)) : typed?.kind === "email" ? typed.key : "";
+    if (!phone && !email) return res.status(400).json({ code: "invalid", message: "Enter an email or a phone number." });
+    const name = String(req.body?.name || idn?.name || "").replace(/[\u0000-\u001f<>]/g, " ").trim().slice(0, 80);
+    const dup = store.listPrefix("system", "wait-").some((x) => x.data?.kind === "wait" && !x.data.invitedAt && ((email && x.data.email === email) || (phone && x.data.phone === phone)));
+    if (!dup) { const w = { name, email, ...(phone ? { phone } : {}), city: "", wants: "", via: "signin", proven: !!idn };
+      if (addWaitlist) addWaitlist(w); else { const wid = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + wid, { kind: "wait", id: wid, ...w, at: Date.now() }); } }
+    console.log(`[signin] waitlist: ${phone ? maskPhone(phone) : maskEmail(email)}`);
+    res.json({ ok: true, to: phone ? prettyPhone(phone) : email });
   });
 
   // ---------- passkeys ----------

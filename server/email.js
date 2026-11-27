@@ -59,8 +59,10 @@ const clean = (s, n) => String(s ?? "").replace(/[\r\n]+/g, " ").trim().slice(0,
 // accent and logo (server/brandkit.js); the plain text stays the same.
 export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin, brandWs }) {
   if (!cfg) return { ok: false, error: "Email isn't set up for this workspace." };
-  let rcpt = [].concat(to || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
-  const copy = list === "guest" ? [] : [].concat(cc || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
+  // the reserved .invalid domain is never mailed: phone-only accounts hold a stand-in address there (server/signin.js)
+  const mailable = (x) => EMAIL_RE.test(x) && !/\.invalid$/i.test(x);
+  let rcpt = [].concat(to || []).map((x) => String(x).trim()).filter(mailable);
+  const copy = list === "guest" ? [] : [].concat(cc || []).map((x) => String(x).trim()).filter(mailable);
   if (!rcpt.length) return { ok: false, error: "No valid recipient." };
   let headers = null, footer = "";
   if (list === "guest") {

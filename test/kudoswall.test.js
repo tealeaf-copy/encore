@@ -84,7 +84,8 @@ test("kudos: one or two are just the cards; none is nothing for a visitor and a 
 
 test("kudos: host.html draws the section in the page's first pass, from its own file", () => {
   assert.match(HOST, /<script src="\/kudoswall\.js"><\/script>/);
-  assert.match(HOST, /const profP = fetch\("\/api\/public\/profile\/" \+ encodeURIComponent\(handle\)\)/, "asked for alongside the page");
+  assert.match(HOST, /profP = fetch\("\/api\/public\/profile\/" \+ encodeURIComponent\(handle\)\)/, "asked for alongside the page");
+  assert.match(HOST, /if \(!d\.host\?\.showcase\) \{ ask\("trust"\); askProfile\(\); \}/, "but not for a page whose host isn't on Pottery Lab yet");
   assert.match(HOST, /Promise\.allSettled\(\[\.\.\.Object\.values\(side\), profP\]\)/, "and waited for with the rest, so it is there before the first paint");
   assert.match(HOST, /window\.EncoreKudos\?\.mount\(S, \{ owner: isOwner, pastId: d\.past\?\.\[0\]\?\.id \|\| "", at: ex \}\)/);
   assert.ok(!/What guests say|more-kudos|vibe-line/.test(HOST), "the old list is gone");

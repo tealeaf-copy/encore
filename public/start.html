@@ -86,7 +86,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 
   <div id="done" class="done" hidden>
     <div id="doneStamp" style="margin-top:20px"></div>
-    <h1 id="doneH">Your first one is out in the world.</h1>
+    <h2 data-h1 id="doneH">Your first one is out in the world.</h2>
     <p class="lede" id="doneLine">Now the only job is to show up. I'll keep the list.</p>
     <div class="linkbox"><input id="link" readonly aria-label="Your invite link"><button type="button" class="btn pri" id="copy" style="width:auto;min-width:96px">Copy</button></div>
     <button type="button" class="btn" id="share" hidden>Send it</button>
@@ -97,6 +97,9 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 </main>
 <script src="/mascot.js"></script><script src="/fx.js"></script><script src="/hostloop.js"></script>
 <script>
+// one top heading at a time: the "done" screen takes it over from the plan
+function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => { const tag = el.closest("[hidden]") ? "h2" : "h1"; if (el.localName === tag) return; const n = document.createElement(tag); for (const a of el.attributes) n.setAttribute(a.name, a.value); while (el.firstChild) n.appendChild(el.firstChild); n.toggleAttribute("data-h1", tag === "h2"); el.replaceWith(n); }); }
+
 (function () {
   const $ = (s) => document.querySelector(s), q = new URLSearchParams(location.search), KEY = "pl.startDraft", F = $("#f"), fx = window.HostLoop?.fx || {};
   const ls = { get: (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
@@ -175,7 +178,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
     } catch (e) { $("#err").textContent = e.message || "Couldn't save it. Try again."; b.disabled = false; copy(); }
   }
   function done(id, out, cel) {
-    $("#plan").hidden = true; $("#done").hidden = false; history.replaceState(null, "", "/start?saved=" + encodeURIComponent(id)); window.scrollTo(0, 0);
+    $("#plan").hidden = true; $("#done").hidden = false; oneH1(); history.replaceState(null, "", "/start?saved=" + encodeURIComponent(id)); window.scrollTo(0, 0);
     const link = location.origin + "/e/" + id; $("#link").value = link; $("#openApp").href = "/?app=1&open=" + encodeURIComponent(id) + "#studio";
     if (!out) { $("#doneH").textContent = "Saved. One tap and it's out."; $("#doneLine").textContent = "Tap the link we just emailed you to confirm it's you. This page sends it out by itself when you do. Your dinner is safe in your account."; $("#copy").disabled = true; $("#link").value = "Ready after you confirm your email"; if (fx.stamp) fx.stamp("Saved", $("#doneStamp"));
       // this page sends it by itself once the email is confirmed (in this tab or another)

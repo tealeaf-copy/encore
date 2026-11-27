@@ -202,8 +202,10 @@ body{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
   let cfg = { providers: {}, held: null }, ident = "", kind = "email", pending = null, timer = 0;
   try { if (next) $("nextIn").value = next; } catch (e) {}
 
+  // one top heading at a time: a step that is not showing keeps its heading as an h2 until it is shown
+  function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => { const tag = el.closest("[hidden]") ? "h2" : "h1"; if (el.localName === tag) return; const n = document.createElement(tag); for (const a of el.attributes) n.setAttribute(a.name, a.value); while (el.firstChild) n.appendChild(el.firstChild); n.toggleAttribute("data-h1", tag === "h2"); el.replaceWith(n); }); }
   function show(step) {
-    document.querySelectorAll("[data-step]").forEach((s) => { s.hidden = s.dataset.step !== step; });
+    document.querySelectorAll("[data-step]").forEach((s) => { s.hidden = s.dataset.step !== step; }); oneH1();
     $("terms").hidden = step !== "start" && step !== "otp";
     const t = document.querySelector('[data-step="' + step + '"] input:not([type=hidden])');
     if (t && (step === "otp" || matchMedia("(hover:hover)").matches)) setTimeout(() => { try { t.focus(); } catch (e) {} }, 30);

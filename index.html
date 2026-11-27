@@ -650,7 +650,7 @@ body{padding-bottom:84px}
 .subtabs a{padding:7px 16px;border-radius:99px;text-decoration:none;color:var(--muted);font-weight:700}
 .subtabs a.on{background:var(--ink);color:#fff}
 .hero-home{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;align-items:start;padding:28px;border-radius:30px;background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--teal) 18%,transparent),transparent 55%),var(--accent-soft);box-shadow:var(--puff)}
-.hero-home h1{font-size:var(--fs-28-40,28px);font-weight:800;letter-spacing:-.03em;margin:6px 0 10px}
+.hero-home h1{font-size:var(--fs-28-40,28px);font-weight:800;letter-spacing:-.03em;margin:6px 0 10px}.hero-home .hh-t{font:500 28px/36px var(--f-display)!important;letter-spacing:-.015em!important;margin:6px 0 10px}
 .journey{background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--puff)}
 .journey ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .journey li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:16px}
@@ -3440,7 +3440,7 @@ function weeklyHTML(){ if(window.__wsPersonal) return ""; const I=weeklyItems();
   return `<div class="panel stack" id="weekly"><div class="btns" style="justify-content:space-between"><div><small class="eyebrow">This week</small><h3>${I.length===1?"One thing needs your attention":`${I.length} things need your attention`}</h3></div><button class="btn ghost sm" id="wkCopy">Copy as a Slack update</button></div>
     <ul class="clean">${I.slice(0,8).map((x,i)=>`<li>${esc(x.t)} ${x.a?`<button class="mini-btn" data-wk="${i}">Copy the nudge</button>`:""}${x.e?` <button class="mini-btn" data-wkopen="${esc(x.e.id||"")}">Open</button>`:""}</li>`).join("")}</ul></div>` }
 function homeHero(){ const S=journeySteps(), next=S.find(x=>!x.done), n=S.filter(x=>x.done).length;
-  return `<section class="hero-home"><div><small class="eyebrow">Pottery Lab</small><h1>Fill the right room. Prove what it was worth.</h1>
+  return `<section class="hero-home"><div><small class="eyebrow">Pottery Lab</small><h2 class="hh-t">Fill the right room. Prove what it was worth.</h2>
     <p class="lede">Pottery Lab builds the guest list with your sales team, helps the right people show up and hands every attendee to their AE the next morning. Then it reports pipeline in numbers your CFO will trust. The planning takes a day, not weeks.</p>
     ${draft.example?`<p class="note">For now you're seeing a sample Passionfroot event, so you can look around. Your own work takes its place as you go.</p>`:""}</div>
     <div class="journey"><div class="btns" style="justify-content:space-between"><b>Your first event in a day</b><span class="note">${n} of ${S.length} done</span></div>
@@ -7345,7 +7345,7 @@ function drawWhoComing(){ const d=draft; if(!isCasual(d)||step!==6) return; cons
     const R=(allRsvps||[]).filter(x=>x.eventId===d.id), go=R.filter(x=>x.response==="going").length+(d.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")&&!R.some(x=>String(x.email||"").toLowerCase()===String(g.email||"").toLowerCase())).length, ask=R.filter(x=>x.response==="requested").length, inn=R.filter(x=>x.interest==="in").length, today=localISO(), past=d.date&&d.date<today&&d.stage!=="interest";
     const st=d.stage==="interest"?["Checking interest",""]:past?["Done","good"]:d.date===today?["Today","good"]:d.date?["Coming up","good"]:["Draft",""];
     const sd=$(".sdot",h); if(sd) sd.innerHTML=`<i></i>${esc(st[0])}`, sd.className=`sdot ${st[1]}`;
-    const t=$("h1",h); if(t) t.textContent=guestTitle(d);
+    const t=$("h1,h2[data-h1]",h); if(t) t.textContent=guestTitle(d);
     const prep=(d.prep||[]), pd=prep.filter(x=>x.done).length, goal=+d.interestGoal||Math.max(4,Math.round((+d.headcount||8)*.6));
     const stats=$(".h2stats",h); if(stats) stats.innerHTML=(d.stage==="interest"?`<div><b>${inn}/${goal}</b><span>In so far</span></div>`:`<div><b>${go}${d.headcount?`/${+d.headcount}`:""}</b><span>in</span></div>`)+(ask?`<div><b>${ask}</b><span>Asking to join</span></div>`:"")+(d.price&&d.price!=="chip"?`<div><b>${esc(d.price)}</b><span>a person</span></div>`:d.chipIn&&chipIn(d)?`<div><b>${esc(cmoney(chipIn(d),d.currency))}</b><span>Chip-in each</span></div>`:(isCasual(d)?"":`<div><b>Free</b><span>To come</span></div>`))+(prep.length?`<div><b>${pd}/${prep.length}</b><span>Prep done</span></div>`:"");
     const why=$(".h2cta .why",h); if(why&&step===7) why.textContent=past?"Thank your guests and add photos.":"";
@@ -13385,6 +13385,16 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 <style>/* Home on a wide screen: one centred column, every card the same width (it was three widths and two alignments) */
 @media (min-width:861px){body.friends-ws #view-programs{max-width:880px;margin-left:auto;margin-right:auto}body.friends-ws #view-programs > .cg,body.friends-ws #view-programs > .pipbrief,body.friends-ws #view-programs .plg-card{max-width:none}body.friends-ws #view-programs > .pipbrief{margin-left:0;margin-right:0}}
 #signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#signOutM a[style*="none"] + .so-dot{display:none}#view-guest .ev2-acts .btn{min-height:44px!important}p.note.ev2-foot a{display:inline-flex!important;align-items:center;min-height:44px}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
+<!-- round 18 -->
+<script>
+// ---- Review round 18: one top heading per screen. A view that is not on screen keeps its content, so its heading
+// steps down to an h2 while it is hidden and steps back up the moment the view is shown (before the next paint). ----
+(function(){ const swap=(el,tag)=>{ const n=document.createElement(tag); for(const a of el.attributes) n.setAttribute(a.name,a.value); while(el.firstChild) n.appendChild(el.firstChild); if(tag==="h2") n.setAttribute("data-h1",""); else n.removeAttribute("data-h1"); el.replaceWith(n) };
+  const tidy=()=>{ try{ for(const v of document.querySelectorAll("main > section.view")){ if(v.hidden) v.querySelectorAll("h1").forEach((h)=>swap(h,"h2")); else v.querySelectorAll("h2[data-h1]").forEach((h)=>swap(h,"h1")) } }catch{} };
+  const go=()=>{ const m=document.querySelector("main"); if(!m) return; tidy(); new MutationObserver(tidy).observe(m,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden"]}) };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
+</script>
+<!-- /round 18 -->
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.

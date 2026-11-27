@@ -105,6 +105,7 @@ test("Milestones are celebrated once each: first event out, the 10th, the first 
   const f = { published: 1, hosted: 0, soldOut: 0, regulars: 0 };
   const c = nextCelebration(f, []); assert.equal(c.id, "first"); assert.equal(c.title, "Your first one is out in the world.");
   assert.equal(nextCelebration(f, ["first"]), null, "seen: never again");
+  assert.equal(nextCelebration({ published: 4, hosted: 2, soldOut: 0, regulars: 0 }, []), null, "a host who has already held one is never told this is their first");
   assert.equal(nextCelebration({ published: 12, hosted: 10, soldOut: 1, regulars: 1 }, ["first", "tenth"]).id, "soldout");
   assert.equal(nextCelebration({ published: 3, hosted: 3, soldOut: 0, regulars: 0 }, ["first"]), null, "no celebration for ordinary progress");
 });

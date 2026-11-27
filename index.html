@@ -13393,7 +13393,61 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   const tidy=()=>{ try{ for(const v of document.querySelectorAll("main > section.view")){ if(v.hidden) v.querySelectorAll("h1").forEach((h)=>swap(h,"h2")); else v.querySelectorAll("h2[data-h1]").forEach((h)=>swap(h,"h1")) } }catch{} };
   const go=()=>{ const m=document.querySelector("main"); if(!m) return; tidy(); new MutationObserver(tidy).observe(m,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden"]}) };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
+
+// ---- Home, review round 18: one nudge at a time. Potto's list, today's small move, the next step and the playbook
+// were four cards in a row. Now the most useful one shows (something a guest is waiting on first, then today's small
+// move, then the next step) and the rest sit behind one quiet "Show more". Home is still settling (hidden but laid out,
+// see "Home settles once" above) while the cards arrive, so the choice is made before anyone sees it. ----
+(function(){ const SEL=".pipbrief,#hlCard,#plgHome,#tbHome"; let all=false;
+  const has=(el)=>!!el&&!el.hidden&&el.childElementCount>0;
+  const pick=(v)=>{ const pb=v.querySelector(":scope > .pipbrief"), hl=v.querySelector(":scope > #hlCard"), plg=v.querySelector(":scope > #plgHome"), tb=v.querySelector(":scope > #tbHome");
+    return (has(pb)&&pb.querySelector(".pb-list li")&&pb)||(has(hl)&&hl.querySelector(".hl-move")&&hl)||(has(plg)&&plg)||(has(hl)&&hl)||(has(pb)&&pb)||(has(tb)&&tb)||null };
+  const up=()=>{ try{ const v=document.getElementById("view-programs"); if(!v||v.hidden||!document.body.classList.contains("friends-ws")) return; const C=[...v.querySelectorAll(":scope > :is("+SEL+")")].filter(has); if(!C.length) return;
+      const win=pick(v); if(!win) return; for(const c of C) c.classList.toggle("pl-nudge-on",c===win);
+      const rest=C.filter((c)=>c!==win); let more=v.querySelector(":scope > #plNudgeMore");
+      if(!rest.length){ more&&more.remove() } else { if(!more){ more=document.createElement("p"); more.id="plNudgeMore"; more.innerHTML='<button type="button" class="linkbtn"></button>'; more.firstChild.onclick=()=>{ all=!all; up() } }
+        const NAME=(c)=>c.id==="hlCard"?"streak":c.id==="plgHome"?"next step":c.id==="tbHome"?"playbook":"Potto's list", N=rest.map(NAME);
+        const b=more.firstChild, t=all?"Show less":"More: "+N.join(", "); if(b.textContent!==t) b.textContent=t; b.setAttribute("aria-expanded",String(all));
+        const at=all?C.filter((c)=>c!==win).pop():win; if(at.nextElementSibling!==more) at.after(more) }
+      if(C[0]!==win&&all) C[0].before(win);
+      v.classList.toggle("pl-nudge-all",all); if(!v.classList.contains("pl-nudge-ready")) v.classList.add("pl-nudge-ready") }catch{} };
+  const go=()=>{ const v=document.getElementById("view-programs"); if(!v) return; up(); new MutationObserver(up).observe(v,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden"]}); new MutationObserver(up).observe(document.body,{attributes:true,attributeFilter:["class"]}) };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
+
+// ---- Idea chips under the composer, review round 18: they lead with what this host already makes. A supper club
+// host sees supper ideas first, a run crew sees runs and hikes, a new host keeps the house order. ----
+(function(){ if(typeof conciergeHTML!=="function"||typeof FRIEND_IDEAS==="undefined") return;
+  const POOL=[["Hack night","fill:A hack night for 15 friends Thursday at 7, bring a laptop and a side project, quiet tables","games"],["Board game night","fill:A board game night for 8 friends Friday at 7, I'll teach, bring a snack","games"],["LAN or watch party","fill:A watch party at my place Saturday at 2 for 10 friends, couch and projector, bring a controller","games"],
+    ["Supper club","fill:A supper club for 8 Saturday at 7:30 at my place, $40 a person, small and off the record","food"],["Book or paper club","fill:A paper club Sunday at 4 for 8 friends, one paper, three questions","read"],["Cook for friends","fill:A cooking night for 6 friends at my place, trying out new dishes","food"],
+    ["Throw a potluck","fill:A potluck dinner for 12 friends at my place","food"],["Start a weekly run club","fill:A Saturday morning run club for 12 friends, coffee after","move"],["See who's up for a hike","fill:A Sunday hike for 10 friends, train from the city","move"],
+    ["Coffee at my place","fill:A coffee morning at my place for 8 friends Sunday at 10","cafe"],["Matcha morning","fill:A matcha morning at my place for 6 friends","cafe"],["Give away something I bake","fill:A free pandan honeycomb cake giveaway for 40 neighbours, Saturday morning","bake"],
+    ["Craft night","fill:A craft night for 6 friends Wednesday at 7, bring whatever you're making","make"],["Movie night","fill:A movie night for 8 friends at my place","games"]];
+  const FAM={food:/dinner|supper|omakase|cook|potluck|brunch|lunch|tasting|kitchen|chef|menu|feast|table|wine|dumpling|pasta|ramen|bbq/i,cafe:/caf[eé]|coffee|matcha|tea\b|pour.?over|espresso/i,bake:/cake|bake|bread|cookie|pastry|b[aá]nh|preorder|pre-order|drop\b/i,move:/\brun|hike|walk|ride|yoga|climb|5k|trail|swim|pilates|cycling/i,make:/pottery|clay|wheel|craft|paint|flower|knit|workshop|studio|ceramic|bouquet/i,games:/game|hack|lan\b|watch party|movie|trivia|chess|dice/i,read:/book|paper club|reading|poetry|writing/i};
+  const NEAR={food:["cafe","bake"],cafe:["food","bake"],bake:["cafe","food"],move:["cafe"],make:["cafe"],games:["read"],read:["games"]};
+  const tops=()=>{ let text=""; try{ text=(allEvents||[]).filter((e)=>!e.example).map((e)=>[e.pubTitle,e.name,e.activity,e.format,e.kindLabel,e.drop?"drop":""].filter(Boolean).join(" ")).join(" · ") }catch{}
+    try{ const hp=typeof __hostProfile!=="undefined"&&__hostProfile; if(hp) text+=" · "+[hp.name,hp.tagline,hp.bio,(hp.kinds||[]).join(" ")].filter(Boolean).join(" ") }catch{}
+    try{ const I=JSON.parse(localStorage.getItem("pl.interests")||"null"); if(I&&Array.isArray(I.topics)) text+=" · "+I.topics.join(" ") }catch{}
+    const score={}; for(const [k,re] of Object.entries(FAM)){ const m=text.match(new RegExp(re.source,"gi")); if(m) score[k]=m.length } return Object.keys(score).sort((a,b)=>score[b]-score[a]) };
+  const ranker=(top)=>(f)=>{ const i=top.indexOf(f); if(i>=0) return i; const n=top.findIndex((t)=>(NEAR[t]||[]).includes(f)); return n>=0?10+n:99 };
+  const order=()=>{ if(!window.__wsPersonal) return false; const top=tops(); if(!top.length) return false; const rank=ranker(top);
+    const L=POOL.map((p,i)=>[p,rank(p[2]),i]).sort((a,b)=>a[1]-b[1]||a[2]-b[2]).slice(0,5).map(([p])=>[p[0],p[1]]); if(L.every((x,i)=>FRIEND_IDEAS[i]&&FRIEND_IDEAS[i][0]===x[0])) return false; FRIEND_IDEAS.splice(0,FRIEND_IDEAS.length,...L); return true };
+  const _c18=conciergeHTML; conciergeHTML=function(){ try{ order() }catch{} return _c18.apply(this,arguments) };
+  // chips already on the page when the host's events arrive are relabelled in place (each chip reads its own data-cg when tapped)
+  const repaint=()=>{ try{ order(); const B=[...document.querySelectorAll("#view-programs #cgSugg > button[data-cg^='fill:']")]; if(!B.length||B.length>FRIEND_IDEAS.length) return; B.forEach((b,i)=>{ const [t,v]=FRIEND_IDEAS[i]; if(b.dataset.cg===v) return; b.dataset.cg=v; const ic=b.querySelector(".cg-ic"); b.textContent=t; if(ic) b.prepend(ic) }) }catch{}
+    try{ const L=document.querySelector("#view-programs #ideaLib.lib-casual"); if(L&&window.__wsPersonal&&typeof ideaLibraryHTML==="function"){ const h=ideaLibraryHTML(), names=(s)=>(s.match(/data-casualidea="[^"]*"/g)||[]).join("|"); if(names(h)&&names(h)!==names(L.outerHTML)) L.outerHTML=h } }catch{} };
+  let rt=0; const later=()=>{ clearTimeout(rt); rt=setTimeout(repaint,120) }; const go=()=>{ const v=document.getElementById("view-programs"); if(v){ later(); new MutationObserver(later).observe(v,{childList:true}) } }; if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go();
+  // "Ideas to try" at the foot of Home follows the same order: the four nearest to what this host makes
+  if(typeof ideaLibraryHTML==="function"&&typeof feed==="function"){ const _il18=ideaLibraryHTML; ideaLibraryHTML=function(){ if(!window.__wsPersonal) return _il18.apply(this,arguments); const top=tops(); if(!top.length) return _il18.apply(this,arguments); const _f=feed, rank=ranker(top);
+      const fam=(x)=>{ const t=[x.name,x.format,x.line].join(" "); let r=99; for(const [k,re] of Object.entries(FAM)) if(re.test(t)) r=Math.min(r,rank(k)); return r };
+      try{ feed=function(){ return _f.apply(this,arguments).map((x,i)=>[x,x.audience==="friends"&&!x.peer?fam(x):99,i]).sort((a,b)=>a[1]-b[1]||a[2]-b[2]).map(([x])=>x) }; return _il18.apply(this,arguments) } finally{ feed=_f } } } })();
 </script>
+<style>/* Home, review round 18: one nudge at a time (see the script above) */
+body.friends-ws #view-programs.pl-nudge-ready:not(.pl-nudge-all) > :is(.pipbrief,#hlCard,#plgHome,#tbHome):not(.pl-nudge-on){display:none!important}
+#plNudgeMore{margin:8px 0 20px}#plNudgeMore .linkbtn{min-height:44px;padding:0 2px;font:500 15px var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);color:var(--pl-accent-text,var(--pl-accent));background:none;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+/* Home and the host's event view on the kit: 6px corners on cards, fields and tiles, no lifted shadow, notebook tints (docs/brand-kit.md) */
+.cg-box,.fcard,.hv-card,.hv-potto,.hv-link,.lib-casual .lib-card,.lib-casual .lib-ic,.fcard .fc-ic{border-radius:var(--pl-r-md,6px)!important}.lib-casual .lib-ic i{border-radius:4px!important}
+.cg-box{box-shadow:none!important}.fcard .fc-ic{background:var(--pl-raised)!important}.hv-potto{background:var(--pl-sand-soft)!important;border-color:var(--pl-line)!important}
+</style>
 <!-- /round 18 -->
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past

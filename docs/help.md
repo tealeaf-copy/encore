@@ -441,11 +441,11 @@ Questions: How do streaks work? | What is a rest pass? | How do I repair my stre
 Your streak counts the months in a row you hosted something, any size. Weekly clubs can count weeks instead in Settings, under Hosting. Your first event earns a rest pass, then one every 3 hosted months (or 4 hosted weeks), and you can hold 2. A quiet month uses one by itself. With no pass left, the streak pauses: host anything within 14 days, even a coffee, and it's back. Only you see your streak unless you turn on Show my streak on my page.
 [Open Settings](/settings#hosting)
 
-## Small moves and warmth points
+## Small moves and hosting points
 
-Keywords: small move, today's small move, warmth, warmth points, monthly goal, goal ring, points
-Questions: What is today's small move? | What are warmth points? | How do I change my monthly goal?
-Today's small move on Home is one thing that takes a minute or two: send a reminder, thank your guests, post a photo, answer a reply, share a feeler, invite one new person or set the next date. Tap Done when it's done. Warmth points count hosting effort: 10 for each event held, 2 for each guest welcomed, 3 for each would go again, and 1 for each small move (up to 20 a month). Pick a monthly goal of 15, 30 or 60 in Settings.
+Keywords: small move, today's small move, hosting points, warmth, warmth points, monthly goal, goal ring, points
+Questions: What is today's small move? | What are hosting points? | How do I change my monthly goal?
+Today's small move on Home is one thing that takes a minute or two: send a reminder, thank your guests, post a photo, answer a reply, share a feeler, invite one new person or set the next date. Tap Done when it's done. Hosting points count hosting effort: 10 for each event held, 2 for each guest welcomed, 3 for each would go again, and 1 for each small move (up to 20 a month). Pick a monthly goal of 15, 30 or 60 in Settings.
 [See your Host path](/path)
 
 ## Circles

@@ -69,7 +69,7 @@
     return `<section class="hl-card" id="hlCard" aria-labelledby="hlH"><p class="hl-k" id="hlH">Your hosting${s.cadence === "week" ? " · weekly" : s.cadence === "off" ? "" : " · monthly"}</p>
       <div class="hl-row">${big}<div><p class="hl-line">${esc(s.line)}</p>${s.status !== "none" && s.status !== "off" ? passes(s) : ""}</div></div>${hu}${restart}
       <hr class="hl-rule"><p class="hl-k">Today's small move</p>${move}
-      <hr class="hl-rule"><div class="hl-foot" style="justify-content:space-between"><div class="hl-ring">${ringSvg(w.pct)}<span><b style="color:var(--pl-ink)" data-hl-warm>${w.points}</b> of ${w.goal} warmth in ${esc(w.month)}</span></div>
+      <hr class="hl-rule"><div class="hl-foot" style="justify-content:space-between"><div class="hl-ring">${ringSvg(w.pct)}<span><b style="color:var(--pl-ink)" data-hl-warm>${w.points}</b> of ${w.goal} hosting points in ${esc(w.month)}</span></div>
       <div class="hl-links"><a href="/path">Host path</a><a href="/circles">${S.circle.on ? "Your circle" : "Circles"}</a></div></div></section>`;
   }
   let last = null, lastAt = 0;
@@ -107,7 +107,7 @@
     sec.innerHTML = `<h2 id="hHost">Hosting</h2><p>Your streak, your goal, and when Potto taps you. At most 2 notes a week, never between ${P.quiet[0] > 12 ? P.quiet[0] - 12 + "pm" : P.quiet[0] + "am"} and ${P.quiet[1]}am.</p>
       ${sel("cadence", "Count my streak", [["month", "Monthly"], ["week", "Weekly"], ["off", "No streak, count events"]], P.cadence)}
       ${sw("showStreak", "Show my streak on my page", P.showStreak, "Off: only you see it")}
-      ${sel("goal", "Monthly warmth goal", [[15, "Light: 15"], [30, "Steady: 30"], [60, "Busy: 60"]], P.goal)}
+      ${sel("goal", "Monthly points goal", [[15, "Light: 15"], [30, "Steady: 30"], [60, "Busy: 60"]], P.goal)}
       ${sw("notif.on", "Notes from Potto", P.notif.on !== false, "Reminders timed to when you usually plan")}
       ${Object.entries(types).map(([k, label]) => sw("notif." + k, label, P.notif[k] !== false)).join("")}
       ${sel("quiet", "Quiet hours", [["21,9", "9pm to 9am"], ["22,8", "10pm to 8am"], ["20,10", "8pm to 10am"]], P.quiet.join(","))}

@@ -158,7 +158,7 @@ export const ring = (points, goal) => ({ points, goal, pct: Math.min(100, Math.r
 
 // ---------- milestones ----------
 export const MILESTONES = [
-  { id: "first", test: (s) => s.published >= 1, title: "Your first one is out in the world.", line: "Now the only job is to show up. I'll keep the list." },
+  { id: "first", test: (s) => s.published >= 1 && !(s.hosted >= 1), /* a first, not the fifth: someone who has already held one is never told this is their first */ title: "Your first one is out in the world.", line: "Now the only job is to show up. I'll keep the list." },
   { id: "tenth", test: (s) => s.hosted >= 10, title: "Ten nights hosted.", line: "That's a habit now. A good one." },
   { id: "soldout", test: (s) => s.soldOut >= 1, title: "Every seat taken.", line: "Your first sold-out night. Someone's on the waitlist wishing they'd been faster." },
   { id: "regular", test: (s) => s.regulars >= 1, title: "You have a regular.", line: "Someone came back a third time. That's the whole point." },

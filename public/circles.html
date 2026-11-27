@@ -64,7 +64,7 @@ ul.facts b{font:500 12px var(--pl-font-mono);color:var(--pl-soft);padding-top:2p
     $("#join").hidden = true; $("#in").hidden = false; $("#h1").textContent = c.tier;
     $("#tierLine").textContent = `You're at the ${c.tier.toLowerCase()}. ${c.cadence === "week" ? "This week" : "This month"} ends in ${c.daysLeft} ${c.daysLeft === 1 ? "day" : "days"}.`;
     $("#meta").textContent = [`${c.size} ${c.size === 1 ? "host" : "hosts"}`, c.city || "Nearby", c.cadence === "week" ? "Weekly" : "Monthly"].join(" · ");
-    $("#board").innerHTML = c.board.map((x) => `<li class="${x.you ? "you" : ""}"><span class="pl">${x.place}</span><span class="nm">${esc(x.you ? "You" : x.name)}<small>${x.points} warmth · ${x.events} ${x.events === 1 ? "event" : "events"}</small></span><span class="st${x.standing === "Moving up" ? " up" : ""}">${esc(x.standing)}</span></li>`).join("") + (c.size < 4 ? `<li><span></span><span class="nm" style="font-weight:400;color:var(--pl-soft);white-space:normal">Your circle fills as more hosts join.</span><span></span></li>` : "");
+    $("#board").innerHTML = c.board.map((x) => `<li class="${x.you ? "you" : ""}"><span class="pl">${x.place}</span><span class="nm">${esc(x.you ? "You" : x.name)}<small>${x.points} points · ${x.events} ${x.events === 1 ? "event" : "events"}</small></span><span class="st${x.standing === "Moving up" ? " up" : ""}">${esc(x.standing)}</span></li>`).join("") + (c.size < 4 ? `<li><span></span><span class="nm" style="font-weight:400;color:var(--pl-soft);white-space:normal">Your circle fills as more hosts join.</span><span></span></li>` : "");
     $("#rule").textContent = c.rule;
   }
   draw(j.circle);

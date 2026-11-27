@@ -664,7 +664,7 @@ export function createApp({ store, dataDir }) {
   // The app's big inline scripts and styles are served as their own files, named by a hash of their content and cached
   // for a year. A guest opening their second invite (or the same one again) downloads only the small page around them,
   // and the browser fetches the scripts in parallel while it draws the invite preview.
-  const APP_ASSETS = new Map(), SPLIT_MIN = 8000;
+  const APP_ASSETS = new Map(), SPLIT_MIN = 4000; // (8000 let the shell grow past its 80,000-character budget as features landed; test/pm-mcp.test.js)
   function splitPage(html) {
     const add = (body, ext) => { const h = crypto.createHash("sha1").update(body).digest("base64url").slice(0, 16), key = `${h}.${ext}`;
       if (!APP_ASSETS.has(key)) { const buf = Buffer.from(body), A = { type: ext === "js" ? "application/javascript; charset=utf-8" : "text/css; charset=utf-8", body: buf, gz: zlib.gzipSync(buf, { level: 9 }), br: null };

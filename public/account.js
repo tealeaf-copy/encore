@@ -1,6 +1,7 @@
 // Following a host takes a free account. This sheet creates one (the host's page is the invite) or signs
 // you in, then the follow goes through. Used on host pages, Discover, the guest page and the shop.
 (function () {
+  if (window.EncoreAccount) return; // one copy, however many pages add it
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   let css = false;
   function style() { if (css) return; css = true; const s = document.createElement("style"); s.textContent = `

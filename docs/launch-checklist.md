@@ -206,6 +206,7 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `TWILIO_WHATSAPP_FROM` | No | The WhatsApp sender number through Twilio. Turns on Potto by WhatsApp. |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_NUMBER` | No | Meta's WhatsApp Cloud API instead of Twilio. |
 | `POTTO_WA_TEMPLATE_LANG` | No | Language code for WhatsApp templates on the Cloud API (default `en_US`). |
+| `ENCORE_SUGGEST_PER_MIN`, `ENCORE_SUGGEST_PER_HOUR`, `ENCORE_SUGGEST_TIMEOUT_MS` | No | Potto autocomplete (server/suggest.js): requests per person a minute (30) and an hour (300), half for signed-out visitors, and how long to wait for Potto before showing only the instant suggestions. |
 | `ENCORE_LISTS_NUDGE_MIN` | No | When the lists nudge first shows. |
 | `ENCORE_TZ`, `PM_TZ`, `PM_CRON` | No | The default time zone, and the schedule of the weekday morning job (`off` turns it off). |
 | `ENCORE_DIRECTORY_CACHE_MS`, `ENCORE_INSIGHTS_CACHE_MS`, `ENCORE_LEADERBOARD_CACHE_MS`, `ENCORE_LEADERBOARD_OBSERVE_MS` | No | How long some pages cache their numbers. |

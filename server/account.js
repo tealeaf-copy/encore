@@ -71,7 +71,7 @@ export async function deleteAccountNow(store, email, { assetsDir, X = null, push
     const copy = JSON.parse(JSON.stringify(data)); if (scrubEmail(copy, em)) { store.set(p, copy); out.scrubbed++; }
   }
   // docs keyed by a hash of the email with no email inside (posts)
-  for (const k of ["posts-", "friends-", "inbox-", "prefs-", "selfprof-"]) { const p = "system/" + k + socialHash(em); if (store.get(p)) { const L = store.get(p).data?.list || []; for (const x of L) if (x?.photo) blobUrls.push(x.photo); store.delete(p); out.docs++; } }
+  for (const k of ["posts-", "friends-", "inbox-", "prefs-", "selfprof-", "plhome-" /* the home area (server/placesuggest.js) */]) { const p = "system/" + k + socialHash(em); if (store.get(p)) { const L = store.get(p).data?.list || []; for (const x of L) if (x?.photo) blobUrls.push(x.photo); store.delete(p); out.docs++; } }
   out.files += await removeBlobs(assetsDir, { urls: blobUrls.filter((x) => /^\/_blob\/[A-Za-z0-9]+$/.test(x)) });
   try { push?.forget(em); } catch {}
   try { safety?.unhide("person:" + keyOf(em)); } catch {}

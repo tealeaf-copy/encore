@@ -78,6 +78,7 @@ import { mountChat } from "./chat.js"; // group chats: one per event, an inbox a
 import { mountSurprise } from "./surprise.js"; import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountTrends } from "./trends.js"; // Potto's idea engine: platform trends, trend notes, Potto's ideas (server/trends.js)
 import { mountInspiration } from "./inspiration.js"; // inspiration cards in the feed (server/inspiration.js)
+import { mountPlaceSuggest } from "./placesuggest.js"; // Potto's picks: places that fit the event being made (server/placesuggest.js)
 import { mountPaidInsights } from "./paidinsights.js"; // Paid Insights: Market Insights for brands, Host Insights, opt-in demographics (server/paidinsights.js)
 import { mountCuration } from "./curation.js"; // lists people follow: visibility, curators, I'd go again (server/curation.js)
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
@@ -877,7 +878,7 @@ export function createApp({ store, dataDir }) {
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountPlaces(app, { store, small, currentUser, C, X, sendStatic }); // after the map: it reads its geo (server/places.js)
   mountDelightAfter(app, { store, small, currentUser, C, X }); // ---- delight after: after plans, places and Potto by text, which it reads (server/delightafter.js) ----
-  mountSuggest(app, { store, small, currentUser, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
+  mountSuggest(app, { store, small, currentUser, X }); mountPlaceSuggest(app, { store, small, currentUser, C, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
   mountLibrary(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, sendStatic, express }); // server/library.js, after hooks: it reads saves and boards
   mountCuration(app, { store, small, currentUser, C, X, sendStatic }); // server/curation.js: list visibility, curator pages, follows, I'd go again (after the library)
   // ---- trends: Potto's ideas, grounded in what people here loved (server/trends.js) ----

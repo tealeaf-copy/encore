@@ -19,17 +19,46 @@
   const KEY = "encore.place", norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   const miles = (a, b) => { const R = 3958.8, r = (x) => (x * Math.PI) / 180, dl = r(b[1] - a[1]), dg = r(b[2] - a[2]), h = Math.sin(dl / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(dg / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
   function find(name) { const n = norm(name); if (!n) return null; return CITIES.find((c) => norm(c[0]) === n) || CITIES.find((c) => c[3] && new RegExp(`\\b(${c[3]})\\b`).test(n)) || CITIES.find((c) => n.includes(norm(c[0])) || norm(c[0]).includes(n)) || null; }
-  function nearest(lat, lng) { let best = null, d = Infinity; for (const c of CITIES) { const m = miles(c, [0, lat, lng]); if (m < d) { d = m; best = c; } } return d < 120 ? best[0] : null; }
+  /** The cities closest to a point, nearest first: [[name, miles], ...]. */
+  function closest(lat, lng, n = 3) { return CITIES.map((c) => [c[0], miles(c, [0, lat, lng])]).sort((a, b) => a[1] - b[1]).slice(0, n); }
+  /** The city you're in, or null when you're far (250+ miles) from every city we know. */
+  function nearest(lat, lng, within = 250) { const [c] = closest(lat, lng, 1); return c && c[1] < within ? c[0] : null; }
   /** Is a place (an event's city or neighbourhood) near my city? Unknown places fall back to a name match. */
   function near(place, mine, within = 60) { if (!mine) return true; const a = find(place), b = find(mine); if (a && b) return a === b || miles(a, b) <= within; return norm(place).includes(norm(mine)); }
   function get() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; } }
   function put(p) { try { localStorage.setItem(KEY, JSON.stringify({ ...p, at: Date.now() })); localStorage.setItem("encore.city", p.city || ""); } catch {} return p; }
-  function gps(prompt) { return new Promise(async (res) => { if (!navigator.geolocation) return res(null); try { if (!prompt && navigator.permissions) { const s = await navigator.permissions.query({ name: "geolocation" }); if (s.state !== "granted") return res(null); } } catch {}
-    navigator.geolocation.getCurrentPosition((pos) => res(nearest(pos.coords.latitude, pos.coords.longitude)), () => res(null), { maximumAge: 30 * 60e3, timeout: 8000, enableHighAccuracy: false }); }); }
-  /** Work out the city. Returns { city, source, moved } and remembers it. */
+  // What we say when your location can't be read, one line per reason (never the same "couldn't" for everything).
+  const GPS_MSG = {
+    denied: "Location is off for this site. On iPhone: Settings, Privacy & Security, Location Services, Safari Websites, While Using. Or pick a city below.",
+    timeout: "That took too long. Try again, or pick a city.",
+    unavailable: "Your phone couldn't find a location right now. Pick a city, or try again in a moment.",
+    unsupported: "This browser can't share your location. Pick a city below.",
+    insecure: "Location only works on a secure (https) page. Pick a city below.",
+    far: "Found you, but we don't have your area yet. Pick the closest city:",
+  };
+  const gpsMessage = (code) => GPS_MSG[code] || GPS_MSG.unavailable;
+  /** Ask the phone where it is. Resolves { ok, city, lat, lng, closest } or { ok: false, code, message, closest? }.
+   *  One coarse try, 15s, a fix up to 5 minutes old is fine; a timeout is reported, not retried with high accuracy. */
+  function locate() { return new Promise((res) => {
+    const fail = (code, extra) => res({ ok: false, code, message: gpsMessage(code), ...(extra || {}) });
+    if (typeof window !== "undefined" && window.isSecureContext === false) return fail("insecure");
+    const G = typeof navigator !== "undefined" && navigator.geolocation; if (!G || !G.getCurrentPosition) return fail("unsupported");
+    try { G.getCurrentPosition((pos) => { const lat = pos.coords.latitude, lng = pos.coords.longitude, near3 = closest(lat, lng, 3), city = nearest(lat, lng);
+        if (!city) return fail("far", { lat, lng, closest: near3.map((c) => c[0]) });
+        res({ ok: true, city, lat, lng, closest: near3.map((c) => c[0]) }); },
+      (err) => fail(err && err.code === 1 ? "denied" : err && err.code === 3 ? "timeout" : "unavailable"),
+      { maximumAge: 5 * 60e3, timeout: 15000, enableHighAccuracy: false }); } catch { fail("unavailable"); }
+  }); }
+  /** Quietly: the city from GPS only if permission was already given (never shows a prompt unless asked). */
+  function gps(prompt) { return new Promise(async (res) => { if (typeof navigator === "undefined" || !navigator.geolocation) return res(null); try { if (!prompt && navigator.permissions) { const s = await navigator.permissions.query({ name: "geolocation" }); if (s.state !== "granted") return res(null); } } catch {}
+    const r = await locate(); res(r.ok ? r.city : null); }); }
+  /** A tap on "Use my location": always the phone's answer, never a stale saved choice. Saves it on success. */
+  async function useGps() { const r = await locate(); if (r.ok) put({ city: r.city, source: "gps", gpsCity: r.city }); return r; }
+  /** Work out the city. Returns { city, source, moved } and remembers it. prompt: true is an explicit ask, and a GPS answer wins. */
   async function resolve({ prompt = false, fallback = "" } = {}) {
     const cur = get(); const g = await gps(prompt);
-    if (g) { if (!cur) return { ...put({ city: g, source: "gps", gpsCity: g }), moved: false };
+    if (g) { if (prompt) return { ...put({ city: g, source: "gps", gpsCity: g }), moved: !!cur?.city && cur.city !== g, from: cur?.city || "" };
+      if (!cur) return { ...put({ city: g, source: "gps", gpsCity: g }), moved: false };
       if (cur.source === "manual" && cur.gpsCity === g) return cur;            // they corrected it here; keep their choice
       if (g !== cur.city) return { ...put({ city: g, source: "gps", gpsCity: g }), moved: true, from: cur.city }; // travelling
       return put({ ...cur, gpsCity: g }); }
@@ -42,9 +71,9 @@
     const draw = (p, note) => { el.innerHTML = `<div class="place-chip"><span class="pc-pin" aria-hidden="true">📍</span>${p.city ? `<b>${esc(p.city)}</b>` : `<b>Anywhere</b>`}<button type="button" class="pc-edit">${p.city ? "Change" : "Set your city"}</button><button type="button" class="pc-gps" title="Use my location">Use my location</button>${note ? `<span class="pc-note">${esc(note)}</span>` : ""}</div>`;
       el.querySelector(".pc-edit").onclick = () => { el.innerHTML = `<form class="place-chip pc-form"><span class="pc-pin" aria-hidden="true">📍</span><input name="c" list="pcCities" value="${esc(p.city)}" placeholder="Type a city" autocomplete="off" data-1p-ignore data-lpignore="true" aria-label="Your city"><datalist id="pcCities">${CITIES.map((c) => `<option value="${esc(c[0])}">`).join("")}</datalist><button class="pc-save" type="submit">Save</button><button type="button" class="pc-any">Anywhere</button></form>`;
         const f = el.querySelector("form"); f.c.focus(); f.c.select(); f.onsubmit = (e) => { e.preventDefault(); const c = (find(f.c.value)?.[0]) || f.c.value.trim(); const np = setManual(c); draw(np); onChange && onChange(np.city); }; el.querySelector(".pc-any").onclick = () => { const np = setManual(""); draw(np); onChange && onChange(""); }; };
-      el.querySelector(".pc-gps").onclick = async () => { el.querySelector(".pc-gps").textContent = "Finding you…"; const g = await gps(true); if (!g) { draw(p, "Couldn't get your location. Type your city instead."); return; } const np = put({ city: g, source: "gps", gpsCity: g }); draw(np, "Found you."); onChange && onChange(g); }; };
+      el.querySelector(".pc-gps").onclick = async () => { const b = el.querySelector(".pc-gps"); b.textContent = "Finding you…"; b.disabled = true; const r = await useGps(); if (!r.ok) { draw(p, r.message + (r.closest ? " " + r.closest.join(", ") : "")); return; } const np = get(); draw(np, `Showing ${r.city} · near you`); onChange && onChange(r.city); }; };
     const p0 = get() || { city: fallback || "" }; draw(p0);
     resolve({ prompt: !get() && !fallback, fallback }).then((p) => { if (p.city !== p0.city || p.moved) { draw(p, p.moved ? `You're in ${p.city}. Showing what's on here.` : ""); onChange && onChange(p.city); } });
   }
-  window.EncorePlace = { CITIES, find, nearest, near, get, resolve, setManual, chip };
+  window.EncorePlace = { CITIES, find, nearest, closest, near, get, resolve, setManual, chip, locate, useGps, gpsMessage };
 })();

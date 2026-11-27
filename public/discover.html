@@ -150,7 +150,9 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   $("#locBtn").onclick = () => openLoc($("#locPanel").hidden);
   $("#locPanel").onsubmit = (e) => { e.preventDefault(); const v = $("#locIn").value.trim(); const c = (P && P.find(v)?.[0]) || v; setCity(c); openLoc(false); $("#locBtn").focus(); };
   $("#locAny").onclick = () => { setCity(""); openLoc(false); $("#locBtn").focus(); };
-  $("#locGps").onclick = async () => { if (!P) return; const b = $("#locGps"); b.textContent = "Finding you…"; const p = await P.resolve({ prompt: true }); b.textContent = "Use my location"; if (!p || !p.city || !(p.source === "gps" || (p.gpsCity && p.gpsCity === p.city))) { $("#locNote").textContent = "Couldn't get your location. Type your city instead."; return; } setCity(p.city, "gps"); openLoc(false); $("#locBtn").focus(); };
+  $("#locGps").onclick = async () => { if (!P) return; const b = $("#locGps"), note = $("#locNote"); if (b.disabled) return; b.disabled = true; b.textContent = "Finding you…"; note.textContent = ""; const r = await (P.useGps ? P.useGps() : P.resolve({ prompt: true }).then((p) => (p.city ? { ok: true, city: p.city } : { ok: false, message: "Your phone couldn't find a location right now." }))); b.disabled = false; b.textContent = "Use my location";
+    if (!r.ok) { note.innerHTML = esc(r.message) + (r.closest && r.closest.length ? " " + r.closest.map((c) => `<button type="button" class="ls-chip" data-near="${esc(c)}">${esc(c)}</button>`).join(" ") : ""); note.querySelectorAll("[data-near]").forEach((x) => (x.onclick = () => { setCity(x.dataset.near); openLoc(false); $("#locBtn").focus(); })); return; }
+    setCity(r.city, "gps"); openLoc(false); $("#locBtn").focus(); };
   $("#locPanel").onkeydown = (e) => { if (e.key === "Escape") { openLoc(false); $("#locBtn").focus(); } };
   drawLoc();
 

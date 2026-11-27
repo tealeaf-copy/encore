@@ -156,7 +156,7 @@
   async function shareFile(blob, name, extra = {}) { try { const f = new File([blob], name, { type: blob.type }); if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], ...extra }); return true; } } catch (e) { if (e?.name === "AbortError") return true; } return false; }
   const phone = () => matchMedia("(pointer:coarse)").matches;
 
-  async function open(opts = {}) { css(); await fill(opts); const D = norm(opts), prev = document.activeElement;
+  async function open(opts = {}) { const prev0 = document.activeElement; css(); await fill(opts); const D = norm(opts), prev = prev0 && prev0 !== document.body && prev0.isConnected ? prev0 : document.activeElement;
     const name = (D.title || "invite").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 40) || "invite";
     const msg = opts.text || `${D.title}${D.when ? `, ${D.when}` : ""}${D.where ? ` at ${D.where}` : ""}. Are you in? ${D.url}`;
     const S = [
@@ -181,7 +181,7 @@
     const tapOff = (l) => { l.textContent = "Tap to copy"; l.classList.toggle("on", false); };
     let nt = 0; const say = (t) => { live.textContent = t; const line = $$(".plsh-tap", bg)[Math.max(0, at)]; $$(".plsh-tap", bg).forEach(tapOff);
       if (line) { line.textContent = t; line.classList.toggle("on", true); } clearTimeout(nt); nt = setTimeout(() => line && tapOff(line), 2600); };
-    const close = () => { bg.remove(); document.removeEventListener("keydown", key, true); document.documentElement.style.overflow = prevOverflow; try { prev?.focus?.({ preventScroll: true }); } catch {} opts.onClose?.(); };
+    const close = () => { bg.remove(); document.removeEventListener("keydown", key, true); document.documentElement.style.overflow = prevOverflow; try { /* back to what opened it; a tap leaves focus on the body, and the button may have been drawn again: then the page's heading */ const t = prev && prev !== document.body && prev.isConnected ? prev : [...document.querySelectorAll("#tk h2, main h1, main h2, h1, h2")].find((h) => h.getClientRects().length && !h.closest("[aria-modal]")); if (t && t !== prev && !t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1"); t?.focus?.({ preventScroll: true }); } catch {} opts.onClose?.(); };
     const key = (e) => { if (!bg.isConnected) return; if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && !/TEXTAREA|INPUT/.test(e.target?.tagName || "")) { e.preventDefault(); go(at + (e.key === "ArrowRight" ? 1 : -1)); } };
     document.addEventListener("keydown", key, true); $(".plsh-x", bg).onclick = close; bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
     const tr = (t) => { try { opts.track?.(t); } catch {} };

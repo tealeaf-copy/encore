@@ -262,7 +262,7 @@ a{color:inherit}button{font:inherit;color:inherit}
     return `<li class="lb-x">${i.why ? `<p class="lb-why">${esc(i.why)}${by ? ` <span>${esc(by)}</span>` : ""}</p>` : ""}${ag}</li>`; };
   /** Home, top: the curator's strip once anything is shared, and the one nudge. */
   const homeLists = () => { if (!ST || chip || q.trim()) return ""; const n = ST.nudge, any = ST.publicLists || ST.followers || ST.saves;
-    return (any && window.PLLists ? PLLists.strip(ST) + (ST.handle && ST.publicLists ? `<p class="hlede" style="margin:-4px 0 8px"><a href="/@${esc(ST.handle)}/lists">See your page</a></p>` : "") : "")
+    return (any && window.PLLists ? PLLists.strip(ST) + (ST.handle && ST.publicLists ? `<p class="hlede" style="margin:-4px 0 8px"><a style="display:inline-block;padding:12px 0;margin:-12px 0" href="/@${esc(ST.handle)}/lists">See your page</a></p>` : "") : "")
       + (n ? `<div class="pll-nudge" data-nudge="${esc(n.id)}"><p>${esc(n.line)}</p><a class="btn sm primary" href="#list-${esc(n.id)}">See how it looks</a><button type="button" class="link" data-nudge-no style="font-size:14px">Not now</button></div>` : ""); };
   const followedHtml = () => (chip || q.trim() || !FOL?.lists?.length ? "" : `<h2 class="lb-sec">Lists you follow</h2><ul class="lb-rows">${FOL.lists.map((l) => entryRow({ href: l.url, name: l.name, sub: `${l.by}'s list · ${plural(l.count, "thing")}${l.following ? "" : " · Saved"}`, tile: () => collage(l.covers) })).join("")}</ul>`);
   /** On your own shared list: followers, your page, and the nudge for this list. */

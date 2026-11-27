@@ -204,7 +204,7 @@
   // went to Files, and in-app browsers ignored it), Google and Outlook go through /e/<id>/cal/<which> with the same
   // times. In the create canvas's guest preview there's no event yet, so it says so instead of failing quietly.
   const calOf = (a) => { const m = /^\/e\/([A-Za-z0-9_-]{2,80})\.ics(\?[^#]*)?$/.exec(a.getAttribute("href") || ""); return m ? { id: m[1], q: m[2] || "" } : null; };
-  function calMenu(a, C) { $("#slCal")?.remove(); const pv = C.id === "_preview" || document.documentElement.classList.contains("pv"), back = document.activeElement;
+  function calMenu(a, C) { $("#slCal")?.remove(); const pv = C.id === "_preview" || document.documentElement.classList.contains("pv"), back = document.activeElement && document.activeElement !== document.body ? document.activeElement : a; /* a tap leaves focus on the page body: focus goes back to the link */
     const base = `/e/${encodeURIComponent(C.id)}`, d = document.createElement("div"); d.id = "slCal"; d.className = "sl-calbg";
     d.innerHTML = `<div class="sl-cal" role="dialog" aria-modal="true" aria-labelledby="slCalH"><p class="sl-eyebrow" id="slCalH">Add to calendar</p>${pv
       ? `<p class="sl-sub">This is the preview. Once you share the invite, guests can add it to Apple Calendar, Google or Outlook from here.</p>`

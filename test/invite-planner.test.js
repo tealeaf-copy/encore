@@ -131,7 +131,7 @@ test("the Invite tab: pick from a list, the capacity meter, waves on schedule, t
   const id = await event(bo, 12, { headcount: 6 });
   let r = await post(`/api/plan/${id}/add`, { chips: [{ k: "noShow", not: true }] }, bo.cookie); let j = await r.json(); assert.equal(r.status, 200, JSON.stringify(j));
   assert.equal(j.added, 4, "Ana, Sam, Joe and the follower, not Kim");
-  let pl = j.plan; assert.equal(pl.meter.invited, 4); assert.equal(pl.meter.seats, 6); assert.match(pl.meter.line, /^4 on the list · 6 seats · expect ~\d+ yes$/);
+  let pl = j.plan; assert.equal(pl.meter.invited, 4); assert.equal(pl.meter.seats, 6); assert.match(pl.meter.line, /^4 on the list · 6 spots · expect ~\d+ in$/);
   assert.equal(pl.waves.length, 3); assert.equal(pl.counts.planned, 4); assert.ok(pl.rows.every((x) => x.status === "planned"));
   // tag Ana VIP: she moves to the first wave
   const anaId = pl.rows.find((x) => x.email === ana.email).id; await post("/api/contacts/" + anaId, { tags: ["VIP"] }, bo.cookie);

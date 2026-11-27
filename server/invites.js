@@ -87,14 +87,14 @@ export function makeInvites({ store, C, X, P, F = null, seats = null, now: clock
     for (const [pid, r] of rBy) { if (seen.has(pid)) continue; const p = byId.get(pid); if (!p) continue; rows.push({ p, entry: null, r, wave: "", status: statusOf(null, r, ev, { now: t, door }), planned: false }); }
     return { ev, pl, rows, door, R };
   }
-  /** "18 invited · 24 seats · expect ~15 yes". Expected counts people already in as yes, and the rest by their reply rate. */
+  /** "18 invited · 24 spots · expect ~15 in". Expected counts people already in as yes, and the rest by their reply rate. */
   function meter(ev, rows) {
     const cap = +ev.headcount || 0, invited = rows.filter((x) => x.planned).length, sent = rows.filter((x) => x.planned && (x.entry.invitedAt || x.r)).length, toSend = invited - sent, inNow = rows.filter((x) => ["yes", "in", "came"].includes(x.status));
     const spots = inNow.reduce((s, x) => s + Math.max(1, Math.floor(+x.r?.party) || 1), 0);
     const open = rows.filter((x) => ["planned", "invited", "seen", "maybe"].includes(x.status)), exp = inNow.length + expectedYes(open.map((x) => x.p));
     const no = rows.filter((x) => x.status === "no").length;
     return { invited, sent, toSend, seats: cap, in: inNow.length, spots, expect: exp, waiting: open.length, no, left: cap ? Math.max(0, cap - spots) : null,
-      line: [!sent && invited ? `${invited} on the list` : `${sent} invited`, sent && toSend ? `${toSend} to send` : "", cap ? `${cap} seats` : "", `expect ~${exp} yes`].filter(Boolean).join(" · ") };
+      line: [!sent && invited ? `${invited} on the list` : `${sent} invited`, sent && toSend ? `${toSend} to send` : "", cap ? `${cap} spots` : "", `expect ~${exp} in`].filter(Boolean).join(" · ") };
   }
 
   // ---- what the host does ----

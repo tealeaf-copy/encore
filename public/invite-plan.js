@@ -46,10 +46,10 @@
 
   // ---------------- the meter ----------------
   function meterHTML(d) { const m = d.meter, cap = m.seats || Math.max(m.expect, m.invited, 1), pin = Math.min(100, (m.spots / cap) * 100), pexp = Math.max(0, Math.min(100 - pin, ((m.expect - m.in) / cap) * 100));
-    const seats = d.seats?.on ? `<div class="ip-blocks" aria-label="Seats by audience">${d.seats.blocks.map((b) => `<div class="ip-blk"><span><b>${E(b.label)}</b> <span class="ip-mono">${b.taken}/${b.cap}</span></span><div class="ip-bar" aria-hidden="true"><i class="in" style="width:${b.cap ? Math.min(100, (b.taken / b.cap) * 100) : 0}%"></i></div><span>${b.released ? "Released to everyone" : b.open ? (b.left ? `${b.left} left` : "Full") : `Opens ${E(b.opens)}`}</span></div>`).join("")}</div>` : "";
-    return `<section class="ip-card ip-meter" aria-label="Capacity"><p class="ip-line">${!m.sent && m.invited ? `<b class="ip-mono">${m.invited}</b> on the list` : !m.sent && m.in ? `<b class="ip-mono">${m.in}</b> in` : `<b class="ip-mono">${m.sent}</b> invited`}${m.sent && m.toSend ? ` · <b class="ip-mono">${m.toSend}</b> to send` : ""} · ${m.seats ? `<b class="ip-mono">${m.seats}</b> seats · ` : ""}expect <b class="ip-mono">~${m.expect}</b> yes</p>
-      <div class="ip-bar" role="img" aria-label="${m.in} in, about ${Math.max(0, m.expect - m.in)} more likely${m.seats ? `, ${m.seats} seats` : ""}"><i class="in" style="width:${pin}%" title="${m.in} in"></i><i class="exp" style="width:${pexp}%" title="About ${Math.max(0, m.expect - m.in)} more likely"></i></div>
-      <p class="ip-legend"><span><i class="sw-in"></i>${m.in} in</span><span><i class="sw-exp"></i>~${Math.max(0, m.expect - m.in)} more likely</span>${m.seats ? `<span>${m.left} ${m.left === 1 ? "seat" : "seats"} open</span>` : ""}${m.seats && m.expect > m.seats ? `<span>You may be over. Use waves or the waitlist.</span>` : m.seats && m.expect < m.seats * 0.7 ? `<span>Room for ~${m.seats - m.expect} more invites</span>` : ""}</p>${seats}</section>`; }
+    const seats = d.seats?.on ? `<div class="ip-blocks" aria-label="Spots by audience">${d.seats.blocks.map((b) => `<div class="ip-blk"><span><b>${E(b.label)}</b> <span class="ip-mono">${b.taken}/${b.cap}</span></span><div class="ip-bar" aria-hidden="true"><i class="in" style="width:${b.cap ? Math.min(100, (b.taken / b.cap) * 100) : 0}%"></i></div><span>${b.released ? "Released to everyone" : b.open ? (b.left ? `${b.left} left` : "Full") : `Opens ${E(b.opens)}`}</span></div>`).join("")}</div>` : "";
+    return `<section class="ip-card ip-meter" aria-label="Capacity"><p class="ip-line">${!m.sent && m.invited ? `<b class="ip-mono">${m.invited}</b> on the list` : !m.sent && m.in ? `<b class="ip-mono">${m.in}</b> in` : `<b class="ip-mono">${m.sent}</b> invited`}${m.sent && m.toSend ? ` · <b class="ip-mono">${m.toSend}</b> to send` : ""} · ${m.seats ? `<b class="ip-mono">${m.seats}</b> spots · ` : ""}expect <b class="ip-mono">~${m.expect}</b> in</p>
+      <div class="ip-bar" role="img" aria-label="${m.in} in, about ${Math.max(0, m.expect - m.in)} more likely${m.seats ? `, ${m.seats} spots` : ""}"><i class="in" style="width:${pin}%" title="${m.in} in"></i><i class="exp" style="width:${pexp}%" title="About ${Math.max(0, m.expect - m.in)} more likely"></i></div>
+      <p class="ip-legend"><span><i class="sw-in"></i>${m.in} in</span><span><i class="sw-exp"></i>~${Math.max(0, m.expect - m.in)} more likely</span>${m.seats ? `<span>${m.left} ${m.left === 1 ? "spot" : "spots"} open</span>` : ""}${m.seats && m.expect > m.seats ? `<span>You may be over. Use waves or the waitlist.</span>` : m.seats && m.expect < m.seats * 0.7 ? `<span>Room for ~${m.seats - m.expect} more invites</span>` : ""}</p>${seats}</section>`; }
 
   function draw(el, id) { const s = st(id), d = s.data; if (!d) return; const c = d.counts, manage = d.rows.length ? !!d.rows.some((r) => r.link) || s.role === "manage" : s.role !== "view";
     const replies = c.yes + c.in + c.maybe + c.no + c.asked + c.waitlist;
@@ -117,7 +117,7 @@
 
   // ---------------- More: seats by audience ----------------
   function moreHTML(d, s) { const z = s.seats;
-    return `<details class="ip-card ip-more" id="ipMore"${s.moreOpen ? " open" : ""}><summary>More: seats by audience</summary>${!z ? `<p class="ip-sub">Loading…</p>` : seatsHTML(d, z, s)}</details>`; }
+    return `<details class="ip-card ip-more" id="ipMore"${s.moreOpen ? " open" : ""}><summary>More: spots by audience</summary>${!z ? `<p class="ip-sub">Loading…</p>` : seatsHTML(d, z, s)}</details>`; }
   const KL = { club: "Fan club", tier: "Supporters", vip: "VIP list", list: "A saved list", regulars: "Regulars (came 2+ times)", new: "New guests", everyone: "Everyone else" };
   function seatsHTML(d, z, s) { const B = s.edit || z.blocks || [], cap = z.cap || d.event.headcount || 0, sum = B.reduce((a, b) => a + (+b.n || 0), 0);
     const kindOpt = (b) => z.kinds.map((k) => `<option value="${k}"${b.kind === k ? " selected" : ""}>${E(KL[k])}</option>`).join("");
@@ -131,7 +131,7 @@
         <p class="ip-muted ip-mono" style="margin:8px 0 0">${sum} of ${cap || "?"} spots split${cap && sum < cap ? `. ${cap - sum} go to everyone else.` : cap && sum > cap ? `. That's ${sum - cap} more than the event has.` : "."}</p>
         <label class="ip-sw"><input type="checkbox" id="ipRoll"${z.rollover !== false ? " checked" : ""}> If a block isn't full by its release time, give the rest to everyone</label>
         <div class="ip-preview" aria-label="What guests see">${top ? `<div><small>A ${E(word(top)[1])} sees</small>${E(word(top)[0])} can reply first. ${Math.max(0, (+top.n || 0) - (top.taken || 0))} ${E(word(top)[1])} spots left.</div>` : ""}${open ? `<div><small>Everyone else sees</small>${open.opensAt > Date.now() ? `Opens to everyone ${E(when(open.opensAt))}, with Remind me.` : "The invite, as usual."}</div>` : ""}</div>` : ""}
-      <div class="ip-acts"><button class="ip-b sm" type="button" data-badd>Add a block</button>${B.length ? `<button class="ip-b pri sm" type="button" data-bsave>Save seats</button>${z.on ? `<button class="ip-b ghost sm" type="button" data-boff>Turn off</button>` : ""}` : ""}</div>`; }
+      <div class="ip-acts"><button class="ip-b sm" type="button" data-badd>Add a block</button>${B.length ? `<button class="ip-b pri sm" type="button" data-bsave>Save the blocks</button>${z.on ? `<button class="ip-b ghost sm" type="button" data-boff>Turn off</button>` : ""}` : ""}</div>`; }
   async function loadSeats(el, id) { const s = st(id); try { s.seats = await api(`/api/plan/${encodeURIComponent(id)}/seats`); s.edit = null; } catch (e) { s.seats = null; } draw(el, id); }
 
   // ---------------- wiring ----------------
@@ -164,12 +164,12 @@
     // seats
     const more = q("#ipMore", el); if (more) { more.ontoggle = () => { s.moreOpen = more.open; if (more.open && !s.seats) loadSeats(el, id); }; if (more.open && !s.seats) loadSeats(el, id); }
     const edit = () => (s.edit = s.edit || JSON.parse(JSON.stringify((s.seats?.blocks || []).filter((b) => !b.implicit))));
-    qa("[data-preset]", el).forEach((b) => (b.onclick = busy(b, async () => { const r = await api(base + "/seats", { preset: b.dataset.preset, on: true }); s.seats = { ...s.seats, ...r, preset: b.dataset.preset }; s.edit = null; await load(id); draw(el, id); toast("Seats split. Change any number below."); })));
+    qa("[data-preset]", el).forEach((b) => (b.onclick = busy(b, async () => { const r = await api(base + "/seats", { preset: b.dataset.preset, on: true }); s.seats = { ...s.seats, ...r, preset: b.dataset.preset }; s.edit = null; await load(id); draw(el, id); toast("Spots split. Change any number below."); })));
     qa("[data-bk]", el).forEach((x) => (x.onchange = () => { const B = edit(), i = +x.closest("[data-bi]").dataset.bi, k = x.dataset.bk; B[i][k] = k === "n" ? +x.value : k === "opensAt" || k === "releaseAt" ? fromLocal(x.value) : x.value; if (k === "kind") B[i].label = ""; draw(el, id); }));
     qa("[data-bdel]", el).forEach((b) => (b.onclick = () => { edit().splice(+b.dataset.bdel, 1); draw(el, id); }));
     const ba = q("[data-badd]", el); if (ba) ba.onclick = () => { const B = edit(); B.push({ kind: B.some((b) => b.kind === "everyone") ? "regulars" : "everyone", n: 4, opensAt: Date.now() }); draw(el, id); };
-    const bs = q("[data-bsave]", el); if (bs) bs.onclick = busy(bs, async () => { const r = await api(base + "/seats", { on: true, blocks: edit(), rollover: !!q("#ipRoll", el)?.checked }); s.seats = { ...s.seats, ...r }; s.edit = null; await load(id); draw(el, id); toast("Seats saved."); });
-    const bo = q("[data-boff]", el); if (bo) bo.onclick = busy(bo, async () => { const r = await api(base + "/seats", { on: false }); s.seats = { ...s.seats, ...r, on: false }; await load(id); draw(el, id); toast("Seats are one pool again."); });
+    const bs = q("[data-bsave]", el); if (bs) bs.onclick = busy(bs, async () => { const r = await api(base + "/seats", { on: true, blocks: edit(), rollover: !!q("#ipRoll", el)?.checked }); s.seats = { ...s.seats, ...r }; s.edit = null; await load(id); draw(el, id); toast("Blocks saved."); });
+    const bo = q("[data-boff]", el); if (bo) bo.onclick = busy(bo, async () => { const r = await api(base + "/seats", { on: false }); s.seats = { ...s.seats, ...r, on: false }; await load(id); draw(el, id); toast("Spots are one pool again."); });
   }
 
   window.InvitePlan = { tagsHtml, mount, refresh: (el, id) => refresh(el, id), _state: S };

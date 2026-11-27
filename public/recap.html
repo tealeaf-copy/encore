@@ -45,7 +45,7 @@
     <div class="who"><span class="av">${av}</span><div><h1>${esc(h.name)}</h1><small>${esc(h.city)}</small></div></div>
     <div class="yr">${d.year}</div><p class="yr-sub">${esc(first)}'s year of <em>hosting</em></p>${window.Potto ? `<span class="potto-c">${window.Potto.svg("cheer", 118)}</span>` : ""}
     <div class="stats"><div class="st"><b>${d.events}</b><span>${d.events === 1 ? "event" : "events"}</span></div><div class="st"><b>${d.guests}</b><span>${d.guests === 1 ? "guest came" : "guests came"}</span></div>
-      <div class="st"><b>${d.returning}</b><span>came back</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.streakUnit === "month" ? (d.longestStreak === 1 ? "month" : "months") : d.longestStreak === 1 ? "week" : "weeks"} in a row, at most</span></div></div>
+      <div class="st"><b>${d.returning}</b><span>came back</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.streakUnit === "month" ? (d.longestStreak === 1 ? "month" : "months") : d.longestStreak === 1 ? "week" : "weeks"} in a row, the longest run</span></div></div>
     <div class="bars" aria-label="Events by month">${d.months.map((n) => `<i class="${n ? "" : "z"}" style="height:${Math.max(4, (n / max) * 100)}%" title="${n}"></i>`).join("")}</div><div class="months">${M.map((x) => `<span>${x}</span>`).join("")}</div>
     ${d.busiestMonth ? `<p class="line">Busiest month: <b>${esc(d.busiestMonth.month)}</b>, with ${d.busiestMonth.n} ${d.busiestMonth.n === 1 ? "event" : "events"}.</p>` : ""}
     ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.label)}<i>×${t.n}</i></span>`).join("")}</div>` : ""}

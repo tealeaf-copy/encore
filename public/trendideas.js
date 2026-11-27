@@ -7,7 +7,8 @@
 //   PLTrendIdeas.fetch({ n, offset })       { ideas, more } from GET /api/public/ideas/suggest, signed in or not
 //   PLTrendIdeas.mount(el, { onPick, n })   3 to 5 ideas with Use this and More ideas. Cached, so a redraw (the create
 //                                           canvas redraws often) paints at once from what it already has.
-//   PLTrendIdeas.suggestFor(text)           autocomplete hook: ideas whose title starts with or contains the text
+//   PLTrendIdeas.suggestFor(text)           ideas whose title or plan contains the text
+//   PLTrendIdeas.bank()                     a live list for the autocomplete bank (PLSuggest.attach({ extra }))
 //   PLTrendIdeas.home()                     the host's "What's working near you" card on Home (also runs by itself)
 // Field Notes kit: --pl-* tokens, IBM Plex, 6px corners, 44px targets, ink-blue primary.
 (function () {
@@ -53,6 +54,10 @@
   /** Start a new event from an idea: the create canvas with its kind, and the title filled in. */
   function start(x) { const C = window.EventCanvas; if (!C?.open) { location.href = "/start"; return; }
     Promise.resolve(C.open({ mode: "new", ...(x.kind ? { kind: x.kind } : {}) })).then(() => setTimeout(() => { const t = document.getElementById("cvTitle"); if (t && !t.value.trim()) { t.value = x.title; t.dispatchEvent(new Event("input", { bubbles: true })); } }, 80)); }
+  /** Candidates for the autocomplete bank (public/autocomplete.js PLSuggest.attach({ extra })): a live list, filled
+   *  once the ideas arrive, each with its source as the row's hint ("Loved here: ...", "Trending on social"). */
+  function bank() { if (bank.L) return bank.L; const L = (bank.L = []);
+    Promise.all([fetchIdeas({ n: 5, offset: 0 }), fetchIdeas({ n: 5, offset: 5 })]).then((R) => { for (const x of R.flatMap((r) => r.ideas)) L.push({ t: x.title, k: x.kind || "", title: x.title, hint: x.sourceLine || "An idea from Potto", src: "trends" }); }); return L; }
   /** For autocomplete (public/autocomplete.js, window.PLSuggest): up to 5 ideas that match what someone is typing. */
   async function suggestFor(text = "", n = 5) { const t = String(text || "").trim().toLowerCase(); const r = await fetchIdeas({ n: 5, offset: 0 }), r2 = r.more ? await fetchIdeas({ n: 5, offset: 5 }) : { ideas: [] };
     const L = [...r.ideas, ...r2.ideas]; return (t ? L.filter((x) => x.title.toLowerCase().includes(t) || (x.say || "").toLowerCase().includes(t)) : L).slice(0, n).map((x) => ({ text: x.say || x.title, title: x.title, source: x.source, sourceLine: x.sourceLine })); }
@@ -81,5 +86,5 @@
   if (typeof MutationObserver === "function" && document.documentElement) new MutationObserver(tick).observe(document.documentElement, { childList: true, subtree: true });
   // in the app, signed in: fetch early, so the canvas and Home draw the ideas with the page instead of after it
   try { if (signedIn() && (/[?&]app=1/.test(location.search) || location.pathname === "/")) { homeData(); fetchIdeas({ n: 3, offset: 0 }); } } catch {}
-  window.PLTrendIdeas = { fetch: fetchIdeas, mount, start, suggestFor, home };
+  window.PLTrendIdeas = { fetch: fetchIdeas, mount, start, suggestFor, bank, home };
 })();

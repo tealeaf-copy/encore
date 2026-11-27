@@ -429,7 +429,7 @@
   const sugCity = () => S?.W?.city || PROFILE?.city || "";
   const nextDay = (k) => { const d = new Date(), n = WD.indexOf(k); if (n < 0) return ""; d.setDate(d.getDate() + ((n - d.getDay() + 7) % 7)); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   function suggestHook() { const P = root.PLSuggest; if (!P?.attach || !S?.el) return;
-    const t = q("#cvTitle", S.el); if (t) P.attach(t, { kind: "idea", city: sugCity, onPick: pickIdea });
+    const t = q("#cvTitle", S.el); if (t) P.attach(t, { kind: "idea", city: sugCity, onPick: pickIdea, extra: root.PLTrendIdeas?.bank?.() || [] }); // trends: Potto's ideas join the bank, labelled
     const own = q("#cvKindOwn", S.el); if (own) P.attach(own, { kind: "kind", maxLen: 24, city: sugCity }); }
   function pickIdea(it) { if (!S) return; let W = S.W; const text = String(it.value || it.text || ""), P = planFromLine(text) || {}, was = [W.date, W.startTime, W.meetPoint || W.venueName, W.planKind].join("|");
     W.pubTitle = W.name = it.title || P.title || text;

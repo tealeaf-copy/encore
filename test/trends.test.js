@@ -180,7 +180,7 @@ test("Potto uses it: chat, text, the ideas row, the swipe deck, the feed card, W
   const read = (f) => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
   assert.match(read("public/feedvisual.js"), /x\.head \|\| "Small formats people loved"/); assert.match(read("public/swipedeck.js"), /c\.sourceLine \|\| "An idea to try"/);
   assert.match(read("public/feed.html"), /\/api\/public\/trends\?n=2&city=/); assert.match(read("public/canvas.js"), /PLTrendIdeas\?\.mount/); assert.match(read("public/start.html"), /PLTrendIdeas/);
-  assert.match(read("index.html"), /<script src="\/trendideas\.js" defer><\/script>/); assert.match(read("public/trendideas.js"), /suggestFor/);
+  assert.match(read("index.html"), /<script src="\/trendideas\.js" defer><\/script>/); assert.match(read("public/trendideas.js"), /suggestFor/); assert.match(read("public/canvas.js"), /extra: root\.PLTrendIdeas\?\.bank\?\.\(\)/, "the autocomplete bank takes Potto's ideas");
   // house rules on the new files: no em dashes
   for (const f of ["server/trends.js", "server/trendnotes.js", "public/trendideas.js"]) { const t = read(f); assert.doesNotMatch(t, /\u2014/, f + ": no em dashes"); }
   const idx = read("index.html"); assert.match(idx.slice(idx.lastIndexOf("<script")), /comewith\.js/, "the Come with me? loader stays the last script");
@@ -207,6 +207,8 @@ test("browser at 390: the canvas shows labelled ideas, Use this fills the title,
     await page.screenshot({ path: path.join(SHOTS, "home-card-390.png") });
     await page.evaluate(() => window.EventCanvas.open({ mode: "new" }));
     await page.waitForSelector("#cvIdeas .pti-use", { timeout: 20000 });
+    await page.waitForFunction(() => (window.PLTrendIdeas?.bank?.() || []).length > 0, null, { timeout: 10000 }); // the autocomplete bank has them too
+    assert.ok(await page.evaluate(() => window.PLTrendIdeas.bank().every((x) => x.t && x.hint)), "each bank idea carries its source as the hint");
     const txt = await page.$eval("#cvIdeas", (el) => el.innerText); assert.match(txt, /Loved here: \d+ guests/); assert.match(txt, /Trending on social|An idea from Potto/);
     const font = await page.$eval("#cvIdeas .pti-t b", (b) => getComputedStyle(b).fontFamily); assert.match(font, /Plex/i);
     const radius = await page.$eval("#cvIdeas .pti", (b) => getComputedStyle(b).borderRadius); assert.equal(radius, "6px");

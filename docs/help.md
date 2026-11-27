@@ -268,6 +268,20 @@ Keywords: invite friends, come with me, bring a friend, hold a spot, friend's sp
 Questions: How does Invite friends work? | How do I bring a friend? | Can I hold a spot for a friend?
 After you reply I'm in, tap Invite friends to make a link for one friend. It opens the share sheet: the link, a flyer and a QR code. On most events their spot is held for 48 hours. On pairs and groups they join yours. Ask to join events still ask: the link holds nothing. Once you're both in, Who's coming says "Mia and Jo are in".
 
+## Inviting a friend to Pottery Lab
+
+Keywords: invite a friend, text an invite, invites left, personal invite, join link, invite only, my invites, take back invite
+Questions: How do I invite a friend to Pottery Lab? | How many invites do I have? | Can I take an invite back?
+Pottery Lab is invite only for now. On your Plans page, tap Text an invite under Invite a friend. Your phone opens Messages with a short note and a link that's just for one friend. It works once, for 30 days. When they join, you're friends here. Each member has 5 invites; one comes back when an invite runs out or you take it back under Your invites.
+[Your plans](/plans)
+
+## Text with Potto
+
+Keywords: text potto, potto by text, sms, whatsapp, text message, texting, stop texts, unsubscribe, quiet hours
+Questions: Can I text Potto? | How do I use Potto by text or WhatsApp? | How do I stop texts from Potto?
+In Settings, add your mobile number, confirm it with the code we text you, then turn on Text with Potto. Text things like "my plans", "I'm in", "where is it" or "what's on this weekend". Hosts can text "who's in" or "remind my guests". Potto asks before it orders, reminds or changes anything. It never texts you between 9pm and 9am. Reply STOP any time to stop, START to come back, HELP for help.
+[Settings](/settings#text)
+
 ## Open tables
 
 Keywords: open table, tables, seating, table of 4, taste questions, suggested tables, you're at table

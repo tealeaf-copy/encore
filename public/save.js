@@ -110,5 +110,7 @@
       if (!(j.interests?.length || j.city)) { const w = await fetch("/api/me/interests", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ interests: Array.isArray(L.interests) ? L.interests : [], city: String(L.city || "").slice(0, 60) }) }); if (!w.ok) return; }
       localStorage.setItem(mark, "1"); localStorage.removeItem("pl.interests"); } catch {} }
   const ready = load().then(() => { emit(); carryInterests(); return merge(); }).catch(() => {});
+  // signed in: the Save to list sheet loads now, so its buttons show filled for things already on a list (public/savelist.js)
+  ready.then(() => { if (!signedIn() || window.PLSaveList || document.querySelector('script[src="/savelist.js"]')) return; const t = document.createElement("script"); t.src = "/savelist.js"; t.defer = true; document.head.appendChild(t); });
   window.PLSave = { toList, listButton, carryInterests, button, isSaved, toggle, add, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
 })();

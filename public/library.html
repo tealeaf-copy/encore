@@ -110,7 +110,7 @@ a{color:inherit}button{font:inherit;color:inherit}
   const thumb = (i) => `<span class="tile${i.kind === "host" || i.kind === "club" ? " round" : ""}" aria-hidden="true">${pic(i)}</span>`;
   const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
   const SHARE_WORD = { private: "Private", link: "Link", friends: "Friends", public: "Public" };
-  const KIND_WORD = { event: "Event", host: "Host", club: "Fan club", idea: "Idea", place: "Place" };
+  const KIND_WORD = { event: "Event", host: "Host", club: "Fan club", idea: "Idea", place: "Place", collection: "Collection", drop: "Drop" };
   const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const when = (d) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return ""; const x = new Date(d + "T12:00:00Z"); return `${DOW[x.getUTCDay()]}, ${MON[x.getUTCMonth()]} ${x.getUTCDate()}`; };
   const itemSub = (i) => [i.past ? "Went" : KIND_WORD[i.kind], i.kind === "event" ? when(i.date) : "", i.line && i.kind !== "event" ? i.line : ""].filter(Boolean).join(" · ");

@@ -4,7 +4,7 @@
 // - smart lists that fill themselves and can't be edited: Going (upcoming plans), Saved (every heart, server/hooks.js),
 //   Hosts you follow and Fan clubs (server/fanclub.js), Went (past plans). Pinned by default.
 // - your own lists ("Cozy winter spots"): a name, an optional note, items of any kind (events, hosts, clubs, ideas,
-//   places). Private by default. A list can also be "share link" (read only, anyone with the link) or "shared with
+//   places, collections from Discover, drops). Private by default. A list can also be "share link" (read only, anyone with the link) or "shared with
 //   friends" (people you added as friends can open it and add to it, for planning together). Shared lists use an
 //   unguessable token; switching back to private kills the link, and a new share makes a new one.
 //   Public (server/curation.js): on the owner's curator page, Discover and followers' feeds, followable. It keeps a
@@ -40,7 +40,7 @@ const LIST_ID = /^[lb][a-f0-9]{10}$/, TOKEN_OK = /^[A-Za-z0-9_-]{24}$/;
 const IMG = (u) => (SAVE_IMG_OK(u) ? u : "");
 const PLAY_OK = (u) => /^https:\/\/[^\s"'<>()]{4,300}$/i.test(u || "");
 
-export const KINDS = ["event", "host", "club", "idea", "place"];
+export const KINDS = ["event", "host", "club", "idea", "place", "collection", "drop"];
 export const SHARE = ["private", "friends", "link", "public"]; // public: server/curation.js
 export const SMART = [
   { id: "going", name: "Going", sub: "Your plans coming up" },
@@ -51,7 +51,8 @@ export const SMART = [
 ];
 export const LIMITS = { lists: 100, items: 300, pins: 24, name: 60, note: 280, createPerHour: 20, addsPerHour: 240, friendAddsPerHour: 60, templates: 60 };
 const DEFAULT_PINS = SMART.map((s) => "smart:" + s.id);
-const refOk = (kind, ref) => (kind === "event" ? ID_OK.test(ref) : kind === "host" || kind === "club" ? HANDLE.test(ref) : kind === "idea" ? IDEA_OK.test(ref) : kind === "place" ? PLACE_OK.test(ref) : false);
+const COLL_OK = /^[a-z0-9][a-z0-9-]{1,40}$/;
+const refOk = (kind, ref) => (kind === "event" || kind === "drop" ? ID_OK.test(ref) : kind === "host" || kind === "club" ? HANDLE.test(ref) : kind === "idea" ? IDEA_OK.test(ref) : kind === "place" ? PLACE_OK.test(ref) : kind === "collection" ? COLL_OK.test(ref) : false);
 const keyOf = (i) => i.kind + ":" + i.ref;
 
 export function makeLibrary({ store, H, Dir, F, X, C, G = () => null, now: clock = () => Date.now() }) {
@@ -96,9 +97,16 @@ export function makeLibrary({ store, H, Dir, F, X, C, G = () => null, now: clock
       return v; }
     if (i.kind === "idea") { const x = H.IDEAS.find((y) => y.id === i.ref); if (!x) return pub ? null : out; return { ...out, title: x.title, line: x.line, url: "/ideas#" + x.id, status: "idea", art: { kind: x.art, tone: x.tone } }; }
     if (i.kind === "place") return { ...out, title: out.title || "A place", line: clean(i.line, 80), status: "place", url: "" };
+    // a Discover collection (/c/<id>): its own page; the title is what the shelf was called when it was saved
+    if (i.kind === "collection") return { ...out, title: out.title || "A collection", line: "Collection", status: "collection", url: "/c/" + encodeURIComponent(i.ref) };
+    // a drop (order ahead, pick up later): an event under the hood (server/drops.js), so its own invite page
+    if (i.kind === "drop") { let ev = null; try { const ws = workspaceOfEvent(i.ref); ev = ws && ws !== DEFAULT_WS ? scopeStore(store, ws).get("events/" + i.ref)?.data : null; } catch {}
+      if (!ev?.drop || ev.cancelled) return pub ? null : { ...out, line: "Drop", status: "drop", url: "/e/" + encodeURIComponent(i.ref) };
+      if (pub && !ev.discoverable) return null;
+      return { ...out, title: clean(ev.pubTitle || ev.name, 140) || out.title, img: IMG(ev.coverPhoto) || out.img, line: "Drop", status: "drop", date: ev.date || "", url: "/e/" + encodeURIComponent(i.ref) }; }
     return pub ? null : out; }
   const hydrateAll = (base, L, o) => L.map((i) => hydrate(base, i, o)).filter(Boolean);
-  const kindWord = { event: "Events", host: "Hosts", club: "Clubs", idea: "Ideas", place: "Places" };
+  const kindWord = { event: "Events", host: "Hosts", club: "Clubs", idea: "Ideas", place: "Places", collection: "Collections", drop: "Drops" };
   const typeOf = (items) => { const k = [...new Set(items.map((i) => i.kind))]; return !k.length ? "List" : k.length === 1 ? kindWord[k[0]] : "Mixed"; };
   const coverOf = (items) => items.slice(0, 4).map((i) => ({ kind: i.kind, ref: i.ref, title: i.title, img: i.img, art: i.art, emoji: i.emoji }));
   const linkOf = (L) => (L.token ? "/l/" + L.token : "");
@@ -212,10 +220,16 @@ export function makeLibrary({ store, H, Dir, F, X, C, G = () => null, now: clock
     const saved = S.items.some((i) => i.kind === kind && i.ref === ref), canSave = ["event", "idea", "host"].includes(kind);
     const last = R.last && (lists.some((l) => l.id === R.last) || shared.some((l) => l.id === R.last)) ? R.last : "";
     return { saved, canSave, lists, shared, last }; }
+  /** Every thing this person has saved or put on a list ("event:abc"), for the filled Save to list buttons. */
+  function marks(email) { const { R, S } = load(email), out = new Set(S.items.map(keyOf)); for (const L of R.lists) for (const i of itemsOf(L, S)) out.add(keyOf(i));
+    for (const { L } of sharedWith(email)) for (const i of L.items) if (i.by && lc(i.by) === lc(email)) out.add(keyOf(i));
+    return [...out].slice(0, 2000); }
   /** Set where one thing lives: `lists` is every list it should be in (own ids and "t:<token>" for friends' lists). */
   function applySheet(email, x, { lists = [], saved, newName = "", base = "" } = {}) { const it = cleanItem(x); if (!it) return { error: "That can't go on a list.", status: 400, code: "invalid" };
     const want = new Set((Array.isArray(lists) ? lists : []).map(String).slice(0, 60)); let created = null;
-    if (clean(newName, LIMITS.name)) { const c = createList(email, { name: newName }); if (c.error) return c; created = c.list; want.add(c.list.id); }
+    // "+ New list" with a name you already have adds to that list instead of making a second one
+    if (clean(newName, LIMITS.name)) { const same = load(email).R.lists.find((l) => lc(l.name) === lc(clean(newName, LIMITS.name)));
+      if (same) { created = same; want.add(same.id); } else { const c = createList(email, { name: newName }); if (c.error) return c; created = c.list; want.add(c.list.id); } }
     const out = { added: [], removed: [] }, { R, S } = load(email);
     for (const L of R.lists) { const has = itemsOf(L, S).some((i) => keyOf(i) === keyOf(it));
       if (want.has(L.id) && !has) { const r = addTo(L, it); if (r.error) return r; out.added.push(L.id); }
@@ -285,7 +299,7 @@ export function makeLibrary({ store, H, Dir, F, X, C, G = () => null, now: clock
     const k = kind + ":" + ref; if (!itemsOf(L, S).some((i) => keyOf(i) === k)) return { error: "That isn't on this list.", status: 404, code: "not_found" };
     const t = clean(why, 120); L.notes = { ...(L.notes || {}) }; if (t) L.notes[k] = t; else delete L.notes[k]; write(email, R); return { ok: true, why: t }; }
   // ---- end visibility ----
-  return { publicItems, setNote, coverOf, typeOf, raw, load, library, openList, createList, updateList, deleteList, addItem, removeItem, pin, sheet, applySheet, byToken, publicView, friendAdd, friendRemove, sharedWith, smartItems, hostLibrary, saveTemplate, dropTemplate, startFrom, tKey };
+  return { publicItems, marks, setNote, coverOf, typeOf, raw, load, library, openList, createList, updateList, deleteList, addItem, removeItem, pin, sheet, applySheet, byToken, publicView, friendAdd, friendRemove, sharedWith, smartItems, hostLibrary, saveTemplate, dropTemplate, startFrom, tKey };
 }
 
 export function mountLibrary(app, { store, currentUser, publicOrigin, C, X, sendStatic, express }) {
@@ -313,7 +327,8 @@ export function mountLibrary(app, { store, currentUser, publicOrigin, C, X, send
   app.post("/api/me/library/lists/:id/items", json, (req, res) => { const u = me(req, res); if (!u) return; if (limited("add|" + u.email, LIMITS.addsPerHour)) return slow(res); send(res, L.addItem(u.email, String(req.params.id), req.body || {})); });
   app.delete("/api/me/library/lists/:id/items", (req, res) => { const u = me(req, res); if (!u) return; send(res, L.removeItem(u.email, String(req.params.id), lc(req.query.kind), String(req.query.ref || ""))); });
   app.post("/api/me/library/pins", json, (req, res) => { const u = me(req, res); if (!u) return; send(res, L.pin(u.email, String(req.body?.key || ""), req.body?.on !== false)); });
-  // the save-to-list sheet
+  // the save-to-list sheet, and what's on your lists already (a Save to list button shows filled for those)
+  app.get("/api/me/library/marks", (req, res) => { const u = me(req, res); if (!u) return; res.json({ keys: L.marks(u.email) }); });
   app.get("/api/me/library/sheet", (req, res) => { const u = me(req, res); if (!u) return; res.json(L.sheet(u.email, lc(req.query.kind), String(req.query.ref || ""), base(req))); });
   app.post("/api/me/library/sheet", json, (req, res) => { const u = me(req, res); if (!u) return; if (limited("add|" + u.email, LIMITS.addsPerHour)) return slow(res); const b = req.body || {};
     if (b.newName && limited("create|" + u.email, LIMITS.createPerHour)) return slow(res);

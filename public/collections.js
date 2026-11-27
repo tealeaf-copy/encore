@@ -16,7 +16,8 @@
   const IMG = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[A-Za-z0-9_.-]+$/.test(u || "") || /^https:\/\/[^\s"'<>()]+$/.test(u || "");
   const cap = (t) => { t = String(t || "").trim(); return t && t !== "other" ? t.charAt(0).toUpperCase() + t.slice(1) : ""; };
   const media = (e) => IMG(e.cover) ? `<img src="${esc(e.cover)}" alt="" loading="lazy">` : window.EventArt ? window.EventArt.cover({ title: e.title, activity: e.format, date: e.date }, { title: "", label: "" }) : "";
-  // Save to list on each card: public/save.js opens the sheet (public/savelist.js) for any [data-pl-savelist]
+  // Save to list on each card, and for the whole collection on its page: public/savelist.js opens the sheet for any
+  // [data-pl-savelist] (collections.html loads it; Discover gets it through public/save.js)
   const LIST_IC = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6.5h11M4 12h11M4 17.5h7M18.5 14v7M15 17.5h7"/></svg>`;
   const saveList = (it) => (/^[A-Za-z0-9_-]{2,80}$/.test(it.ref || "") ? `<button type="button" class="plk-sl" data-pl-savelist="${esc(JSON.stringify(it))}" aria-label="Save to list: ${esc(it.title || "")}">${LIST_IC}</button>` : "");
   function card(e) { const url = SAFE(e.url) ? e.url : "/e/" + encodeURIComponent(e.id);
@@ -31,6 +32,7 @@
   const CSS = `
 section.plk-shelves{display:grid;gap:28px;margin:4px 0 8px;padding:8px 0 0}section.plk-sh{padding:0}
 .plk-shelves:empty{display:none}
+.plk-slc{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:12px 0 0;padding:0 14px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}.plk-slc:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
 .plk-card .plk-sl{position:absolute;top:8px;right:8px;z-index:2;width:44px;height:44px;display:grid;place-items:center;border-radius:999px;border:1.5px solid var(--pl-ink,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);cursor:pointer;padding:0}.plk-card .plk-sl:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
 .plk-sh h2{font:400 var(--fs-20-28,20px)/1.2 var(--sys-title);margin:0;letter-spacing:-.015em}
 .plk-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
@@ -91,7 +93,7 @@ section.plk-shelves{display:grid;gap:28px;margin:4px 0 8px;padding:8px 0 0}secti
       ? (x.hosts.length ? `<div class="plk-hosts">${x.hosts.map(hostCard).join("")}</div>` : "")
       : (x.events.length ? `<div class="plk-grid">${x.events.map(card).join("")}</div>` : "") + (x.ideas.length ? `<h2 class="plk-sub">Nothing quite like it yet</h2><p class="plk-subp">${x.events.length ? "A few more ideas in this spirit, for anyone who wants to host one." : "Be the first: here are ideas in this spirit to host."}</p><div class="plk-grid">${x.ideas.map(ideaCard).join("")}</div>` : "");
     const n = x.kind === "hosts" ? x.hosts.length : x.events.length;
-    el.innerHTML = `<div class="plk-page"><div class="plk-intro"><h1>${esc(x.title)}</h1><p>${esc(x.intro)}</p>${n ? `<span class="plk-n">${n} ${x.kind === "hosts" ? (n === 1 ? "host" : "hosts") : n === 1 ? "event" : "events"}${c && x.kind !== "hosts" ? " · " + esc(c) + " first" : ""}</span>` : ""}</div>
+    el.innerHTML = `<div class="plk-page"><div class="plk-intro"><h1>${esc(x.title)}</h1><p>${esc(x.intro)}</p><button type="button" class="plk-slc" data-pl-savelist="${esc(JSON.stringify({ kind: "collection", ref: x.id, title: x.title }))}" aria-label="Save to list: ${esc(x.title)}">${LIST_IC}<span class="pls-t">Save to list</span></button>${n ? `<span class="plk-n">${n} ${x.kind === "hosts" ? (n === 1 ? "host" : "hosts") : n === 1 ? "event" : "events"}${c && x.kind !== "hosts" ? " · " + esc(c) + " first" : ""}</span>` : ""}</div>
       ${body || `<div class="plk-empty">${window.Potto ? window.Potto.svg("think", 88, "Potto") : ""}<b>Nothing on this shelf yet</b><p>New events land here as hosts post them. Have a look around Discover in the meantime.</p><a class="ls-btn" href="/discover">Back to Discover</a></div>`}
       <nav class="plk-more" aria-label="Other collections">${(j.others || []).map((o) => `<a class="ls-chip" href="${esc(o.url)}">${esc(o.title)}</a>`).join("")}</nav></div>`;
     return x; }

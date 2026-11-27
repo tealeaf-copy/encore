@@ -74,7 +74,7 @@ import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: 
 import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.js"; import { mountInvites } from "./invites.js"; // People, seats by audience and the invite plan (server/people.js, seats.js, invites.js) // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { makeReplyDigest } from "./replydigest.js"; // the host's reply summary: one email per event every few hours (server/replydigest.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
-import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
+import { mountSurprise } from "./surprise.js"; import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountTrends } from "./trends.js"; // Potto's idea engine: platform trends, trend notes, Potto's ideas (server/trends.js)
 import { mountInspiration } from "./inspiration.js"; // inspiration cards in the feed (server/inspiration.js)
 import { mountPaidInsights } from "./paidinsights.js"; // Paid Insights: Market Insights for brands, Host Insights, opt-in demographics (server/paidinsights.js)
@@ -869,7 +869,8 @@ export function createApp({ store, dataDir }) {
   mountFriendInvites(app, { store, small, currentUser, C, X, sendStatic: (...a) => sendStatic(...a), publicOrigin: (req) => originOf(req), emailConfig: () => signinEmailConfig(), textOnce: (p, t) => app.locals.pottoText.textOnce(p, t) });
   // ---- end Potto by text ----
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
-  mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
+  const HK = mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
+  mountSurprise(app, { store, small, currentUser, C, X, H: HK, invitedGuest: (...a) => app.locals.invitedGuest?.(...a) }); // ---- surprise touches: drawn covers, milestones, regulars, invite lines, send-offs (server/surprise.js) ----
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountPlaces(app, { store, small, currentUser, C, X, sendStatic }); // after the map: it reads its geo (server/places.js)
   mountSuggest(app, { store, small, currentUser, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
@@ -1312,6 +1313,7 @@ export function createApp({ store, dataDir }) {
     if (!eq(inviteToken(req.ws, eventId, key), h.slice(i + 1))) return null;
     return (data.guests || []).find((g) => guestKeyOf(g) === key) || null;
   }
+  app.locals.invitedGuest = (req, ws, eventId, data) => invitedGuest({ get: (h) => req.get(h), ws }, eventId, data); // surprise touches: "Maya saved you a seat" (server/surprise.js)
   const aeOk = (ws, eventId, slug, token) => eq(aeToken(ws, eventId, slug), token);
   /** On a nominate view with a signed AE token: which AE it is (found among the event's owners, or x-encore-ae) and up to
    * 12 of their own people (event guests and scout contacts they own), name/title/company only. */

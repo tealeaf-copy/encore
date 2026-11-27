@@ -8649,8 +8649,9 @@ function coverFieldHTML(d){ const u=safeCover(d?.coverPhoto); return `<div class
 function coverTemplates(d){ const A=window.EventArt; if(!A) return undefined; const ev={...d,coverArt:null,title:d.pubTitle||d.name||d.title||"Your event"}, cur=d.coverPhoto?null:(d.coverArt?.kind||A.kindOf(ev)), kinds=A.suggest(ev,9); if(cur&&!kinds.includes(cur)) kinds.unshift(cur);
   return kinds.map(k=>({id:k,label:A.labelOf(k),on:!d.coverPhoto&&k===cur,html:A.cover(ev,{kind:k,tone:A.toneOf(ev,k),title:A.labelOf(k),label:"",exact:true})})) }
 async function openCoverSheet(d,after){ d=d||draft; if(!d) return; if(!window.PhotoSheet){ toast("One moment, the photo picker is loading."); return } const A=window.EventArt;
-  await window.PhotoSheet.open({for:"cover",eventId:d.id||"",current:{url:safeCover(d.coverPhoto),source:safeCover(d.coverSource),focus:d.coverFocus||null},templates:coverTemplates(d),onChange:async c=>{
+  await window.PhotoSheet.open({for:"cover",eventId:d.id||"",current:{url:safeCover(d.coverPhoto),source:safeCover(d.coverSource),focus:d.coverFocus||null},templates:(window.PLTitleCover?.tiles(d,coverTemplates(d)))||coverTemplates(d),onChange:async c=>{ /* surprise touches: the first tile is a cover Potto drew for this event (public/surprise-host.js) */
     if(c.removed){ d.coverPhoto=""; d.coverSource=""; d.coverFocus=null }
+    else if(c.template==="drawn-for-event"&&window.PLTitleCover?.art(d)){ d.coverPhoto=""; d.coverSource=""; d.coverFocus=null; d.coverArt=window.PLTitleCover.art(d); window.PLTitleCover.used(d) }
     else if(c.template){ d.coverPhoto=""; d.coverSource=""; d.coverFocus=null; d.coverArt={kind:c.template,tone:A?A.toneOf({...d,title:d.pubTitle||d.name||""},c.template):""} }
     else { d.coverPhoto=c.url; d.coverSource=c.source; d.coverFocus=c.focus; d.coverArt=null }
     await saveEvent(true); toast(c.removed?"Cover removed.":(d.published||d.discoverable)?"Cover saved. Guests see it now.":"Cover saved."); try{ after&&after() }catch{} }}) }
@@ -13553,6 +13554,7 @@ body.friends-ws #view-programs.pl-nudge-ready:not(.pl-nudge-all) > :is(.pipbrief
 @media (max-width:860px){body:not(.friends-ws) header.top nav.tabs>a.searchtab,body:not(.friends-ws) header.top nav.tabs>a.asktab{margin-top:-14px}body:not(.friends-ws) header.top #signOut{flex:none;min-height:44px;white-space:nowrap;padding:0 8px 0 4px;font-size:13px}body:not(.friends-ws) header.top nav.tabs{padding-left:10px;gap:0 2px}body:not(.friends-ws) header.top nav.tabs>a{font-size:14px!important}}
 </style>
 <!-- /round 18 -->
+<script src="/surprise.js" defer></script><script src="/surprise-host.js" defer></script><!-- surprise touches: drawn covers, milestones and regulars on Home, invite lines and send-offs on /g (server/surprise.js) -->
 <script src="/paymethods.js" defer></script><!-- Get paid: the price setting, the drop setup, Home and the guest's pay buttons (server/paymethods.js) -->
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past

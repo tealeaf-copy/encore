@@ -90,7 +90,7 @@
     const view = document.getElementById("view-programs"); if (!view || view.hidden) return;
     let S; try { S = await loadState(force); } catch { return; } if (S.off) return;
     place(view, cardHTML(S)); wire(view, S);
-    if (S.celebrate) { const c = S.celebrate; last = { ...S, celebrate: null }; celebrate(c, { link: c.eventId ? `/?app=1&open=${encodeURIComponent(c.eventId)}#studio` : "" }); }
+    if (S.celebrate) { const c = S.celebrate; last = { ...S, celebrate: null }; if (window.PLMilestones) window.PLMilestones.loopCard(c); /* a card on Home, never a sheet over the page (public/surprise-host.js) */ else celebrate(c, { link: c.eventId ? `/?app=1&open=${encodeURIComponent(c.eventId)}#studio` : "" }); }
   }
   function mountHome() {
     if (typeof window.renderPrograms === "function" && !window.renderPrograms.__hl) { const orig = window.renderPrograms, wrapped = function () { const r = orig.apply(this, arguments); setTimeout(() => home(false), 0); return r; }; wrapped.__hl = 1; window.renderPrograms = wrapped; }

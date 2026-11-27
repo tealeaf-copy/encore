@@ -385,3 +385,16 @@ body.bb[data-top]:not(:has(> .bb-top)){padding-top:57px}
 .tg-why{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);margin:0;padding:0;list-style:none}
 @media (min-width:760px){.tg-why{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .tg-why li{border-top:1.5px solid var(--pl-ink);padding-top:12px}.tg-why b{display:block;font:600 16px/1.35 var(--pl-font-text);margin-bottom:4px}.tg-why span{color:var(--bb-soft);font-size:15px}
+
+/* ---- phones: every link, button and "more" row on the teams pages is a 44px target (review round 18).
+   A link that is the only thing in its line gets a taller hit area on itself (position:relative keeps the area on
+   the link); rows that stack, like "Also here", grow for real so two targets never overlap. ---- */
+@media (max-width:860px){
+  body.bb details > summary{padding-block:10px}
+  body.bb .bb-link{min-height:44px;display:inline-flex;align-items:center}
+  body.bb .bb-facts li > a{display:inline-flex;align-items:center;min-height:44px}
+  body.bb :is(h2,h3,p) > a:only-child,body.bb p > svg:first-child + a:last-child,body.bb .ti-mstamp button,body.bb .ti-tag button{position:relative}
+  body.bb :is(h2,h3,p) > a:only-child::after,body.bb p > svg:first-child + a:last-child::after,body.bb .ti-mstamp button::after,body.bb .ti-tag button::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+  body.bb .ti-tag button::after{left:-11px;right:-11px}
+  body.bb .ti-sugg button{min-height:44px;padding:0 14px}
+}

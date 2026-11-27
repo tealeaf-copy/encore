@@ -10626,6 +10626,35 @@ body.guestmode{padding-left:0!important}body.guestmode #trialBar,body.guestmode 
 
 .hw-vis.v1{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:18px}.v1 .hw-input{box-sizing:border-box;max-width:100%}.v1 .hw-chips{position:static}
 .hw-vis{height:250px}.hw-plan{padding:10px 14px}.hw-row{padding:4px 0}
+/* How it works, in Field Notes: a light, numbered card; the tab shows only this (no next-step, streak or ideas cards
+   underneath, which made the tab look like Start with a dark box dropped in) */
+#view-programs:has(> .hw) > :not(.hw-tabs):not(.hw){display:none!important}
+.hw-tabs{justify-content:flex-start;margin:16px 0 0;padding-right:52px}
+.hw-tabs button{min-height:40px;font:600 15px var(--sys-title)!important;color:var(--pl-soft)!important;border-radius:6px!important}
+.hw-tabs button[aria-selected=true]{background:var(--pl-surface)!important;color:var(--pl-ink)!important;border:1.5px solid var(--pl-ink)!important;box-shadow:none!important}
+.hw{background:var(--pl-surface)!important;color:var(--pl-ink)!important;border:1.5px solid var(--pl-ink);border-radius:6px!important;box-shadow:none!important;margin:16px 0 24px!important;padding:24px 20px!important;counter-reset:hw}
+.hw h2{color:var(--pl-ink)!important;font:var(--pl-display-weight,600) 28px/1.15 var(--sys-display)!important;letter-spacing:-.01em;margin:0 0 4px!important}
+.hw > h2::before{content:"HOW IT WORKS";display:block;font:500 12px/16px var(--sys-mono,ui-monospace,monospace);letter-spacing:.06em;color:var(--pl-soft);margin-bottom:8px}
+.hw-grid{gap:0!important;margin-top:8px}
+.hw-step{counter-increment:hw;position:relative;padding:16px 0 16px 44px;border-top:1.5px dashed var(--pl-line)}
+.hw-step:first-child{border-top:0}
+.hw-step::before{content:counter(hw,decimal-leading-zero);position:absolute;left:0;top:18px;font:500 13px var(--sys-mono,ui-monospace,monospace);color:var(--pl-accent);letter-spacing:.04em}
+.hw h3,.hw-step h3{color:var(--pl-ink)!important;font:600 18px/1.3 var(--sys-title)!important;letter-spacing:0!important;margin:0 0 4px!important}
+.hw-step p{color:var(--pl-soft)!important;font-size:16px!important;line-height:1.5!important;margin:0!important}
+.hw-vis{background:var(--pl-page)!important;border:1px solid var(--pl-line)!important;border-radius:6px!important;margin-bottom:12px}
+.hw .linkbtn{color:var(--pl-accent)!important}
+.hw-cta{margin-top:20px!important}.hw .btn.primary{min-height:48px}
+@media (min-width:861px){.hw-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:20px!important}.hw-step{border-top:0;padding:40px 0 0}.hw-step::before{top:12px}}
+.hw > p{color:var(--pl-soft)!important;font-size:16px!important;line-height:1.5!important}
+.hw-vis::before,.hw-vis::after{display:none!important}
+.hw-input{background:var(--pl-surface)!important;border:1.5px solid var(--pl-ink)!important;border-radius:6px!important}
+.hw-type,.hw-input *{color:var(--pl-ink)!important}
+.hw-chips span{border:1px solid var(--pl-line-strong,var(--pl-line))!important;border-style:solid!important;color:var(--pl-ink)!important;background:var(--pl-surface)!important;border-radius:6px!important}
+.hw-c{background:var(--pl-surface)!important;color:var(--pl-ink)!important;border:1.5px solid var(--pl-ink)!important;box-shadow:none!important;border-radius:6px!important}
+.hw-c small{color:var(--pl-soft)!important}.hw-c b{color:var(--pl-ink)!important}
+.hw-c.b{background:var(--pl-accent)!important;border-color:var(--pl-accent)!important}.hw-c.b small,.hw-c.b b{color:#fff!important}
+.hw-plan{background:var(--pl-surface)!important;box-shadow:none!important;border:1px solid var(--pl-line)!important;border-radius:6px!important}
+.hw-plan *{color:var(--pl-ink)!important}.hw-tags span{background:var(--pl-page)!important;border-radius:6px!important}
 
 @media (max-width:600px){.cg-thread{max-height:none;overflow:visible}}
 #peerEmpty{margin:12px 0;border-left:3px solid var(--accent)}

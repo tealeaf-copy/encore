@@ -107,7 +107,7 @@ details.ip-more>summary::-webkit-details-marker{display:none}details.ip-more>sum
 /* sheets */
 .ip-sheet-bg{position:fixed;inset:0;z-index:200;background:rgba(29,27,24,.32);display:flex;align-items:flex-end;justify-content:center}
 .ip-sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--pl-surface);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--pl-shadow-float)}
-.ip-sheet h2{font:400 28px/1.1 var(--sys-display);margin:0 0 4px}
+.ip-sheet h2{font:600 28px/1.1 var(--sys-display);margin:0 0 4px}
 @media (min-width:700px){.ip-sheet-bg{align-items:center}.ip-sheet{border-radius:20px;padding:24px}}
 .ip-toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:300;background:var(--pl-ink);color:#fff;padding:10px 16px;border-radius:12px;font:600 14px var(--sys-title);box-shadow:var(--pl-shadow-float)}
 

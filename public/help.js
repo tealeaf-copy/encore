@@ -228,10 +228,19 @@
       for (const fx of [0.15, 0.5, 0.85]) for (const fy of [0.15, 0.5, 0.85]) if (contentAt(x0 + w * fx, y0 + hh * fy)) return true; } catch {} return false; }
   // look again when scrolling stops (the button stays as it is while the page moves)
   { let st = 0; addEventListener("scroll", () => { clearTimeout(st); st = setTimeout(() => place(), 160); }, { passive: true }); }
+  function helpRow() {
+    const main = document.querySelector("main"), row = document.createElement("p"); row.className = "eh-row"; row.setAttribute("data-help-auto", "");
+    row.style.cssText = "margin:24px 16px 16px;text-align:center";
+    row.innerHTML = `<button type="button" data-help-open style="min-height:44px;padding:0 16px;border:1.5px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-btn,6px);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px var(--pl-font-text,'IBM Plex Sans'),system-ui,sans-serif;cursor:pointer">Need a hand? Ask Potto</button>`;
+    if (main && main.parentElement) main.after(row); else document.body.appendChild(row);
+  }
   function place() {
     try { const b = btn(); if (!b || isOpen()) return; const away = modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
       // phones with a bottom tab bar: help lives in the Me sheet (public/chatnav.js), so nothing floats over the page's own
       // buttons (the Home composer's send arrow, toggles, card menus). The nudge can still offer it once, above the bar.
+      // Phones without one (a plan, a summit, sign-up): a "Need a hand?" row at the end of the page instead, so the
+      // button never sits on the page's own words (design audit: it covered meta lines at rest).
+      if (innerWidth <= 860 && !tabBar() && !document.querySelector("[data-help-open]") && !document.documentElement.classList.contains("es-pre") && document.readyState !== "loading") helpRow();
       const intab = tabBar() || !!document.querySelector("[data-help-open]") || (innerWidth <= 860 && document.documentElement.classList.contains("es-pre") && !document.querySelector(".es-tabs,nav.tabs")) /* a page that is about to get its tab bar (slow connection): don't float over the logo meanwhile */; /* or the page has its own Help row */ b.classList.toggle("eh-intab", intab); host.style.height = intab || phone() ? "" : "72px";
       const h = obstacleHeight(), dock = !intab && h > innerHeight * 0.45 - 8;
       b.classList.toggle("eh-dock", dock); nudge().classList.toggle("eh-dock", dock);

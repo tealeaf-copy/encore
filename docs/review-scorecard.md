@@ -71,3 +71,34 @@ Compared again: Partiful lets you type an event like a text and fixes the detail
 - **What's included** as an add-on in the editor (`included`), shown on both invites: a workshop's clay, glazes and firing, a trip's meals.
 - **Invite emails carry a calendar file link** (`/e/<id>.ics`) for invites, nudges and "you're on the list" sends from the invite plan, so campaign guests and everyone else can put it in their calendar from the email.
 - **The light invite's bottom padding** holds the reply bar's room only while the bar is on the page (`body:has(.prb)`), and the bar no longer pads the body by hand, so nothing is left behind after you reply.
+
+## Round 3
+
+Compared again: Eventbrite is still the reference for running a big room (badges, check-in) and for times that read right across cities; Partiful for the small moments that feel personal.
+
+| Persona | Use | Joy | Ease | Intu | Pick | Notes (what moved) |
+|---|---|---|---|---|---|---|
+| Engineer | 9 | 8 | 9 | 9 | 9 | 1,133 tests and zero crawl problems at 390 and 1280 after every round. Joy stays 8: nothing here is meant to delight an engineer. |
+| Product designer | 9 | 8 | 9 | 9 | 9 | A wheel-throwing class now draws as a craft, not a party. Joy 8: some brand pages still set small titles in the serif (owned by the brand and Plans work). |
+| Product manager | 9 | 9 | 9 | 9 | 9 | No dead ends left on the paths we drove: every Discover row, Save and "Order" goes somewhere real. |
+| Field marketer (brand) | 9 | 8 | 9 | 9 | 9 | Times read in each city's own zone on Home and the Run timeline ("7pm EST"); invite emails carry a calendar file; one guest list end to end. Joy 8: the campaign pages are calm and correct but plain. |
+| Supper club host | 9 | 9 | 9 | 9 | 9 | |
+| Game or hack night host | 9 | 8 | 9 | 9 | 9 | Name tags for a hack night of 40 are one tap from the guest list. |
+| Run club host | 9 | 9 | 9 | 9 | 9 | |
+| Pottery or cooking workshop host | 9 | 9 | 9 | 9 | 9 | "What's included" (clay, glazes, firing) on the invite; the line "Wheel throwing Sunday 2pm at Hoa Studio, 8 spots" fills itself in. |
+| Weekend getaway host | 9 | 8 | 9 | 9 | 9 | Last day, day-by-day plan, and the plan reaches guests who are in. Joy 8: the plan page is useful but plain. |
+| Small summit host | 9 | 8 | 9 | 9 | 9 | Name tags (first name large, company and title for a brand), the agenda as talks by day, check-in on the status board. |
+| Coffee pop-up business | 9 | 9 | 9 | 9 | 9 | |
+| Casual planner | 9 | 9 | 9 | 9 | 9 | |
+| Hobbyist seller | 9 | 9 | 9 | 9 | 9 | |
+| City explorer / guest | 9 | 9 | 9 | 9 | 9 | |
+
+### Fixed in round 3
+
+- **Per-city time zones for brands:** each booking carries its local start time and zone (`local` on booking cards, server/campaigns.js), shown on the brand Home's Coming up and the campaign Run timeline.
+- **Name tags** from the invite plan's Status tab (public/invite-plan.js): everyone who's in, eight to a letter page, first name large, the rest of the name, company and title for a brand, and the event.
+- **What's included and a smarter title** proven end to end for a workshop; a wheel-throwing or glazing class draws as a craft (public/eventart.js).
+
+### Still below 9, and why
+
+- **Joy at 8** for the engineer, designer, field marketer, game night, weekend getaway and summit personas. Their jobs now work end to end, but the screens they live in (campaign tabs, the plan page, the status board) are tidy rather than delightful, and a few brand pages set small titles in the serif. Those pages belong to the brand and Plans work running in parallel, so this loop left their look alone.

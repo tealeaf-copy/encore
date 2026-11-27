@@ -84,3 +84,13 @@ test("the campaign's Invite and Run tabs: set up the guest list, the status boar
   assert.match(h, /\/api\/campaigns\/\$\{C\.id\}\/events\/\$\{evSel\}\/plan/); assert.match(h, /\/api\/campaigns\/\$\{C\.id\}\/ros/);
   assert.doesNotMatch(h, /—/, "no em dashes");
 });
+
+test("per-city time: each booking says its start time in its own city's zone, on Home and the Run timeline", async () => {
+  const O = S.owner.c, C = (await ok(await req("GET", `/api/campaigns/${S.campaigns.C1}`, null, O))).campaign;
+  const ny = C.bookings.find((b) => /Long Island City|Greenpoint|West Village|Fort Greene|Williamsburg|Bushwick/.test(b.area || "")), sf = C.bookings.find((b) => /Mission|Hayes Valley|SoMa/.test(b.area || ""));
+  for (const b of [ny, sf].filter(Boolean)) assert.match(b.local.time, /^\d{2}:\d{2}$/);
+  if (ny) assert.equal(ny.local.tz, "America/New_York"); if (sf) { assert.equal(sf.local.tz, "America/Los_Angeles"); assert.match(sf.local.zone, /^P[SD]T$/); }
+  const H = (await ok(await req("GET", "/api/teams/home", null, O))); assert.ok(H.upcoming.every((r) => r.local && "zone" in r.local));
+  assert.match(fs.readFileSync(new URL("../public/teams-home.html", import.meta.url), "utf8"), /r\.local\?\.time \? ` · \$\{esc\(hm\(r\.local\.time\)\)\}/);
+  assert.match(fs.readFileSync(new URL("../public/teams-campaigns.html", import.meta.url), "utf8"), /r\.local\?\.time \? `<small style="display:block">/);
+});

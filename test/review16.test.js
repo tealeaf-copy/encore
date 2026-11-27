@@ -146,3 +146,16 @@ test("What's included: a workshop's materials as an add-on, cleaned for guests a
   const h = X.html({ included: ["Clay and glazes", "<b>An apron</b>"] }); assert.match(h, /What&#39;s included/); assert.match(h, /&lt;b&gt;An apron/); assert.match(X.html({ included: ["Clay"] }, { full: true }), /Clay/);
   const { publicExtras } = await import("../server/app.js"); assert.deepEqual(publicExtras({ included: ["  Clay ", "", 5] }).included, ["Clay", "5"]);
 });
+
+test("Name tags for everyone who's in, from the invite plan: first name large, the rest, company for a brand, the event", () => {
+  const ip = read("public/invite-plan.js");
+  assert.match(ip, /const TAG_OK = \["yes", "in", "came"\]/); assert.match(ip, /data-tags>Print name tags<\/button>/);
+  assert.match(ip, /function tagsHtml\(d\)/); assert.match(ip, /\.t b\{font:600 40px\/1\.05 "IBM Plex Serif"/, "the serif only at display size");
+  assert.match(ip, /\$\{E\(f\)\}/, "names are escaped"); assert.match(ip, /window\.InvitePlan = \{ tagsHtml,/);
+});
+
+test("A wheel-throwing class draws as a craft, not a party", () => {
+  globalThis.window = globalThis.window || globalThis; const require = createRequire(import.meta.url); require("../public/eventart.js");
+  assert.equal(globalThis.EventArt.kindOf({ pubTitle: "Wheel throwing for beginners" }), "craft");
+  assert.equal(globalThis.EventArt.kindOf({ pubTitle: "Glazing night" }), "craft");
+});

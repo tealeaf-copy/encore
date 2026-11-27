@@ -33,6 +33,7 @@ test("the default club name says whose regulars they are", () => {
   assert.equal(defaultClubName("Bo's Omecasa"), "Bo's Regulars");
   assert.equal(defaultClubName("Claire"), "Claire's Regulars");
   assert.equal(defaultClubName("James"), "James' Regulars");
+  assert.equal(defaultClubName("Long Table Supper Club"), "Long Table Supper Club Regulars", "a club's name is kept whole, never cut to its first word");
 });
 
 test("follow and unfollow with one tap, the bell turns notices off, and the host page knows", async () => {
@@ -190,4 +191,13 @@ test("the members' chat: members and the host are in it, others aren't", async (
   assert.equal((await get(`/api/chats/${j.chatId}`, out.cookie)).status, 403);
   assert.ok((await getJ("/api/chats", mem.cookie)).chats.some((c) => c.id === j.chatId), "in the member's inbox");
   await post("/api/me/club/bo-chat/leave", {}, mem.cookie); assert.equal((await get(`/api/chats/${j.chatId}`, mem.cookie)).status, 403, "leaving the club leaves the chat");
+});
+
+test("The fan club has a card on the host's page: start it, join it, leave it (public/fanclub.js)", () => {
+  const read = (f) => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8"), host = read("public/host.html"), js = read("public/fanclub.js"), guides = read("server/guides.js");
+  assert.match(host, /<script src="\/fanclub\.js"><\/script>/); assert.match(host, /window\.EncoreClub\?\.mount\(h, d\)/, "drawn in the page's first pass, from what the page already has");
+  for (const re of [/"\/api\/host\/club", \{ on: true/, /"\/api\/host\/club", \{ on: false \}/, /api \+ "\/join"/, /api \+ "\/leave"/, /Join, it's free/, /Start the club/, /Leave the club/]) assert.match(js, re);
+  assert.match(js, /id = "club"/, "the card is the #club that guides, notices and the library link to");
+  assert.doesNotMatch(guides, /edit=1#club/, "the guide's Start a fan club opens the card, not the page editor"); assert.equal((guides.match(/href: "\{page\}#club"/g) || []).length, 3);
+  assert.doesNotMatch(js, /\u2014/);
 });

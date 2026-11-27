@@ -129,7 +129,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
-<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script>
+<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script>
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
@@ -176,6 +176,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
       ${tastes.length && !(h.experiences || []).length ? `<p style="margin:4px 0 0;font-size:14px;font-weight:600">What are you into?</p><div class="chips" aria-label="What you're into">${tastes.map((t) => `<label><input type="checkbox" name="t" value="${esc(t)}"><span>${esc(t)}</span></label>`).join("")}</div>` : ""}
       <button class="btn" type="submit">Follow</button><small class="muted" id="ferr" role="alert"></small></form></div>
       </aside></div>`;
+  window.EncoreClub?.mount(h, d); // the fan club card at #club (public/fanclub.js): join or leave for a guest, start and members for the host
   // one "Support" card for every way to chip in: tips, a pledge, the support links and the wishlist
   let tippers = 0; const long = String(first).trim().split(/\s+/).length > 2, supH = !long ? `Support ${first}` : d.person ? `Support ${String(d.person).trim().split(/\s+/)[0]}` : "Chip in";
   const tipLink = (a) => [h.venmo && `https://venmo.com/${encodeURIComponent(h.venmo)}?txn=pay&amount=${a}&note=${encodeURIComponent("Thank you for hosting!")}`, h.paypal && `https://paypal.me/${encodeURIComponent(h.paypal)}/${a}`, h.cashapp && `https://cash.app/$${encodeURIComponent(h.cashapp)}/${a}`].filter(Boolean)[0];
@@ -230,11 +231,13 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
       swap(); new MutationObserver(swap).observe(document.body, { childList: true, subtree: true }); }
     // two columns only when the side column has enough in it; otherwise one full-width column, side cards in a row at the end
     { const st = document.createElement("style"); st.textContent = `.cols.one-col{grid-template-columns:minmax(0,1fr)!important}.cols.one-col>aside.side{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start}.cols.one-col>aside.side>#sideExtras{display:contents}`; document.head.appendChild(st);
-      let t = 0; const born = performance.now(); const check = () => { const cols = document.querySelector(".cols"); if (!cols) return; const main = cols.firstElementChild, aside = cols.querySelector("aside.side"); if (!main || !aside || innerWidth <= 760) { cols.classList.remove("one-col"); return; }
+      let t = 0; const check = () => { const cols = document.querySelector(".cols"); if (!cols) return; const main = cols.firstElementChild, aside = cols.querySelector("aside.side"); if (!main || !aside || innerWidth <= 760) { cols.classList.remove("one-col"); return; }
         if (cols.classList.contains("one-col")) return; const top = aside.getBoundingClientRect().top, kids = [...aside.children, ...(aside.querySelector("#sideExtras")?.children || [])].filter((k) => k.offsetHeight > 0 && k.id !== "sideExtras"), used = kids.reduce((m, k) => Math.max(m, k.getBoundingClientRect().bottom - top), 0); if (used < main.getBoundingClientRect().height * 0.45) cols.classList.add("one-col"); };
-      // while the page is still arriving, decide at once (before the next paint) so the columns never switch under a reader
-      const relayout = () => { clearTimeout(t); if (performance.now() - born < 1500) check(); else t = setTimeout(check, 400); };
-      relayout(); addEventListener("load", relayout); addEventListener("resize", () => { document.querySelector(".cols")?.classList.remove("one-col"); relayout(); }); new MutationObserver(relayout).observe(document.querySelector("main") || document.body, { childList: true, subtree: true }); }
+      // decided once, in the page's first pass (before the first paint), so the columns never switch under a reader:
+      // sections that arrive later (the scrapbook, what's on offer, a series) add to the page without changing its layout.
+      // A resize decides again.
+      let first = true; requestAnimationFrame(() => { first = false; }); const relayout = () => { if (first) check(); };
+      relayout(); addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => { document.querySelector(".cols")?.classList.remove("one-col"); check(); }, 200); }); new MutationObserver(relayout).observe(document.querySelector("main") || document.body, { childList: true, subtree: true }); }
     // example hosts show what a page can look like: clearly labelled, no tips or payment links, nothing to RSVP to or book
     if (d.sample) { document.body.classList.add("example-host");
       const st = document.createElement("style"); st.textContent = `.ex-note{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--pl-sand-soft);border:2px dashed #D9A93F;border-radius:6px;padding:10px 14px;margin:12px 0;font-size:14px}.ex-note b{font-family:inherit;font-weight:700}.ex-note a{font-weight:700;color:var(--pl-accent-text)}body.example-host #follow,body.example-host #topFollow,body.example-host #collabCard{display:none!important}.ex-dis{position:relative;opacity:.8}.ex-dis .ex-tag{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:999px;background:var(--pl-sand-soft);border:1.5px dashed #B07D1A;color:var(--pl-ink);font:700 12px/1.3 system-ui;z-index:2}.ex-off{display:inline-block;padding:10px 14px;border-radius:6px;background:var(--pl-sand-soft);border:1.5px dashed #B07D1A;color:var(--pl-ink);font-weight:700;font-size:16px}`; document.head.appendChild(st);

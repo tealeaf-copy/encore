@@ -51,7 +51,7 @@ export function stripPaid(body) {
   return { ...body, host: h, supporters: 0, paidHidden: true };
 }
 /** "Bo's Regulars" from "Bo's Omecasa", "Claire Regulars" from "Claire". */
-export function defaultClubName(name) { const n = String(name || "").trim(); if (!n) return "Regulars"; const w = n.split(/\s+/)[0].replace(/['’]s$/i, ""); return `${w}${/s$/i.test(w) ? "'" : "'s"} Regulars`; }
+export function defaultClubName(name) { const n = String(name || "").trim(); if (!n) return "Regulars"; if (n.split(/\s+/).length > 2) return `${n} Regulars`.slice(0, 60); /* "Long Table Supper Club Regulars", never "Long's Regulars" */ const w = n.split(/\s+/)[0].replace(/['’]s$/i, ""); return `${w}${/s$/i.test(w) ? "'" : "'s"} Regulars`; }
 
 export function makeFanclub({ store, C, X = null, safety = null, now: clock = () => Date.now() }) {
   const SF = safety || makeSafety(store); // the app's own safety store, so a hide shows at once

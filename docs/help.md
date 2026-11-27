@@ -377,7 +377,7 @@ On a host's page, tap Follow. It takes a free account, made right there, and you
 
 Keywords: fan club, regulars, members, join a club, members only, early access, first dibs, host updates, member badge, leave a club
 Questions: What is a fan club? | How do I start a fan club? | How do I join a fan club? | What do members get?
-A fan club is for a host's regulars. Hosts turn it on from the Fan club tab on their page: pick a name (it starts as "Your name's Regulars"), a one-line pitch and a few perks. Members get first dibs on new events and drops (24 hours before everyone else unless the host picks another window), events set to Fan club only, a members' group chat, and short updates from the host. Joining is free: tap Join on the host's page. Leave anytime from the same tab, and turn off a club's notices there or from the link in any club email. Your member badge shows on your own page only if you turn it on. Hosts see members by first name, who comes most, and can export the list as CSV or remove someone.
+A fan club is for a host's regulars. Hosts start it from the Fan club card on their own page: pick a name (it starts as "Your name's Regulars") and a one-line pitch. Members get first dibs on new events and drops (24 hours before everyone else unless the host picks another window), events set to Fan club only, a members' group chat, and short updates from the host. Joining is free: tap Join on the Fan club card on the host's page. Leave anytime from the same card, and turn off a club's notices from the link in any club email. Hosts see members by first name and who comes most, and can export the list as CSV.
 [Find a host](/hosts)
 
 ## Free at launch

@@ -21,7 +21,7 @@ test("Monthly streak (the default): counts months in a row and survives until th
 
 test("Streaks can be off (a summit, a yearly trip): events count, nothing lapses, no heads-up", () => {
   const s = streakState({ dates: ["2026-03-10", "2026-09-20"], cadence: "off", now: NOW });
-  assert.equal(s.status, "off"); assert.equal(s.count, 2); assert.equal(headsUp(s), null); assert.match(streakLine(s).line, /every one counts/);
+  assert.equal(s.status, "off"); assert.equal(s.count, 2); assert.equal(headsUp(s), null); assert.match(streakLine(s).line, /Every one counts/);
   assert.match(streakLine(streakState({ dates: ["2026-08-10"], now: NOW })).line, /Count events instead in Settings/, "a lapsed monthly streak offers the switch");
 });
 

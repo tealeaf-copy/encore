@@ -83,7 +83,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
       <label>A line for guests <small>Optional</small><textarea name="note" maxlength="280" placeholder="I'm making dumplings. Bring something to drink."></textarea></label>
       <p class="saved" id="saved" aria-live="polite"></p>
     </form>
-    <div class="go"><button type="button" class="btn pri" id="save">Save your dinner and get a link to send</button><p class="fine" id="fine">Free. Guests reply without an account.</p></div>
+    <div class="go"><button type="button" class="btn pri" id="save">Get my link</button><p class="fine" id="fine">Free. Guests reply without an account.</p></div>
   </div>
 
   <div id="done" class="done" hidden>
@@ -133,7 +133,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   if (!d || (q.get("t") && d.t !== t && !q.get("save"))) d = fresh(t); else t = T[d.t] ? d.t : t;
   // anonymous id for the copy experiment (server/experiments.js): random, this browser only, never tied to a person
   let anon = ""; try { anon = localStorage.getItem("pl.anon") || ""; if (!/^[A-Za-z0-9_-]{6,80}$/.test(anon)) { anon = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("pl.anon", anon); } } catch {}
-  const COPY = { plan: (n) => ({ eyebrow: `Plan a ${n}`, h1: `Plan a ${n}. It takes a minute.`, save: `Save your ${n} and get a link to send` }), start: (n) => ({ eyebrow: "Start small", h1: "Four people and a night. That's an event.", save: "Save it and get your link" }) };
+  const COPY = { plan: (n) => ({ eyebrow: `Plan a ${n}`, h1: `Plan a ${n}. It takes a minute.`, save: "Get my link" }), start: (n) => ({ eyebrow: "Start small", h1: "Four people and a night. That's an event.", save: "Get my link" }) };
   const copy = () => { const c = (COPY[["table", "weekend", "summit"].includes(t) ? "plan" : variant] || COPY.plan)(T[t].noun); /* a booked table or a trip names itself */ $("#eyebrow").textContent = c.eyebrow; $("#h1").textContent = c.h1; $("#save").textContent = c.save; document.title = c.eyebrow + " · Pottery Lab"; };
   fetch("/api/public/xp/first-win-copy?u=" + encodeURIComponent(anon), { credentials: "same-origin" }).then((r) => r.json()).then((j) => { if (j.variant) { variant = j.variant; copy(); } }).catch(() => {});
 

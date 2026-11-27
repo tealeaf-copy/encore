@@ -36,7 +36,7 @@
 .ac-menu a:hover,.ac-menu a:focus-visible{background:var(--pl-accent-soft);outline:none}
 @media (max-width:640px){.ac-menu{left:16px!important;right:16px!important;top:auto!important;bottom:calc(16px + env(safe-area-inset-bottom))!important;min-width:0}}
 .ac-sync{border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);padding:12px 14px}
-.ac-sync summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:44px;font:600 15px var(--pl-font-text);color:var(--pl-ink)}
+.ac-sync summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;white-space:nowrap;cursor:pointer;list-style:none;min-height:44px;font:600 15px var(--pl-font-text);color:var(--pl-ink)}
 .ac-sync summary::-webkit-details-marker{display:none}.ac-sync summary small{font:400 14px var(--pl-font-text);color:var(--pl-soft);margin-left:auto}
 .ac-sync summary svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .ac-sync p{margin:6px 0 10px;font:400 14px/1.45 var(--pl-font-text);color:var(--pl-soft)}

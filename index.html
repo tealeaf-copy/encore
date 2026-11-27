@@ -7417,7 +7417,8 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
     if(!$("#hostHello")&&!past){ const H=window.__gHostInfo||{}, name=hostFirst(e), paid=e.price&&e.price!=="chip"; const g=document.createElement("div"); g.id="hostHello"; g.className="host-hello";
       const line=e.stage==="interest"?`${esc(name)} wants to know who's in`:`${esc(name)} is hosting`;
       const kw=(()=>{ try{ const w=window.EncoreLooks?.cornerWord?.(e)||""; return w&&!/^event$/i.test(w)?w:"" }catch{ return "" } })(); /* the kind of event, after the host: "Madison is hosting · Hack night" */
-      g.innerHTML=`<span class="hh-av">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#29489A",40):pipSVG("happy",34)}</span><span>${line}${kw?` · ${esc(kw)}`:""}</span>`; const t3=host.querySelector(".invite .in > h3"), inv=host.querySelector(".invite")||host.firstElementChild; if(t3) t3.before(g); else inv?.before(g) }
+      const hd=H.handle||e.hostHandle||""; /* the host is front and center: the face and name open their page */
+      g.innerHTML=`${hd?`<a class="hh-link" href="/@${encodeURIComponent(hd)}" aria-label="See ${esc(name)}'s page">`:""}<span class="hh-av">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#29489A",40):pipSVG("happy",34)}</span><span>${line}${kw?` · ${esc(kw)}`:""}</span>${hd?"</a>":""}`; const t3=host.querySelector(".invite .in > h3"), inv=host.querySelector(".invite")||host.firstElementChild; if(t3) t3.before(g); else inv?.before(g) }
     // a booking bar that stays on screen on phones until they've replied
     const form=$("#g-send",host)?.closest(".stack")||$("#gResp",host)?.closest(".stack")||$("#ic-pick",host)?.closest(".stack"); $("#gBar")?.remove();
     if(form&&!form.hidden&&!M&&!past&&!e.example&&!e.sample&&window.innerWidth<760){ const R=(e.headcount&&e.guests)?Math.max(0,(+e.headcount||0)-(e.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length):null, paid=e.price&&e.price!=="chip";
@@ -7430,7 +7431,7 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
       $("button",bar).onclick=()=>{ form.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>$("#g-name",host)?.focus(),450) };
       const seen=new Map(), io=new IntersectionObserver(es=>{ es.forEach(en=>seen.set(en.target,en.isIntersecting)); bar.classList.toggle("hide",[...seen.values()].some(Boolean)) },{threshold:.15}); io.observe(form); bar.__io=io } }catch(err){ console.warn(err) } return r } }
 // the event-host lookup keeps the host's portrait for the greeting
-{ const _f2=window.fetch; window.fetch=function(u,o){ const p=_f2.apply(this,arguments); try{ if(String(u).includes("/api/public/event-host/")) p.then(r=>r.clone().json()).then(j=>{ if(j?.host){ window.EncoreBrandKit?.use(j.host.kit); window.__gHostInfo={...(window.__gHostInfo||{}),...j.host,avatarArt:j.host.avatarArt||window.__gHostInfo?.avatarArt}; if(j.person) window.__gHostName=window.__gHostName||j.person; const hv=document.querySelector("#hostHello .hh-av"); if(hv&&j.host.avatarArt&&window.EncoreAvatars) hv.innerHTML=window.EncoreAvatars.svg(j.host.avatarArt,j.host.accent||"#29489A",40) } }).catch(()=>{}) }catch{} return p } }
+{ const _f2=window.fetch; window.fetch=function(u,o){ const p=_f2.apply(this,arguments); try{ if(String(u).includes("/api/public/event-host/")) p.then(r=>r.clone().json()).then(j=>{ if(j?.host){ window.EncoreBrandKit?.use(j.host.kit); window.__gHostInfo={...(window.__gHostInfo||{}),...j.host,avatarArt:j.host.avatarArt||window.__gHostInfo?.avatarArt}; if(j.person) window.__gHostName=window.__gHostName||j.person; const hv=document.querySelector("#hostHello .hh-av"); if(hv&&j.host.avatarArt&&window.EncoreAvatars) hv.innerHTML=window.EncoreAvatars.svg(j.host.avatarArt,j.host.accent||"#29489A",40); const hh=document.getElementById("hostHello"); if(hh&&j.host.handle&&!hh.querySelector(".hh-link")){ const a=document.createElement("a"); a.className="hh-link"; a.href="/@"+encodeURIComponent(j.host.handle); a.setAttribute("aria-label","See the host's page"); while(hh.firstChild) a.appendChild(hh.firstChild); hh.appendChild(a) } } }).catch(()=>{}) }catch{} return p } }
 // one title for Potto
 // (removed: "hype pig" wording from when the mascot was a piglet)
 
@@ -10626,6 +10627,7 @@ body.guestmode{padding-left:0!important}body.guestmode #trialBar,body.guestmode 
 
 .hw-vis.v1{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:18px}.v1 .hw-input{box-sizing:border-box;max-width:100%}.v1 .hw-chips{position:static}
 .hw-vis{height:250px}.hw-plan{padding:10px 14px}.hw-row{padding:4px 0}
+.host-hello .hh-link{display:inline-flex;align-items:center;gap:inherit;color:inherit;text-decoration:none;min-height:44px}.host-hello .hh-link:hover span:last-child,.host-hello .hh-link:focus-visible span:last-child{text-decoration:underline}
 /* How it works, in Field Notes: a light, numbered card; the tab shows only this (no next-step, streak or ideas cards
    underneath, which made the tab look like Start with a dark box dropped in) */
 #view-programs:has(> .hw) > :not(.hw-tabs):not(.hw){display:none!important}

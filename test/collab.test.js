@@ -92,7 +92,7 @@ test("Team up end to end: opt in, discovery, the request, the thread, yes, the j
   // the thread: sent, seen, replied; contact details hidden; nobody else gets in
   let T = (await json("GET", `/api/teamup/requests/${id}`, null, maya)).j.teamup; assert.equal(T.status, "sent"); assert.equal(T.thread[0].text, "Hi Sam! Text me on (contact details hidden)."); assert.deepEqual(T.dates, ["2099-03-07", "2099-03-14"]);
   T = (await json("GET", `/api/teamup/requests/${id}`, null, sam)).j.teamup; assert.equal(T.status, "seen"); assert.equal(T.incoming, true); assert.deepEqual(T.roles, { me: "Pour the coffee", them: "Lead the 5k" });
-  assert.equal((await json("GET", `/api/teamup/requests/${id}`, null, kim)).status, 404);
+  assert.equal((await json("GET", `/api/teamup/requests/${id}`, null, kim)).j.teamup, null, "nobody else reads it"); assert.equal((await json("POST", `/api/teamup/requests/${id}`, { action: "message", text: "hi" }, kim)).status, 404);
   assert.equal((await json("POST", `/api/teamup/requests/${id}`, { action: "accept" }, maya)).status, 403, "only Sam can say yes");
   T = (await json("POST", `/api/teamup/requests/${id}`, { action: "message", text: "Love it. sam@example.com if easier" }, sam)).j.teamup; assert.equal(T.status, "replied"); assert.match(T.thread[1].text, /\(contact details hidden\)/);
   assert.ok((await json("GET", "/api/me/inbox", null, maya)).j.items.some((n) => n.kind === "teamup" && /Sam on your team-up/.test(n.text)));

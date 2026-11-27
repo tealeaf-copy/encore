@@ -243,7 +243,9 @@ export function mountTeamUp(app, { store, small, currentUser, C, X, sendStatic, 
   app.get("/api/teamup/requests", async (req, res) => { const u = me(req, res, { host: false }); if (!u) return; res.set("Cache-Control", "private, no-store");
     const L = all().filter((r) => r.fromWs === u.ws || r.toWs === u.ws).sort((a, b) => (b.updatedAt || b.at) - (a.updatedAt || a.at)), V = []; for (const r of L.slice(0, 60)) V.push(await view(r, u.ws));
     res.json({ incoming: V.filter((v) => v.incoming), sent: V.filter((v) => !v.incoming), pref: prefOf(u.ws) }); });
-  app.get("/api/teamup/requests/:id", async (req, res) => { const M = mineR(req, res); if (!M) return; res.set("Cache-Control", "private, no-store"); const { u, r } = M;
+  app.get("/api/teamup/requests/:id", async (req, res) => { res.set("Cache-Control", "private, no-store"); const u0 = currentUser(req), r0 = get(req.params.id);
+    if (u0 && u0.ws !== DEFAULT_WS && (!r0 || (r0.fromWs !== u0.ws && r0.toWs !== u0.ws))) return res.json({ teamup: null, code: "not_found" }); // the page says it plainly; not a failed request
+    const M = mineR(req, res); if (!M) return; res.set("Cache-Control", "private, no-store"); const { u, r } = M;
     if (r.toWs === u.ws && r.status === "sent") { r.status = "seen"; r.seenAt = Date.now(); put(r); }
     res.json({ teamup: await view(r, u.ws) }); });
   app.post("/api/teamup/requests/:id", small, async (req, res) => { const M = mineR(req, res); if (!M) return; const { u, r } = M, b = req.body || {}, act = String(b.action || ""), mineIn = r.toWs === u.ws, otherWs = mineIn ? r.fromWs : r.toWs, who = mineIn ? r.to : r.from, whoN = who.first || who.name, link = `/teamup/${r.id}`;

@@ -33,6 +33,8 @@ self.addEventListener("activate", (e) => {
   })());
 });
 const forget = () => Promise.all([caches.delete(DATA), caches.delete(PAGES)]).catch(() => {});
+// the saved feed answers (signed in and out), after you gave kudos or commented (server/feedcomments.js "Freshness")
+const dropFeed = async () => { try { const c = await caches.open(DATA); for (const k of await c.keys()) if (/\/api\/(me\/feed|public\/feed)(\?|$)/.test(new URL(k.url).pathname + "?")) await c.delete(k); } catch {} };
 self.addEventListener("message", (e) => {
   if (e.data === "signed-out") e.waitUntil?.(forget());
   // public/shell.js asks for a page a finger just landed on, so a slow network still has a fresh copy to fall back on
@@ -69,6 +71,9 @@ self.addEventListener("fetch", (e) => {
   const req = e.request; if (req.method !== "GET") {
     // signing out (or in as someone else) drops the cached pages and data
     if (req.method === "POST" && /^\/api\/(logout|login|signup|auth\/(code|email)\/verify|me\/delete)$/.test(new URL(req.url).pathname)) e.waitUntil(forget());
+    // a kudos or a comment that went through: the saved feed copies have old counts, so they go (the next read is fresh)
+    else if (/^\/api\/feed\/(kudos|comments)(\/|$)/.test(new URL(req.url).pathname) && new URL(req.url).origin === self.location.origin)
+      e.respondWith(fetch(req).then((res) => { if (res.ok) e.waitUntil(dropFeed()); return res; }));
     return;
   }
   const url = new URL(req.url);

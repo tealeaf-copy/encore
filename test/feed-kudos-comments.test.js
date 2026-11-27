@@ -56,20 +56,21 @@ after(async () => { for (const k of Object.keys(ENV)) delete process.env[k]; awa
 
 test("Kudos add up across three people, read the same after a reload, and a second tap takes one away", async () => {
   let j = await kudos("noor", "e:kcUp"); assert.equal(j.status, 200); assert.deepEqual([j.count, j.mine, j.line], [1, true, "You gave kudos"]);
-  j = await kudos("maya", "e:kcUp"); assert.deepEqual([j.count, j.mine, j.line], [2, true, "You and 1 more gave kudos"]);
-  j = await kudos("ana", "e:kcUp"); assert.deepEqual([j.count, j.mine], [3, true]); assert.equal(j.line, "You and 2 more gave kudos");
+  // kudos are public: everyone who gave them is named (unless they keep their name to themselves), friends first, then the latest
+  j = await kudos("maya", "e:kcUp"); assert.deepEqual([j.count, j.mine, j.line], [2, true, "You and Noor gave kudos"]);
+  j = await kudos("ana", "e:kcUp"); assert.deepEqual([j.count, j.mine], [3, true]); assert.equal(j.line, "You, Maya and 1 other gave kudos", "Maya is Ana's friend, so she comes first");
   // a reload: the feed carries the same count, to each person in their own words
-  for (const [who, mine, line] of [["ana", true, "You and 2 more gave kudos"], ["noor", true, "You and 2 more gave kudos"], ["jun", false, "3 people gave kudos"]]) {
+  for (const [who, mine, line] of [["ana", true, "You, Maya and 1 other gave kudos"], ["noor", true, "You, Ana and 1 other gave kudos"], ["jun", false, "Ana, Maya and 1 other gave kudos"]]) {
     const k = cardIn(await feedOf(who), "e:kcUp").kudos; assert.deepEqual([k.count, k.mine, k.line], [3, mine, line], who); }
   // the fresh counts the page asks for after it draws (a saved or minute-old feed never leaves a stale number up)
   let S = await (await get("/api/feed/social?targets=" + encodeURIComponent("e:kcUp,e:kcIdea,e:kcPrivate,nope"), U.jun.cookie)).json();
   assert.equal(S.items["e:kcUp"].kudos.count, 3); assert.equal(S.items["e:kcIdea"].kudos.count, 0); assert.ok(!("e:kcPrivate" in S.items) && !("nope" in S.items));
   // toggling off decrements, for that person only
   j = await kudos("maya", "e:kcUp"); assert.deepEqual([j.count, j.mine], [2, false]);
-  let k = cardIn(await feedOf("ana"), "e:kcUp").kudos; assert.deepEqual([k.count, k.mine, k.line], [2, true, "You and 1 more gave kudos"]);
+  let k = cardIn(await feedOf("ana"), "e:kcUp").kudos; assert.deepEqual([k.count, k.mine, k.line], [2, true, "You and Noor gave kudos"]);
   j = await kudos("maya", "e:kcUp"); assert.deepEqual([j.count, j.mine], [3, true]);
-  // a friend is named to their friend; "You" never counts yourself twice
-  k = cardIn(await feedOf("ana"), "e:kcUp").kudos; assert.deepEqual(k.names, ["Maya"]);
+  // a friend is named first to their friend; "You" never counts yourself twice; your face leads the row
+  k = cardIn(await feedOf("ana"), "e:kcUp").kudos; assert.deepEqual(k.names, ["Maya", "Noor"]); assert.equal(k.faces.length, 3); assert.equal(k.faces[0].me, 1); assert.deepEqual(k.faces.slice(1).map((f) => f.i), ["M", "N"]);
   await kudos("noor", "e:kcUp"); k = cardIn(await feedOf("ana"), "e:kcUp").kudos; assert.equal(k.line, "You and Maya gave kudos");
   // signed out: the public feed shows the count too, and can't add to it
   const pub = await (await get("/api/public/feed")).json(); assert.equal(cardIn(pub.blend, "e:kcUp").kudos.count, 2); assert.equal(cardIn(pub.blend, "e:kcUp").kudos.mine, false);
@@ -110,9 +111,9 @@ test("Comments: add, list, the count and preview in the feed, delete your own, t
   for (const who of ["jun", ""]) { const T = await thread(who, "e:kcUp"); assert.equal(T.status, 200); assert.deepEqual(T.comments.map((x) => x.name + ": " + x.text), ["Noor: See you there", "Maya: Bringing rye.", "Theo: Doors at seven."]); assert.equal(T.canPost, !!who); assert.ok(!JSON.stringify(T).includes("@example.com"), "no emails"); }
   let T = await thread("noor", "e:kcUp"); assert.equal(T.title, "Winter Bread Supper"); assert.equal(T.comments[2].host, true, "the host's comment is marked");
   assert.deepEqual(T.comments.map((x) => x.canDelete), [true, false, false]); assert.ok(T.comments[1].key && !T.comments[0].key, "others carry a key for Report and Block; yours doesn't");
-  // the feed: the count and the latest two, signed in and out
-  let card = cardIn(await feedOf("jun"), "e:kcUp"); assert.equal(card.comments.count, 3); assert.deepEqual(card.comments.last.map((x) => `${x.name}: ${x.text}`), ["Maya: Bringing rye.", "Theo: Doors at seven."]);
-  assert.equal(cardIn(await feedOf("maya"), "e:kcUp").comments.last[0].mine, true);
+  // the feed: the count and the latest three, signed in and out
+  let card = cardIn(await feedOf("jun"), "e:kcUp"); assert.equal(card.comments.count, 3); assert.deepEqual(card.comments.last.map((x) => `${x.name}: ${x.text}`), ["Noor: See you there", "Maya: Bringing rye.", "Theo: Doors at seven."]);
+  assert.equal(cardIn(await feedOf("maya"), "e:kcUp").comments.last[1].mine, true);
   assert.equal(cardIn((await (await get("/api/public/feed")).json()).blend, "e:kcUp").comments.count, 3);
   assert.equal((await (await get("/api/feed/social?targets=e:kcUp")).json()).items["e:kcUp"].comments.count, 3);
   // signed out can't write; nobody deletes someone else's; the writer and the host can
@@ -152,7 +153,7 @@ test("The host hears once per card an hour, never about their own comment", asyn
   await say("theo", "e:kcIdea", "Tell me which morning works."); assert.equal((await inbox()).length, before0, "not for the host's own comment");
   await say("jun", "e:kcIdea", "Saturday works for me"); await say("noor", "e:kcIdea", "Same here");
   const L = (await inbox()).filter((n) => /Apartment Cafe Morning/.test(n.text));
-  assert.equal(L.length, 1, "batched: one line for the card, not one per comment"); assert.match(L[0].text, /^(Ana|Jun) commented on Apartment Cafe Morning: "/); assert.equal(L[0].link, "/feed?comments=" + encodeURIComponent("e:kcIdea"));
+  assert.equal(L.length, 1, "batched: one line for the card, not one per comment"); assert.match(L[0].text, /^(Ana|Jun) commented on Apartment Cafe Morning: "/); assert.equal(L[0].link, "/post/e/kcIdea", "the note opens the post page");
 });
 
 test("Blocks and reports: a blocked person's comments are hidden from the blocker; a hidden comment is gone for everyone", async () => {
@@ -209,9 +210,12 @@ test("Plain text only: markup is kept as words by the server and escaped by the 
   // signed out: Comment goes to sign in, and comes back to the feed
   const out = ctx.window.FeedVisual.blendHtml({ items: [card] }, { signedIn: false }); assert.match(out, /<a class="fb-act" href="\/login\?next=%2Ffeed">[\s\S]*?<span>Comment<\/span>/);
   // the sheet escapes every comment it draws, and carries Report and Block for other people's
-  const sheet = fs.readFileSync(new URL("../public/feedcomments.js", import.meta.url), "utf8");
-  assert.match(sheet, /<p class="fcm-t">\$\{esc\(c\.text\)\}<\/p>/); assert.match(sheet, /<b>\$\{esc\(c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
-  assert.match(sheet, /Open the group chat/); assert.ok(!/—/.test(sheet + fs.readFileSync(new URL("../server/feedcomments.js", import.meta.url), "utf8")), "no em dashes");
+  // the post page's thread escapes every comment it draws, and carries Report and Block for other people's
+  const sheet = fs.readFileSync(new URL("../public/feedcomments.js", import.meta.url), "utf8"), page = fs.readFileSync(new URL("../public/post.html", import.meta.url), "utf8");
+  assert.match(sheet, /<p class="pp-t">\$\{esc\(c\.text\)\}<\/p>/); assert.match(sheet, /<b>\$\{esc\(c\.mine \? "You" : c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
+  // the group chat is a quiet link on the post page, never in the comment flow on the card
+  assert.match(page, /Open the group chat/); assert.ok(!/group chat/i.test(html), "no group chat link on the card");
+  for (const f of [sheet, page, fs.readFileSync(new URL("../server/feedcomments.js", import.meta.url), "utf8")]) assert.ok(!/—/.test(f), "no em dashes");
 });
 
 // review round 19: walked in a browser as a guest and as the host, at 390 and 1280
@@ -227,9 +231,12 @@ test("A comment in the host's Inbox keeps its own full stops: who and where on t
   const r = linesOf({ kind: "comment", text: 'Sam commented on Dumpling night: pork and chive: "Bringing my own chilli oil. See you Thursday."' });
   assert.equal(r.line, "Sam commented on Dumpling night: pork and chive"); assert.equal(r.preview, "Bringing my own chilli oil. See you Thursday.");
 });
-test("Feed cards: a double tap is one kudos, 44px targets and 6px corners on the comment sheet", () => {
-  const fv = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), fc = fs.readFileSync(new URL("../public/feedcomments.js", import.meta.url), "utf8");
+test("Feed cards: a double tap is one kudos, 44px targets and 6px corners on the comment box and the post page", () => {
+  const fv = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), pg = fs.readFileSync(new URL("../public/post.html", import.meta.url), "utf8");
   assert.match(fv, /if \(Date\.now\(\) - \(tapped\.get\(t\) \|\| 0\) < 500\) return;/);
   assert.match(fv, /\.fb-follow-in\{flex:none;min-height:44px;[^}]*border-radius:var\(--pl-r-btn,6px\)/); assert.match(fv, /\.fb-title a\{display:block;padding:6px 0;margin:-6px 0/);
-  assert.doesNotMatch(fc, /border-radius:(1\d|2\d)px/, "the sheet, its field and Send are on the kit's 6px"); assert.match(fc, /\.fcm-send\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-btn,6px\)/);
+  assert.match(fv, /\.fb-sendc\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-btn,6px\)/); assert.match(fv, /\.fb-add textarea\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-md,6px\)/); assert.match(fv, /\.fb-count\{[^}]*min-height:44px/);
+  assert.doesNotMatch(pg, /border-radius:(1\d|2\d)px/, "the post page is on the kit's 6px"); assert.match(pg, /\.pp-send\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-btn,6px\)/);
+  // no stretched hit areas: a pseudo-element never grows a control over its neighbours in the social block
+  assert.doesNotMatch(fv, /\.fb-(soc|count|c|cm-all|add|sendc|act)[^{]*::?(before|after)\{[^}]*inset/);
 });

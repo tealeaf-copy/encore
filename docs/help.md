@@ -640,3 +640,10 @@ Keywords: stats, my stats, streak, events gone to, neighbourhoods explored, regu
 Questions: Where are my stats? | Who can see my stats? | How do I show stats on my page?
 Your stats are on the Me sheet under Your stats: events you've gone to, hosts you follow, neighbourhoods explored and, if you host, guests welcomed and regulars. Only you see them. To show some on your page, tap Choose what shows and pick them one at a time.
 [See your stats](/me)
+
+## Kudos and comments on the feed
+
+Keywords: kudos, comments, comment, reply, who gave kudos, hide my name, a guest, feed privacy, post page
+Questions: Who can see my comments? | How do I hide my name on kudos? | Why does it say A guest?
+Kudos and comments sit right on each feed card, for everyone who can see that card, signed in or not. A private or members-only event keeps its own limits. Tap View all comments or the line of faces to open the post, with every comment, replies and everyone who gave kudos. To choose who sees your name next to your kudos and comments, go to Settings, Your name on the feed: Everyone, People I follow or Only hosts. Anyone else sees "A guest". Hosts always see who commented on their own posts. If you block someone, their kudos and comments are gone for you.
+[Open Settings](/settings#names)

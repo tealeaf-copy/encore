@@ -121,7 +121,7 @@ test("Kudos and dismiss: signed in only, real targets, rate limited", async () =
   assert.equal((await post("/api/feed/kudos", { target: "e:nope" }, U.noor.cookie)).status, 404);
   let j = await (await post("/api/feed/kudos", { target: "e:fbCtUp" }, U.noor.cookie)).json(); assert.equal(j.count, 1); assert.equal(j.mine, true);
   j = await (await post("/api/feed/kudos", { target: "e:fbCtUp" }, U.maya.cookie)).json(); assert.equal(j.count, 2);
-  const B = await feedOf("ana"); assert.equal(B.items.find((x) => x.id === "fbCtUp").kudos.line, "Maya and 1 more gave kudos", "friends named, others counted");
+  const B = await feedOf("ana"); assert.equal(B.items.find((x) => x.id === "fbCtUp").kudos.line, "Maya and Noor gave kudos", "kudos are public: friends named first, then everyone who shows their name");
   j = await (await post("/api/feed/kudos", { target: "e:fbCtUp" }, U.noor.cookie)).json(); assert.equal(j.count, 1); assert.equal(j.mine, false, "a second tap takes it back");
   // dismiss: gone from that person's follow row
   assert.equal((await post("/api/feed/dismiss", { target: "host:laps-fb" }, U.ana.cookie)).status, 200);

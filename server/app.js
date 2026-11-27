@@ -786,7 +786,7 @@ export function createApp({ store, dataDir }) {
   if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => RD.run().catch((e) => console.warn("[replydigest]", e?.message)), 20 * 60e3); t.unref?.(); }
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
-  mountFeedComments(app, { small, currentUser, X }); // ---- comments on feed cards (server/feedcomments.js), next to the feed blend it reads ----
+  mountFeedComments(app, { small, currentUser, X, sendHtml: (req, res, html) => sendText(req, res, html) }); // ---- comments on feed cards and the post page (server/feedcomments.js), next to the feed blend it reads ----
   mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X }); mountInvites(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // the address book and the invite plan
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)

@@ -20,6 +20,7 @@ section>p{margin:0 0 12px;color:var(--smoke);font-size:14px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;border-top:1.5px solid var(--line)}
 .row:first-of-type{border-top:0}
 .row span small{display:block;color:var(--smoke);font-size:13px}
+.nm-set{margin:0;padding:0;border:0}.nm-set legend{padding:0 0 4px;font-weight:600;font-size:15px}.nm-set .row{cursor:pointer}.nm-set input{width:22px;height:22px;margin:0 2px 0 0;accent-color:var(--pl-accent,#29489A);cursor:pointer}.nm-err{margin:6px 0 0;font-size:13px;color:var(--smoke)}.nm-err:empty{display:none}
 .sw{appearance:none;width:48px;height:28px;border-radius:999px;background:var(--line-strong);position:relative;cursor:pointer;flex:none;margin:0;transition:background .15s}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
 .sw::before{content:"";position:absolute;inset:-10px -4px}
@@ -81,6 +82,12 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     </section>
     <!-- end Potto by text -->
     <section aria-labelledby="hReply" id="replies"><h2 id="hReply">Your replies</h2><p>What Potto fills in when you reply to an invite. Hosts see it only once you send your reply.</p><div id="replyDetails"></div><script src="/replydetails.js" defer></script></section>
+    <section aria-labelledby="hName" id="names"><h2 id="hName">Your name on the feed</h2><p>Kudos and comments on the feed are public, like the posts they're on. Choose who sees your name next to them. Everyone else sees "A guest". Hosts always see who commented on their own posts.</p>
+      <fieldset class="nm-set"><legend>Show my name on kudos and comments</legend>
+        <label class="row"><span>Everyone</span><input type="radio" name="socialName" value="everyone" checked></label>
+        <label class="row"><span>People I follow</span><input type="radio" name="socialName" value="follow"></label>
+        <label class="row"><span>Only hosts</span><input type="radio" name="socialName" value="hosts"></label>
+      </fieldset><p class="nm-err" role="status"></p></section>
     <section aria-labelledby="hFind"><h2 id="hFind">Finding you</h2><p>Off unless you turn it on. When it's on, friends who check their contacts on Find people can see you're here. We compare scrambled emails and phone numbers and keep nothing they send.</p>
       <div class="row"><span>Let people find me by email or phone<small>Your email and the phone on your account</small></span><input type="checkbox" class="sw" id="findable" aria-label="Let people find me by email or phone"></div></section>
     <section aria-labelledby="hIns" id="insights"><h2 id="hIns">Brand insights</h2><p>Brands on Pottery Lab can see what kinds of events people love, as totals only, for example "supper clubs in Brooklyn, 40+ people, 88% would go again". Your activity is left out of those totals unless you choose to count it. If you do, your replies, kudos and interests are always mixed with at least 9 other people and 3 events, and never carry your name, email or anything that points to you. Brands can't download it. <a href="/teams/insights/how">How insights work</a></p>
@@ -141,6 +148,9 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
   $("#msgPopups").checked = E.chatPopups !== false; popKeep(E.chatPopups !== false);
   $("#msgPopups").onchange = (e) => { popKeep(e.target.checked); send("/api/me/prefs", { chatPopups: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; popKeep(e.target.checked); }); };
   $("#replyDigest").onchange = (e) => { E.replyDigest = e.target.checked; send("/api/me/prefs", { replyDigest: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; }); };
+  // who sees your name on feed kudos and comments (server/feedblend.js nameShown): Everyone, People I follow, Only hosts
+  { const set = (v) => document.querySelectorAll('input[name="socialName"]').forEach((r) => (r.checked = r.value === v)); set(E.socialName || "everyone"); let cur = E.socialName || "everyone";
+    document.querySelector(".nm-set").onchange = async (e) => { const v = e.target.value, msg = document.querySelector(".nm-err"); try { const j = await send("/api/me/prefs", { socialName: v }); cur = j.socialName || v; msg.textContent = "Saved."; } catch { set(cur); msg.textContent = "That didn't save. Try again."; } }; }
   // Find people: let people find me by email or phone (server/findpeople.js), off by default
   try { const FD = await get("/api/me/findable"); $("#findable").checked = FD.on === true; } catch {}
   $("#findable").onchange = (e) => send("/api/me/findable", { on: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; });

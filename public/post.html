@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/calm.js"></script><script src="/authguard.js"></script>
+<title>Post | Pottery Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/community.css">
+<style>
+/* The post page (/post/...): one feed card on top, everyone who gave kudos, the whole conversation and the box to add
+   to it. Server: server/feedcomments.js (the page arrives with its own data in #postData). Tokens only, light only. */
+:root{--eh-bottom:calc(84px + env(safe-area-inset-bottom,0px))} /* "Need a hand?" sits above the comment box */
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--pl-page,#EFEBE2);color:var(--pl-ink,#1B1D1C);font:16px/1.5 var(--sys-sans,"IBM Plex Sans",system-ui,sans-serif);color-scheme:light}
+.ppg{max-width:600px;margin:0 auto;padding:8px 16px 0}
+.pp-top{display:flex;align-items:center;min-height:52px}
+.pp-back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px 0 4px;margin-left:-4px;border-radius:var(--pl-r-btn,6px);color:var(--pl-accent-text,#29489A);font:600 15px var(--sys-sans,"IBM Plex Sans",system-ui);text-decoration:none}
+.pp-back:hover{text-decoration:underline;text-underline-offset:3px}.pp-back svg{width:20px;height:20px}
+#ppCard .fb-card{padding-top:8px;padding-bottom:4px}
+/* on this page the full lists below take the place of the card's previews */
+#ppCard .fb-count,#ppCard .fb-cm,#ppCard .fb-add{display:none!important}
+.pp-sec{padding:20px 0 4px;border-top:1px solid var(--pl-line,#CFC8B9)}
+.pp-sec h2{display:flex;align-items:baseline;gap:8px;margin:0 0 8px;font:600 17px/1.3 var(--sys-sans,"IBM Plex Sans",system-ui);letter-spacing:0}
+.pp-n{font:500 14px var(--sys-mono,ui-monospace,monospace);color:var(--pl-soft,#444845);font-variant-numeric:tabular-nums}
+.pp-kl{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px}
+.pp-kl li{display:flex;align-items:center;gap:8px;min-height:36px;font-size:15px}.pp-kl li b{font-weight:600}.pp-kl li.g{color:var(--pl-soft,#444845)}
+.pp-kl .fb-f,.pp-c>.fb-f,.pp-row>.fb-f{width:32px;height:32px;font-size:13px;border-color:var(--pl-page,#EFEBE2)}
+.pp-none{margin:0 0 8px;color:var(--pl-soft,#444845);font-size:15px}
+.pp-list,.pp-rs ol{list-style:none;margin:0;padding:0}
+.pp-c{display:flex;gap:10px;padding:12px 0}.pp-list>.pp-c+.pp-c,.pp-list>.pp-rs+.pp-c{border-top:1px solid var(--pl-line,#CFC8B9)}
+.pp-rs{padding:0 0 4px 42px}.pp-c.re{padding:8px 0}.pp-c.re>.fb-f{width:24px;height:24px;font-size:11px}
+.pp-c.wait{opacity:.7}.pp-c.hl .pp-b{background:color-mix(in srgb,var(--pl-accent,#29489A) 8%,transparent);border-radius:var(--pl-r-md,6px);box-shadow:0 0 0 6px color-mix(in srgb,var(--pl-accent,#29489A) 8%,transparent)}
+.pp-b{flex:1;min-width:0}.ppg .pp-b>p{margin:0}.ppg .pp-b>p.pp-t{margin-top:2px}.ppg .pp-b>p.pp-do{margin:0 0 -10px -10px}
+.pp-who{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;margin:0;padding-right:40px;font-size:15px;line-height:1.35}.pp-who b{font-weight:600}
+.pp-tag{font-size:12px;font-weight:600;color:var(--pl-accent-text,#29489A)}
+.pp-at{font:400 12px/1.35 var(--sys-mono,ui-monospace,monospace);color:var(--pl-soft,#444845);font-variant-numeric:tabular-nums;text-decoration:none}a.pp-at{padding:14px 6px;margin:-14px -6px}a.pp-at:hover{text-decoration:underline;text-underline-offset:3px}
+.pp-t{margin:2px 0 0;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.pp-do{display:flex;gap:4px;margin:0 0 -10px -10px}
+.pp-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--pl-soft,#444845);font:500 13px var(--sys-sans,"IBM Plex Sans",system-ui);cursor:pointer}.pp-btn:hover{color:var(--pl-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}.pp-btn.sure{color:var(--pl-accent-text,#29489A);font-weight:600}
+.pp-c .sf-more{top:6px;right:-6px;width:36px;height:36px;background:transparent;border-color:transparent;color:var(--pl-soft,#444845)}.pp-c{position:relative}
+.pp-empty{padding:12px 0 16px;color:var(--pl-soft,#444845);font-size:15px}
+/* the box: at the bottom of the conversation, and it stays in reach while you read */
+#ppBox{position:sticky;bottom:0;z-index:4;margin:8px -16px 0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--pl-page,#EFEBE2);border-top:1px solid var(--pl-line,#CFC8B9)}
+.pp-row{display:flex;align-items:flex-end;gap:10px}.pp-row>.fb-f{margin-bottom:6px}
+.pp-row textarea{flex:1;min-width:0;min-height:44px;max-height:160px;resize:none;margin:0;padding:11px 12px;border:1px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-md,6px);background:#fff;color:var(--pl-ink,#1B1D1C);font:16px/1.3 var(--sys-sans,"IBM Plex Sans",system-ui)}
+.pp-row textarea::placeholder{color:var(--pl-soft,#444845);opacity:1}.pp-row textarea:focus-visible{outline:2px solid var(--pl-accent,#29489A);outline-offset:0;border-color:var(--pl-accent,#29489A)}
+.pp-send{flex:none;min-height:44px;padding:0 18px;border:0;border-radius:var(--pl-r-btn,6px);background:var(--pl-accent,#29489A);color:var(--pl-on-accent,#fff);font:600 15px var(--sys-sans,"IBM Plex Sans",system-ui);cursor:pointer}.pp-send:hover{background:var(--pl-accent-press,#1F3878)}.pp-send[disabled]{opacity:.5;cursor:default}
+.pp-re{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px 42px;font-size:13px;color:var(--pl-soft,#444845)}.pp-re[hidden]{display:none}
+.pp-re-x{display:grid;place-items:center;width:44px;height:44px;margin:-12px -10px -12px 0;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--pl-soft,#444845);cursor:pointer}.pp-re-x svg{width:16px;height:16px}.pp-re-x:hover{color:var(--pl-ink,#1B1D1C)}
+.pp-meta{display:flex;justify-content:space-between;gap:12px;margin:0 0 0 42px;font-size:13px;line-height:1.4}.pp-meta:has(span:empty+span:empty){display:none}
+.pp-err{color:var(--pl-accent-text,#29489A);font-weight:600;padding-top:6px}.pp-err:empty,.pp-cnt:empty{display:none}.pp-cnt{margin-left:auto;padding-top:6px;font-family:var(--sys-mono,ui-monospace,monospace);color:var(--pl-soft,#444845)}
+.pp-in{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--pl-r-btn,6px);background:var(--pl-accent,#29489A);color:var(--pl-on-accent,#fff);font:600 16px var(--sys-sans,"IBM Plex Sans",system-ui);text-decoration:none}.pp-in:hover{background:var(--pl-accent-press,#1F3878)}
+.pp-chat{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 12px;color:var(--pl-soft,#444845);font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--pl-line,#CFC8B9)}.pp-chat:hover{color:var(--pl-ink,#1B1D1C)}.pp-chat[hidden]{display:none}
+.ppg a:focus-visible,.ppg button:focus-visible{outline:3px solid var(--pl-ink,#1B1D1C);outline-offset:2px}
+.fb-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pp-gone{padding:48px 0;text-align:center}.pp-gone p{color:var(--pl-soft,#444845)}
+@media (min-width:700px){.ppg{padding-top:24px}#ppBox{margin:8px 0 0;padding-left:0;padding-right:0}}
+</style>
+<script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/safety.js" defer></script>
+</head><body>
+<main class="ppg" id="m">
+  <div class="pp-top"><a class="pp-back" id="ppBack" href="/feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Back to the feed</a></div>
+  <h1 class="fb-sr" id="ppH">Post</h1>
+  <div id="ppCard"></div>
+  <section class="pp-sec" id="kudos" aria-labelledby="ppKH"><h2 id="ppKH">Kudos</h2><div id="ppK"></div></section>
+  <section class="pp-sec" id="comments" aria-labelledby="ppCH"><h2 id="ppCH">Comments</h2><ol class="pp-list" id="ppList"></ol>
+    <a class="pp-chat" id="ppChat" hidden>You were there. Open the group chat</a>
+    <div id="ppBox"></div></section>
+</main>
+<script id="postData" type="application/json">null</script>
+<script src="/feedvisual.js"></script><script src="/feedcomments.js"></script>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  let P = null; try { P = JSON.parse($("#postData").textContent); } catch {}
+  const FV = window.FeedVisual, S = FV && FV.social;
+  if (!P || !S || !window.PLThread) { $("#m").innerHTML = `<div class="pp-gone"><h1>This post didn't load</h1><p>Check your connection and try again.</p><a class="pp-back" href="/feed">Back to the feed</a></div>`; return; }
+  // back: to the same place in the feed when you came from there, else to the feed
+  const back = $("#ppBack"); let ref = null; try { ref = document.referrer ? new URL(document.referrer) : null; } catch {}
+  if (ref && ref.origin === location.origin && history.length > 1) back.onclick = (e) => { e.preventDefault(); history.back(); };
+  $("#ppH").textContent = P.title || "Post";
+  // the card, drawn the way the feed draws it, with its kudos button wired (the lists below take the previews' place)
+  FV.css(); $("#ppCard").innerHTML = S.card(P.item, { signedIn: !!P.signedIn, me: P.me || null }); FV.wire($("#ppCard"));
+  // everyone who gave kudos: you first, then the newest; "A guest" for someone who keeps their name to themselves
+  let K = P.kudos || { count: 0, people: [] };
+  function drawKudos() { const L = K.people || [];
+    $("#ppKH").innerHTML = `Kudos${K.count ? ` <span class="pp-n">${K.count}</span>` : ""}`;
+    $("#ppK").innerHTML = L.length ? `<ul class="pp-kl">${L.map((p) => `<li class="${p.guest ? "g" : ""}">${S.face(p.face || {})}<b>${esc(p.mine ? "You" : p.name)}</b></li>`).join("")}${K.count > L.length ? `<li class="g">and ${K.count - L.length} more</li>` : ""}</ul>`
+      : `<p class="pp-none">${K.count ? esc(K.line || "") : "No kudos yet."}</p>`; }
+  drawKudos();
+  document.addEventListener("pl:kudos", (e) => { const d = e.detail || {}; if (d.target !== P.target || !d.kudos) return; const k = d.kudos, mineBefore = (K.people || []).some((p) => p.mine);
+    K = { ...K, count: k.count, line: k.line }; if (k.mine && !mineBefore) K.people = [{ name: "You", mine: true, face: { ...(P.me || {}), me: 1 } }, ...(K.people || [])]; if (!k.mine && mineBefore) K.people = (K.people || []).filter((p) => !p.mine); drawKudos(); });
+  // the whole conversation, with one level of replies
+  window.PLThread.mount(document, P, { onChange: (c) => S.setComments(P.target, c) });
+  // the group chat: a quiet link for the people who were in it
+  if (P.chat && /^\/g#/.test(P.chat)) { const a = $("#ppChat"); a.href = P.chat; a.hidden = false; }
+  if (location.hash === "#kudos") $("#kudos").scrollIntoView({ block: "start" });
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

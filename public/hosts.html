@@ -57,6 +57,7 @@ html body .ex-chips button{border-style:solid;border-width:1.5px}
 /* the shared request form (storeshop.js) inside the sheet: the sheet already shows the option, price and proof */
 .bk-in{margin-top:16px}.bk-in>h3{font-size:24px;margin:0 0 6px}.sheet .book>.nu-eyebrow,.sheet .book>h2,.sheet .book-sum,.sheet #b2bProof,.sheet .bk-n,.sheet .bk-rows{display:none!important}.sheet .book .btn:not(.ghost){background:var(--ember);color:#fff}.sheet .book .btn.ghost{background:#fff;border:1.5px solid var(--ink);color:var(--ink)}.sheet .book form{margin-top:0}
 </style>
+<script src="/authguard.js"></script><!-- in the head, so the side menu's room is held from the first paint on a wide screen (the header jumped 66px on a cold load) -->
 </head><body data-audience="brand">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="26" height="26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a>
@@ -74,7 +75,7 @@ html body .ex-chips button{border-style:solid;border-width:1.5px}
   <p style="margin:4px 0 30px"><a href="/gifts/plan" style="font-weight:600;color:var(--pl-accent-text);display:inline-flex;align-items:center;min-height:44px">Sending gifts instead? Plan gifts</a></p>
 </div>
 <div class="wrap"><footer>Pottery Lab · Hosts set their own prices. · <a href="/">For hosts</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer></div>
-<script src="/authguard.js"></script><script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script><script src="/avatars.js"></script><script src="/terms.js"></script><script src="/menucard.js"></script><script src="/storeshop.js"></script>
+<script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script><script src="/avatars.js"></script><script src="/terms.js"></script><script src="/menucard.js"></script><script src="/storeshop.js"></script>
 <script>
 (function () { const C = window.EncoreCommunity, esc = C.esc, A = window.EncoreAvatars, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   $("#pipFace").innerHTML = C.pipSVG("happy", 36);

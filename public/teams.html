@@ -41,7 +41,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
 .ex-h{font-size:20px;margin:18px 0 0}.ex-sub{margin:2px 0 0;color:var(--pl-soft);font-size:14px}.honest{text-align:left}.ask{display:flex;flex-wrap:wrap;gap:8px;max-width:520px;margin:12px 0 0}.empty:not(.honest) .ask{margin:12px auto 0}.ask input{flex:1 1 200px;min-width:0;padding:10px 12px;border:1px solid var(--pl-line-strong);border-radius:6px;font:inherit;min-height:44px}.ask input[type=date]{flex:0 1 170px}.ask button{padding:10px 16px;min-height:44px;border-radius:6px;border:0;background:var(--pl-accent-text);color:#fff;font-weight:600;font-size:16px;font-family:inherit;cursor:pointer}
 .cov-h{flex:1 1 100%;font-size:13px;color:var(--pl-soft)}.where small,.why small{font-size:13px;color:var(--pl-soft)}
 .how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}@media (max-width:760px){.how{grid-template-columns:1fr}}.how div{background:var(--pl-surface);border:1px solid var(--line);border-radius:6px;padding:14px;font-size:14px}.how b{display:block;font-family:var(--pl-font-text);font-weight:600;font-size:16px;margin-bottom:4px}
-</style></head><body data-audience="brand">
+</style><script src="/authguard.js"></script></head><body data-audience="brand">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="26" height="26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a><nav><a href="/team">Team space</a><a href="/results">Results</a><a href="/discover">Discover</a></nav></header>
   <h1>Find a local host</h1>
@@ -62,7 +62,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
   <div class="insight" id="insight" hidden></div>
   <div class="how"><div><b>1. Request a date</b>Say when, where and how many.</div><div><b>2. Get a quote</b>The host sends a price and what's included.</div><div><b>3. Accept the quote</b>50% deposit confirms your date.</div></div>
 </div>
-<script src="/authguard.js"></script><script>
+<script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   // copy without a dialog: the clipboard, then a hidden text field; false when both are blocked

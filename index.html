@@ -1385,6 +1385,14 @@ window.plRx=function(src,flags){ try{ return new RegExp(src,flags) }catch(e){ le
   if(c==="\\"){ out+=src.slice(i,i+2); i+=2; continue } if(cls){ if(c==="]") cls=false; out+=c; i++; continue } if(c==="["){ cls=true; out+=c; i++; continue }
   if(src.startsWith("(?<=",i)||src.startsWith("(?<!",i)){ let d=0,k=i,inC=false; for(;k<src.length;k++){ const x=src[k]; if(x==="\\"){ k++; continue } if(inC){ if(x==="]") inC=false; continue } if(x==="[") inC=true; else if(x==="(") d++; else if(x===")"&&--d===0) break } i=k+1; continue }
   out+=c; i++ } return new RegExp(out,flags) } };
+// Arriving to start a new event (?new=1#studio: "Plan a dinner" for a signed-in host, the New event link) opens the
+// create canvas over the studio. The studio under it stays out of sight while the canvas opens and while it is up
+// (5s at most if no canvas comes), so the page doesn't jump around as it draws behind.
+(()=>{ try{ const q=new URLSearchParams(location.search); if(location.hash!=="#studio"||q.get("new")!=="1"||q.get("open")||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return;
+  const H=document.documentElement, st=document.createElement("style"); st.textContent="html.pl-newcv #view-studio{visibility:hidden}"; document.head.appendChild(st); H.classList.add("pl-newcv");
+  let seen=false; const mo=new MutationObserver(()=>{ const up=!!document.getElementById("cv"); if(up) seen=true; else if(seen||document.getElementById("wizBg")||document.querySelector(".dp-sheet,.hv-bg")) off() });
+  const off=()=>{ mo.disconnect(); H.classList.remove("pl-newcv") }; setTimeout(()=>{ if(!seen) off() },5000);
+  mo.observe(document.body||H,{childList:true,subtree:true}) }catch{} })();
 // local calendar dates (not UTC): today's date and whole days until a YYYY-MM-DD date
 // declared here (the early block) so render code that runs from a fetch callback before later blocks parse can use them
 function hostFirst(e){ return (String(e?.hostName||window.__gHostName||"").trim().split(/\s+/)[0]||"").replace(/['’]s$/i,"")||"your host" } // "Bo's Omecasa" hosts as Bo, never "Bo's is hosting"

@@ -184,13 +184,15 @@ export function renderCard(spec = {}, size = "story") { const S = SIZES[size] ||
 // ---------------------------------------------------------------- off the main thread
 // Drawing a story card takes a moment of CPU, so the server asks a worker for it and keeps answering requests meanwhile.
 // One worker, made when first needed; if it can't start or fails, the card is drawn here instead.
-let worker = null, seq = 0; const waits = new Map();
-function startWorker() { if (worker !== null) return worker; try { worker = new Worker(new URL(import.meta.url), { workerData: { plShareCards: true } }); worker.unref();
-    worker.on("message", ({ id, png, err }) => { const w = waits.get(id); if (!w) return; waits.delete(id); if (err || !png) w.fail(); else w.ok(Buffer.from(png)); });
-    worker.on("error", () => { for (const w of waits.values()) w.fail(); waits.clear(); worker = false; }); worker.on("exit", () => { for (const w of waits.values()) w.fail(); waits.clear(); worker = false; }); }
+let worker = null, seq = 0, idleT = null; const waits = new Map();
+// the worker holds the process open only while a card is being drawn; with nothing to do it is ended after a quiet while
+function idle() { clearTimeout(idleT); idleT = setTimeout(() => { if (worker && !waits.size) { const w = worker; worker = null; w.terminate().catch(() => {}); } }, 30_000); idleT.unref?.(); }
+function startWorker() { if (worker !== null) return worker; try { worker = new Worker(new URL(import.meta.url), { workerData: { plShareCards: true } });
+    worker.on("message", ({ id, png, err }) => { const w = waits.get(id); if (!w) return; waits.delete(id); if (err || !png) w.fail(); else w.ok(Buffer.from(png)); if (!waits.size) { worker?.unref?.(); idle(); } });
+    worker.on("error", () => { for (const w of waits.values()) w.fail(); waits.clear(); worker = false; }); worker.on("exit", () => { for (const w of waits.values()) w.fail(); waits.clear(); worker = null; }); worker.unref(); }
   catch { worker = false; } return worker; }
 /** The same PNG as renderCard, drawn in a worker thread. */
 export function renderCardAsync(spec = {}, size = "story") { const key = (SIZES[size] ? size : "story") + JSON.stringify(spec); if (cache.has(key)) return Promise.resolve(cache.get(key));
   const W = startWorker(); if (!W) return Promise.resolve(renderCard(spec, size));
-  return new Promise((resolve) => { const id = ++seq; waits.set(id, { ok: (png) => { if (cache.size > 60) cache.delete(cache.keys().next().value); cache.set(key, png); resolve(png); }, fail: () => resolve(renderCard(spec, size)) }); W.postMessage({ id, spec, size }); }); }
+  return new Promise((resolve) => { const id = ++seq; waits.set(id, { ok: (png) => { if (cache.size > 60) cache.delete(cache.keys().next().value); cache.set(key, png); resolve(png); }, fail: () => resolve(renderCard(spec, size)) }); W.ref(); W.postMessage({ id, spec, size }); }); }
 if (!isMainThread && workerData?.plShareCards) parentPort.on("message", ({ id, spec, size }) => { try { const png = renderCard(spec, size), out = new Uint8Array(png); parentPort.postMessage({ id, png: out }, [out.buffer]); } catch (e) { parentPort.postMessage({ id, err: String(e?.message || e) }); } });

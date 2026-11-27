@@ -217,7 +217,10 @@ export function publicEvent(data, view) {
   if (data.casual && view !== "plan") { if (e.venueAddr) { delete e.venueAddr; e.addrHidden = true; }
     // a place name that is really a home or a street address ("My apartment, 214 Bedford Ave") is an address too:
     // guests get it after they're in, through the RSVP-checked address endpoint
-    for (const k of ["venueName", "meetPoint"]) if (e[k] && looksLikeAddress(e[k])) { delete e[k]; e.addrHidden = true; }
+    // ... but "My place, Greenpoint" still says Greenpoint: the last part, when it isn't an address itself, stays as the area
+    for (const k of ["venueName", "meetPoint"]) if (e[k] && looksLikeAddress(e[k])) { const area = String(e[k]).split(",").slice(1).pop()?.trim() || "";
+      if (!e.hood && area && area.length <= 40 && !/\d/.test(area) && !looksLikeAddress(area) && area.toLowerCase() !== String(e.city || "").toLowerCase()) e.hood = area;
+      delete e[k]; e.addrHidden = true; }
     if (data.approvalRequired) { if (e.meetPoint || e.venueName || e.venues) e.addrHidden = true; delete e.meetPoint; delete e.venueName; delete e.venues; } }
   return e;
 }

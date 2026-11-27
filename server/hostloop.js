@@ -288,6 +288,7 @@ export function draftToEvent(d = {}, { now = today(), city = "", tz = "" } = {})
   if (kind === "table") { const place = clean(d.place, 80); ev.activity = "dinner"; ev.headcount = Math.max(1, seats - 1); ev.reservation = { restaurant: place, time: ev.startTime, party: seats, split: "even", holdUntil: addDays(date, -2) < now ? now : addDays(date, -2) }; ev.noMaybe = true; }
   if (kind === "weekend") { ev.carpool = true; ev.noMaybe = true; if (!ev.endDate) ev.endDate = addDays(date, 2); ev.lodging = { area: clean(d.place, 60) }; }
   if (kind === "summit") { ev.kind = "summit"; ev.noMaybe = true; ev.itineraryPublic = true; ev.agenda = { tracks: ["Main stage", "Workshops"], rooms: [{ name: "Main hall", capacity: seats }, { name: "Studio", capacity: Math.max(10, Math.round(seats / 4)) }], sessions: [] }; }
+  if (ev.concept) ev.why = ev.concept; // "A line for guests" is for guests: it shows on the invite
   if (!ev.concept) delete ev.concept; if (!ev.venueName) delete ev.venueName; if (!ev.city) delete ev.city;
   return ev;
 }

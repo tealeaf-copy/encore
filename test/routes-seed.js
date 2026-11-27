@@ -37,7 +37,17 @@ export async function seedRoutes(base) {
   await post("/api/chats/rtOpen/messages", { text: "So glad you're coming." }, host.cookie);
   await post("/api/chats/rtOpen/messages", { rid: g.rid, code: g.code, text: "Can't wait." }, guest.cookie);
   await post("/api/public/follow", { handle: "mai-routes", email: guest.email, name: guest.name }, guest.cookie);
-  return { host, guest, admin, cover, handle: "mai-routes", exp: "dumpling1", open: "rtOpen", past: "rtPast", ask: "rtAsk", today: "rtToday", draft: "rtDraft", openRid: g, pastRid: p };
+  // review 18: one of each scale (server/kinds.js): a booked table, a weekend away, a summit with a public speaker
+  await put("events/rtTable", ev({ name: "Dinner at Lilia", date: day(7), startTime: "19:30", planKind: "table", noMaybe: true, discoverable: false, unlisted: true, headcount: 5, venueName: "Lilia", meetPoint: "",
+    reservation: { restaurant: "Lilia", time: "19:30", party: 6, link: "https://resy.com/lilia", confirmation: "R-1", holdUntil: day(5), split: "even" } }), host.cookie);
+  await put("events/rtTrip", ev({ name: "Cabin weekend", date: day(10), endDate: day(12), startTime: "16:00", planKind: "weekend", noMaybe: true, carpool: true, discoverable: false, unlisted: true,
+    lodging: { name: "Creek House", area: "Phoenicia", checkIn: "16:00", checkOut: "11:00", address: "41 Creek Rd" }, beds: [{ id: "b1", room: "Loft", label: "Queen", sleeps: 2 }] }), host.cookie);
+  await put("events/rtSummit", ev({ name: "Small summit", date: day(14), endDate: day(15), startTime: "09:30", planKind: "summit", kind: "summit", noMaybe: true, itineraryPublic: true, headcount: 80,
+    speakers: [{ id: "sp1", name: "Ana Ruiz", title: "Head of Design", public: true }], sponsors: [{ name: "Fernwood Labs" }],
+    agenda: { tracks: ["Design"], rooms: [{ name: "Main hall", capacity: 80 }], sessions: [{ id: "s1", day: 1, time: "10:00", title: "Keynote", track: "Design", room: "Main hall", speakers: ["sp1"] }] } }), host.cookie);
+  const trip = await reply("rtTrip", "kroutestrip1", { name: guest.name, email: guest.email, cookie: guest.cookie });
+  await reply("rtSummit", "kroutessumm1", { name: guest.name, email: guest.email, cookie: guest.cookie });
+  return { host, guest, admin, cover, handle: "mai-routes", exp: "dumpling1", open: "rtOpen", past: "rtPast", ask: "rtAsk", today: "rtToday", draft: "rtDraft", openRid: g, pastRid: p, tripRid: trip };
 }
 
 // every user-facing page. `as` limits a page to a role ("admin" pages 404 for everyone else, on purpose).
@@ -46,7 +56,7 @@ export function pagesFor(S) {
   return [
     "/", "/feed", "/discover", "/events", "/ideas", "/hosts", "/saved", "/plans", "/chats", `/chats/${S.open}`, "/settings", "/community", "/playbook",
     "/signup", "/login", "/about", "/privacy", "/terms", `/@${S.handle}`, `/e/${S.open}`, `/e/${S.past}`, `/i/${S.open}`, "/g", `/x/${S.handle}/${S.exp}`,
-    `/again/${S.past}?${q(S.pastRid)}`, `/k/${S.past}?${q(S.pastRid)}`, `/recap/${S.handle}`, `/p/${S.past}?${q(S.pastRid)}`, "/?app=1", "/leaderboard", "/pricing",
+    `/plans/rtTable`, `/plans/rtTrip`, `/plans/rtSummit`, `/speakers/rtSummit/sp1`, `/e/rtTable`, "/start?t=table", "/guides/weekend-away", `/again/${S.past}?${q(S.pastRid)}`, `/k/${S.past}?${q(S.pastRid)}`, `/recap/${S.handle}`, `/p/${S.past}?${q(S.pastRid)}`, "/?app=1", "/leaderboard", "/pricing",
     { path: "/moderation", as: "admin" }, { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }

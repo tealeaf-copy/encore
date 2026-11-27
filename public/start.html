@@ -76,8 +76,8 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
     <form id="f" autocomplete="off" novalidate>
       <label>What is it<input name="title" maxlength="80" placeholder="Dinner for 4"></label>
       <div class="two"><label>When<input name="date" type="date"></label><label>Time<input name="time" type="time" step="900"></label></div>
-      <label>Where <small>A neighbourhood is enough for now</small><input name="place" maxlength="80" placeholder="My place, Greenpoint"></label>
-      <div><span style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Seats</span><div class="step"><button type="button" id="less" aria-label="One fewer seat">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more seat">+</button></div></div>
+      <label id="placeL">Where <small>A neighbourhood is enough for now</small><input name="place" maxlength="80" placeholder="My place, Greenpoint"></label>
+      <div><span id="seatsL" style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Seats</span><div class="step"><button type="button" id="less" aria-label="One fewer seat">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more seat">+</button></div></div>
       <label>A line for guests <small>Optional</small><textarea name="note" maxlength="280" placeholder="I'm making dumplings. Bring something to drink."></textarea></label>
       <p class="saved" id="saved" aria-live="polite"></p>
     </form>
@@ -104,6 +104,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
   // templates: the Host path's nodes and Potto's small-move ideas all start here
   const T = {
     dinner4: { chip: "Dinner for 4", title: "Dinner for 4", kind: "Dinner", seats: 4, noun: "dinner" },
+    table: { chip: "Book a table", title: "Dinner out", kind: "Book a table", seats: 6, time: "19:30", noun: "dinner out", note: "I booked us a table. Reply so I can keep the count right.", place: "Restaurant", placeHint: "Lilia, Williamsburg", seatWord: "Party size" },
     coffee: { chip: "Coffee for two", title: "Coffee, just us", kind: "Coffee", seats: 2, time: "10:00", noun: "coffee", note: "Small and easy. My treat." },
     game: { chip: "Game night", title: "Game night", kind: "Game night", seats: 6, time: "19:30", noun: "game night", note: "Bring a game you'd teach in five minutes." },
     run: { chip: "Run club", title: "Saturday 5k, coffee after", kind: "Run", seats: 10, time: "08:00", noun: "run", note: "Every pace. We wait at the end." },
@@ -117,22 +118,25 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
     feeler: { chip: "A feeler", title: "Would you come to a dumpling night?", kind: "Feeler", seats: 6, noun: "feeler", note: "Thinking about it for later this month. Reply if you'd come." },
     again: { chip: "Same crew", title: "Same crew, new month", kind: "Dinner", seats: 6, noun: "dinner" },
   };
-  const CHIPS = ["dinner4", "coffee", "game", "run", "table8"];
+  const CHIPS = ["dinner4", "table", "coffee", "game", "weekend", "summit"];
   let t = T[q.get("t")] ? q.get("t") : "dinner4", d = ls.get(KEY), variant = "plan", signed = false;
   const fresh = (k) => { const x = T[k]; return { t: k, title: x.title, kind: x.kind, seats: x.seats, date: friday(), time: x.time || "19:00", place: "", note: x.note || "", ...(x.days ? { endDate: plus(friday(), x.days) } : {}), at: Date.now() }; };
   if (!d || (q.get("t") && d.t !== t && !q.get("save"))) d = fresh(t); else t = T[d.t] ? d.t : t;
   // anonymous id for the copy experiment (server/experiments.js): random, this browser only, never tied to a person
   let anon = ""; try { anon = localStorage.getItem("pl.anon") || ""; if (!/^[A-Za-z0-9_-]{6,80}$/.test(anon)) { anon = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("pl.anon", anon); } } catch {}
   const COPY = { plan: (n) => ({ eyebrow: `Plan a ${n}`, h1: `Plan a ${n}. It takes a minute.`, save: `Save your ${n} and get a link to send` }), start: (n) => ({ eyebrow: "Start small", h1: "Four people and a night. That's an event.", save: "Save it and get your link" }) };
-  const copy = () => { const c = (COPY[variant] || COPY.plan)(T[t].noun); $("#eyebrow").textContent = c.eyebrow; $("#h1").textContent = c.h1; $("#save").textContent = c.save; document.title = c.eyebrow + " · Pottery Lab"; };
+  const copy = () => { const c = (COPY[["table", "weekend", "summit"].includes(t) ? "plan" : variant] || COPY.plan)(T[t].noun); /* a booked table or a trip names itself */ $("#eyebrow").textContent = c.eyebrow; $("#h1").textContent = c.h1; $("#save").textContent = c.save; document.title = c.eyebrow + " · Pottery Lab"; };
   fetch("/api/public/xp/first-win-copy?u=" + encodeURIComponent(anon), { credentials: "same-origin" }).then((r) => r.json()).then((j) => { if (j.variant) { variant = j.variant; copy(); } }).catch(() => {});
 
   const fmtWhen = () => { const s = d.date ? new Date(d.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "Pick a night"; const [h, m] = String(d.time || "19:00").split(":").map(Number);
     return s + (d.endDate ? " to " + new Date(d.endDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", day: "numeric" }) : "") + " · " + ((h % 12) || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h < 12 ? "am" : "pm"); };
   function draw() {
-    $("#cKind").textContent = d.kind || "Dinner"; $("#cTitle").textContent = d.title || T[t].title; $("#cWhen").textContent = fmtWhen(); $("#cWhere").textContent = d.place || "Somewhere you like";
+    // a booked table: the place is the restaurant, the seats are the party size, and guests get a reply-by day
+    const X = T[t] || {}; $("#placeL").firstChild.textContent = X.place ? X.place + " " : "Where "; $("#seatsL").textContent = X.seatWord || "Seats";
+    const hold = t === "table" && d.date ? new Date(new Date(d.date + "T12:00:00").getTime() - 2 * 864e5).toLocaleDateString("en-US", { weekday: "long" }) : "";
+    $("#cKind").textContent = d.kind || "Dinner"; $("#cTitle").textContent = d.title || T[t].title; $("#cWhen").textContent = fmtWhen(); $("#cWhere").textContent = d.place || (T[t].place ? "The restaurant" : "Somewhere you like"); F.place.placeholder = T[t].placeHint || "My place, Greenpoint";
     $("#cSeats").innerHTML = Array.from({ length: Math.min(24, d.seats) }, () => "<i></i>").join("") + (d.seats > 24 ? `<span class="meta">+${d.seats - 24}</span>` : "");
-    $("#cNote").hidden = !d.note; $("#cNote").textContent = d.note || ""; $("#seatsOut").textContent = d.seats;
+    $("#cNote").hidden = !d.note && !hold; $("#cNote").textContent = [d.note || "", hold ? `Reply by ${hold} so I can update the booking.` : ""].filter(Boolean).join(" "); $("#seatsOut").textContent = d.seats;
     document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.t === t)));
   }
   let savedT; const keep = () => { d.at = Date.now(); ls.set(KEY, d); clearTimeout(savedT); savedT = setTimeout(() => { $("#saved").innerHTML = (fx.check ? fx.check() : "") + " Saved on this phone"; }, 250); };

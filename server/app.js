@@ -53,7 +53,7 @@ import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/p
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
-import { mountPlans } from "./plans.js"; // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
+import { mountPlans } from "./plans.js"; import { mountKinds } from "./kinds.js"; // a table for friends, a weekend away, a summit (server/kinds.js) // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountBrandbook } from "./brandbook.js"; import { mountInsights } from "./insights.js"; import { mountCampaigns } from "./campaigns.js"; // brand Insights ("What resonates") and Campaigns (server/insights.js, server/campaigns.js) // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
@@ -179,6 +179,7 @@ PUBLIC_FIELDS.push("priceTiers");
 // the create canvas (public/canvas.js): the host's own sections, links, an accessibility note and co-hosts, cleaned in
 // publicEvent below and drawn on both invites by public/sections.js
 PUBLIC_FIELDS.push("sections", "links", "accessNote", "cohosts");
+PUBLIC_FIELDS.push("planKind"); // what the host is planning: a table, a weekend away, a summit (server/kinds.js); the parts with addresses stay off the public doc
 PUBLIC_FIELDS.push("endDate", "included"); // review 16: a weekend away's last day; what's included (a workshop's materials)
 const cleanStr = (v, n) => String(v ?? "").replace(/\r/g, "").trim().slice(0, n);
 export function publicExtras(e) {
@@ -796,7 +797,8 @@ export function createApp({ store, dataDir }) {
   mountTables(app, { store, small, C, X, currentUser, serverReply: (...a) => serverReply(...a), ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) }); // review round 11: tables (server/tables.js)
   mountSeries(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: episodes and the changelog (server/series.js)
   mountSlots(app, { store, small, X, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: slots and quiet guests (server/slots.js)
-  mountPlans(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
+  const PL = mountPlans(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
+  mountKinds(app, { store, small, big: express.json({ limit: "300kb" }), currentUser, C, X, P: PL, sendStatic }); // the parts each scale needs: a booked table, a weekend away, a summit (server/kinds.js)
   mountHooksOut(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req) }); // review round 13: Discord/Slack and calendars (server/hooksout.js)
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
@@ -1892,6 +1894,7 @@ export function createApp({ store, dataDir }) {
     const was = before?.response || "", now = after?.response || "", title = titleOf(ev), owner = getWorkspace(ws)?.ownerEmail || "", who = firstOf(after?.name || before?.name) || "Someone", studio = `/?app=1&open=${encodeURIComponent(eventId)}#studio`;
     if (now === "going" && was !== "going" && after?.withOf) { try { claimHold(St, id, after); } catch {} } // the friend's own reply holds the spot now
     try { app.locals.chat?.onRsvp(req, ws, id, before, after); } catch {} // guests who are in join the group chat (server/chat.js)
+    try { app.locals.kinds?.onRsvp(ws, eventId); } catch {} // a booked table: "You're at 7 of 6. Call to add a seat?" in the host's bell (server/kinds.js)
     const promoted = await promoteWaitlist(req, ws, eventId);
     // the second-host loop: a guest who sent another host kudos in the last 30 days says I'm in here (server/social.js)
     if (now === "going" && was !== "going" && after?.email) { try { X.loopTouch(after.email, ws, "rsvp"); } catch {} }

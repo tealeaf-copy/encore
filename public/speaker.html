@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Speaker · Pottery Lab</title>
+<meta name="description" content="A speaker at an event on Pottery Lab, and their sessions.">
+<link rel="stylesheet" href="/community.css"><link rel="stylesheet" href="/playful.css">
+<style>
+/* /speakers/<event>/<speaker> (server/kinds.js): public only when the speaker said yes or the host marked it public */
+.sp-wrap{max-width:640px;margin:0 auto;padding:12px 0 48px}
+.sp-back{display:inline-flex;align-items:center;min-height:44px;font:500 15px var(--pl-font-text);color:var(--pl-accent-text);text-decoration:none}
+.sp-k{display:block;margin:12px 0 4px;font:500 13px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--pl-accent-text)}
+.sp-name{margin:0;font:600 40px/1.1 var(--pl-font-display);letter-spacing:-.02em;color:var(--pl-ink)}
+.sp-title{margin:8px 0 0;font:500 17px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.sp-bio{margin:16px 0 0;font:400 17px/1.6 var(--pl-font-text);color:var(--pl-ink)}
+.sp-photo{width:96px;height:96px;border-radius:50%;object-fit:cover;border:1.5px solid var(--pl-ink);display:block;margin:8px 0 0}
+.sp-h2{display:flex;justify-content:space-between;align-items:baseline;margin:28px 0 0;padding-bottom:6px;border-bottom:var(--pl-rule,1.5px solid var(--pl-ink));font:600 18px/1.3 var(--pl-font-text)}
+.sp-h2 small{font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-soft)}
+.sp-list{list-style:none;margin:0;padding:0}.sp-list li{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px dashed var(--pl-line-strong)}
+.sp-list time{font:500 14px/1.5 var(--pl-font-mono);color:var(--pl-ink)}.sp-list b{display:block;font:600 17px/1.3 var(--pl-font-text)}.sp-list small{display:block;font:400 15px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.sp-acts{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0}
+.sp-acts a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none}
+.sp-acts a.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
+.sp-miss{padding:40px 0;text-align:center;color:var(--pl-soft);font:400 16px var(--pl-font-text)}
+.sp-skel i{display:block;height:40px;margin:14px 0;border-radius:6px;background:var(--pl-raised)}
+</style>
+</head><body>
+<div class="wrap"><main class="sp-wrap" id="m" aria-busy="true"><div class="sp-skel" aria-label="Getting the speaker"><i style="width:60%"></i><i style="width:40%;height:20px"></i><i></i><i></i></div></main></div>
+<script src="/authguard.js"></script>
+<script>
+(async function () { const m = document.getElementById("m"), p = location.pathname.match(/^\/speakers\/([A-Za-z0-9_-]{2,80})\/([a-z0-9]{1,16})$/) || [];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const clock = (t) => { const x = /^(\d{2}):(\d{2})$/.exec(t || ""); if (!x) return ""; let h = +x[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}${x[2] === "00" ? "" : ":" + x[2]}${ap}`; };
+  const day = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  let j = null; try { const r = await fetch(`/api/public/speaker/${encodeURIComponent(p[1] || "")}/${encodeURIComponent(p[2] || "")}`); if (r.ok) j = await r.json(); } catch {}
+  m.removeAttribute("aria-busy");
+  if (!j) { m.innerHTML = `<p class="sp-miss">This speaker's page isn't public. <a href="/discover">Find something to go to</a></p>`; return; }
+  const s = j.speaker, e = j.event; document.title = `${s.name} · ${e.title} · Pottery Lab`;
+  m.innerHTML = `<a class="sp-back" href="/plans/${encodeURIComponent(e.id)}#agenda">&lsaquo; ${esc(e.title)}</a><span class="sp-k">Speaker</span>${s.photo ? `<img class="sp-photo" src="${esc(s.photo)}" alt="">` : ""}<h1 class="sp-name">${esc(s.name)}</h1>`
+    + (s.title || s.org ? `<p class="sp-title">${esc([s.title, s.org].filter(Boolean).join(", "))}</p>` : "") + (s.bio ? `<p class="sp-bio">${esc(s.bio)}</p>` : "")
+    + (j.sessions.length ? `<h2 class="sp-h2">Sessions<small>${esc(e.endDate && e.endDate !== e.date ? `${day(e.date)} to ${day(e.endDate)}` : day(e.date))}</small></h2><ul class="sp-list">${j.sessions.map((x) => `<li><time>${esc(clock(x.time))}</time><span><b>${esc(x.title)}</b><small>${esc([day(x.day), x.track, x.room].filter(Boolean).join(" · "))}</small></span></li>`).join("")}</ul>` : "")
+    + `<div class="sp-acts"><a class="pri" href="/e/${encodeURIComponent(e.id)}">See the event</a>${s.link ? `<a href="${esc(s.link)}" target="_blank" rel="noopener">Their link</a>` : ""}</div>`;
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

@@ -168,10 +168,11 @@ export const nextCelebration = (stats, seen = []) => MILESTONES.find((m) => m.te
 
 // ---------- the host path ----------
 // Each node links to its guide (server/guides.js, /guides/<id>) when there is one, else to its own notes on /path.
-const GUIDE_OF = { dinner4: "first-supper", table8: "first-supper", ticketed: "first-supper", regular: "game-night", series: "grow-regulars", soldout: "grow-regulars" };
+const GUIDE_OF = { dinner4: "first-supper", booked: "book-a-table", table8: "first-supper", ticketed: "first-supper", regular: "game-night", series: "grow-regulars", soldout: "grow-regulars", weekend: "weekend-away", summit: "small-summit" };
 export const guideHrefOf = (id) => (GUIDES.some((g) => g.id === GUIDE_OF[id]) ? `/guides/${GUIDE_OF[id]}` : `/path#guide-${id}`);
 export const PATH = [
   { id: "dinner4", title: "Dinner for 4", test: (f) => f.hosted >= 1, steps: ["Pick a night two weeks out.", "Ask three people you'd like at the same table.", "Cook one thing well. Buy the rest."] },
+  { id: "booked", title: "Book a table for friends", test: (f) => f.tables >= 1, steps: ["Book for the number you expect, not the number you invite.", "Give a reply-by day two days before.", "Call the restaurant when the count moves."] },
   { id: "table8", title: "A table of 8", test: (f) => f.maxGuests >= 8, steps: ["Invite ten; eight will say yes.", "Seat people next to someone new.", "Send a reminder the day before."] },
   { id: "regular", title: "A regular night", test: (f) => f.hosted >= 3 && f.streakBest >= 3, steps: ["Same day, same time, every month.", "Say the next date out loud at the end.", "Let a regular bring a friend."] },
   { id: "ticketed", title: "Your first ticketed event", test: (f) => f.ticketed >= 1, steps: ["Price to cover costs, then a little.", "Say what the money pays for.", "Keep a few spots for people you know."] },
@@ -181,7 +182,7 @@ export const PATH = [
   { id: "summit", title: "A summit", test: (f) => f.maxGuests >= 60, steps: ["Start with five speakers you know.", "A host for every room.", "Leave the hallway time long."] },
 ];
 export function pathOf(f) { let nextSet = false; return PATH.map((n) => { const done = !!n.test(f), next = !done && !nextSet; if (next) nextSet = true;
-  return { id: n.id, title: n.title, state: done ? "done" : next ? "next" : "later", steps: n.steps, template: `/start?t=${n.id}`, guideHref: guideHrefOf(n.id) }; }); }
+  return { id: n.id, title: n.title, state: done ? "done" : next ? "next" : "later", steps: n.steps, template: `/start?t=${({ booked: "table" })[n.id] || n.id}`, guideHref: guideHrefOf(n.id) }; }); }
 
 /** Badges: everything recognition.js earns, plus the ones the loop adds. Pure. */
 export function loopBadges(base, f, s) {
@@ -281,6 +282,12 @@ export function draftToEvent(d = {}, { now = today(), city = "", tz = "" } = {})
     venueName: clean(d.place, 80), city: clean(d.city || city, 60), discoverable: false, fromStart: true, createdAt: Date.now() };
   if (tz && tzOk(tz)) ev.tz = tz;
   if (ISO.test(d.endDate || "") && d.endDate > date) ev.endDate = d.endDate;
+  // the kind the template started from (server/kinds.js): a booked table, a weekend away, a summit
+  const kind = { table: "table", weekend: "weekend", summit: "summit", game: "game", dinner4: "dinner", table8: "dinner", soldout: "dinner", again: "dinner" }[d.t];
+  if (kind) ev.planKind = kind;
+  if (kind === "table") { const place = clean(d.place, 80); ev.activity = "dinner"; ev.headcount = Math.max(1, seats - 1); ev.reservation = { restaurant: place, time: ev.startTime, party: seats, split: "even", holdUntil: addDays(date, -2) < now ? now : addDays(date, -2) }; ev.noMaybe = true; }
+  if (kind === "weekend") { ev.carpool = true; ev.noMaybe = true; if (!ev.endDate) ev.endDate = addDays(date, 2); ev.lodging = { area: clean(d.place, 60) }; }
+  if (kind === "summit") { ev.kind = "summit"; ev.noMaybe = true; ev.itineraryPublic = true; ev.agenda = { tracks: ["Main stage", "Workshops"], rooms: [{ name: "Main hall", capacity: seats }, { name: "Studio", capacity: Math.max(10, Math.round(seats / 4)) }], sessions: [] }; }
   if (!ev.concept) delete ev.concept; if (!ev.venueName) delete ev.venueName; if (!ev.city) delete ev.city;
   return ev;
 }
@@ -329,6 +336,7 @@ export function makeHostLoop(store, { C, X, push = () => null, origin = () => pr
       ticketed: pastE.concat(upE).filter((x) => { const p = String(x.e.price ?? ""); return p && !/^(free|0|\$?0|chip)$/i.test(p) && !x.e.free; }).length,
       series: evs.filter((x) => x.e.series === true || x.e.repeat === "weekly" || x.e.repeat === "monthly" || x.e.episode).length ? 1 : 0,
       multiDay: evs.filter((x) => ISO.test(x.e.endDate || "") && x.e.endDate > x.e.date).length,
+      tables: evs.filter((x) => x.e.planKind === "table" || !!x.e.reservation?.restaurant).length,
       createdTimes: evs.map((x) => +x.e.createdAt || x.updated || 0).filter(Boolean),
       tz: (() => { const z = [...evs].reverse().map((x) => x.e.tz).find((t) => tzOk(t)); return z || tzOfCity(C?.profileOf?.(ws)?.city) || process.env.ENCORE_TZ || "UTC"; })(),
       movesDone: (D?.moves || []).length,

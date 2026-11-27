@@ -11,7 +11,7 @@ const hash = (s) => crypto.createHash("sha256").update(lc(s)).digest("hex").slic
 const iso = (t) => new Date(t).toISOString().slice(0, 10);
 
 // {page} is the host's own page (/@handle), {event} their latest event's page. Links resolve in linkOf().
-const NEW = "/?app=1&new=1#studio", HOME = "/?app=1#programs";
+const NEW = "/?app=1&new=1#studio", HOME = "/?app=1#programs", newOf = (k) => `/?app=1&new=1&kind=${k}#studio`;
 export const GUIDES = [
   { id: "first-supper", title: "Host your first supper club", short: "Five steps, one table, one good night.", for: "new",
     intro: "A supper club is a dinner you host for people who don't all know each other yet. Keep it small, cook one thing you love, and let the table do the rest.",
@@ -47,6 +47,41 @@ export const GUIDES = [
       { id: "club", title: "Start a fan club", body: "First dibs on new dates and a members' chat. Free, and you can turn it off.", label: "Start a fan club", href: "{page}?edit=1#club", auto: (s) => s.club },
       { id: "post", title: "Send your members an update", body: "A short note between events: what's next, a photo from last time.", label: "Open your page", href: "{page}", auto: (s) => s.posts > 0 },
       { id: "back", title: "See who came back", body: "Your stats show regulars and would-go-again, privately. Watch them grow.", label: "See your stats", href: "/me", auto: (s) => s.returning > 0 },
+    ] },
+  // review 18: one guide for each scale, from a booked table to a summit (server/kinds.js)
+  { id: "book-a-table", title: "Book a table for friends", short: "A restaurant, a reply-by day, a count that matches.", for: "any",
+    intro: "The simplest night out: you book, friends reply, and the table matches the people who come. Pottery Lab keeps the count against the booking.",
+    steps: [
+      { id: "event", title: "Book the table, then invite", body: "Pick Book a table. Add the restaurant, the time and the party size you booked. The booking link and confirmation go only to people who are in.", label: "Book a table", href: newOf("table"), auto: (s) => s.tables > 0 },
+      { id: "hold", title: "Give a reply-by day", body: "Two days before is plenty. Guests read: Reply by Thursday so I can update the booking.", label: "Open your events", href: HOME, auto: (s) => s.tableHolds > 0 },
+      { id: "share", title: "Send the invite", body: "Drop the link in the group chat. Replies count against the party size as they come in.", label: "Share the invite", href: "{event}", auto: (s) => s.shared },
+      { id: "count", title: "Call when the count moves", body: "You'll see \"You're at 7 of 6. Call to add a seat?\" in your bell and in Plans. Tap The booking matches once you've called.", label: "See your plans", href: "/plans", auto: (s) => s.tablesConfirmed > 0 },
+      { id: "split", title: "Settle the bill", body: "Even split or each pays their own. Add the total after and everyone sees their share with your pay link.", label: "Open your events", href: HOME, auto: (s) => s.tablesSplit > 0 },
+    ] },
+  { id: "teach-a-class", title: "Teach your first class", short: "Small, hands-on, everything included.", for: "any",
+    intro: "A class works when people know what they'll make, what's included and what to bring. Keep it to eight and leave time to make a mess.",
+    steps: [
+      { id: "event", title: "Set up the class", body: "Pick Class. Say what everyone makes and how long it takes.", label: "Start a class", href: newOf("class"), auto: (s) => s.classes > 0 },
+      { id: "included", title: "Say what's included", body: "Materials, tools, firing and pickup. Guests stop wondering what to buy.", label: "Open your events", href: HOME, auto: (s) => s.included > 0 },
+      { id: "share", title: "Share the invite", body: "A small class fills from a few friends of friends. Send it to three people first.", label: "Share the invite", href: "{event}", auto: (s) => s.shared },
+      { id: "repeat", title: "Make it a series", body: "Turn on repeat and the next class makes itself. Regulars hear first.", label: "Open your events", href: HOME, auto: (s) => s.repeats > 0 },
+    ] },
+  { id: "weekend-away", title: "Plan a weekend away", short: "A house, a plan by day, beds, rides and shared costs.", for: "any",
+    intro: "Book the place before the people, share a rough plan, and keep the money plain: who paid what, and who owes whom. Nothing moves through the app.",
+    steps: [
+      { id: "event", title: "Start the weekend", body: "Pick Weekend away. Add the dates, the place and the area. The address goes only to people who are in.", label: "Plan a weekend", href: newOf("weekend"), auto: (s) => s.trips > 0 },
+      { id: "plan", title: "Lay out the days", body: "Arrive, dinner, a hike, checkout. Start from the Weekend away shape on the plan page and change what you like.", label: "See your plans", href: "/plans", auto: (s) => s.tripPlans > 0 },
+      { id: "beds", title: "Beds and rides", body: "List the beds once. Guests claim one each, and drivers offer seats in their car.", label: "See your plans", href: "/plans", auto: (s) => s.tripBeds > 0 },
+      { id: "costs", title: "Add the shared costs", body: "The house, groceries, the car. Each is split among the people who are in, with \"You owe Maya $84\" and your pay link.", label: "See your plans", href: "/plans", auto: (s) => s.tripCosts > 0 },
+    ] },
+  { id: "small-summit", title: "Run a small summit", short: "Tracks, rooms, speakers, a door that moves.", for: "any",
+    intro: "Start with five speakers you know, a host for every room and long hallway time. Guests pick their own agenda; you keep the run of show.",
+    steps: [
+      { id: "event", title: "Start the summit", body: "Pick Summit. Add the days, your tracks and your rooms with how many fit.", label: "Start a summit", href: newOf("summit"), auto: (s) => s.summits > 0 },
+      { id: "agenda", title: "Build the agenda", body: "Sessions with a time, a track, a room and speakers. Guests save the ones they want, and we warn them when two overlap.", label: "See your plans", href: "/plans", auto: (s) => s.sessions > 0 },
+      { id: "speakers", title: "Ask speakers about their page", body: "A speaker's page is public only when they say yes, or you mark it public. Everyone else is named to guests who are in.", label: "See your plans", href: "/plans", auto: (s) => s.speakers > 0 },
+      { id: "tickets", title: "Tickets and tiers", body: "Early, regular, student. Guests pick a tier when they reply and pay with your link.", label: "Open your events", href: HOME, auto: (s) => s.tiered > 0 },
+      { id: "door", title: "Get the door ready", body: "Print the agenda and the name tags, then check people in from the invite planner on the day.", label: "Open your events", href: HOME, auto: (s) => s.checkedIn > 0 },
     ] },
 ];
 export const guideById = (id) => GUIDES.find((g) => g.id === id) || null;
@@ -90,6 +125,13 @@ export function makeGuides({ store, C, X, F }) {
       soloFriendly: E.filter((e) => (Array.isArray(e.comfort) && e.comfort.includes("solo")) || (e.openTable && e.openTable.on !== false)).length,
       drops: E.filter((e) => e.drop || e.preorder).length, sharedDrop: E.some((e) => (e.drop || e.preorder) && shared(e)),
       pastEvents: E.filter((e) => e.date && e.date <= today).length, upcoming: E.filter((e) => e.date && e.date > today).length,
+      // the kinds (server/kinds.js): a booked table, a class, a weekend away, a summit
+      tables: E.filter((e) => e.planKind === "table" || e.reservation?.restaurant).length, tableHolds: E.filter((e) => e.reservation?.holdUntil).length, tablesConfirmed: E.filter((e) => Number.isInteger(e.reservation?.confirmedFor)).length, tablesSplit: E.filter((e) => e.reservation?.split === "own" || e.reservation?.bill > 0).length,
+      classes: E.filter((e) => e.planKind === "class" || /\b(class|workshop|lesson)\b/.test(text(e))).length, included: E.filter((e) => (e.included || []).length).length,
+      trips: E.filter((e) => e.planKind === "weekend" || (e.endDate && e.endDate > (e.date || ""))).length, tripPlans: E.filter((e) => e.endDate && (e.itinerary || []).length).length, tripBeds: E.filter((e) => (e.beds || []).length).length,
+      tripCosts: E.filter((e) => (S.get("trip/" + e.id)?.data?.costs || []).length).length,
+      summits: E.filter((e) => e.planKind === "summit" || e.kind === "summit").length, sessions: E.filter((e) => (e.agenda?.sessions || []).length).length, speakers: E.filter((e) => (e.speakers || []).length).length,
+      tiered: E.filter((e) => (e.priceTiers || []).length).length, checkedIn: R.filter((r) => r.checkedInAt).length,
       handle: h.handle || "", latest: (latest.find((e) => e.date && e.date >= today) || latest[0])?.id || "", latestDrop: latest.find((e) => e.drop || e.preorder)?.id || "" };
   }
   function view(ws) { const sig = signals(ws), M = read(ws);

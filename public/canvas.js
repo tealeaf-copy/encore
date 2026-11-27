@@ -125,7 +125,60 @@
   function planLineLabel(p) { if (!p) return ""; const bits = [p.date ? new Date(p.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "", p.startTime ? clock(p.startTime).replace(":00", "") : "", p.meetPoint || "", p.headcount ? `${p.headcount} spots` : ""].filter(Boolean);
     return "Fill in " + (bits.length > 1 ? bits.slice(0, -1).join(", ") + " and " + bits[bits.length - 1] : bits[0]); }
 
-  const pure = { planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, effectOf, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
+  // "What are you planning?": each kind preloads its add-ons, sections and defaults, from a dinner to a summit. The
+  // kind's own blocks (the booking, where we're staying, the agenda) write the fields server/kinds.js reads; what fills
+  // up over time (beds, rides, costs, sessions, speakers) lives on the plan page. What the host already typed stays.
+  const isoPlus = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const PLAN_KINDS = [
+    { k: "dinner", label: "Dinner", line: "At home, a few friends", addons: ["food", "bring"], n: 6, time: "19:00", set: { noMaybe: true, activity: "dinner" } },
+    { k: "table", label: "Book a table", line: "A restaurant booking for friends", addons: ["table"], n: 6, time: "19:30", set: { noMaybe: true, activity: "dinner" } },
+    { k: "game", label: "Game night", line: "Games, snacks, a seat for someone new", addons: ["bring"], n: 6, time: "19:30", set: { activity: "game night" },
+      sections: [{ icon: "star", title: "The games", body: "We'll start with something you can learn in five minutes. Bring one you love to teach." }] },
+    { k: "class", label: "Class", line: "Teach something hands-on", addons: ["included", "bring", "access"], n: 8, time: "14:00", set: { activity: "class" },
+      sections: [{ icon: "clock", title: "How it goes", body: "A short demo, then hands on. You'll leave with something you made." }] },
+    { k: "drop", label: "Drop", line: "Order ahead, pick up at a set time", handoff: "drop" },
+    { k: "weekend", label: "Weekend away", line: "A house, a plan by day, shared costs", addons: ["stay", "bring", "included"], n: 8, time: "16:00", days: 2, set: { noMaybe: true, carpool: true, activity: "trip" },
+      bring: ["A warm layer", "Comfortable shoes", "Swimsuit", "Phone charger"] },
+    { k: "summit", label: "Summit", line: "Talks, tracks and rooms, a big list", addons: ["agenda", "access", "parking"], n: 80, time: "09:30", set: { kind: "summit", noMaybe: true, itineraryPublic: true, activity: "summit" },
+      agenda: { tracks: ["Main stage", "Workshops"], rooms: [{ name: "Main hall", capacity: 80 }, { name: "Studio", capacity: 20 }], sessions: [] } },
+  ];
+  const KIND_BLOCKS = [{ k: "table", title: "The booking", icon: "food" }, { k: "stay", title: "Where we're staying", icon: "key" }, { k: "agenda", title: "Agenda and rooms", icon: "clock" }];
+  /** Pick a kind: its defaults fill only what's empty, its add-ons open, its sections join the host's own. Pure. */
+  function applyKind(d, k, open = new Set()) { const K = PLAN_KINDS.find((x) => x.k === k); d = d || {}; open = new Set(open); if (!K) return { d, open };
+    if (K.handoff) return { d, open, handoff: K.handoff };
+    const prev = d.planKind, P = PLAN_KINDS.find((x) => x.k === prev);
+    if (P && prev !== k) for (const key of Object.keys(P.set || {})) if (!(key in (K.set || {}))) { if (key === "kind") d.kind = "social"; else if (typeof P.set[key] === "boolean") d[key] = false; }
+    d.planKind = k; Object.assign(d, K.set || {});
+    if (!/^\d{2}:\d{2}$/.test(d.startTime || "")) d.startTime = K.time;
+    const hadCount = +d.headcount > 0; if (!hadCount) d.headcount = k === "table" ? K.n - 1 : K.n; // a table for 6 is you and 5 spots: more replies wait on the list
+    if (K.days && /^\d{4}-\d{2}-\d{2}$/.test(d.date || "") && !(d.endDate > d.date)) d.endDate = isoPlus(d.date, K.days);
+    if (!K.days && d.endDate && PLAN_KINDS.find((x) => x.k === prev)?.days) d.endDate = "";
+    if (K.bring && !(Array.isArray(d.bring) && d.bring.length)) d.bring = K.bring.slice();
+    if (k === "table") { const r = { party: hadCount ? +d.headcount : K.n, split: "even", ...(d.reservation || {}) }; if (!r.time) r.time = d.startTime; if (!r.restaurant && d.venueName) r.restaurant = d.venueName; if (!r.holdUntil && /^\d{4}-\d{2}-\d{2}$/.test(d.date || "")) r.holdUntil = isoPlus(d.date, -2); d.reservation = r; }
+    if (k === "weekend") d.lodging = { ...(d.lodging || {}) };
+    if (k === "summit" && !(d.agenda?.tracks || []).length) d.agenda = JSON.parse(JSON.stringify(K.agenda));
+    const have = new Set((d.sections || []).map((s) => String(s.title || "").toLowerCase())); d.sections = [...(d.sections || []), ...(K.sections || []).filter((s) => !have.has(s.title.toLowerCase()))];
+    for (const a of K.addons || []) open.add(a);
+    return { d, open }; }
+  /** A kind block's field as the host edits it ("reservation.party"). Pure. */
+  function kindText(d, path) { const [o, f] = path.split("."), v = d?.[o]?.[f];
+    if (path === "agenda.tracks") return (d?.agenda?.tracks || []).join(", ");
+    if (path === "agenda.rooms") return (d?.agenda?.rooms || []).map((r) => (r.capacity ? `${r.name}, ${r.capacity}` : r.name)).join("\n");
+    if (path === "reservation.bill") return v ? String(v / 100) : "";
+    if (/\.(time|checkIn|checkOut)$/.test(path) && HHMM.test(v || "")) return clock(v).replace(":00", ""); // "7:30pm", the way people say it
+    return v == null ? "" : String(v); }
+  function kindSet(d, path, v) { const [o, f] = path.split("."), was = d?.reservation?.restaurant || ""; d[o] = { ...(d[o] || {}) }; const s = String(v ?? "");
+    if (path === "agenda.tracks") d.agenda.tracks = s.split(/,|\n/).map((x) => x.trim().slice(0, 30)).filter(Boolean).slice(0, 8);
+    else if (path === "agenda.rooms") d.agenda.rooms = s.split(/\n/).map((x) => { const m = /^(.*?)(?:[,\s]+(\d{1,4}))?\s*$/.exec(x.trim()); return { name: (m?.[1] || "").trim().slice(0, 40), capacity: +(m?.[2] || 0) }; }).filter((r) => r.name).slice(0, 16);
+    else if (path === "reservation.party") { d.reservation.party = Math.max(0, Math.min(40, parseInt(s, 10) || 0)); if (d.reservation.party > 1) d.headcount = d.reservation.party - 1; }
+    else if (path === "reservation.bill") { const m = s.replace(/[,\s$]/g, "").match(/^(\d{1,6})(\.\d{1,2})?$/); d.reservation.bill = m ? Math.round(+(m[1] + (m[2] || "")) * 100) : 0; }
+    else if (/^(time|checkIn|checkOut)$/.test(f)) { const m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec(s.trim()); let h = m ? +m[1] : -1; const ap = (m?.[3] || "").toLowerCase(); if (ap === "pm" && h < 12) h += 12; if (ap === "am" && h === 12) h = 0;
+      d[o][f] = m && h >= 0 && h < 24 && +(m[2] || 0) < 60 ? `${String(h).padStart(2, "0")}:${m[2] || "00"}` : s.slice(0, 10); }
+    else d[o][f] = s.slice(0, f === "address" || f === "link" ? 200 : 80);
+    if (path === "reservation.restaurant" && (!d.venueName || d.venueName === was)) d.venueName = d.reservation.restaurant; // the place guests see is the restaurant
+    return d; }
+
+  const pure = { PLAN_KINDS, KIND_BLOCKS, applyKind, kindText, kindSet, planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, effectOf, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
   root.EventCanvas = { ...pure };
   if (typeof document === "undefined") return;
 
@@ -174,7 +227,18 @@
     S = { W, orig: editing ? cur : null, isNew: !(W.published || W.discoverable), key, dirty: !!note, note, base: editing ? cur.updatedAt || null : null, open: new Set(ADDONS.filter((a) => addonHas(W, a.k)).map((a) => a.k)),
       club, clubWas: club, mode: "edit" };
     if (kept?.club) S.club = kept.club;
+    // a kind from the caller or the link (/?app=1&new=1&kind=weekend from a guide or the host path)
+    let want = o.kind || ""; try { const u = new URL(location.href); if (!want && !editing) want = u.searchParams.get("kind") || ""; if (u.searchParams.has("kind")) { u.searchParams.delete("kind"); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
+    if (!editing && want && PLAN_KINDS.some((x) => x.k === want && !x.handoff) && S.W.planKind !== want) { const r = applyKind(S.W, want, S.open); S.W = r.d; S.open = r.open; }
+    else if (editing) for (const [b, k] of Object.entries(KIND_OF_BLOCK)) if (planKind(S.W) === k) S.open.add(b);
     build(); }
+  const planKind = (W) => W.planKind || (W.reservation?.restaurant ? "table" : W.lodging?.name ? "weekend" : (W.agenda?.tracks || []).length ? "summit" : "");
+  /** "What are you planning?": fill in the kind's defaults, open its blocks, or hand a drop to the drop setup. */
+  function pickKind(k) { const r = applyKind(S.W, k, S.open);
+    if (r.handoff === "drop") { const D = root.EncoreDrop; if (D?.setup) { close(); D.setup({ onDone: (j) => { if (j?.id) { location.hash = "#programs"; location.reload(); } } }); } else say("The drop setup is still loading. Try again in a moment."); return; }
+    S.W = r.d; S.open = r.open; changed(true); try { root.PLFx?.haptic?.("light"); } catch {}
+    const K = PLAN_KINDS.find((x) => x.k === k); say(`${K.label}: set up. Change anything.`);
+    const blk = q(`[data-kblock="${Object.keys(KIND_OF_BLOCK).find((b) => KIND_OF_BLOCK[b] === k) || ""}"]`, S.el); if (blk) { blk.classList.add("new"); setTimeout(() => blk.scrollIntoView({ block: "center", behavior: "smooth" }), 60); } }
 
   function close(quiet) { if (!S?.el) return; S.el.__lkStop?.(); S.el.remove(); document.body.classList.remove("cv-open"); qa(".cv-sh-bg").forEach((x) => x.remove()); if (!quiet) S = null; else S.el = null; }
 
@@ -193,6 +257,17 @@
     else { const ph = { bring: "One per line. Snacks, a drink to share", food: "One per line. Starter: Pandan madeleines", parking: "Street parking on Elm. The 2 train stops a block away.", access: "Step-free entry, an elevator to the third floor", included: "One per line. Clay and glazes, an apron, firing and pickup in two weeks" }[a.k];
       body = `<textarea data-af="${a.k}" rows="2" placeholder="${esc(ph)}" aria-label="${esc(a.title)}">${esc(addonText(W, a.k))}</textarea>`; }
     return `<section class="cv-blk" data-addon="${a.k}"><header>${ic}<h3>${esc(a.title)}</h3>${rm}</header>${body}</section>`; }
+  // the kind's own blocks: the booking, where we're staying, the agenda's tracks and rooms
+  const KIND_OF_BLOCK = { table: "table", stay: "weekend", agenda: "summit" };
+  function kindBlock(W, b) { const f = (path, label, ph, o = {}) => `<label class="cv-kf${o.wide ? " w" : ""}"><span>${esc(label)}</span>${o.area ? `<textarea data-kf="${path}" rows="2" placeholder="${esc(ph)}">${esc(kindText(W, path))}</textarea>` : `<input data-kf="${path}" value="${esc(kindText(W, path))}" placeholder="${esc(ph)}"${o.type ? ` type="${o.type}"` : ""}${o.mode ? ` inputmode="${o.mode}"` : ""} autocomplete="off">`}${o.note ? `<small>${esc(o.note)}</small>` : ""}</label>`;
+    let body = "";
+    if (b.k === "table") body = `<div class="cv-kg">${f("reservation.restaurant", "Restaurant", "Lilia", { wide: true })}${f("reservation.time", "Booked for", "7:30pm")}${f("reservation.party", "Party size", "6", { mode: "numeric" })}${f("reservation.holdUntil", "Reply by", "", { type: "date", note: "Guests read: Reply by Thursday so I can update the booking." })}
+      <label class="cv-kf"><span>The bill</span><select data-kf="reservation.split"><option value="even"${W.reservation?.split !== "own" && W.reservation?.split !== "" ? " selected" : ""}>Split it evenly</option><option value="own"${W.reservation?.split === "own" ? " selected" : ""}>Each pays their own</option><option value=""${W.reservation?.split === "" ? " selected" : ""}>Decide later</option></select></label>
+      ${f("reservation.link", "Booking link", "resy.com/…", { wide: true, mode: "url" })}${f("reservation.confirmation", "Confirmation", "Optional")}</div><p class="cv-kn">The link and confirmation go to guests who are in. You'll see "You're at 7 of 6" as replies come in.</p>`;
+    else if (b.k === "stay") body = `<div class="cv-kg">${f("lodging.name", "The place", "Esopus Cabin", { wide: true })}${f("lodging.area", "Area", "Phoenicia")}${f("lodging.checkIn", "Check in", "4pm")}${f("lodging.checkOut", "Check out", "11am")}${f("lodging.address", "Address", "Only people who are in see it", { wide: true })}${f("lodging.link", "Listing link", "airbnb.com/…", { wide: true, mode: "url" })}</div><p class="cv-kn">After you save: who sleeps where, rides with seats to claim and shared costs, on the plan page.</p>`;
+    else body = `<div class="cv-kg">${f("agenda.tracks", "Tracks", "Main stage, Workshops", { wide: true })}${f("agenda.rooms", "Rooms and how many fit", "Main hall, 80", { wide: true, area: true })}</div><p class="cv-kn">After you save: sessions, speakers and sponsors on the plan page. Guests save sessions to their own agenda.</p>`;
+    return `<section class="cv-blk cv-kind" data-kblock="${b.k}"><header>${SX().svg(b.icon)}<h3>${esc(b.title)}</h3><button type="button" class="cv-rm" data-rmk="${b.k}" aria-label="Remove ${esc(b.title.toLowerCase())}">${I.x}</button></header>${body}</section>`; }
+  function kindsRow(W) { if (!S.isNew) return ""; return `<div class="cv-kinds cv-ed" role="group" aria-labelledby="cvKindsH"><p id="cvKindsH">What are you planning?</p><div>${PLAN_KINDS.map((k) => `<button type="button" class="cv-kc" data-kind="${k.k}" aria-pressed="${W.planKind === k.k}" title="${esc(k.line)}">${esc(k.label)}</button>`).join("")}</div></div>`; }
   function sectionBlock(s, i) { return `<section class="cv-blk cv-own" data-sec="${i}"><header>${SX().svg(s.icon)}<h3>${esc(s.title || "A note")}</h3><button type="button" class="cv-rm cv-ed" data-secedit="${i}" aria-label="Edit ${esc(s.title || "section")}">${I.pen}</button></header>${s.body ? `<p>${esc(s.body).replace(/\n/g, "<br>")}</p>` : ""}</section>`; }
   function pills(W) { const n = (W.questions || []).length || (W.askQ ? 1 : 0);
     return [["questions", I.q, n ? `Questions (${n})` : "Add questions", n > 0], ["reminders", I.bell, "Reminders", W.autoRemind !== false], ["approval", I.lock, "Require approval", !!W.approvalRequired], ["more", I.more, "More", false]]
@@ -205,6 +280,7 @@
   const replyWords = (W) => (W.approvalRequired ? ["Ask to join"] : isFeeler(W) ? ["I'm in", "Maybe", "Can't go"] : W.noMaybe ? ["I'm in", "Can't go"] : ["I'm in", "Maybe", "Can't go"]);
   function pageHTML() { const W = S.W, st = titleStyleOf(W), when = whenSentence(W), [wd, wt] = when.split(" · "), place = String(W.meetPoint || W.venueName || "").trim(), V = visKey(W, S.club), F = isFeeler(W), KF = kitFont();
     return `${S.note ? `<p class="cv-note" role="status"><span>${esc(S.note)}</span>${S.orig ? "" : `<button type="button" class="cv-text-btn" data-cv="fresh">Start fresh</button>`}</p>` : ""}
+      ${kindsRow(W)}
       <p class="cv-tag"><span class="cv-dot g"></span>Guests see this page. Tap anything to change it.<button type="button" class="cv-text-btn" data-mode="guest">Preview as guest</button></p>
       <div class="cv-cover cv-ed" id="cvCover">${coverHTML(W)}<button type="button" class="cv-pen" data-cv="cover" aria-label="Change the cover">${I.pen}<span>Cover</span></button></div>
       <div class="cv-ed cv-tw"><label class="vh" for="cvTitle">Event title</label><textarea id="cvTitle" class="cv-title" rows="1" maxlength="90" placeholder="Untitled event" enterkeyhint="done">${esc(W.pubTitle || W.name || "")}</textarea></div>
@@ -216,8 +292,8 @@
         <button type="button" class="cv-row cv-ed" data-cv="place" id="cvPlace"><span class="cv-ic">${I.pin}</span><span class="cv-rt"><small>Where</small>${place ? `<b>${esc(place)}</b>${W.city ? `<em>${esc(W.city)}</em>` : ""}` : `<b class="ph">Add a place</b>`}</span>${I.chev}</button>
       </div>
       <div class="cv-ed"><label class="vh" for="cvDesc">Description</label><textarea id="cvDesc" class="cv-desc" rows="3" maxlength="600" placeholder="Say what it is, who it's for and what to expect.">${esc(W.why || "")}</textarea></div>
-      <div class="cv-blocks" id="cvBlocks">${ADDONS.filter((a) => S.open.has(a.k)).map((a) => addonBlock(W, a)).join("")}${SX().clean(W.sections).map(sectionBlock).join("")}</div>
-      ${ADDONS.some((a) => !S.open.has(a.k)) ? `<div class="cv-chips" role="group" aria-label="Add to the invite">${ADDONS.filter((a) => !S.open.has(a.k)).map((a) => `<button type="button" class="cv-chip" data-add="${a.k}">${I.plus}<span>${esc(a.label)}</span></button>`).join("")}</div>` : ""}
+      <div class="cv-blocks" id="cvBlocks">${KIND_BLOCKS.filter((b) => S.open.has(b.k)).map((b) => kindBlock(W, b)).join("")}${ADDONS.filter((a) => S.open.has(a.k)).map((a) => addonBlock(W, a)).join("")}${SX().clean(W.sections).map(sectionBlock).join("")}</div>
+      ${ADDONS.some((a) => !S.open.has(a.k)) ? `<div class="cv-chips" role="group" aria-label="Add to the invite">${KIND_BLOCKS.filter((b) => KIND_OF_BLOCK[b.k] === W.planKind && !S.open.has(b.k)).map((b) => `<button type="button" class="cv-chip" data-add="${b.k}">${I.plus}<span>${esc(b.title)}</span></button>`).join("")}${ADDONS.filter((a) => !S.open.has(a.k)).map((a) => `<button type="button" class="cv-chip" data-add="${a.k}">${I.plus}<span>${esc(a.label)}</span></button>`).join("")}</div>` : ""}
       <div class="cv-moresay"><span>More to say?</span><button type="button" class="cv-mini" data-cv="section">${I.plus}<span>New section</span></button></div>
       <div class="cv-reply" id="cvReply"><p>${F ? "Would you come?" : W.approvalRequired ? "Want in?" : "Are you in?"}</p><div>${replyWords(W).map((t) => `<span>${esc(t)}</span>`).join("")}</div></div>
       <div class="cv-host">
@@ -270,15 +346,18 @@
         { const fb = q("#cvFromLine", el); clearTimeout(fb?.__t); if (fb) fb.__t = setTimeout(() => { const P = planFromLine(t.value); fb.hidden = !P || (!!W.date && !!W.startTime && !!(W.meetPoint || W.venueName)); if (P) { fb.textContent = planLineLabel(P); fb.__p = P; } }, 400); } const cov = q("#cvCover", el); if (cov && !W.coverPhoto && !W.coverArt?.kind) { clearTimeout(t.__c); t.__c = setTimeout(() => { const pen = q(".cv-pen", cov); cov.innerHTML = coverHTML(W); cov.appendChild(pen); }, 500); } }
       else if (t.id === "cvDesc") { W.why = t.value; grow(t); pvFlash = "desc"; }
       else if (t.dataset.af) { addonSet(W, t.dataset.af, t.value); grow(t); pvFlash = "sections"; }
+      else if (t.dataset.kf) { kindSet(W, t.dataset.kf, t.value); grow(t); }
       else if (t.dataset.link) { const L = (W.links || []).length ? W.links.map((x) => ({ ...x })) : [{ label: "", url: "" }]; while (L.length <= +t.dataset.link) L.push({ label: "", url: "" }); L[+t.dataset.link][t.dataset.lf] = t.value; W.links = L.map((l) => ({ label: l.label.slice(0, 60), url: l.url.slice(0, 500) })); }
       else return; changed(); });
     el.addEventListener("keydown", (e) => { if (e.target.id === "cvTitle" && e.key === "Enter") { e.preventDefault(); e.target.blur(); } if (e.key === "Escape" && !q(".cv-sh-bg")) tryClose(); });
-    el.addEventListener("change", (e) => { if (e.target.id === "cvVis") { setVis(e.target.value); q("#cvVisHint", el).textContent = visList(true).find((x) => x[0] === e.target.value)[2]; } });
+    el.addEventListener("change", (e) => { if (e.target.dataset?.kf && e.target.tagName === "SELECT") { kindSet(S.W, e.target.dataset.kf, e.target.value); changed(); return; } if (e.target.id === "cvVis") { setVis(e.target.value); q("#cvVisHint", el).textContent = visList(true).find((x) => x[0] === e.target.value)[2]; } });
     el.addEventListener("focusout", (e) => { const t = e.target; if (t.dataset.af === "playlist" || t.dataset.lf === "url") { const u = httpsOf(t.value); if (u && u !== t.value) { t.value = u; t.dispatchEvent(new Event("input", { bubbles: true })); } } });
     el.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b || !el.contains(b)) return; const W = S.W;
       if (b.dataset.mode) return setMode(b.dataset.mode);
       if (b.dataset.style) { const L = { ...(W.look || {}) }; if (FONTN[b.dataset.style]) L.titleFont = FONTN[b.dataset.style]; else delete L.titleFont; W.look = L; W.titleFont = ""; qa("[data-style]", el).forEach((x) => x.setAttribute("aria-checked", String(x === b))); dress(); changed(); pulse(".cv-tw", "title"); return; }
       if (b.dataset.add) { S.open.add(b.dataset.add); pvFlash = "sections"; changed(true); const blk = q(`[data-addon="${b.dataset.add}"]`, el); blk?.scrollIntoView({ block: "center", behavior: "smooth" }); blk?.classList.add("new"); setTimeout(() => q("input,textarea", blk)?.focus({ preventScroll: true }), 250); return; }
+      if (b.dataset.kind) return pickKind(b.dataset.kind);
+      if (b.dataset.rmk) { S.open.delete(b.dataset.rmk); changed(true); return; }
       if (b.dataset.rm) { const k = b.dataset.rm; S.open.delete(k); addonSet(W, k, k === "link" ? [] : ""); changed(true); return; }
       if (b.dataset.secedit) return sectionSheet(+b.dataset.secedit);
       if (b.id === "cvFromLine") { const P = b.__p || planFromLine(W.pubTitle); if (!P) return; W.pubTitle = W.name = P.title; for (const k of ["date", "startTime", "meetPoint"]) if (P[k] && !W[k]) W[k] = P[k]; if (P.headcount && !+W.headcount) W.headcount = P.headcount; if (P.why && !String(W.why || "").trim()) W.why = P.why;
@@ -444,6 +523,7 @@
   // write the canvas into the app's event and save it. publish: share it with the chosen visibility
   async function commit(publish) { const W = S.W, save = app("saveEvent"); if (!save) { say("Saving isn't ready yet. Try again in a moment."); return false; }
     W.name = W.pubTitle = String(W.pubTitle || W.name || "").trim(); W.sections = SX().clean(W.sections);
+    if (W.planKind === "table" && W.reservation && !W.reservation.holdUntil && /^\d{4}-\d{2}-\d{2}$/.test(W.date || "")) W.reservation.holdUntil = isoPlus(W.date, -2); // a reply-by day two days before, unless the host picked one
     if (publish) visApply(W, visKey(W, S.club), { publish: true });
     let d; if (S.orig) { Object.assign(S.orig, clone(W)); d = S.orig; if (getDraft() !== d) setDraft(d); } else { d = clone(W); setDraft(d); }
     const ok = await save(true); if (ok === false) { if (publish && S.isNew) { d.published = false; d.discoverable = false; W.published = false; W.discoverable = false; } return false; }
@@ -534,6 +614,10 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-blk .evs-ic{width:20px;height:20px}
 #cv .cv-blk :is(input,textarea),.cv-sh :is(input,textarea,select){font-weight:400!important;width:100%;box-sizing:border-box;min-height:46px;padding:10px 12px!important;border-radius:12px!important;border:1px solid var(--cv-line2)!important;background:var(--cv-field)!important;color:var(--cv-ink);font:inherit;font-size:16px;resize:none;box-shadow:none!important}
 #cv .cv-blk textarea{overflow:hidden;min-height:46px}
+#cv .cv-blk select{width:100%;box-sizing:border-box;height:46px;min-height:46px;padding:0 10px;border-radius:12px!important;border:1px solid var(--cv-line2)!important;background:var(--cv-field)!important;color:var(--cv-ink);font:inherit;font-size:16px}
+#cv .cv-kg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}#cv .cv-kf{display:grid;gap:4px;min-width:0;align-self:start;align-content:start}#cv .cv-kf.w{grid-column:1/-1}#cv .cv-kf>span{font:500 14px var(--cv-sans);color:var(--cv-soft)}#cv .cv-kf small{font-size:14px;line-height:1.4;color:var(--cv-soft)}#cv .cv-blk p.cv-kn{font-size:15px;color:var(--cv-soft)}
+#cv .cv-kinds{margin:0 0 14px;padding:12px 14px;border:1.5px solid var(--cv-ink);border-radius:6px;background:var(--cv-card)}#cv .cv-kinds p{margin:0 0 10px;font:600 17px/1.3 var(--cv-sans)}#cv .cv-kinds>div{display:flex;flex-wrap:wrap;gap:8px}
+#cv .cv-kc{min-height:44px;padding:0 14px;border-radius:6px!important;border:1.5px solid var(--cv-line2)!important;background:var(--cv-bg)!important;font:500 15px var(--cv-sans)}#cv .cv-kc[aria-pressed=true]{background:var(--cv-ink)!important;border-color:var(--cv-ink)!important;color:var(--cv-card)!important}#cv .cv-kc:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}
 #cv .cv-rm,.cv-sh .cv-rm{width:40px;height:40px;border-radius:999px!important;border:0!important;background:transparent!important;display:grid;place-items:center;color:var(--cv-soft)!important;padding:0;margin:0}
 #cv .cv-two,.cv-sh .cv-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}
 #cv .cv-text-btn,.cv-sh .cv-text-btn{display:inline-flex;align-items:center;gap:6px;justify-self:start;min-height:40px;padding:0!important;border:0!important;background:none!important;font-size:15px;font-weight:600;text-decoration:underline;text-underline-offset:3px;color:var(--cv-ink)!important;margin:0}

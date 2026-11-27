@@ -79,7 +79,7 @@
 </style>
 </head><body>
 <div class="wrap"><main class="pl-plan" id="m" aria-live="polite" aria-busy="true"><div class="pv-skel" aria-label="Getting the plan"><i class="c"></i><i class="t"></i><i class="a"></i><i class="r"></i><i class="r"></i><i class="r"></i></div></main></div>
-<script src="/authguard.js"></script><script src="/fx.js"></script><script src="/mascot.js" defer></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script>
+<script src="/authguard.js"></script><script src="/fx.js"></script><script src="/mascot.js" defer></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script><script src="/kinds.js"></script>
 <script>
 // A plan's page (server/plans.js GET /api/public/plan/:id): the cover, the dates and the host, then the plan day by day,
 // set like a travel notebook: a divider for each day, the morning, afternoon and evening named for when they are
@@ -115,28 +115,33 @@
       const named = parts.filter((g) => g.p).length, near = r === "Today" || r === "Tomorrow", showParts = named >= 2 || (named === 1 && near);
       const rows = (L) => L.map((x) => { let h = T.itinRowHtml(x); if (x === M.next) h = h.replace('class="tl-row tl-irow', 'class="tl-row tl-irow is-next').replace('<b class="tl-title tl-ititle">', `<b class="tl-title tl-ititle"><span class="fn-next">Up next</span>`); else if (M.done.has(x.at + x.title)) h = h.replace('class="tl-row tl-irow', 'class="tl-row tl-irow is-done'); return h; }).join("");
       return `<section class="fn-day${d.date === today ? " is-today" : ""}" data-date="${esc(d.date)}"><div class="fn-dd${P.days.length > 1 ? "" : " solo"}">${P.days.length > 1 ? `<span class="fn-dn" aria-hidden="true">${String(d.n).padStart(2, "0")}</span>` : ""}<h3 class="fn-dt">${P.days.length > 1 ? `<span class="vh" style="position:absolute;left:-9999px">Day ${d.n}, </span>` : ""}<b>${esc(r || wk(d.date))}</b><span>${esc(dateText(d.date))}</span></h3></div>`
-        + (d.items.length ? parts.map((g) => `${showParts && g.p ? `<h4 class="fn-part">${esc(partLabel(d.date, g.p))}</h4>` : ""}<ol class="tl-list">${rows(g.items)}</ol>`).join("") : `<p class="fn-empty">${d.n === P.days.length && P.days.length > 1 ? "Heading home. Nothing planned." : "Nothing planned yet. Time to wander."}</p>`) + `</section>`; }).join("")}</div>`; }
+        + (d.items.length ? parts.map((g) => `${showParts && g.p ? `<h4 class="fn-part">${esc(partLabel(d.date, g.p))}</h4>` : ""}<ol class="tl-list">${rows(g.items)}</ol>`).join("") : `<p class="fn-empty">${P.kinds?.kind === "summit" ? "Nothing on the run of show for this day yet." : d.n === P.days.length && P.days.length > 1 ? "Heading home. Nothing planned." : "Nothing planned yet. Time to wander."}</p>`) + `</section>`; }).join("")}</div>`; }
   // a small drawn map: linen, a few streets, a river, a dashed circle for the area. Never a pinned door.
   const mapThumb = () => `<svg viewBox="0 0 112 76" aria-hidden="true"><rect width="112" height="76" fill="var(--pl-page)"/><path d="M-4 58C20 50 34 66 58 56S96 40 118 46" fill="none" stroke="var(--pl-line)" stroke-width="7" stroke-linecap="round"/><g fill="none" stroke="var(--pl-line-strong)" stroke-width="1" opacity=".7"><path d="M0 20h112M0 38h112M22 0v76M52 0v76M84 0v76"/></g><path d="M8 70L40 8M70 76L104 4" fill="none" stroke="var(--pl-surface)" stroke-width="3"/><circle cx="56" cy="34" r="19" fill="var(--pl-accent-soft)" stroke="var(--pl-accent)" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="56" cy="34" r="3" fill="var(--pl-accent)"/></svg>`;
   const whereHtml = () => !P.place || P.locked ? "" : `<a class="fn-where" href="/map${P.city ? "?city=" + encodeURIComponent(P.city) : ""}">${mapThumb()}<span><span class="k">Where</span><b>${esc(P.place)}</b><small>${P.going || P.isHost ? "The exact spot is on the invite." : "The area. The exact spot goes to guests who are in."} Open the map.</small></span></a>`;
   // what to bring: the host's list, or for a trip with none, a starter list that says it's only ideas
   const STARTER = ["A warm layer", "Comfortable shoes", "Phone charger", "Anything you need to sleep well"];
-  function beforeHtml() { if (P.locked) return ""; const own = (P.bring || []).length, list = own ? P.bring : P.multi && !P.isHost ? STARTER : [], inc = P.included || [], ticks = ls.get("pl.pack." + P.id) || [];
+  function beforeHtml() { if (P.locked) return ""; const own = (P.bring || []).length, list = own ? P.bring : P.multi && !P.isHost && P.kinds?.kind !== "summit" ? STARTER : [], inc = P.included || [], ticks = ls.get("pl.pack." + P.id) || [];
     if (!list.length && !inc.length) return "";
     return `<h2 class="pv-h2">Before you go<small>${P.multi ? "Packing" : "Bring"}</small></h2><div class="fn-before${list.length && inc.length ? " two" : ""}">`
       + (list.length ? `<div><h3>${own ? "What to bring" : "A packing list to start from"}</h3><ul class="fn-check">${list.map((x, i) => `<li><label><input type="checkbox" data-pack="${i}"${ticks.includes(x) ? " checked" : ""}><span>${esc(x)}</span></label></li>`).join("")}</ul><p class="fn-note">${own ? "Your ticks stay on this phone." : `Ideas, not from ${esc(P.host.first || "the host")}. Ask in the chat if you're not sure.`}</p></div>` : "")
       + (inc.length ? `<div><h3>Included</h3><ul class="fn-inc">${inc.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "") + `</div>`; }
   function draw() {
     const locked = P.locked ? `<div class="pv-lock"><p>${P.response === "waitlist" ? "You're on the waitlist. The plan shows here once you're in." : P.response === "requested" ? `You asked to join. The plan shows here once ${esc(P.host.first || "the host")} lets you in.` : `Say you're in to see the plan, day by day.`}</p><a class="btn primary" href="/e/${encodeURIComponent(P.id)}">Open the invite</a></div>` : "";
-    const empty = !P.locked && !P.days.some((d) => d.items.length), w = when();
+    const empty = !P.locked && !P.days.some((d) => d.items.length), w = when(), K = P.kinds, KH = window.PLKinds && K ? window.PLKinds.html(P) : "";
+    // a booked table needs no day-by-day plan; a summit's guests read the agenda, and the run of show stays with the host and team
+    const noPlan = (K?.kind === "table" && empty) || P.runOfShow, ros = K?.kind === "summit" && P.isHost;
+    m.classList.toggle("kd-wide", K?.kind === "summit" && P.isHost);
     m.innerHTML = T.coverHtml(P, { avatar: av, art: typeof art === "string" ? art : "", back: "/plans" })
       + (P.status || w ? `<div class="pv-status">${P.status ? `<span class="pv-chipst">${esc(P.status)}</span>` : ""}${w ? `<span class="pv-when">${esc(w)}</span>` : ""}</div>` : "")
       + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}${P.isHost && !empty ? `<button type="button" data-print>Print the plan</button>` : ""}</div>`
       + whereHtml()
-      + `<h2 class="pv-h2">The plan<small>${P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
-      + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : itinHtml()))
+      + KH
+      + (noPlan ? "" : `<h2 class="pv-h2">${ros ? "Run of show" : "The plan"}<small>${ros ? "Host and team" : P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
+      + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : itinHtml())))
       + beforeHtml()
-      + (P.editable ? editorHtml(empty) : "");
+      + (P.editable && !(K?.kind === "table" && empty) ? editorHtml(empty) : "");
+    if (KH) window.PLKinds.wire(m, P, { proof: proof?.rid && proof?.code ? { rid: proof.rid, code: proof.code } : null, redraw: () => { const y = scrollY; draw(); scrollTo(0, y); } });
     m.querySelector("[data-addcal]")?.addEventListener("click", (e) => window.PLAddCal?.open(e.currentTarget, P));
     m.querySelector(".pv-acts [data-print]")?.addEventListener("click", () => window.print()); // the agenda for the door, on one sheet
     const more = m.querySelector(".pc-more"); if (more) more.onclick = (e) => { e.stopPropagation(); let mn = m.querySelector(".pc-menu"); if (mn) { mn.remove(); more.setAttribute("aria-expanded", "false"); return; }
@@ -147,7 +152,8 @@
       mn.querySelector("[data-copy]").onclick = async (ev) => { try { await navigator.clipboard.writeText(location.origin + "/e/" + P.id); ev.target.textContent = "Copied"; } catch {} }; };
     // ticking the packing list: the tick answers at once, a light haptic in the app, and it stays on this phone
     m.querySelectorAll("[data-pack]").forEach((c) => (c.onchange = () => { const L = [...m.querySelectorAll("[data-pack]")].filter((x) => x.checked).map((x) => x.nextElementSibling.textContent); ls.set("pl.pack." + P.id, L); if (c.checked && fx) { fx.ink(c); fx.haptic("light"); } }));
-    if (P.editable) wireEditor();
+    if (P.editable && m.querySelector("#itSave")) wireEditor();
+    if (/#agenda$/.test(location.hash) && !draw.__a) { draw.__a = true; setTimeout(() => document.getElementById("agenda")?.scrollIntoView({ block: "start" }), 60); }
     if (P.editable && /[?&]edit=1\b/.test(location.search)) setTimeout(() => m.querySelector(".it-ed")?.scrollIntoView({ block: "start" }), 60); // from the editor's Settings: "The plan, day by day"
   }
   // ---- the host lays out the plan ----
@@ -173,7 +179,7 @@
   };
   const tplKeys = () => (P.multi ? ["trip", "summit"] : ["evening", "summit"]);
   const potto = () => { try { return window.Potto ? window.Potto.svg("think", 40, "") : ""; } catch { return ""; } };
-  const editorHtml = (empty) => `<details class="it-wrap"${empty || /[?&]edit=1\b/.test(location.search) ? " open" : ""}><summary>${empty ? "Lay out the plan" : "Edit the plan"}<small>${rows.length ? `${rows.length} ${rows.length === 1 ? "thing" : "things"}` : "Host only"}</small></summary><section class="it-ed" aria-label="Lay out the plan"><p class="hint">Arrive, check in, dinner, a workshop, checkout. Guests who are in see it here and on the invite.</p>
+  const editorHtml = (empty) => `<details class="it-wrap"${empty || /[?&]edit=1\b/.test(location.search) ? " open" : ""}><summary>${P.kinds?.kind === "summit" ? (empty ? "Lay out the run of show" : "Edit the run of show") : empty ? "Lay out the plan" : "Edit the plan"}<small>${rows.length ? `${rows.length} ${rows.length === 1 ? "thing" : "things"}` : "Host only"}</small></summary><section class="it-ed" aria-label="Lay out the plan"><p class="hint">Arrive, check in, dinner, a workshop, checkout. Guests who are in see it here and on the invite.</p>
     ${!rows.length ? `<p class="it-potto">${potto()}<span>Start from a shape, then change what you like. I'll keep it in time order.</span></p><div class="it-tpl" role="group" aria-label="Start from">${tplKeys().map((k) => `<button type="button" data-tpl="${k}">${esc(TPL[k].label)}</button>`).join("")}</div>` : ""}
     <div id="itRows">${rows.map(rowHtml).join("")}</div>
     <div class="it-bar"><button type="button" id="itAdd">+ Add to the plan</button></div>

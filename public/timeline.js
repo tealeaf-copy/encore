@@ -45,7 +45,7 @@
     for (let d = it.date, n = 1; d <= to && n <= 31; d = addDays(d, 1), n++) out.push({ date: d, n, items: (it.itinerary || []).filter((x) => x.day === d) }); return out; }
 
   // the order kinds take in a day's dots, and their names
-  const KIND = { hosting: "Hosting", going: "Going", class: "Class", pickup: "Pickup", waitlist: "Waitlist", saved: "Saved", todo: "To do" };
+  const KIND = { hosting: "Hosting", going: "Going", class: "Class", pickup: "Pickup", waitlist: "Waitlist", saved: "Saved", todo: "To do", session: "Your agenda" };
   const DOT_ORDER = ["hosting", "going", "class", "pickup", "waitlist", "saved"];
   /** { "YYYY-MM-DD": ["hosting", "going"] } for a month ("YYYY-MM"): one dot per kind a day has, a span on each of its days. To-dos ride on their event. Pure. */
   function calendarDots(items, ym) { const out = {};
@@ -71,11 +71,11 @@
     activity: ic("M10 3.5l1.8 4.2 4.2 1.8-4.2 1.8L10 15.5l-1.8-4.2L4 9.5l4.2-1.8z"), free: ic("M10 6.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM10 2.5v1.5M10 16v1.5M2.5 10H4M16 10h1.5M4.7 4.7l1 1M14.3 14.3l1 1M4.7 15.3l1-1M14.3 5.7l1-1"),
     travel: ic("M4 13.5V7.5A2.5 2.5 0 0 1 6.5 5h7A2.5 2.5 0 0 1 16 7.5v6zM4 10h12M6.5 16.5l1-3M13.5 16.5l-1-3M7 12h.01M13 12h.01"), checkout: ic("M11 4.5H5.5v11H11M9 10h7.5M13.5 7l3 3-3 3"),
     chev: ic("M8 5l5 5-5 5"), back: ic("M12 5l-5 5 5 5"), more: ic("M5 10h.01M10 10h.01M15 10h.01"), cal: ic("M4 5.5h12v10.5H4zM4 8.5h12M7 3.5v3M13 3.5v3"),
-  };
+  }; ICON.session = ICON.talk; // a saved summit session
   const ITIN_LABEL = { arrive: "Arrive", checkin: "Check in", meal: "Meal", workshop: "Workshop", talk: "Talk", activity: "Activity", free: "Free time", travel: "Travel", checkout: "Check out" };
 
   /** A row opens the peek (public/peek.js) on a plain tap; it stays a link for everything else. */
-  const peekAttr = (it) => (it.eventId ? ` data-peek="${esc(it.eventId)}"` : "");
+  const peekAttr = (it) => (it.eventId && it.kind !== "session" ? ` data-peek="${esc(it.eventId)}"` : ""); // a saved session opens the agenda itself
   /** One row: the time, a node on the line, the title (serif for events), one muted sub-line, a chevron. */
   const calOk = (it) => it.kind !== "todo" && !it.draft && /^\d{4}-\d{2}-\d{2}$/.test(it.date || "");
   const calBtn = (it) => `<button type="button" class="tl-cal" data-addcal="${esc(it.key)}" aria-label="Add ${esc(it.title)} to your calendar" aria-haspopup="menu" aria-expanded="false">${ICON.cal}</button>`;

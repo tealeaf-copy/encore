@@ -182,13 +182,13 @@ test("The pre-signup draft becomes a clean event: defaults, limits, no markup", 
 
 test("The Host path scales from a dinner for 4 to a summit, with a guide and a template on every node", () => {
   const P = pathOf({ hosted: 1, maxGuests: 6, streakBest: 1, ticketed: 0, series: 0, soldOut: 0, multiDay: 0 });
-  assert.deepEqual(P.map((n) => n.title), ["Dinner for 4", "A table of 8", "A regular night", "Your first ticketed event", "A series", "A sold-out night", "A weekend away", "A summit"]);
+  assert.deepEqual(P.map((n) => n.title), ["Dinner for 4", "Book a table for friends", "A table of 8", "A regular night", "Your first ticketed event", "A series", "A sold-out night", "A weekend away", "A summit"]);
   assert.deepEqual(P.slice(0, 3).map((n) => n.state), ["done", "next", "later"]);
   for (const n of P) { assert.ok(n.steps.length >= 3); assert.match(n.template, /^\/start\?t=/); assert.match(n.guideHref, /^\/(?:guides\/[a-z-]+|path#guide-[a-z0-9]+)$/); }
   const G = Object.fromEntries(P.map((n) => [n.id, n.guideHref]));
   assert.equal(G.dinner4, "/guides/first-supper", "a node with a written guide links to it");
   assert.equal(G.regular, "/guides/game-night"); assert.equal(G.series, "/guides/grow-regulars");
-  assert.equal(G.summit, "/path#guide-summit", "a node without one keeps its notes on /path");
+  assert.equal(G.summit, "/guides/small-summit"); assert.equal(G.weekend, "/guides/weekend-away"); assert.equal(G.booked, "/guides/book-a-table", "review 18: every scale has its written guide");
   const B = loopBadges({ badges: [{ id: "new", label: "New host", why: "x" }] }, { soldOut: 1, regulars: 2, movesDone: 12 }, { restUsed: ["2026-10-01"], repaired: [], count: 3, status: "done" });
   assert.deepEqual(B.map((b) => b.id), ["new", "rested", "soldout", "regular", "moves"], "recognition's badges first, then the loop's");
 });

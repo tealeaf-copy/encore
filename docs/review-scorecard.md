@@ -180,3 +180,31 @@ All fourteen personas are at 9 or higher on every score. The six that were at 8 
 Potto speaks in two places added this loop, as docs/potto-voice.md asks: the empty plan editor ("Start from a shape, then change what you like. I'll keep it in time order.") and check-in when everyone's arrived ("Everyone's here. I'll stop counting.").
 
 Left for later, none of them below 9: a real map tile behind the drawn area on the plan page (map.js loads MapLibre from a CDN, too heavy for a thumbnail); tracks or rooms on a summit agenda; the test world writes some past events straight into the store, so a host's studio asks `/api/signoff` about events the event index doesn't know and gets 404s (test data only, not a product path).
+
+## Round 7 (review 18: every scale of hosting)
+
+Screens: `event-kinds/` in the session scratchpad, at 390px (1280px for the summit host). The owner's brief: hosting spans "something very simple like dinner with friends and booking a reservation, to a big summit or a big trip or weekend getaway". Compared against Partiful (a dinner or a trip with friends: the invite, replies, a group chat, a rough plan) and Eventbrite and Luma (a summit: tiers, an agenda, speakers, check-in). Neither keeps a restaurant booking's count against the replies, and neither does beds, rides and shared costs for a trip.
+
+| Persona | Use | Joy | Ease | Intu | Pick | Notes (what moved) |
+|---|---|---|---|---|---|---|
+| Dinner host who books a table | 9 | 9 | 9 | 9 | 9 | New: Book a table. The meter is one dot a seat, the ones over the booking in red, and "You're at 7 of 6. Call to add a seat?" in the bell, in Plans and on the plan page with Call and "Updated". A table for 6 is you and five spots, so more replies wait on the list. |
+| Guest at a booked table | 9 | 9 | 9 | 9 | 9 | "Reply by Tuesday so I can update the booking" in highlighter on the invite; the booking link, confirmation and address once in; "$41.67 each" with the host's pay link after. |
+| Weekend getaway host | 9 | 9 | 9 | 9 | 9 | Where we're staying, who sleeps where, rides, shared costs, the plan by day and the packing list on one page. Adding a cost is a label, a sum, who paid and who's in it. |
+| Guest on a weekend away | 9 | 9 | 9 | 9 | 9 | "Take it" on a bed, "Take a seat" in a car, "You owe Maya $160" with a Pay button; never a line between two other people. |
+| Small summit host (1280) | 9 | 9 | 9 | 9 | 9 | Agenda by day, time and track, rooms with capacity, room clashes, speakers with "Page not public", sponsors labelled, door tools, the run of show kept for the host and team, and "Add the agenda to the run of show". |
+| Summit guest | 9 | 9 | 9 | 9 | 9 | Save to my agenda, "Room full", "Overlaps with Office hours", and each saved session on its own row in Plans with a calendar button. |
+
+### Fixed in round 7
+
+- **What are you planning?** (public/canvas.js `PLAN_KINDS`, `applyKind`): Dinner, Book a table, Game night, Class, Drop, Weekend away, Summit as the first question on a new event. Each fills only what's empty and opens its blocks: the booking, where we're staying, agenda and rooms; Drop hands over to the drop setup. A guide or path link can name the kind (`/?app=1&new=1&kind=weekend#studio`) and skips the "What are you making?" sheet.
+- **server/kinds.js**: the booking (`reservation`), lodging, beds, cars and the costs ledger (`trip/<id>`), the agenda, speakers, sponsors and saved sessions (`agenda/<id>`). Pure parts are tested on their own: the meter, the reply-by line, even splits in exact cents, pairwise lines, bed and seat claims, capacity, overlaps, room clashes and speaker visibility.
+- **Privacy**: the lodging address, the booking link and the confirmation reach only people who are in (and are scrubbed from the itinerary for anyone else); none of it is on the public event doc. Ledger lines only for the two people in them, the host included. No payments move: pay links only.
+- **The invite** (public/planhook.js, also on /g): a short card for the kind. invite.html is unchanged.
+- **/start** has Book a table; the host path has "Book a table for friends"; four new guides (book-a-table, teach-a-class, weekend-away, small-summit) and the path's weekend and summit nodes link to them.
+- **Speaker pages** at `/speakers/<event>/<speaker>`, public only when the speaker said yes or the host marked them public.
+
+### Left for later
+
+- The meter can't see a restaurant's own system: "Updated" is the host saying they called.
+- Session capacity is first come, first saved; there's no waitlist per session yet.
+- Sponsor logos are links the brand gives the host; there's no upload in the sponsors editor.

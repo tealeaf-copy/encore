@@ -259,7 +259,8 @@
   const KINDS = [["event", I.cal, "An event", "You show up on a date. Guests tap I'm in.", "Dumpling night at my place, Sat 7pm"],
     ["drop", I.bag, "A drop", "People order ahead and pick up at a set time.", "Pandan cake, pick up Sat 9 to 10am"],
     ["book", I.people, "Something to book", "Teams and groups request a date. You quote.", "Pottery class for 8 to 20, $55 a person"]];
-  function choose(o = {}) { const S = sheet({ title: "What are you making?", label: "What are you making?", body: `<div class="dp-potto">${potto("happy", 48)}<p>Pick one. You can make the others any time.</p></div><div class="dp-acts">${KINDS.map(([k, ic, t, s, ex]) => `<button type="button" class="dp-act" data-kind="${k}"><span class="ic">${ic}</span><span><b>${t}</b><small>${s}</small><small style="margin-top:2px">Like: ${esc(ex)}</small></span>${I.chev}</button>`).join("")}</div>` });
+  function choose(o = {}) { try { const k = new URLSearchParams(location.search).get("kind"); if (k && k !== "drop" && o.event) return o.event(); } catch {} // a guide or the host path already said what: straight to the canvas
+    const S = sheet({ title: "What are you making?", label: "What are you making?", body: `<div class="dp-potto">${potto("happy", 48)}<p>Pick one. You can make the others any time.</p></div><div class="dp-acts">${KINDS.map(([k, ic, t, s, ex]) => `<button type="button" class="dp-act" data-kind="${k}"><span class="ic">${ic}</span><span><b>${t}</b><small>${s}</small><small style="margin-top:2px">Like: ${esc(ex)}</small></span>${I.chev}</button>`).join("")}</div>` });
     $$("[data-kind]", S.bg).forEach((b) => (b.onclick = () => { S.close(); const k = b.dataset.kind; if (k === "event") (o.event || (() => (location.href = "/?app=1#studio")))(); else if (k === "drop") setup({ onDone: o.onDone }); else bookable({ onDone: o.onDone }); })); }
 
   // ================= the host page: one "What I offer" section =================

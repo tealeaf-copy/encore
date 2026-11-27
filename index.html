@@ -13343,7 +13343,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 </script>
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
-// invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----
+// invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.
 (function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)) return; const t=document.createElement("script"); t.src=src; t.async=false; document.head.appendChild(t) };
-  if(location.pathname==="/g") add("/comewith.js"); if(location.pathname==="/g"||location.pathname==="/") add("/hostlike.js") })();
+  if(location.pathname==="/g"){ add("/comewith.js"); add("/timeline.js"); add("/planhook.js") } if(location.pathname==="/g"||location.pathname==="/") add("/hostlike.js") })();
 </script>

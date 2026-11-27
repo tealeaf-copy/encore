@@ -41,7 +41,7 @@ const listOf = (v) => (Array.isArray(v) ? v : String(v || "").split(/\n|,(?![^(]
 const priced = (ev) => !!ev?.price && ev.price !== "chip" && !ev.free;
 
 /** Every kind a timeline item can be. Pure. */
-export const KINDS = ["going", "hosting", "pickup", "class", "todo", "waitlist", "saved"];
+export const KINDS = ["going", "hosting", "pickup", "class", "todo", "waitlist", "saved", "session"]; // session: a summit talk a guest saved to their agenda (server/kinds.js)
 /** The kinds an itinerary item can be, each with its own small icon on the page. */
 export const ITIN_KINDS = ["arrive", "checkin", "meal", "workshop", "talk", "activity", "free", "travel", "checkout"];
 const MAX_ITIN = 40;
@@ -160,7 +160,7 @@ export function itineraryFor(ev, { exact = false } = {}) {
 }
 /** Swaps the street address, a private meet point and anything shaped like "12 Java St" for the area. Pure. */
 export function scrubberOf(ev) {
-  const secret = [ev?.venueAddr, ev?.approvalRequired || !ev?.discoverable ? ev?.meetPoint : "", ev?.venueAddr ? ev?.venueName : ""].map((x) => clean(x, 200)).filter((x) => x && x.length >= 4);
+  const secret = [ev?.venueAddr, ev?.approvalRequired || !ev?.discoverable ? ev?.meetPoint : "", ev?.venueAddr ? ev?.venueName : "", ev?.lodging?.address, ev?.reservation?.confirmation].map((x) => clean(x, 200)).filter((x) => x && x.length >= 4);
   const area = areaOf(ev) || "the area";
   return (s) => { let t = String(s || ""); for (const x of secret) t = t.split(x).join(area); return t.replace(/\b\d{1,5}\s+[A-Z][\w'.-]*(?:\s+[A-Z][\w'.-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Lane|Ln|Dr|Drive|Pl|Place|Way|Ct)\b\.?(?:,?\s*(?:Apt|Unit|#)\s*\w+)?/g, area); };
 }
@@ -170,6 +170,7 @@ export function itineraryDays(ev, items) { if (!ISO.test(ev?.date || "")) return
 /** The chip on a plan's cover: the host's own label, else "Weekend away", "Summit", "Supper club" and so on. Pure. */
 export function typeChip(ev) {
   const own = clean(ev?.typeLabel, 24); if (own) return own;
+  const pk = { table: "Booked table", summit: "Summit", class: "Class", game: "Game night" }[ev?.planKind]; if (pk) return pk; // what the host said they were planning (server/kinds.js)
   const t = lc([ev?.pubTitle, ev?.name, ev?.activity, ev?.kind, ev?.format].join(" ")), days = multiDay(ev) ? dayNo(lastDay(ev)) - dayNo(ev.date) + 1 : 1;
   if (/summit|conference|forum|offsite/.test(t) || ["summit", "owned", "conference"].includes(ev?.kind)) return "Summit";
   if (/retreat/.test(t)) return "Retreat";
@@ -216,7 +217,8 @@ export function replyRule(ev, r, want, { host = "the host", today = todayIn(even
 }
 
 // ---------- building the timeline ----------
-export function makePlans({ store, C, X }) {
+export function makePlans({ store, C, X, kinds = () => null }) {
+  const K = kinds;
   const profile = (ws) => { try { return C.profileOf?.(ws) || null; } catch { return null; } };
   const hostFirstOf = (ws, ev) => first(profile(ws)?.name || ev?.hostName || getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || "");
   const episode = (id, ws, host = false) => { try { return episodeOf(store, id, ws, { host }); } catch { return null; } };
@@ -229,11 +231,13 @@ export function makePlans({ store, C, X }) {
     if (kind === "pickup") { const lab = r.pickupLabel || r.slot || ""; time = slotStart(lab); if (!date) date = slotDay(slotLabel(lab), today); }
     const pos = kind === "waitlist" ? waitlistPos(S.list("rsvps").filter((d) => d.data?.eventId === id), rid) : 0;
     const status = statusOf(kind, ev, r, { pos, hostFirst: host, episode: ep });
-    const main = itemOf({ id, ev, kind, status, place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), host, date: date !== ev.date ? date : "", time, extra: { rid, in: inn, ...(multiDay(ev) && inn ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) } });
+    const main = itemOf({ id, ev, kind, status, place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), host, date: date !== ev.date ? date : "", time, extra: { rid, in: inn, ...(multiDay(ev) && inn && !((ev.agenda?.sessions || []).length && (ev.planKind === "summit" || ev.kind === "summit")) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) /* a summit's guests get their own agenda, not the run of show */ } });
     if (multiDay(ev) || ev.itinerary?.length) main.href = `/plans/${encodeURIComponent(id)}`;
     const out = [main];
     if (!main.date) return out;
     if (inn && r.slot && !ev.drop && (ev.slots || []).includes(r.slot)) out.push(itemOf({ id, ev, kind: "todo", key: `todo:bring:${id}`, title: bringLine(r.slot), status: `For ${titleOf(ev)}`, date: main.date, time: main.time, ord: -1 }));
+    // a summit: the sessions this guest saved, each on its own row, so Plans is their personal agenda
+    if (inn) { try { for (const x of K()?.savedSessions(ws, id, ev, rid) || []) out.push(itemOf({ id, ev, kind: "session", key: `session:${id}:${x.id}`, title: x.title, status: [x.conflict ? "Overlaps another saved session" : "On your agenda", x.room, x.track].filter(Boolean).join(" · "), date: x.day, time: x.time, href: `/plans/${encodeURIComponent(id)}#agenda`, extra: { endMs: zonedMs(x.day, x.end, eventTz(ev)) } })); } catch {} }
     if (inn && priced(ev) && !r.paid && !r.paidClaim && !ev.ticketNote && !ev.drop) out.push(itemOf({ id, ev, kind: "todo", key: `todo:pay:${id}`, title: `Pay ${ev.price} to finish`, status: `For ${titleOf(ev)}`, date: main.date, time: main.time, ord: -2 }));
     return out;
   }
@@ -248,6 +252,8 @@ export function makePlans({ store, C, X }) {
         extra: { draft: status === "Draft", ...(ep ? { classNo: ep.n } : {}), ...(multiDay(ev) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) } });
       if (ev.drop) { const lab = (ev.slots || [])[0] || ""; if (lab) { it.time = slotStart(lab) || it.time; } }
       out.push(it);
+      // a booked table whose count moved: "Update the reservation · 7 of 6 at the table"
+      try { const tt = K()?.hostTodo(ws, id, ev); if (tt) out.push(itemOf({ id, ev, kind: "todo", key: `todo:table:${id}`, title: tt.title, status: tt.status, href: `/plans/${encodeURIComponent(id)}`, date: it.date, time: it.time, ord: -2 })); } catch {}
       if (going > 0 && !ev.drop && !ev.venueAddr && !ev.venueName && !ev.meetPoint && !ev.online) out.push(itemOf({ id, ev, kind: "todo", key: `todo:addr:${id}`, title: "Add the address", status: `${going} ${going === 1 ? "person is" : "people are"} in`, href: `/plans/${encodeURIComponent(id)}`, date: it.date, time: it.time, ord: -1 }));
     }
     return out;
@@ -359,7 +365,7 @@ const endHour = (t) => { const [h, m] = t.split(":").map(Number); return `${Stri
 
 // ---------- routes ----------
 export function mountPlans(app, { store, small, currentUser, C, X, sendStatic, publicOrigin }) {
-  const P = makePlans({ store, C, X });
+  const P = makePlans({ store, C, X, kinds: () => app.locals.kinds });
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   const me = (req) => { try { return currentUser(req); } catch { return null; } };
   app.locals.plans = P;
@@ -400,7 +406,11 @@ export function mountPlans(app, { store, small, currentUser, C, X, sendStatic, p
   // one plan: the cover and the itinerary (guests who are in, the host, or everyone when the host made it public)
   app.get("/api/public/plan/:id", (req, res) => { const id = String(req.params.id || ""); if (!ID.test(id)) return bad(res, "No such plan.", 404, "not_found"); const u = me(req);
     const p = P.planOf(id, { rid: String(req.query.rid || "").slice(0, 80), code: String(req.query.code || "").slice(0, 40), email: u?.email || "", ws: u?.ws || "" });
-    if (!p) return bad(res, "No such plan.", 404, "not_found"); res.set("Cache-Control", "private, no-store").json({ plan: p }); });
+    if (!p) return bad(res, "No such plan.", 404, "not_found");
+    // the kind's own parts (a booked table, a weekend away, a summit), as this viewer may see them (server/kinds.js)
+    try { const V = P.viewerOf(id, { rid: String(req.query.rid || "").slice(0, 80), code: String(req.query.code || "").slice(0, 40), email: u?.email || "", ws: u?.ws || "" }); const k = app.locals.kinds?.viewOf(id, V);
+      if (k) { p.kinds = k; if (k.kind === "summit" && k.agenda && !k.agenda.locked && k.agenda.sessions.length && !p.isHost) { p.days = p.days.map((d) => ({ ...d, items: [] })); p.runOfShow = true; } } } catch {}
+    res.set("Cache-Control", "private, no-store").json({ plan: p }); });
 
   // the host lays out the plan: [{ day, time, kind, title, sub }], and whether everyone with the link sees it
   app.post("/api/host/events/:id/itinerary", small, (req, res) => { const u = me(req); if (!u?.ws || u.ws === DEFAULT_WS) return bad(res, "Sign in first.", 401, "unauthenticated");

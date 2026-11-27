@@ -49,7 +49,7 @@ const weekday = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("en-US"
 const hasKudos = (K) => !!(K && (K.love || (K.tags || []).length));
 
 /** The kudos lines, word for word. */
-export const groupMessage = (title, link) => `Thank you for coming to ${title}! If you have 10 seconds, tap a few words about it: ${link}`;
+export const groupMessage = (title, link) => `Thank you for coming to ${title}. If you have 10 seconds, tap a few words about it: ${link}`;
 export const sendLine = (host, title, link) => `${host || "Your host"} would love to hear how ${title} was. 10 seconds: ${link}`;
 export const followUpLine = (host, title, link) => (host ? `One last ask: how was ${title}? Kudos for ${host} take 10 seconds: ${link}` : `One last ask: how was ${title}? Kudos take 10 seconds: ${link}`);
 export const NO_MATCH = "We couldn't find that reply. Use the email or phone you replied with.";

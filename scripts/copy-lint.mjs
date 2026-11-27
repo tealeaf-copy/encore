@@ -61,7 +61,7 @@ function jsStrings(src, line0 = 1) {
         if (d === "\\") { s += src[j + 1] === "u" && src.slice(j + 2, j + 6) === "2014" ? "—" : " "; if (src[j + 1] === "\n") line++; j += src[j + 1] === "u" ? 6 : 2; continue; }
         if (d === "\n") { line++; if (q !== "`") break; }
         // a template's ${...}: stands in as X here, and the strings inside it are scanned too
-        if (q === "`" && d === "$" && src[j + 1] === "{") { depth = 1; j += 2; s += " X "; const from = j, l0 = line; while (j < n && depth) { if (src[j] === "{") depth++; else if (src[j] === "}") depth--; else if (src[j] === "\n") line++; j++; } out.push(...jsStrings(src.slice(from, j - 1), l0)); continue; }
+        if (q === "`" && d === "$" && src[j + 1] === "{") { depth = 1; j += 2; s += "X"; const from = j, l0 = line; while (j < n && depth) { if (src[j] === "{") depth++; else if (src[j] === "}") depth--; else if (src[j] === "\n") line++; j++; } out.push(...jsStrings(src.slice(from, j - 1), l0)); continue; }
         if (d === q) break;
         s += d; j++;
       }

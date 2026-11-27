@@ -80,7 +80,7 @@ test("Per-guest links: each guest who hasn't left kudos gets their own working l
   assert.equal((await post("/api/host/kudos-nudge/nzProg/nudged", { rid: "nope", via: "text" }, host)).status, 404);
   assert.equal((await post("/api/host/kudos-nudge/nzProg/nudged", { rid: nc, via: "text" })).status, 403, "only the host");
   // the group message, word for word, and a QR code of the group link
-  assert.equal(s.group.message, `Thank you for coming to Taco night! If you have 10 seconds, tap a few words about it: ${s.group.link}`);
+  assert.equal(s.group.message, `Thank you for coming to Taco night. If you have 10 seconds, tap a few words about it: ${s.group.link}`);
   assert.match(s.group.link, /\/k\/nzProg\?g=[A-Za-z0-9]{16,}$/);
   const qr = await fetch(srv.base + "/api/host/kudos-nudge/nzProg/qr.svg", { headers: { cookie: host } }); assert.equal(qr.status, 200); assert.match(qr.headers.get("content-type"), /svg/); assert.match(await qr.text(), /^<svg /);
   assert.equal(qrMatrix(s.group.link).length % 4, 1, "a QR code is 17 + 4 x version modules wide");

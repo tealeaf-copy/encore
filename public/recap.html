@@ -25,7 +25,7 @@
 .years{display:flex;gap:6px;justify-content:center;margin-top:14px}.years a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;font-size:14px;color:var(--smoke)}.years a[aria-current]{color:var(--ink);font-weight:700}
 .empty{text-align:center;color:var(--smoke);padding:40px 10px}
 </style></head><body>
-<div class="wrap"><div class="top"><a href="/">pottery lab</a><small>Year in review</small></div><div id="m"><p class="empty">Loading…</p></div></div>
+<div class="wrap"><div class="top"><a href="/">pottery lab</a><small>Year in review</small></div><div id="m"><p class="empty">Loading…</p></div><p class="mine-yr" id="mineYr" hidden><a href="/year/">Your own year in nights</a></p><!-- the year in nights (public/yearreview.js) --></div>
 <script src="/avatars.js"></script><script src="/mascot.js"></script>
 <script>
 (async function () {
@@ -57,4 +57,6 @@
     try { if (navigator.share) { await navigator.share({ title: document.title, text, url: share }); return; } await navigator.clipboard.writeText(share); document.getElementById("shareBtn").textContent = "Link copied"; } catch {} };
 })();
 </script>
+<script>/* the year in nights (public/yearreview.js): signed in, a link to your own year under a host's */ (function () { const p = document.getElementById("mineYr"); if (!p || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; const y = new URLSearchParams(location.search).get("year"); p.querySelector("a").href = "/year/" + (/^20\d\d$/.test(y || "") ? y : new Date().getFullYear()); p.hidden = false; })();</script>
+<style>.mine-yr{text-align:center;margin:8px 0 0}.mine-yr a{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-accent-text);font-weight:600}</style>
 </body></html>

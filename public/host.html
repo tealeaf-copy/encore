@@ -340,7 +340,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
     try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified && me.email) { const row = f.querySelector(".row"); if (row) { row.style.display = "none"; f.name.value = me.name || ""; f.email.value = me.email; } } } catch {} };
   go(); })();
 </script>
-<script src="/stats.js" defer></script><script src="/igimport.js" defer></script><!-- hook: "Refresh from your Instagram" after a claim, and the row in Edit page (public/igimport.js) -->
+<script src="/stats.js" defer></script><script src="/sharecards.js" defer></script><script src="/places.js" defer></script><!-- Your places on a page (public/places.js) --><script src="/igimport.js" defer></script><!-- hook: "Refresh from your Instagram" after a claim, and the row in Edit page (public/igimport.js) -->
 <script>
 // Bookable for teams (server/brandbook.js): a quiet strip linking to the host's team packages, when they have any
 (function () { const m = /^\/@([a-z0-9-]+)/.exec(location.pathname); if (!m) return; fetch("/api/bb/hostpkgs/" + m[1]).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!d || !d.packages.length) return; const ex = document.getElementById("extras"); if (!ex) return;

@@ -365,6 +365,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   load();
 })();
 </script><script>(async () => { try { if (localStorage.getItem("encore.city") !== null) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); if (!sessionStorage.getItem("encore.feedCity")) { sessionStorage.setItem("encore.feedCity", "1"); if (window.PLFeedReload) window.PLFeedReload(); else location.reload(); } } } catch {} })();</script>
+<script src="/sharecards.js" defer></script><script src="/yearreview.js" defer></script><!-- the year in nights card, December and milestones (public/yearreview.js) -->
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
 </body></html>

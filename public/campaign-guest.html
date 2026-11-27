@@ -9,7 +9,7 @@
   const { esc, api, icon, $ } = BB, main = $("#main"), p = location.pathname.split("/").filter(Boolean), cid = p[1], token = p[3] || "";
   const day = (d) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }) : "Date to come");
   const oops = (e) => (main.innerHTML = `<section class="bb-xhead"><h1>This link doesn't work</h1><p class="bb-lede">${esc(e.message)}</p></section>`);
-  const evCard = (e) => `<div class="ti-card" style="margin:16px 0"><p class="ti-k">${esc(day(e.date))}</p><h2>${esc(e.name)}</h2><p class="ti-sub">With ${esc(e.host)}${e.area ? ` in ${esc(e.area)}` : ""} · a small group of about ${e.headcount}. The exact place comes once you're in.</p></div>`;
+  const evCard = (e) => `<div class="ti-card" style="margin:16px 0"><p class="ti-k">${esc(day(e.date))}</p><h2>${esc(e.name)}</h2><p class="ti-sub">With ${esc(e.host)}${e.area ? ` in ${esc(e.area)}` : ""} · a small group of about ${e.headcount}. The exact place comes once you're in.</p>${e.photos ? `<p class="ti-sub">${esc(e.photos)}</p>` : ""}</div>`;
   async function rsvp() { let d; try { d = await api(`/api/cg/${cid}/r/${token}`); } catch (e) { return oops(e); }
     const E = d.event, U = new URLSearchParams(location.search), one = U.get("r");
     if (d.past && d.checkedIn) return feedback(d);

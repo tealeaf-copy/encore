@@ -34,6 +34,8 @@ test("the demo opens signed out, each path straight from a short link, with a se
   // the history is on example hosts, and it tells one story: a past bakery night with a report, a booked coffee pop-up, a campaign in progress
   const R = await ok(await get("/api/bb/requests", D.cookie)); assert.equal(R.requests.length, 2);
   assert.deepEqual(R.requests.map((r) => r.status).sort(), ["booked", "done"]); assert.ok(R.requests.every((r) => ["rise-and-crumb", "phin-and-night"].includes(r.handle)));
+  // with brand photography on the brief, the invite says photos are taken and how to opt out
+  const cg = await ok(await get(`/api/cg/${S.campaign}`)); assert.match(cg.events.find((e) => e.id === S.next).photos, /photographer.*left out/);
   const O = await ok(await get(`/api/campaigns/${S.campaign}/outcomes`, D.cookie)); const txt = JSON.stringify(O);
   assert.match(txt, /Larkspur Labs/); assert.ok(/"meetings"/.test(txt));
   // a signed-in real person is asked first

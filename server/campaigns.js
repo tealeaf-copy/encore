@@ -396,7 +396,9 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
     res.set("Cache-Control", "private, no-store").json({ company: u.W.company || "", name: first(u.name), active, upcoming, waiting, money: money0, resonates, results: results(u.ws), campaigns: L.length }); });
 
   // ---- guests: the public sign-up page and each guest's own reply link ----
-  const pubEvent = (r) => ({ id: r.id, name: r.pkgName, host: hostName(r), date: r.date || "", area: areaOf(r), headcount: r.headcount, status: statusOf(r) });
+  // photos: when the brief lets the brand photograph guests, or a photographer is booked, the invite says so plainly
+  const photoNote = (r) => { const ph = store.get("system/bpev-" + r.id)?.data?.brief?.photos; return ph === "consent" ? "There's a photographer. If you'd rather not be in photos, say so at check-in and you'll be left out." : ph === "host" ? "The host takes a few recap photos." : ""; };
+  const pubEvent = (r) => ({ id: r.id, name: r.pkgName, host: hostName(r), date: r.date || "", area: areaOf(r), headcount: r.headcount, status: statusOf(r), photos: photoNote(r) });
   app.get("/api/cg/:id", (req, res) => { const c = cGet(req.params.id); if (!c || c.joinOpen === false) return bad(res, "This sign-up page is closed.", 404, "not_found"); const W = getWorkspace(c.ws);
     res.set("Cache-Control", "private, no-store").json({ company: W?.company || "", title: c.title, goal: "", events: reqsOf(c).filter((r) => ["requested", "accepted", "booked", "countered", "approval"].includes(statusOf(r)) && (!r.date || r.date >= isoDay())).map(pubEvent) }); });
   app.post("/api/cg/:id/join", small, (req, res) => { if (limited("cj:" + req.ip, 30)) return bad(res, "Too many sign-ups from here. Try again later.", 429, "rate_limited"); const c = cGet(req.params.id); if (!c || c.joinOpen === false) return bad(res, "This sign-up page is closed.", 404, "not_found");

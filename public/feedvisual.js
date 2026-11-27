@@ -348,7 +348,7 @@
     // the opening: today's date and city in mono, one headline made from what's really on, one line naming real things
     const now = new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), lead = big.find((e) => !e.sample), drop = [...realPast, ...recent][0];
     const h1 = tl && weekend.length ? `${weekend.length} plan${weekend.length === 1 ? "" : "s"} <em>near you</em> this week` : tl && local.length ? `Good plans <em>near you</em>` : `What people are <em>hosting</em>`;
-    const again = drop && lead && drop.title.toLowerCase() === lead.title.toLowerCase(), bits = [drop ? `New photos from ${drop.title}` : "", lead ? (again ? `the next one is ${dayWord(lead.date)}` : `${lead.title} ${dayWord(lead.date)}`) : ""].filter(Boolean);
+    const again = drop && lead && drop.title.toLowerCase() === lead.title.toLowerCase(), bits = [drop ? `New photos from ${drop.title}` : "", lead ? (again ? `the next one is ${dayWord(lead.date)}` : [lead.title, dayWord(lead.date)].filter(Boolean).join(" ")) : ""].filter(Boolean); /* a drop has no day: "Pandan honeycomb cake.", not "Pandan honeycomb cake ." */
     const lede = bits.length ? bits.join(bits.length > 1 ? ", and " : "").replace(/^(.)/, (c) => c.toUpperCase()) + "." : "Small dinners, wheel nights and slow runs from hosts on Pottery Lab.";
     const intro = `<section class="fv-intro" aria-labelledby="fvH1"><p class="fv-kicker"><span>${esc(now)}</span><span id="feedPlace">${esc(town)}</span></p>
       <h1 id="fvH1">${h1}</h1><p class="fv-lede">${esc(lede)}</p>${F ? "" : `<p class="fv-sub"><a href="/login?next=/feed">Sign in</a> to see your friends.</p>`}<span class="fv-potto" aria-hidden="true">${potto("wave", 64)}</span></section>`;

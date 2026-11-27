@@ -27,7 +27,7 @@
     if (!own && (!c0.on || V.blocked || V.removed)) return; // no club yet: only the host sees the card
     if (!document.getElementById("clubCss")) { const st = document.createElement("style"); st.id = "clubCss"; st.textContent = CSS; document.head.appendChild(st); }
     const box = document.createElement("section"); box.className = "club"; box.id = "club"; box.setAttribute("aria-labelledby", "clubH"); side.prepend(box);
-    const hostName = String(d.person || h.name || "the host").trim().split(/\s+/)[0], path = "/@" + encodeURIComponent(h.handle), api = "/api/me/club/" + encodeURIComponent(h.handle);
+    const hostName = String(d.person || h.name || "the host").trim().split(/\s+/)[0].replace(/['’]s$/i, ""), path = "/@" + encodeURIComponent(h.handle), api = "/api/me/club/" + encodeURIComponent(h.handle);
     const S = { c: { ...c0 }, member: !!V.member, since: V.since || 0, more: null, err: "" };
     const err = (m) => { S.err = m || ""; const e = box.querySelector(".club-err"); if (e) e.textContent = S.err; };
 

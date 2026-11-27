@@ -141,7 +141,7 @@ html body #view-guest#view-guest.ev2 #gForm .row{display:grid!important;grid-tem
 :is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(input,select,textarea)::placeholder{color:#6B6E69;opacity:1}
 :is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(input,select,textarea):focus-visible{outline:2px solid var(--lk-btn,var(--kit-btn,var(--pl-accent)))!important;outline-offset:2px}
 /* checkbox rows: the box on the first line of the text, 15/22; a helper under it at 14/20 */
-:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check{align-items:flex-start!important;gap:12px!important;margin:0!important;min-height:0!important;font:400 15px/22px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check{align-items:flex-start!important;gap:12px!important;margin:-6px 0!important;padding:11px 0!important;min-height:44px!important;font:400 15px/22px var(--pl-font-text)!important;color:var(--pl-ink)!important}
 :is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check>span{display:block;min-height:0!important}
 :is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check small{display:block!important;margin:2px 0 0!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important}
 :is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check.pl-rem{justify-content:flex-start!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important;align-items:center!important}
@@ -168,7 +168,7 @@ html body #view-guest#view-guest.ev2 .ev-faq h4{font:600 18px/24px var(--pl-font
 html body #view-guest#view-guest.ev2 .ev-faq :is(input,.btn){min-height:48px!important;border-radius:var(--pl-r-btn)!important;box-shadow:none!important}
 html body #view-guest#view-guest.ev2 .ev-faq input{border:var(--pl-bw) solid var(--pl-ink)!important;background:#fff!important;font:400 16px/22px var(--pl-font-text)!important}
 /* small actions (Map, Copy link, Add to calendar): 40px, 6px corners, a quiet line */
-:is(html body #m#m .sl-tools,html body #view-guest#view-guest.ev2 .in>.ev2-acts) :is(.sl-btn,.btn){min-height:40px!important;padding:0 14px!important;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-line-strong)!important;background:transparent!important;color:var(--pl-ink)!important;font:600 14px/20px var(--pl-font-text)!important;box-shadow:none!important}
+:is(html body #m#m .sl-tools,html body #view-guest#view-guest.ev2 .in>.ev2-acts) :is(.sl-btn,.btn){min-height:44px!important;padding:0 14px!important;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-line-strong)!important;background:transparent!important;color:var(--pl-ink)!important;font:600 14px/20px var(--pl-font-text)!important;box-shadow:none!important}
 html body #m#m #slBox{margin:16px 0 0}
 /* ---- the full invite (/g) on its own terms ---- */
 html body #view-guest#view-guest.ev2{color:var(--pl-ink)}

@@ -13382,7 +13382,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   const go=()=>{ const v=document.getElementById("view-programs"); if(!v) return; up(); new MutationObserver(up).observe(v,{childList:true}); const t=setInterval(up,300); setTimeout(()=>clearInterval(t),6000) };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
 </script>
-<style>#signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .btn.sm,#view-guest a.btn.ghost{min-height:44px}#view-guest label:has(> #g-showme),#view-guest label:has(> #gRemember){min-height:44px;align-items:center}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
+<style>#signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .ev2-acts .btn{min-height:44px!important}p.note.ev2-foot a{display:inline-flex!important;align-items:center;min-height:44px}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.

@@ -148,7 +148,7 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
   /** Before a reply: null when it's fine, else the refusal. Members-only needs a member; members-first waits for the window. */
   function rsvpGate(ws, id, emails = []) { const v = visOf(ws, id); if (!v) return null; const E = emails.map(lc).filter(Boolean), c = config(ws);
     if (v.only && !E.some((e) => canSee(ws, e))) return { code: "club_only", message: `This one is for ${c.name} only. Join the fan club on ${C.profileOf(ws)?.name || "the host"}'s page to get in.`, handle: handleOf(ws) };
-    if (!v.only && v.earlyUntil && v.earlyUntil > clock() && !E.some((e) => canSee(ws, e))) return { code: "club_early", message: `${c.name} get first dibs until ${new Date(v.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Join the fan club to book now, or come back then.`, handle: handleOf(ws), until: v.earlyUntil };
+    if (!v.only && v.earlyUntil && v.earlyUntil > clock() && !E.some((e) => canSee(ws, e))) return { code: "club_early", message: `${c.name} can reply first, until ${new Date(v.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Join the fan club to book now, or come back then.`, handle: handleOf(ws), until: v.earlyUntil };
     return null; }
 
   // ---- posts ----
@@ -213,7 +213,7 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
     const until = earlyUntil ? new Date(earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
     for (const m of M) await tellOne(req, ws, m.email, { club: true, key: `club-${id}`, eventId: id, link, subject: v.only ? `Members only: ${title}` : `Early access: ${title}`,
       text: v.only ? `${c.name}: ${title}, for members only.` : earlyUntil ? `${c.name} first: ${title}. Open to members until ${until}.` : `${h.name}: ${title}`,
-      body: v.only ? `${h.name} made a ${kind} for ${c.name} only: ${title}.` : earlyUntil ? `${h.name} has a new ${kind}: ${title}. ${c.name} get first dibs until ${until}, before it opens to everyone.` : `${h.name} has a new ${kind}: ${title}.` });
+      body: v.only ? `${h.name} made a ${kind} for ${c.name} only: ${title}.` : earlyUntil ? `${h.name} has a new ${kind}: ${title}. ${c.name} can reply first, until ${until}. Then it opens to everyone.` : `${h.name} has a new ${kind}: ${title}.` });
     if (v.only) return;
     if (earlyUntil > Date.now()) return; // followers hear when it opens (runJobs)
     await tellFollowers(req, ws, id, memberSet); } catch (e) { console.warn("[fanclub] publish", e?.message); } }

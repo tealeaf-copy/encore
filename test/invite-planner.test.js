@@ -300,7 +300,7 @@ test("seats: members get their block first, everyone else waits for the open tim
   const m1 = await person("Mia One"), m2 = await person("Max Two"), m3 = await person("Moe Three"), pub = await person("Pat Public");
   for (const m of [m1, m2, m3]) assert.equal((await post("/api/me/club/bo-seats/join", {}, m.cookie)).status, 200);
   // the guest side, plain
-  assert.equal((await getJ(`/api/public/seats/${id}`, m1.cookie)).line, "Members get first dibs. 2 member seats left.");
+  assert.equal((await getJ(`/api/public/seats/${id}`, m1.cookie)).line, "Members can reply first. 2 member spots left.");
   const pl = await getJ(`/api/public/seats/${id}`, pub.cookie); assert.match(pl.line, /^Opens to everyone \w{3} \d/); assert.equal(pl.remind, true); assert.ok(!/member|Fan club/i.test(JSON.stringify(pl)), "the public never reads about other blocks");
   // the public waits; members get in
   r = await guestRsvp(bo.ws, { eventId: id, name: "Pat Public", email: pub.email, response: "going" }, pub.cookie); assert.equal(r.status, 403); assert.equal((await r.json()).code, "seats_not_open");
@@ -368,8 +368,8 @@ test("seats: paid supporter tiers get their own block on the web and are never n
   const sApp = await getJ(`/api/plan/${id}/seats`, bo.cookie, APP); assert.ok(!sApp.kinds.includes("tier") && !sApp.tiers.length, "the app never offers paid tiers");
   const t = Date.now(); await post(`/api/plan/${id}/seats`, { on: true, blocks: [{ id: "pat", kind: "tier", tier: "founding", n: 2, opensAt: t - 1000 }, { id: "all", kind: "everyone", n: 4, opensAt: t + 48 * 3600e3 }] }, bo.cookie);
   const fan = await person("Fay Patron"); assert.equal((await post("/api/public/pledge", { handle: "bo-tier", tier: "founding", email: fan.email, name: fan.name }, fan.cookie)).status, 200);
-  assert.equal((await getJ(`/api/public/seats/${id}`, fan.cookie)).line, "Supporters get first dibs. 2 supporter seats left.");
-  const inApp = await getJ(`/api/public/seats/${id}`, fan.cookie, APP); assert.ok(!/supporter|patron|founding|tier/i.test(inApp.line), inApp.line); assert.equal(inApp.line, "You get first dibs. 2 early seats left.");
+  assert.equal((await getJ(`/api/public/seats/${id}`, fan.cookie)).line, "Supporters can reply first. 2 supporter spots left.");
+  const inApp = await getJ(`/api/public/seats/${id}`, fan.cookie, APP); assert.ok(!/supporter|patron|founding|tier/i.test(inApp.line), inApp.line); assert.equal(inApp.line, "You can reply first. 2 early spots left.");
   assert.ok(!/founding|Supporter/i.test(JSON.stringify((await getJ(`/api/plan/${id}/seats`, bo.cookie, APP)).blocks)), "the host's own app view doesn't name it either");
   assert.equal((await guestRsvp(bo.ws, { eventId: id, name: fan.name, email: fan.email, response: "going" }, fan.cookie)).status, 200);
   // the app can't wipe out the paid block when it saves

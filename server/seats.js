@@ -10,7 +10,7 @@
 // the server inside the reply (server/app.js rsvpPolicy), and a short hold counts replies still in flight so two people
 // can't both take the last seat of a block. The rsvp keeps `seatBlock`.
 //
-// The guest side is plain: a member reads "Members get first dibs. 2 member seats left.", everyone else "Opens to
+// The guest side is plain: a member reads "Members can reply first. 2 member spots left.", everyone else "Opens to
 // everyone Wed 9am" with Remind me, or the waitlist when their block is full. In the app (isNativeReq) paid tiers are
 // never named: a supporter block reads as early access, and the host can't add one there.
 import crypto from "node:crypto";
@@ -129,9 +129,9 @@ export function makeSeats({ store, P, F = null, now: clock = () => Date.now() })
     const em = lc(email), person = em ? P.byKey(ws, em) : null;
     const E = s.blocks.filter((b) => b.kind !== "everyone" && eligible(ws, b, em, person)).sort((a, b) => RANK[a.kind] - RANK[b.kind]), open = s.open;
     const word = (b) => (b.kind === "tier" ? (native ? "early" : "supporter") : b.kind === "club" ? "member" : b.kind === "regulars" ? "regular" : b.kind === "new" ? "first-timer" : "early");
-    const who = (b) => (b.kind === "tier" ? (native ? "You get" : "Supporters get") : b.kind === "club" ? "Members get" : b.kind === "regulars" ? "Regulars get" : b.kind === "new" ? "First-timers get" : "You get");
+    const who = (b) => (b.kind === "tier" ? (native ? "You" : "Supporters") : b.kind === "club" ? "Members" : b.kind === "regulars" ? "Regulars" : b.kind === "new" ? "First-timers" : "You");
     const mineB = E.find((b) => b.open && b.left > 0) || E.find((b) => !b.open && b.left > 0);
-    if (mineB && mineB.open) return { on: true, line: `${who(mineB)} first dibs. ${mineB.left === 1 ? `1 ${word(mineB)} seat left.` : `${mineB.left} ${word(mineB)} seats left.`}`, can: true, left: mineB.left };
+    if (mineB && mineB.open) return { on: true, line: `${who(mineB)} can reply first. ${mineB.left === 1 ? `1 ${word(mineB)} spot left.` : `${mineB.left} ${word(mineB)} spots left.`}`, can: true, left: mineB.left };
     if (mineB) return { on: true, line: `Your early access opens ${fmtOpen(mineB.opensAt, ev)}.`, can: false, remind: true, opensAt: mineB.opensAt };
     if (!open.open) return { on: true, line: `Opens to everyone ${fmtOpen(open.opensAt, ev)}.`, can: false, remind: true, opensAt: open.opensAt };
     if (open.left > 0) return { on: true, line: open.left <= 5 ? `${open.left} ${open.left === 1 ? "spot" : "spots"} open to everyone.` : "", can: true, left: open.left };

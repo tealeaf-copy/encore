@@ -1353,7 +1353,7 @@ export function createApp({ store, dataDir }) {
   const CRM_WRITES = new Set(["upsert_event_attendees", "log_followups", "rollup_account_spend"]);
   const isRevOps = (u) => !!u && (u.roles || []).some((r) => /^(rev\s?ops|revenue operations|crm admin|sales ?ops)$/i.test(String(r).trim()));
   const canWriteCrm = (req) => isRevOps(currentUser(req)) || (!authEnabled() && sessionWorkspace(req) === DEFAULT_WS && !teamOf(DEFAULT_WS).length);
-  const crmSummary = (tool, input) => tool === "upsert_event_attendees" ? `add ${(input?.members || []).length} attendees to the "${input?.eventName || "event"}" campaign`
+  const crmSummary = (tool, input) => tool === "upsert_event_attendees" ? `add ${(input?.members || []).length} guests to the "${input?.eventName || "event"}" campaign`
     : tool === "log_followups" ? `log ${(input?.items || []).length} follow-up next steps for ${input?.eventName || "an event"}`
     : `write event spend onto ${(input?.accounts || []).length} accounts`;
   app.get("/api/crmwrites", (req, res) => {
@@ -1590,7 +1590,7 @@ export function createApp({ store, dataDir }) {
       const utm = cleanUtm(b.utm); delete b.utm;
       // Ticketed dinners can open to followers first: everyone else waits until the window closes.
       if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws0 = workspaceOfEvent(String(b.eventId)), ev0 = ws0 && scopeStore(store, ws0).get("events/" + String(b.eventId))?.data;
-        if (ev0 && earlyAccessBlocks(ev0, C.followersOf(ws0).some((f) => f.email === String(b.email || "").trim().toLowerCase()))) { res.status(403).json({ code: "early_access", message: `Followers get first dibs until ${new Date(ev0.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Follow the host with this email to book now, or come back then.` }); return false; } }
+        if (ev0 && earlyAccessBlocks(ev0, C.followersOf(ws0).some((f) => f.email === String(b.email || "").trim().toLowerCase()))) { res.status(403).json({ code: "early_access", message: `Followers can reply first, until ${new Date(ev0.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Follow the host with this email to book now, or come back then.` }); return false; } }
       // fan clubs (server/fanclub.js): members-only events and the members-first window
       if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws1 = workspaceOfEvent(String(b.eventId)), fc = ws1 && !app.locals.invites?.isInvited?.(ws1, String(b.eventId), [b.email, currentUser(req)?.email]) && app.locals.fanclub?.rsvpGate(ws1, String(b.eventId), [b.email, currentUser(req)?.email]); /* a personal invite (server/invites.js) skips the members-first wait */ if (fc) { res.status(403).json(fc); return false; } }
       // answers to the host's own questions: a few short values, plain text only

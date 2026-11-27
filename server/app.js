@@ -40,6 +40,7 @@ import { mountInterest } from "./interest.js"; // one page per experience or sho
 import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
+import { mountTeamUp, publicTeamUp } from "./collab.js"; // Team up: hosts hosting together (server/collab.js)
 import { mountOnboard } from "./onboard.js";
 import { mountSignin, signinEmailConfig } from "./signin.js";
 import { mountDirectory } from "./directory.js";
@@ -207,6 +208,7 @@ PUBLIC_FIELDS.push("priceTiers");
 // the create canvas (public/canvas.js): the host's own sections, links, an accessibility note and co-hosts, cleaned in
 // publicEvent below and drawn on both invites by public/sections.js
 PUBLIC_FIELDS.push("sections", "links", "accessNote", "cohosts");
+PUBLIC_FIELDS.push("teamUp"); // Team up (server/collab.js): the two hosts of a joint event, cleaned to names and faces in publicExtras
 PUBLIC_FIELDS.push("planKind"); // what the host is planning: a table, a weekend away, a summit (server/kinds.js); the parts with addresses stay off the public doc
 PUBLIC_FIELDS.push("cancelled", "example"); // the event audit: a cancelled event says so to guests, and an example says it is one
 PUBLIC_FIELDS.push("endDate", "included"); // review 16: a weekend away's last day; what's included (a workshop's materials)
@@ -217,6 +219,7 @@ export function publicExtras(e) {
   if (e.accessNote != null) e.accessNote = cleanStr(e.accessNote, 300);
   if (e.included != null) e.included = (Array.isArray(e.included) ? e.included : []).map((x) => cleanStr(x, 120)).filter(Boolean).slice(0, 20);
   // co-hosts: a Pottery Lab handle and the name the host typed, never an email
+  if (e.teamUp != null) { const t = publicTeamUp(e.teamUp); if (t) e.teamUp = t; else delete e.teamUp; } // Team up hook (server/collab.js): hosts only, never the split
   if (e.cohosts != null) e.cohosts = (Array.isArray(e.cohosts) ? e.cohosts : []).map((c) => ({ handle: /^@?[a-z0-9][a-z0-9-]{1,29}$/i.test(String(c?.handle || "")) ? String(c.handle).replace(/^@/, "").toLowerCase() : "", name: /@.*\./.test(String(c?.name || "")) ? "" : cleanStr(c?.name, 60) })).filter((c) => c.handle || c.name).slice(0, 6);
   return e;
 }
@@ -852,6 +855,7 @@ export function createApp({ store, dataDir }) {
   app.locals.proposals = mountProposals(app, { store, small, currentUser, C: BC, X, PUBLIC_DIR, assetsDir, publicOrigin: (req) => originOf(req) }); // brand proposals (server/proposals.js), after the team bookings it builds on
   mountBrand(app, { small, currentUser });
   mountCollabs(app, { store, small, currentUser, C, X });
+  app.locals.teamup = mountTeamUp(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) }); // Team up hook (server/collab.js)
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });
   // the events directory: /events, its read-only API (/api/v1) for people and agents, and a public MCP server (/mcp/public)
   mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect: GUEST_REDIRECT, publicOrigin: (req) => originOf(req) });
@@ -2014,6 +2018,7 @@ export function createApp({ store, dataDir }) {
       const line = (typeof req.hostLine === "function" && req.hostLine(now, who, title)) || { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Plans change. Their spot is open again.${after.paid ? " They had paid." : after.paidClaim ? " They said they paid." : ""}` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
       // review round 7: a pre-order reply says what they ordered
       if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: now === "going" && after.order ? `🛍 ${who} ordered ${String(after.order).slice(0, 160)} (${title}).` : line, link: studio, eventId });
+      if (line && ev.teamUp) { try { app.locals.teamup?.onReply(ws, ev, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: line, link: studio, eventId }); } catch {} } // Team up hook: both hosts hear replies (server/collab.js)
       let firstYes = false;
       // the first yes on an event also reaches the host's own inbox, once: a host planning their first dinner is rarely in the app when it lands (review round 18). Every reply after it stays in the bell.
       if (now === "going" && was !== "going" && !after.order && !ev.drop && !ev.example && X.canEmail(owner) && String(after.email || "").toLowerCase() !== String(owner).toLowerCase() && St.list("rsvps").filter((d) => d.data?.eventId === eventId && d.data?.response === "going").length === 1) { try { await mailWs(ws, { to: owner, subject: `${who} is in for ${title}`, text: `${who} is in. That's the first reply for ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nSee who's coming: ${originOf(req)}${studio}\n\n${RD.wants(owner) ? "After this one, replies come as one short summary every few hours, never one by one. You can turn that off in Settings." : "The next replies wait in your bell, not your inbox."}\n`, eventId, kind: "firstyes" }); firstYes = true; RD.sent(ws, eventId); } catch {} }

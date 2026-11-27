@@ -78,6 +78,7 @@ function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; c
   // a prepared page's past events (its scrapbook), read-only: title, date, place (neighborhood or city), a note, a shipped cover and the original link
 export { PREVIEW_LABEL, feedPreviews, previewListed } from "./previews.js";
 import { previewListed } from "./previews.js";
+import { collabFlag, jointRefs } from "./collab.js"; // Team up hook: joint events on both pages, collab: true on cards (server/collab.js)
 export function showcasePast(L) { const s = (v, n) => String(v ?? "").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
     return (Array.isArray(L) ? L : []).slice(0, 60).map((x, i) => { let link = ""; try { const u = new URL(String(x?.link || "")); if (u.protocol === "https:") link = u.href; } catch {}
       const host = link ? new URL(link).hostname : "", source = /partiful/i.test(host) ? "Partiful" : /lu\.ma|luma\.com/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : link ? "Web" : "";
@@ -180,13 +181,17 @@ export function makeCommunity(store) {
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
     if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood && sameCity(e.city, host.city)) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; const priceLine = (() => { try { return priceOf(e) || ""; } catch { return ""; } })();
     const episode = (() => { try { return episodeNumber(store, id); } catch { return null; } })(); // review round 13: "Hack night #14" (server/episodes.js)
-    return { id, ...o, etype: typeOf(e), ...(priceLine ? { priceLine } : {}), ...(episode ? { episode } : {}), ...(e.drop ? { pickup: globalThis.PLPickup.line(e), always: !!e.always } : {}) /* a drop's pickup, in the shared words */, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
+    return { id, ...o, etype: typeOf(e), ...(priceLine ? { priceLine } : {}), ...(episode ? { episode } : {}), ...(e.drop ? { pickup: globalThis.PLPickup.line(e), always: !!e.always } : {}) /* a drop's pickup, in the shared words */, ...collabFlag(e, host?.handle) /* Team up hook (server/collab.js) */, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
   // onPage: the host's own page shows every event they published there; "unlisted" only keeps it off Discover.
   // privateToo: link-only events that were shared (published). Past ones belong in the scrapbook (title, date, cover,
   // photos and kudos; never the place or who came); upcoming ones are only ever shown to the host themselves.
   // A host can keep one off with scrapbook: false.
   const isPrivateShared = (e) => !e.discoverable && !!e.published && e.scrapbook !== false && !e.cancelled;
-  function eventsOf(ws, { upcoming = true, discoverableOnly = true, onPage = false, privateToo = false, owner = false } = {}) {
+  function eventsOf(ws, opts = {}) { const own = eventsOfWs(ws, opts); if (opts._joint) return own;
+    // Team up hook (server/collab.js): a joint event shows on the partner host's page too, as the owner's page shows it (never their private ones)
+    let add = []; try { add = jointRefs(ws).map(([ow, id]) => eventsOfWs(ow, { ...opts, owner: false, _joint: true }).find((c) => c.id === id && !c.private)).filter(Boolean); } catch {}
+    return add.length ? [...own, ...add].sort((a, b) => String(a.date || "9").localeCompare(String(b.date || "9"))) : own; }
+  function eventsOfWs(ws, { upcoming = true, discoverableOnly = true, onPage = false, privateToo = false, owner = false } = {}) {
     const today = new Date().toISOString().slice(0, 10), host = profileOf(ws);
     const listed = (e) => !discoverableOnly || (e.discoverable && (onPage || !e.unlisted)) || (privateToo && isPrivateShared(e));
     // the host's own page: what they hid stays off it for everyone else (still live by its link); the owner gets it marked
@@ -237,7 +242,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
   function discover({ all = false } = {}) {
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
-    for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
+    for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws, { _joint: true } /* Team up: the owner lists it */).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false, _joint: true }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
       // public lists show finished pages: a real name (not just the handle), a line about them, and a face or photo.
       // Unfinished pages still work by link; they just aren't featured until they're ready.
       const ready = !pageGaps(h).length;

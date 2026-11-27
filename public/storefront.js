@@ -290,12 +290,14 @@
         <h4>Tagline</h4><input id="sp-tag" maxlength="90" value="${(st.tagline || "").replace(/"/g, "&quot;")}" placeholder="e.g. Saturday runs, no one left behind">
         <h4>Links</h4>${[0, 1, 2, 3].map((i) => `<div class="sp-link"><input data-ll="${i}" placeholder="Label" value="${(st.links[i]?.label || "").replace(/"/g, "&quot;")}" maxlength="24"><input data-lu="${i}" placeholder="https://instagram.com/…" value="${(st.links[i]?.url || "").replace(/"/g, "&quot;")}"></div>`).join("")}
         <h4>Hosts you recommend</h4><p class="sp-hint" style="font-size:13px;color:#6B5F56;margin:-4px 0 8px">They show on your page. You show on theirs.</p>${[0, 1, 2, 3, 4, 5].map((i) => `<div class="sp-link"><input data-rh="${i}" list="spRecHosts" placeholder="Name or @handle" value="${st.recommends[i]?.handle ? "@" + st.recommends[i].handle : ""}"><input data-rn="${i}" placeholder="Why? (optional)" maxlength="120" value="${(st.recommends[i]?.note || "").replace(/"/g, "&quot;")}"></div>`).join("")}<datalist id="spRecHosts"></datalist>
+        <div id="spTeamUp"></div><!-- Team up hook: "Open to teaming up" (public/collab.js) -->
         <div id="spProof"></div>
         <h4>Show on your page</h4><div class="sp-tog">${[["past", "Past events"], ["kudos", "What guests say"], ["photos", "Photos"], ["tips", "Support and wishlist"], ...(friends ? [] : [["hire", "For brands"]]), ["profile", "Your host traits"]].map(([k, l]) => `<label><input type="checkbox" data-sec="${k}" ${st.sections[k] ? "checked" : ""}> ${l}</label>`).join("")}</div>
         <div id="spSupport"></div><div class="sp-actions"><button type="button" class="sp-save" id="sp-save">Save</button><span id="sp-msg"></span></div>`;
       if (!friends) proofEditor(pane.querySelector("#spProof"));
       try { window.EncoreSupport?.mount(pane.querySelector("#spSupport"), mine); window.EncoreSupport?.mountName(pane.querySelector("#spName")); } catch {}
       try { window.IgImport?.settingsRow(pane.querySelector("#spIg")); } catch {} // hook: "Import from Instagram" (public/igimport.js)
+      try { window.EncoreTeamUp?.settingsRow(pane.querySelector("#spTeamUp")); } catch {} // Team up hook: the switch and the pitch (public/collab.js)
       pane.querySelector(".sp-x").onclick = () => { pane.hidden = true; };
       pane.querySelector("#sp-copy").onclick = async () => { const b = pane.querySelector("#sp-copy"), link = `${location.origin}/@${h.handle}`;
         // a browser can refuse the clipboard: then show the link, selected, so it can be copied by hand

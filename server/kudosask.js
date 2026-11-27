@@ -15,6 +15,7 @@ import { localParts, pottoSettings } from "./reminders.js";
 import { eventTz } from "./tz.js";
 import { KUDOS_TAGS, kudosTagsFor, replyKey } from "./social.js";
 import { mountKudosNudge } from "./kudosnudge.js";
+import { teamUpNames } from "./collab.js";
 import { nextFor } from "./repeats.js"; // review round 7: "Nothing like it coming up" shows the series' next date // kudos nudges: the host's sheet, the group link, Send for me, the reminder
 
 const DAY = 864e5, MORNING = 9, EVENING = 21, LAST_DAY = 3;
@@ -26,7 +27,7 @@ const isDemo = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""
 const askId = (eventId, rid) => `${eventId}--${String(rid).replace(/[^A-Za-z0-9_-]/g, "")}`;
 
 /** The host's first name as guests know it (the same order the invite uses). */
-export function hostFirst(C, ws, ev) { return first(ev?.hostName) || first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name) || first(C?.profileOf?.(ws)?.name) || ""; }
+export function hostFirst(C, ws, ev) { return teamUpNames(ev) /* Team up hook: "Maya and Sam" (server/collab.js) */ || first(ev?.hostName) || first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name) || first(C?.profileOf?.(ws)?.name) || ""; }
 /** The one line every guest gets. */
 export function askLine(title, host, link) { return host ? `How was ${title} at ${host}'s? Leave kudos in one tap: ${link}` : `How was ${title}? Leave kudos in one tap: ${link}`; }
 export const kudosLink = (origin, eventId, rid, code) => `${origin}/k/${encodeURIComponent(eventId)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`;

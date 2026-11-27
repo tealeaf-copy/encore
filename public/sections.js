@@ -38,7 +38,8 @@
   /** Everything this file adds to an invite, as HTML. `full`: the full invite, which already shows dress, playlist and getting there. */
   function html(e, { full = false } = {}) { if (!e) return ""; const out = [];
     const co = (Array.isArray(e.cohosts) ? e.cohosts : []).map((c) => str(c?.name || (c?.handle ? "@" + String(c.handle).replace(/^@/, "") : ""), 60)).filter(Boolean);
-    if (co.length) out.push(`<p class="evs-co">${svg("people")}<span>With ${esc(co.length > 1 ? co.slice(0, -1).join(", ") + " and " + co[co.length - 1] : co[0])}</span></p>`);
+    const tu = hostedBy(e); if (tu) out.push(tu); // Team up hook (server/collab.js): "Hosted by Maya and Sam", both faces and Follow, in place of the co-host line (and of the light invite's one-host row)
+    else if (co.length) out.push(`<p class="evs-co">${svg("people")}<span>With ${esc(co.length > 1 ? co.slice(0, -1).join(", ") + " and " + co[co.length - 1] : co[0])}</span></p>`);
     if (!full) { if (str(e.dress, 80)) out.push(block("shirt", "Dress code", `<p>${esc(str(e.dress, 80))}</p>`));
       if (https(e.playlistUrl)) out.push(block("music", "Playlist", `<p><a href="${esc(https(e.playlistUrl))}" target="_blank" rel="noopener nofollow">Open the playlist</a></p>`));
       const gt = (Array.isArray(e.getThere) ? e.getThere : []).map((s) => str(s?.x, 200)).filter(Boolean); if (gt.length) out.push(block("car", "Parking and getting there", gt.map((x) => `<p>${esc(x)}</p>`).join(""))); }
@@ -47,7 +48,15 @@
     if (str(e.accessNote, 300)) out.push(block("access", "Accessibility", `<p>${para(str(e.accessNote, 300))}</p>`));
     for (const s of clean(e.sections)) out.push(block(s.icon, s.title || "A note from the host", s.body ? `<p>${para(s.body)}</p>` : ""));
     return out.length ? `<div class="evs" id="evSections">${out.join("")}</div>` : ""; }
-  const CSS = `.evs-inc{margin:0;padding-left:20px}.evs-inc li{margin:2px 0}.evs{display:grid;gap:4px;margin:16px 0 8px}.evs-b{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
+  // ---- Team up (server/collab.js): a joint event's two hosts, each with a face, a link to their page and Follow ----
+  const HANDLE = /^[a-z0-9][a-z0-9-]{1,29}$/;
+  function hostedBy(e) { const H = (Array.isArray(e?.teamUp?.hosts) ? e.teamUp.hosts : []).filter((h) => HANDLE.test(String(h?.handle || ""))).slice(0, 2); if (H.length !== 2) return "";
+    const A = root.EncoreAvatars, nm = (h) => str(h.first || String(h.name || "").split(" ")[0], 30) || "@" + h.handle;
+    const face = (h) => /^(\/_blob\/[A-Za-z0-9_-]{6,80}|https:\/\/[^\s"<>()]+)$/.test(String(h.avatarUrl || "")) ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && A?.svg ? A.svg(String(h.avatarArt), /^#[0-9a-f]{3,8}$/i.test(h.accent || "") ? h.accent : "#29489A", 44) : `<span aria-hidden="true">${esc(nm(h)[0])}</span>`;
+    return `<section class="evs-hb" aria-label="Hosted by ${esc(nm(H[0]))} and ${esc(nm(H[1]))}"><h3>Hosted by ${esc(nm(H[0]))} and ${esc(nm(H[1]))}</h3><ul>${H.map((h) => `<li><a class="evs-hf" href="/@${esc(h.handle)}"><span class="evs-face">${face(h)}</span><span><b>${esc(str(h.name, 60) || nm(h))}</b></span></a><button type="button" class="plf-btn" data-pl-follow="${esc(h.handle)}" data-name="${esc(str(h.name, 60) || nm(h))}">Follow</button></li>`).join("")}</ul></section>`; }
+  const CSS = `body:has(.evs-hb) .hrow{display:none!important}.evs-hb{padding:14px 0;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}.evs-hb:first-child{border-top:0}.evs .evs-hb h3{margin:0 0 8px;font:600 17px/1.3 var(--sys-title,"IBM Plex Sans"),system-ui,sans-serif!important}.evs-hb ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.evs-hb li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}.evs-hf{display:flex;gap:10px;align-items:center;min-height:44px;color:inherit;text-decoration:none;min-width:0}.evs-hf b{font-weight:600;overflow-wrap:anywhere}.evs-face{flex:none;width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,currentColor 10%,transparent);font-weight:600}.evs-face svg,.evs-face img{width:100%;height:100%;object-fit:cover;display:block}
+.evs-inc{margin:0;padding-left:20px}.evs-inc li{margin:2px 0}.evs{display:grid;gap:4px;margin:16px 0 8px}.evs-b{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
 .evs-b:first-child{border-top:0}.evs-ic{width:20px;height:20px;margin-top:2px;opacity:.8}.evs .evs-b h3{margin:0 0 4px;font:600 17px/1.3 var(--sys-title,"IBM Plex Sans"),system-ui,sans-serif!important;letter-spacing:-.005em}
 .evs-b p{margin:0 0 6px;font-size:16px;line-height:1.55;overflow-wrap:anywhere}.evs-b p:last-child{margin-bottom:0}.evs-b a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .evs-co{display:flex;gap:10px;align-items:center;margin:0 0 4px;font-weight:500}.evs-co .evs-ic{margin:0}`;
@@ -57,13 +66,14 @@
   const light = /^\/[ei]\/[A-Za-z0-9_-]{2,80}$/.test(location.pathname), id = light ? location.pathname.split("/")[2] : "";
   let ev = null, asked = false, t = 0;
   const put = (at, h, where) => { const old = document.getElementById("evSections"), sig = h.length + ":" + where + ":" + [...h].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0); if (old && old.dataset.sig === sig && old.previousElementSibling === at) return; old?.remove(); if (!h || !at) return; css(); at.insertAdjacentHTML(where, h); const n = document.getElementById("evSections"); if (n) n.dataset.sig = sig; };
+  const needFollow = (e) => { if (!e?.teamUp || root.PLFollow || document.querySelector('script[src^="/follow.js"]')) return; const t = document.createElement("script"); t.src = "/follow.js"; t.defer = true; document.head.appendChild(t); }; // Team up: Follow on both hosts
   const run = () => {
     if (light) { const m = document.getElementById("m"); if (!m || !m.querySelector("h1")) return;
       if (id === "_preview") ev = root.__pvEv || null; // the create canvas's live preview (public/invite-preview.js)
       if (!ev) { if (!asked && id !== "_preview") { asked = true; fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)).then((j) => { ev = j?.data || j || {}; run(); }).catch(() => {}); } return; }
       const kits = m.querySelectorAll(":scope > .kit"), at = kits[kits.length - 1] || m.querySelector(":scope > .why") || m.querySelector(":scope > .host") || m.querySelector(":scope > .facts");
-      return put(at, html(ev), "afterend"); }
+      needFollow(ev); return put(at, html(ev), "afterend"); }
     if (location.pathname === "/g" && /^#rsvp-/.test(location.hash)) { const e = root.__gEv, inn = document.querySelector("#view-guest .in"); if (!e || !inn) return;
-      const at = inn.querySelector(":scope > .ev2-extras") || inn.querySelector(":scope > .gk") || inn.querySelector(":scope > .gxfacts"); return put(at, html(e, { full: true }), "afterend"); } };
+      const at = inn.querySelector(":scope > .ev2-extras") || inn.querySelector(":scope > .gk") || inn.querySelector(":scope > .gxfacts"); needFollow(e); return put(at, html(e, { full: true }), "afterend"); } };
   if (light || location.pathname === "/g") new MutationObserver(() => { clearTimeout(t); t = setTimeout(run, 150); }).observe(document.documentElement, { childList: true, subtree: true });
 })(typeof window !== "undefined" ? window : globalThis);

@@ -237,7 +237,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     for (const c of D.events) { const H = hosts.get(c.host?.handle); if (!H || !ID_OK.test(String(c.id)) || c.private || c.unlisted) continue; if ((c.date || "9999") < now) continue; events.push(fromCard(c, H, "upcoming")); }
     // past: what each page shows under "Past events"
     for (const H of hosts.values()) { if (H.pastOff) continue; const seen = new Set();
-      if (H.ws) for (const c of C.eventsOf(H.ws, { upcoming: false })) { if (c.private || c.unlisted || !ID_OK.test(String(c.id))) continue; seen.add(`${String(c.title || "").toLowerCase()}|${c.date || ""}`); events.push(fromCard(c, H, "past")); }
+      if (H.ws) for (const c of C.eventsOf(H.ws, { upcoming: false, _joint: true /* Team up: once, under the owner */ })) { if (c.private || c.unlisted || !ID_OK.test(String(c.id))) continue; seen.add(`${String(c.title || "").toLowerCase()}|${c.date || ""}`); events.push(fromCard(c, H, "past")); }
       const items = H.ws ? SB.publicItems(H.ws) : H.h.scrapbook || [];
       for (const x of items) { const date = /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : ""; if (date && date >= now) continue;
         const k = `${String(x.title || "").toLowerCase()}|${date}`; if (seen.has(k)) continue; seen.add(k);

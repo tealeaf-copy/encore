@@ -73,6 +73,10 @@ const APIS = `
 /api/public/profile/mai-routes|out host guest
 /api/public/shop/mai-routes|out host guest
 /api/public/collabs/mai-routes|out host guest
+/api/public/teamup/mai-routes|out host guest
+/api/teamup/with/mai-routes|out host guest
+/api/teamup/me|out host guest
+/api/teamup/matches|out host guest
 /api/public/event-host/rtOpen|out host guest
 /api/public/event-host/rtPast|out host guest
 /api/public/episode/rtOpen|out host guest
@@ -133,6 +137,7 @@ const APIS = `
 /api/brand|host guest
 /api/codes|host guest
 /api/collabs|host guest
+/api/teamup/requests|host guest
 /api/email/status|host guest
 /api/help/tickets|host guest
 /api/host/profile|host guest

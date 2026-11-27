@@ -13,6 +13,7 @@ import { eventTz, zonedMs, hourIn } from "./tz.js";
 import { pottoSettings } from "./reminders.js";
 import { addressOpen } from "./drops.js";
 import { payStateOf } from "./droppay.js"; // an unpaid drop order's day-before email is the pay reminder (server/droppay.js)
+import { teamUpHas, partnerWsOf } from "./collab.js"; // Team up hook: joint events reach both audiences and count for both hosts (server/collab.js)
 import { newWithHost } from "./tables.js"; // review round 13: the one "New" (first time with this host)
 import { momentKind, momentMaxBytes, videoSeconds, sniffedAs, unreadVideoMaxBytes, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
@@ -236,7 +237,7 @@ export function makeSocial(store, { C, saveBlob }) {
     for (const k of I.kudos) if (F.includes(lc(k.email)) && k.love && canSee(k.eventId) && k.at > recent) items.push({ kind: "kudos", at: k.at, who: people.get(lc(k.email)), love: k.love, tags: k.tags || [], event: evCard(I.events.get(k.eventId)) });
     const followedWs = []; for (const x of new Set([...I.events.values()].map((v) => v.ws))) if (C.followersOf(x).some((f) => f.email === me)) followedWs.push(x);
     for (const w of followedWs) { const hp = C.profileOf(w), hostP = { name: hp?.name || "", handle: hp?.handle, emoji: hp?.emoji || "🎉", color: hp?.color, email: getWorkspace(w)?.ownerEmail || "" };
-      for (const x of I.events.values()) { if (x.ws !== w || !isPublic(x.e)) continue; if (F.includes(lc(x.owner))) continue;
+      for (const x of I.events.values()) { if ((x.ws !== w && !teamUpHas(x.e, hp?.handle)) || !isPublic(x.e)) continue; if (F.includes(lc(x.owner))) continue; if (x.ws !== w && followedWs.includes(x.ws)) continue; /* Team up hook: a joint event reaches the partner's followers, once */
         if ((x.e.date || "9") >= today()) items.push({ kind: "hosting", at: x.e.updatedAt || x.e.createdAt || now, who: hostP, event: evCard(x) });
         else if (Date.parse(x.e.date) > recent) { const K = I.kudos.filter((k) => k.eventId === x.id && k.love), n = [...I.att.values()].filter((L) => L.some((a) => a.eventId === x.id)).length; items.push({ kind: "recap", at: Date.parse(x.e.date) + 20 * 3600e3, who: hostP, event: evCard(x), count: n, love: K[0]?.love || "", kudos: K.length }); } } }
     items.sort((a, b) => b.at - a.at);
@@ -278,11 +279,11 @@ export function makeSocial(store, { C, saveBlob }) {
   // ---- a host's strengths: what they host, what people say, the vibe ----
   function hostStrengths(ws, { year } = {}) {
     const inYear = (d) => !year || String(d || "").startsWith(String(year));
-    const I = index(), ev = [...I.events.values()].filter((x) => x.ws === ws && x.e.date && x.e.date <= today() && x.e.stage !== "interest" && inYear(x.e.date)), K = I.kudos.filter((k) => k.ws === ws && (!year || new Date(k.at || 0).getFullYear() === +year)).sort((a, b) => b.at - a.at);
+    const I = index(), myH = C.profileOf(ws)?.handle, mineE = (x) => x && (x.ws === ws || teamUpHas(x.e, myH)) /* Team up hook: joint events count for both hosts */, ev = [...I.events.values()].filter((x) => mineE(x) && x.e.date && x.e.date <= today() && x.e.stage !== "interest" && inYear(x.e.date)), K = I.kudos.filter((k) => (k.ws === ws || mineE(I.events.get(k.eventId))) && (!year || new Date(k.at || 0).getFullYear() === +year)).sort((a, b) => b.at - a.at);
     const kinds = {}; for (const x of ev) for (const l of lanesOf(`${x.e.activity || ""} ${x.e.name || ""}`)) kinds[l] = (kinds[l] || 0) + 1;
     const tags = {}; for (const k of K) for (const t of k.tags || []) tags[t] = (tags[t] || 0) + 1;
-    const pastIds = new Set(ev.map((x) => x.id)), guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => a.ws === ws && pastIds.has(a.eventId))) guests.add(em);
-    const returning = [...guests].filter((em) => (I.att.get(em) || []).filter((a) => a.ws === ws && pastIds.has(a.eventId)).length > 1).length;
+    const pastIds = new Set(ev.map((x) => x.id)), guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => pastIds.has(a.eventId))) guests.add(em);
+    const returning = [...guests].filter((em) => (I.att.get(em) || []).filter((a) => pastIds.has(a.eventId)).length > 1).length;
     const tagList = Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([t, n]) => { const T = KUDOS_TAGS.find((x) => x[0] === t); return { tag: t, emoji: T?.[1] || "✨", label: T?.[2] || t, n }; });
     const vibe = tagList.slice(0, 3).map((t) => t.label.toLowerCase());
     const tippers = K.filter((k) => k.tipped).length, hostedN = ev.filter((x) => x.e.casual && x.e.date && x.e.date <= today()).length;
@@ -589,6 +590,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const priorK = P.S.get("kudos/" + P.rid)?.data, freshK = !(priorK && ((priorK.tags || []).length || priorK.love)); P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, verified: kudosVerified(P.S, { eventId: P.r.eventId, rid: P.rid, viaGroup: !!P.viaGroup }), ...(P.viaGroup ? { viaGroup: true } : {}), via: b.via === "ask" ? "ask" : "page", ...(["better", "same", "less"].includes(b.compare) ? { compare: b.compare } : {}), ...(P.S.get("kudos/" + P.rid)?.data?.tipped ? { tipped: true, tip: P.S.get("kudos/" + P.rid).data.tip } : {}), at: Date.now() }); X.bust();
     if (freshK) track("kudos_received", { ws: P.ws, eventId: P.r.eventId });
     const W = getWorkspace(P.ws); X.notify(W?.ownerEmail, { kind: "kudos-in", text: `💌 ${first(P.r.name) || "A guest"} sent kudos for ${P.ev?.pubTitle || P.ev?.name}${love ? `: "${love.slice(0, 80)}"` : ""}`, link: `/?app=1&open=${encodeURIComponent(P.r.eventId)}#studio`, eventId: P.r.eventId });
+    try { for (const w of partnerWsOf(P.ev, P.ws)) X.notify(getWorkspace(w)?.ownerEmail, { kind: "kudos-in", text: `${first(P.r.name) || "A guest"} sent kudos for ${P.ev?.pubTitle || P.ev?.name}, which you hosted together${love ? `: "${love.slice(0, 80)}"` : ""}`, link: P.ev?.fromTeamUp ? `/teamup/${P.ev.fromTeamUp}` : "/feed", eventId: P.r.eventId }); } catch {} // Team up hook: kudos credit both hosts
     const h = C.profileOf(P.ws); res.json({ ok: true, host: h?.handle ? { handle: h.handle, name: h.name } : null }); });
   app.get("/api/host/kudos/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); const kudos = S.list("kudos").filter((d) => d.data?.eventId === id).map((d) => withVerified(S, d.id, d.data)).sort((a, b) => b.at - a.at);
     // "Kudos asked of N guests · M sent": N from the ask job's log, M every kudos with words or chips for this event

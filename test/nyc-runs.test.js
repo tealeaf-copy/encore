@@ -72,7 +72,7 @@ test("New York or not, the weekly repeat, and the words a host types", () => {
   const box = { window: {} }; vm.runInNewContext(src("public/canvas.js"), box); const C = box.window.EventCanvas;
   const L = C.planFromLine("Saturday 8am easy 5K, then coffee", new Date(2026, 10, 27)); assert.equal(L.title, "Easy 5K"); assert.equal(L.startTime, "08:00");
   const W = C.planFromLine("Tuesday tempo run at 6:30pm, every week", new Date(2026, 10, 27)); assert.equal(W.title, "Tuesday tempo run"); assert.equal(W.startTime, "18:30"); assert.equal(W.repeat, "weekly"); assert.match(C.planLineLabel(W), /every week/);
-  assert.match(src("public/canvas.js"), /k === "startTime" && W\[k\] === kt/, "the Fill in button replaces the kind's default time");
+  assert.match(src("public/canvas.js"), /if \(P.startTime && kt && W.startTime === kt\) W.startTime = P.startTime/, "the Fill in button replaces the kind's default time");
 });
 
 test("run sign-up: pace groups, first time, emergency contact and waiver on the host's say, never a food question", () => {

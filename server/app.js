@@ -74,6 +74,7 @@ import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.j
 import { makeReplyDigest } from "./replydigest.js"; // the host's reply summary: one email per event every few hours (server/replydigest.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
+import { mountTrends } from "./trends.js"; // Potto's idea engine: platform trends, trend notes, Potto's ideas (server/trends.js)
 import { mountCuration } from "./curation.js"; // lists people follow: visibility, curators, I'd go again (server/curation.js)
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
 import { mountIdeasNudge } from "./ideasnudge.js"; // "Ideas to try" where people feel stuck; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
@@ -871,6 +872,8 @@ export function createApp({ store, dataDir }) {
   mountSuggest(app, { store, small, currentUser, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
   mountLibrary(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, sendStatic, express }); // server/library.js, after hooks: it reads saves and boards
   mountCuration(app, { store, small, currentUser, C, X, sendStatic }); // server/curation.js: list visibility, curator pages, follows, I'd go again (after the library)
+  // ---- trends: Potto's ideas, grounded in what people here loved (server/trends.js) ----
+  mountTrends(app, { store, express, currentUser, C, X, IDEAS }); // ---- end trends ----
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).

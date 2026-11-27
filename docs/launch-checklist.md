@@ -210,6 +210,7 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `POTTO_WA_TEMPLATE_LANG` | No | Language code for WhatsApp templates on the Cloud API (default `en_US`). |
 | `ENCORE_SUGGEST_PER_MIN`, `ENCORE_SUGGEST_PER_HOUR`, `ENCORE_SUGGEST_TIMEOUT_MS` | No | Potto autocomplete (server/suggest.js): requests per person a minute (30) and an hour (300), half for signed-out visitors, and how long to wait for Potto before showing only the instant suggestions. |
 | `ENCORE_LISTS_NUDGE_MIN` | No | When the lists nudge first shows. |
+| `ENCORE_TRENDS_MIN_HOSTS`, `ENCORE_TRENDS_MIN_GUESTS` | No | How much data Potto needs before it calls a format popular in a city (defaults 3 hosts and 15 guests, server/trends.js). Trend notes ("Trending on social") are edited at `/api/admin/trend-notes` by the people in `ENCORE_ADMIN_EMAILS`, and drop out by themselves after 120 days. |
 | `ENCORE_TZ`, `PM_TZ`, `PM_CRON` | No | The default time zone, and the schedule of the weekday morning job (`off` turns it off). |
 | `ENCORE_DIRECTORY_CACHE_MS`, `ENCORE_INSIGHTS_CACHE_MS`, `ENCORE_LEADERBOARD_CACHE_MS`, `ENCORE_LEADERBOARD_OBSERVE_MS` | No | How long some pages cache their numbers. |
 | `ENCORE_CSP` | No | `report` makes the content security policy report-only (for debugging). |

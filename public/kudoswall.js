@@ -34,6 +34,7 @@
 .kd-tags li{display:inline-flex;align-items:baseline;gap:6px;padding:5px 11px;border:1px solid var(--pl-line);border-radius:999px;background:var(--pl-surface);color:var(--pl-ink);font:500 14px/1.3 var(--sys-sans)}
 .kd-tags b{font-weight:600;color:var(--pl-soft);font-variant-numeric:tabular-nums}
 .kd-list{margin-top:14px;display:grid;gap:var(--kd-gap);grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));align-items:stretch}
+.kd.is-all .kd-list{align-items:start}
 .kd-few .kd-list{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
 .kd.is-row:not(.is-all) .kd-list{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:min(84%,320px);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:0;scrollbar-width:none;padding:2px 2px 6px;margin-inline:-2px}
 .kd.is-row:not(.is-all) .kd-list::-webkit-scrollbar{display:none}

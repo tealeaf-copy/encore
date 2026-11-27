@@ -53,7 +53,7 @@ test("kudos: the first three come from different nights, and guests who came bac
 
 test("kudos: the carousel CSS is scroll snap with a peek, buttons only with a mouse, tokens only", () => {
   assert.match(CSS, /\.kd\.is-row:not\(\.is-all\) \.kd-list\{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:min\(84%,320px\);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;/, "cards a fixed share of the row, so the next one peeks");
-  assert.match(CSS, /scroll-snap-align:start/);
+  assert.match(CSS, /scroll-snap-align:start/); assert.match(CSS, /\.kd\.is-all \.kd-list\{align-items:start\}/, "in the full grid a short note is a short card");
   assert.match(CSS, /\.kd-nav\{display:none;width:44px;height:44px;/); assert.match(CSS, /@media \(hover:hover\) and \(pointer:fine\) and \(min-width:761px\)\{\.kd\.is-row:not\(\.is-all\):not\(\.fits\) \.kd-nav\{display:grid\}\}/);
   assert.match(CSS, /-webkit-line-clamp:var\(--kd-lines,6\)/); assert.match(CSS, /\.kd-card\{--kd-lines:5\}/); assert.match(CSS, /\.kd-card\.has-photo\{--kd-lines:3\}/);
   assert.ok(!/#[0-9a-f]{3,8}\b|rgba?\(/i.test(CSS), "no hard-coded colours: a host's brand kit flows through the tokens");

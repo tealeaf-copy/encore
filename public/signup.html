@@ -4,7 +4,7 @@
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px "IBM Plex Sans",system-ui,sans-serif;background:var(--pl-page);color:var(--pl-ink)}
   form{background:#fff;padding:30px;border-radius:18px;border:1px solid var(--pl-line);box-shadow:0 1px 2px rgba(43,33,28,.05),0 18px 40px -24px rgba(43,33,28,.3);width:min(360px,calc(100vw - 32px));box-sizing:border-box}
-  .brand{display:flex;align-items:center;gap:8px;font:700 20px var(--sys-display);margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:0;font:600 25px/1 var(--sys-display);letter-spacing:-.03em;margin-bottom:18px}
   h1,.h1{margin:0 0 4px;font:600 28px/1.15 var(--sys-display)}.sub{margin:0 0 18px;color:var(--pl-soft);font-size:14px}
   label{display:block;font-size:13px;font-weight:600;color:var(--pl-ink);margin-bottom:12px}
   input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 12px;border-radius:12px}
@@ -95,7 +95,7 @@ form button:not([type=button]):not([role=tab]){min-height:52px;font-size:16px;ma
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
-        wl.innerHTML = `<div class="brand">pottery lab</div><h2 class="h1">You're on the waitlist</h2><p class="done">We'll email you when there's room.</p>`;
+        wl.innerHTML = `<div class="brand"><svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;vertical-align:-7px;margin-right:8px"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent)"/></svg>pottery lab</div><h2 class="h1">You're on the waitlist</h2><p class="done">We'll email you when there's room.</p>`;
       } catch { er.textContent = "Can't reach Pottery Lab. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();

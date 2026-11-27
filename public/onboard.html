@@ -13,7 +13,7 @@ p{margin:0 0 10px}
 a{color:var(--ember2)}
 [hidden]{display:none!important}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;max-width:1080px;margin:0 auto}
-.top .brand{font:600 20px var(--sys-display);color:var(--ink);text-decoration:none}
+.top .brand{display:inline-flex;align-items:center;font:600 25px/1 var(--sys-display);letter-spacing:-.03em;color:var(--ink);text-decoration:none}
 .top .later{font-size:15px;color:var(--smoke)}
 main{max-width:1080px;margin:0 auto;padding:0 16px 80px}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 16px;padding:0;list-style:none}
@@ -122,7 +122,7 @@ label.lab{display:block;font-weight:600;font-size:14.5px;margin:0 0 4px}
 .done-card{text-align:center;padding:28px 18px}
 @media (max-width:520px){.pk-grid{grid-template-columns:1fr}.ev{grid-template-columns:1fr}.ev .ev-f{grid-template-columns:1fr}.potto-row .art{width:60px;height:60px}.say{font-size:16px}.btn{width:100%}.row.end .btn,.sticky-go .btn{width:100%}.spread .btn.link{width:auto}}
 </style></head><body>
-<header class="top"><a class="brand" href="/">pottery lab</a><a class="later" id="later" href="/">Finish later</a></header>
+<header class="top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;vertical-align:-7px;margin-right:8px"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent)"/></svg>pottery lab</a><a class="later" id="later" href="/">Finish later</a></header>
 <main>
   <ol class="steps" id="steps" aria-label="Steps"></ol>
   <div class="potto-row"><div class="art" id="pottoArt" aria-hidden="true"></div><p class="say" id="say" aria-live="polite"></p></div>

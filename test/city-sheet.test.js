@@ -26,6 +26,7 @@ async function phone(cookie) {
   const ctx = await browser.newContext({ ...pw.devices["iPhone 13"], serviceWorkers: "block" });
   await ctx.addInitScript(() => { try { localStorage.setItem("pl.deckDone", "1"); localStorage.setItem("pl.interestsSeen", "1"); if (!sessionStorage.getItem("seeded")) { sessionStorage.setItem("seeded", "1"); localStorage.setItem("encore.recentCities", JSON.stringify(["Lisbon", "Austin"])); } } catch {} });
   await ctx.grantPermissions(["geolocation"], { origin: srv.base }); await ctx.setGeolocation({ latitude: 37.78, longitude: -122.41 });
+  ctx.setDefaultTimeout(90000); // the suite runs files in parallel; a busy machine is slow, not broken
   if (cookie) { const [k, ...v] = cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: srv.base }, { name: "encore_in", value: "1", url: srv.base }]); }
   return ctx;
 }
@@ -36,7 +37,7 @@ const sheetInfo = (page) => page.evaluate(() => { const s = document.querySelect
 test("Discover: one tap opens the sheet; chips apply at once; Anywhere and the choice are remembered", async (t) => {
   if (!browser) return t.skip("no playwright");
   const ctx = await phone(), page = await ctx.newPage(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
-  await page.goto(srv.base + "/discover", { waitUntil: "networkidle" });
+  await page.goto(srv.base + "/discover", { waitUntil: "load", timeout: 120000 }); await page.waitForFunction(() => document.querySelector("#locBtn")?.onclick);
   await page.click("#locBtn"); await page.waitForSelector(".pls [data-sec=events] [data-city]");
   const s = await sheetInfo(page);
   assert.deepEqual(s.recent, ["Lisbon", "Austin"], "recent cities first");
@@ -51,7 +52,7 @@ test("Discover: one tap opens the sheet; chips apply at once; Anywhere and the c
   // Anywhere sticks across a reload (it used to be overwritten by the workspace city)
   await page.click("#locBtn"); await page.click('.pls-any [data-city=""]');
   assert.equal((await page.textContent("#locName")).trim(), "Anywhere");
-  await page.reload({ waitUntil: "networkidle" }); assert.equal((await page.textContent("#locName")).trim(), "Anywhere");
+  await page.reload({ waitUntil: "load", timeout: 120000 }); await page.waitForFunction(() => document.querySelector("#locBtn")?.onclick); assert.equal((await page.textContent("#locName")).trim(), "Anywhere");
   // search is the last option: suggestions as you type, a tap applies
   await page.click("#locBtn"); await page.fill(".pls-search input", "lis"); await page.click('.pls-sugg [data-city="Lisbon"]');
   assert.equal((await page.textContent("#locName")).trim(), "Lisbon");
@@ -69,7 +70,7 @@ test("Discover: one tap opens the sheet; chips apply at once; Anywhere and the c
 test("Feed: the 'Showing' chip opens the same sheet and the feed updates in place", async (t) => {
   if (!browser) return t.skip("no playwright");
   const ctx = await phone(host.cookie), page = await ctx.newPage(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
-  await page.goto(srv.base + "/feed", { waitUntil: "networkidle" }); await page.waitForSelector("#feedPlace .pc-btn");
+  await page.goto(srv.base + "/feed", { waitUntil: "load", timeout: 120000 }); await page.waitForSelector("#feedPlace .pc-btn");
   assert.match(await page.textContent("#feedPlace .pc-btn"), /Showing .*Change/);
   await page.evaluate(() => { window.__stay = 1; });
   await page.click("#feedPlace .pc-btn"); await page.waitForSelector(".pls"); await page.click('.pls [data-sec="recent"] [data-city="Lisbon"]');

@@ -122,6 +122,9 @@ const APIS = `
 /api/me/requests|host guest
 /api/me/rsvp-profile|host guest
 /api/me/sidebar|host guest
+/api/me/alerts|host guest
+/api/me/friends|host guest
+/api/public/places|out host guest
 /api/me/blocks|host guest
 /api/me/friends-going?ids=rtOpen|host guest
 /api/me/mutuals/rtPast|host guest

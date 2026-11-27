@@ -164,7 +164,7 @@
   /** The place chip: "Showing San Francisco  Change", one button. A tap opens the sheet; onChange(city) runs on a pick. */
   function chip(el, onChange, { fallback = "" } = {}) {
     if (!el) return;
-    const draw = (p) => { el.innerHTML = `<button type="button" class="place-chip pc-btn" aria-haspopup="dialog"><span class="pc-pin" aria-hidden="true">${PIN}</span><span class="pc-lbl">Showing <b>${esc(p.city || "Anywhere")}</b>${p.city && p.source === "gps" ? `<span class="pc-near"> · near you</span>` : ""}</span><span class="pc-chg">Change</span></button>`;
+    const draw = (p) => { el.innerHTML = `<button type="button" class="pc-btn" aria-haspopup="dialog"><span class="pc-pin" aria-hidden="true">${PIN}</span><span class="pc-lbl">Showing <b>${esc(p.city || "Anywhere")}</b>${p.city && p.source === "gps" ? `<span class="pc-near"> · near you</span>` : ""}</span><span class="pc-chg">Change</span></button>`;
       const b = el.querySelector("button"); b.setAttribute("aria-label", `Showing ${label(p)}. Change city`);
       b.onclick = () => sheet({ anchor: b, onPick: (c) => { draw(get() || { city: c }); onChange && onChange(c); const nb = el.querySelector("button"); if (nb) try { nb.focus({ preventScroll: true }); } catch {} } }); };
     const p0 = get() || { city: fallback || "" }; draw(p0);

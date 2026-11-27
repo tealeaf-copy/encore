@@ -54,7 +54,7 @@ textarea.ip-in{min-height:120px;padding:10px 12px;resize:vertical}
 .ip-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--pl-line);min-height:60px;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;color:inherit;font:inherit;width:100%}
 .ip-row>span{min-width:0}.ip-row:first-child{border-top:0}button.ip-row{cursor:pointer}button.ip-row:hover{background:var(--pl-page)}
 .ip-row b{display:block;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ip-row .ip-meta{display:block;color:var(--pl-soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ip-row .ip-meta{display:block;color:var(--pl-soft);font-size:13px;line-height:1.4;text-wrap:pretty}
 .ip-row .ip-end{display:flex;align-items:center;gap:6px}.ip-row .ip-end select.ip-in{width:104px;padding:0 6px}
 .ip-st{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--pl-soft);white-space:nowrap}
 .ip-st i{width:8px;height:8px;border-radius:50%;background:var(--pl-line-strong)}

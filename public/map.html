@@ -223,7 +223,7 @@ body.nomap{overflow:auto}
   // ---------- the list ----------
   const visible = () => K.sortEvents(K.filterEvents(all(), S.f, ctx()), S.you); // nearest once we know where you are, else soonest
   function drawHead(L) { const city = S.data?.city || "your city";
-    $("#shTitle").innerHTML = S.f.mine ? `<em>Your map</em>: ${L.length} ${L.length === 1 ? "spot" : "spots"}` : L.length ? `${L.length} ${L.length === 1 ? "thing" : "things"} on near <em>${esc(city)}</em>` : `Nothing on near ${esc(city)}`;
+    $("#shTitle").innerHTML = S.f.mine ? `<em>Your map</em>: ${L.length} ${L.length === 1 ? "spot" : "spots"}` : L.length ? `${L.length} ${L.length === 1 ? "thing" : "things"} happening near <em>${esc(city)}</em>` : `Nothing happening near ${esc(city)} yet`;
     const hoods = new Set(L.map((e) => e.hood).filter(Boolean)).size;
     $("#shSub").textContent = S.f.mine && L.length ? `${hoods} ${hoods === 1 ? "neighbourhood" : "neighbourhoods"} so far` : S.nomap ? "Grouped by neighbourhood" : S.you ? "Distances from you" : "Distances from the map centre"; }
   function drawCats() { const ET = window.EventTypes; if (ET) { const T = ET.present(all()).filter((k) => k !== "event"); if (S.f.cat && ET.valid(S.f.cat) && !T.includes(S.f.cat)) T.push(S.f.cat); $("#cats").innerHTML = T.map((k) => ET.chip(k, S.f.cat === k, "data-cat")).join(""); return; } /* the same types and colours as the tags */ $("#cats").innerHTML = K.CATS.map((c) => `<button type="button" class="cat" data-cat="${c.id}" aria-pressed="${S.f.cat === c.id}">${PIN.cat(c.id, 18)}<span>${c.label}</span></button>`).join(""); }

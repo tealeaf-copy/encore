@@ -317,7 +317,7 @@ html body #gExample{border-style:solid!important;border-width:1px!important;bord
 html body :is(.ev2-rsvp .pill.done,.ev-faq,.rail button[data-step][aria-current="step"]){box-shadow:none!important;border-width:1.5px!important}
 html body .ev-faq{border-color:var(--line)!important;border-radius:var(--r-md)!important}
 html body .rail button[data-step][aria-current="step"]{outline:1.5px solid var(--ink)!important}
-html body .pp{border:1.5px solid var(--ui-frame)!important;box-shadow:var(--shadow-sheet)!important}
+html body .pp:not(main){border:1.5px solid var(--ui-frame)!important;box-shadow:var(--shadow-sheet)!important} /* not the People page, whose main is also .pp (it drew a black frame round the whole page) */
 /* phones: the bottom tab bar already holds Feed, Discover, Sign in and Sign up, so the header's own links (which were
    cut off at 320px) step aside; the header keeps the wordmark and its controls (the bell) */
 @media (max-width:860px){html body.es-has-tabs header nav > a:not(.bell):not([class*=bell]){display:none!important}}

@@ -170,6 +170,8 @@ export function readIntent(text, { today = todayIn(""), pending = null } = {}) {
   if (pending) { if (/^(yes|y|yep|yeah|yup|ok|okay|confirm|do it|send|send it|place it|go ahead|sure|please do|publish|publish it|move it|sounds good|perfect)\b/.test(word)) return { intent: "confirm" };
     if (/^(no|nope|n|don'?t|dont|never ?mind|nah|not now|wait|hold on)\b/.test(word)) return { intent: "cancel" }; }
   const named = (re) => { const m = re.exec(t); return m ? clean(m[1], 80).replace(/[?.!]+$/, "").replace(/^(?:the|my)\s+/, "") : ""; };
+  // ideas to host (server/trends.js): "what should I host?", "any ideas for saturday"
+  if (/\b(what should i host|what (?:can|could|do) i host|what to host|host next|ideas? (?:for|to) (?:host|throw|plan)|ideas? for (?:a |an |my )?(?:party|get-?together|event|night|weekend|saturday|friday|sunday)|any ideas)\b/.test(t)) return { intent: "ideas" };
   // hosts
   if (/^publish\b/.test(t)) return { intent: "publish", event: named(/^publish\s+(.+)/) };
   if (/\b(remind (?:my |the |all )?(?:guests|people|everyone|group)|send (?:a |the )?reminder)\b/.test(t)) return { intent: "remind", event: named(/\b(?:for|about|to)\s+(.+)$/) };
@@ -202,7 +204,7 @@ export function readIntent(text, { today = todayIn(""), pending = null } = {}) {
   if (/^(hi|hey|hello|yo|sup|hiya)$/.test(word)) return { intent: "hello" };
   return { intent: "unknown" };
 }
-export const INTENTS = ["rsvp", "where", "when", "calendar", "bring", "who", "plans", "weekend", "order", "person", "draft", "publish", "remind", "summary", "move", "rich", "unknown"];
+export const INTENTS = ["rsvp", "where", "when", "calendar", "bring", "who", "plans", "weekend", "ideas", "order", "person", "draft", "publish", "remind", "summary", "move", "rich", "unknown"];
 /** The model's job for free text: pick one intent and (maybe) an event name. It never acts. */
 export function intentPrompt(text, ctx) {
   return `POTTO-TEXT
@@ -349,6 +351,12 @@ export function makePottoText({ app, store, X, C, publicOrigin = () => process.e
     if (!L.length) return { text: `Nothing I can see this weekend yet. Hosts post all week, so check back, or browse here: ${link("/discover")}` };
     const abs = (x) => (/^https?:/.test(x) ? x : link(x));
     return { text: `This weekend: ${L.map((e, i) => `${i + 1}. ${clean(e.title, 40)}, ${clean(e.when, 24)}${e.area || e.city ? ", " + clean(e.area || e.city, 24) : ""} ${abs(e.url)}`).join(" ")}` }; }
+  // ideas to host: what people here loved first, each with its source (server/trends.js)
+  function ideasText(u) { let L = []; try { L = (app.locals.trends?.forPotto(u, { n: 3 }) || []).slice(0, 3); } catch {}
+    if (!L.length) return { text: `A few to start from are on the Ideas page: ${link("/ideas")}` };
+    const say = (x) => `${clean(x.title, 40)} (${clean(x.label, 60)})`; let text = `Ideas to host: ${L.map((x, i) => `${i + 1}. ${say(x)}`).join(" ")} Reply with one and a day, like "${clean(L[0].title, 30).toLowerCase()} sat 7pm", and I'll draft it.`;
+    if (text.length > 600) text = text.slice(0, 597) + "...";
+    return { text }; }
   // drops: the ones they can see (invited, following the host, or ordered before)
   function dropsFor(u) { const out = new Map(), add = (E) => { if (E?.ev?.drop && upcoming(E.ev) && !E.ev.ordersPaused) out.set(E.id, E); };
     for (const x of [...myInvites(u.email), ...myReplies(u.email)]) add(x);
@@ -441,6 +449,7 @@ export function makePottoText({ app, store, X, C, publicOrigin = () => process.e
       case "who": return who(u, st, a);
       case "plans": return myPlans(u);
       case "weekend": return weekend(u);
+      case "ideas": return ideasText(u);
       case "order": return order(u, st, a);
       case "person": return person(u, st, text);
       case "rich": return rich(u, st, a);
@@ -583,7 +592,7 @@ export function makePottoText({ app, store, X, C, publicOrigin = () => process.e
     return { on: cfg.on, sms: !!cfg.sms, whatsapp: !!cfg.whatsapp, signed: !!cfg.token || !!cfg.meta?.secret, opted, today: { in: c.in || 0, out: c.out || 0, unknown: c.unknown || 0, stops: c.stops || 0 },
       templates: Object.fromEntries(Object.entries(TEMPLATES).map(([k, v]) => [k, !!templateOf(k)])),
       line: cfg.on ? `On: ${ch.join(", ")}. Webhooks: ${baseUrl() || ""}/api/potto/sms and /api/potto/whatsapp. ${opted} ${opted === 1 ? "person has" : "people have"} it on. Today: ${c.in || 0} in, ${c.out || 0} out, ${c.stops || 0} stops.${!cfg.token && !cfg.fake ? " Missing the Twilio auth token, so webhooks are refused." : ""}` : "Off. Add the Twilio or WhatsApp settings in docs/potto-text.md to switch it on." }; }
-  return { key, ref, isOwn, inbound, answer, send, enqueue, runDue, queueReminders, flushBatches, flushQueue, fromInbox, fromRsvp, watch, settingsOf, setOn, textOnce, status, accountOf, stateOf, callAs, CONSENT };
+  return { ideasText, key, ref, isOwn, inbound, answer, send, enqueue, runDue, queueReminders, flushBatches, flushQueue, fromInbox, fromRsvp, watch, settingsOf, setOn, textOnce, status, accountOf, stateOf, callAs, CONSENT };
 }
 
 // ---------- routes ----------

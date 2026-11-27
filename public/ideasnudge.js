@@ -12,7 +12,10 @@
   if (window.PLIdeas) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const interests = () => { try { const p = JSON.parse(localStorage.getItem("pl.interests") || "null"); return (Array.isArray(p) ? p : p?.interests || []).join(","); } catch { return ""; } };
-  async function fetchIdeas({ n = 4 } = {}) { try { const r = await fetch(`/api/public/ideas/try?n=${n}&interests=${encodeURIComponent(interests())}`, { credentials: "same-origin" }); return r.ok ? (await r.json()).ideas || [] : []; } catch { return []; } }
+  // where it says who vouches for an idea (server/trends.js): "Loved here: ...", "Trending on social", "An idea from Potto"
+  const city = () => { let c = ""; try { c = (window.EncorePlace?.get?.() || {}).city || localStorage.getItem("encore.city") || ""; } catch {} return String(c || "").slice(0, 60); };
+  const tag = (x) => (x.source === "platform" ? "Loved here" : x.source === "editorial" ? "Trending on social" : x.source === "potto" ? "Idea from Potto" : "");
+  async function fetchIdeas({ n = 4 } = {}) { try { const r = await fetch(`/api/public/ideas/try?n=${n}&interests=${encodeURIComponent(interests())}&city=${encodeURIComponent(city())}`, { credentials: "same-origin" }); return r.ok ? (await r.json()).ideas || [] : []; } catch { return []; } }
   function css() { if (document.getElementById("plIdeasCss")) return; const s = document.createElement("style"); s.id = "plIdeasCss"; s.textContent = `
 .pli-row{margin:12px 0 0}.pli-row p{margin:0 0 6px;color:#665A51;font:500 13px/1.3 "IBM Plex Sans",system-ui,sans-serif}
 .pli-opts{display:flex;flex-wrap:wrap;gap:8px}.pli-opts button{min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid #E4D9C8;background:#FFFCF7;color:#1F1A17;font:500 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -21,6 +24,7 @@
 .pli-box{border:1.5px solid #E4D9C8;border-radius:16px;background:#FFFCF7;padding:16px;margin:16px 0}.pli-box h3{margin:0 0 4px;font:600 16px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#1F1A17}.pli-box>p{margin:0 0 8px;color:#665A51;font-size:14px}
 .pli-list{list-style:none;margin:0;padding:0}.pli-list li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1.5px solid #E4D9C8}.pli-list li:first-child{border-top:0}
 .pli-list span{flex:1;min-width:0}.pli-list b{display:block;font:600 15px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#1F1A17}.pli-list small{display:block;color:#665A51;font-size:13px;line-height:1.35}
+.pli-src{color:var(--pl-soft,#444845);font-weight:400}.pli-list small.pli-src{font:400 12px/1.4 var(--pl-font-mono,"IBM Plex Mono",monospace)}
 .pli-list button{flex:none;min-height:44px;padding:0 14px;border-radius:6px;border:1.5px solid var(--pl-line-strong,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
 `; document.head.appendChild(s); }
   function start(x) { try { localStorage.removeItem("pl.hostLike"); localStorage.setItem("pl.hostIdea", JSON.stringify({ id: x.id, title: x.title || "", at: Date.now() })); } catch {}
@@ -28,13 +32,13 @@
   async function row(el, { input = null, onPick = null, n = 4, label = "Not sure? Try one:" } = {}) {
     if (!el) return []; css(); const L = (await fetchIdeas({ n })).slice(0, 4); if (!L.length) { el.hidden = true; return []; }
     el.classList.add("pli-row"); el.hidden = false;
-    el.innerHTML = `<p>${esc(label)}</p><div class="pli-opts">${L.map((x, i) => `<button type="button" data-pli="${i}" title="${esc(x.line)}">${esc(x.title)}</button>`).join("")}<a class="pli-more" href="/ideas">More ideas</a></div>`;
+    el.innerHTML = `<p>${esc(label)}</p><div class="pli-opts">${L.map((x, i) => `<button type="button" data-pli="${i}" title="${esc([x.line, x.sourceLine].filter(Boolean).join(". "))}">${esc(x.title)}${tag(x) ? `<span class="pli-src"> · ${esc(tag(x))}</span>` : ""}</button>`).join("")}<a class="pli-more" href="/ideas">More ideas</a></div>`;
     el.querySelectorAll("[data-pli]").forEach((b) => (b.onclick = () => { const x = L[+b.dataset.pli]; if (onPick) return onPick(x);
       if (input) { input.value = x.say; input.dispatchEvent(new Event("input", { bubbles: true })); input.focus(); try { input.setSelectionRange(input.value.length, input.value.length); } catch {} } }));
     return L; }
   async function list(el, { lead = "Ideas to try", sub = "", n = 3, bare = false } = {}) {
     if (!el) return []; css(); const L = (await fetchIdeas({ n })).slice(0, Math.min(4, n)); if (!L.length) { el.hidden = true; return []; }
-    el.hidden = false; el.innerHTML = `<div class="${bare ? "" : "pli-box"}">${bare ? "" : `<h3>${esc(lead)}</h3>`}${sub ? `<p>${esc(sub)}</p>` : ""}<ul class="pli-list">${L.map((x, i) => `<li><span><b>${esc(x.title)}</b><small>${esc(x.line)}</small></span><button type="button" data-plh="${i}">Host this</button></li>`).join("")}</ul><a class="pli-more" href="/ideas">More ideas</a></div>`;
+    el.hidden = false; el.innerHTML = `<div class="${bare ? "" : "pli-box"}">${bare ? "" : `<h3>${esc(lead)}</h3>`}${sub ? `<p>${esc(sub)}</p>` : ""}<ul class="pli-list">${L.map((x, i) => `<li><span><b>${esc(x.title)}</b><small>${esc(x.line)}</small>${x.sourceLine ? `<small class="pli-src">${esc(x.sourceLine)}</small>` : ""}</span><button type="button" data-plh="${i}">Host this</button></li>`).join("")}</ul><a class="pli-more" href="/ideas">More ideas</a></div>`;
     el.querySelectorAll("[data-plh]").forEach((b) => (b.onclick = () => start(L[+b.dataset.plh]))); return L; }
   window.PLIdeas = { row, list, start, fetch: fetchIdeas };
 })();

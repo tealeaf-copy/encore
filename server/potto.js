@@ -101,6 +101,7 @@ Answer using only the context below. Never invent events, people, names, numbers
 ${POTTO_VOICE}
 At most 90 words. No headings. Say "spots", not "seats". Say "guests", not "attendees".
 Links: only hrefs that appear in the context, at most 3.
+Ideas to host: start from "ideas" in the context, in order, and say each one's label as given. Only ideas with source "platform" are measured; call the rest trends on social or general ideas, never data, and never add numbers to them.
 At most one action, only for the host's own events (myEvents): "remind" with text (a short reminder for the group chat, under 300 characters), "broadcast" (tell people on Pottery Lab it suits, when discoverable or audienceWho is set) or "announce" (tell the host's followers). The person confirms before anything is sent, so describe it, don't claim it's done.
 Reply with only JSON: {"answer": string, "links": [{"label": string, "href": string}], "action": null or {"type": "remind" | "broadcast" | "announce", "eventId": string, "text": string}}
 <context>
@@ -151,7 +152,8 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
   const body = express.json({ limit: "3mb" }), small = express.json({ limit: "64kb" }), P = makePottoStore(store);
   const me = (req, res) => { let u = null; try { u = currentUser(req); } catch {} if (!u || !u.email || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in to ask Potto." }); return null; } res.set("Cache-Control", "private, no-store"); return u; };
   const hits = new Map(); const limited = (k) => { const now = Date.now(), h = (hits.get(k) || []).filter((t) => now - t < 3600e3); if (h.length >= perHour()) { hits.set(k, h); return true; } h.push(now); hits.set(k, h); if (hits.size > 20000) hits.clear(); return false; };
-  const ctxOf = (req, u, eventId = "") => buildContext({ store, C, X, F: app.locals.fanclub, safety: app.locals.appstore?.safety, user: u, tz: String(req.body?.tz || req.query?.tz || "").slice(0, 60), eventId });
+  const ctxOf = (req, u, eventId = "") => { const c = buildContext({ store, C, X, F: app.locals.fanclub, safety: app.locals.appstore?.safety, user: u, tz: String(req.body?.tz || req.query?.tz || "").slice(0, 60), eventId });
+    try { const I = app.locals.trends?.forPotto(u); if (I?.length) c.ideas = I; } catch {} return c; }; // ideas to host, labelled by source (server/trends.js)
   const status = (u) => { const mode = aiMode(), used = P.usage(u.email).tokens, cap = tokensPerDay(); return { ai: mode, left: Math.max(0, cap - used), limit: cap, can: { search: true, help: true, navigation: true, drafting: mode !== "missing_key", photos: mode === "live" },
     unavailable: mode === "missing_key" ? "AI isn't set up on this server. I can still search, find pages, look things up and answer help questions." : used >= cap ? "You've used today's AI allowance. I'll keep to plain answers until tomorrow." : "" }; };
   app.locals.potto = { P, ctxOf, lastPrompt: "" };

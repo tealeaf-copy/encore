@@ -292,6 +292,9 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   function memberEvents(v) { const fc = app?.locals?.fanclub; if (!v.email || !fc) return new Set(); const S = new Set();
     try { for (const x of v.I.events.values()) if (fc.visibility(x.ws, x.id) === "members" && fc.isMember(x.ws, v.email) && !x.e.cancelled && !x.e.private && !x.e.example) S.add(x.id); } catch {} return S; }
 
+  // the ideas deck card: what people here loved first, with an honest heading and source line (server/trends.js)
+  function ideasCard(ideas, city, now) { const base = { kind: "ideas", key: "ideas", count: ideas.length, titles: ideas.slice(0, 3).map((x) => clean(x.title, 60)) };
+    try { const T = app?.locals?.trends?.feedCard({ city: clean(city, 60) }, now); if (T) return { ...base, titles: T.titles.map((t) => clean(t, 60)), head: T.head, sourceLine: T.sourceLine, source: T.source }; } catch {} return base; }
   // ---------- the stream ----------
   /** The blended feed for one viewer (email "" when signed out). posts: a signed-in viewer's friends' posts. */
   function blend({ email = "", ws = "", device = "", city = "", posts = [], now = Date.now() } = {}) {
@@ -299,7 +302,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     const F = follows(v), ideas = app?.locals?.hooks?.IDEAS || [];
     const pools = { club: clubPosts(v, now), event: events(v, now), recap: recaps(v, now), milestone: milestones(v, now), post: (posts || []).map((p) => ({ ...p, kind: "post", key: "p:" + p.id })),
       follow: F.length >= 2 ? [{ kind: "follow", key: "follow", title: email ? "Hosts and people to follow" : "Hosts to follow", cards: F }] : [],
-      ideas: ideas.length ? [{ kind: "ideas", key: "ideas", count: ideas.length, titles: ideas.slice(0, 3).map((x) => clean(x.title, 60)) }] : [] };
+      ideas: ideas.length ? [ideasCard(ideas, city, now)] : [] };
     // ---- lists in the feed (server/listfeed.js): "Maya made a list", "Maya added ... to ..."; friends and followers only ----
     const LF = app?.locals?.listFeed; if (LF && v.email) { try { pools.list = LF.cards(v, { now, kudosOf: (t) => kudosOf(v, t), commentsOf: (t) => commentsOf(v, t) }); } catch { pools.list = []; } }
     const items = arrange(pools, pools.list?.length ? { pattern: LIST_PATTERN } : undefined); // ---- end lists in the feed ----

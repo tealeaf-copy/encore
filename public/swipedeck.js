@@ -31,7 +31,7 @@
   function avatar(h) { if (!h) return ""; const u = /^\/(?:_blob\/[A-Za-z0-9]{20}|presets\/[a-z0-9-]+\.(?:svg|jpg|png))$/.test(h.avatarUrl || "") ? h.avatarUrl : "";
     const inner = u ? `<img src="${esc(u)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.color || "#E26D8E", 30) : esc(h.emoji || "🙂"); return `<span class="sd-av" style="--c:${esc(h.color || "#E26D8E")}" aria-hidden="true">${inner}</span>`; }
   const meta = (c) => [c.kind === "event" ? [dayOf(c.when), t12(c.startTime)].filter(Boolean).join(" · ") : "", c.where, c.price].filter(Boolean).join(" · ");
-  const hostLine = (c) => (c.kind === "event" && c.host ? `${avatar(c.host)}<span><b>${esc(c.host.name)}</b> is hosting</span>` : c.kind === "host" && c.host ? `${avatar(c.host)}<span>From <b>${esc(c.host.name)}</b></span>` : c.kind === "idea" ? `<span class="sd-idea" aria-hidden="true">💡</span><span>An idea to try</span>` : "");
+  const hostLine = (c) => (c.kind === "event" && c.host ? `${avatar(c.host)}<span><b>${esc(c.host.name)}</b> is hosting</span>` : c.kind === "host" && c.host ? `${avatar(c.host)}<span>From <b>${esc(c.host.name)}</b></span>` : c.kind === "idea" ? `<span class="sd-idea" aria-hidden="true">💡</span><span>${esc(c.sourceLine || "An idea to try")}</span>` : "");
   // playing-card deck: flat pastels in turn, the event's kind in the corners (top-left, and upside down bottom-right)
   const DECK = ["#EEF0B4", "#DCC3EC", "#BFE4EA", "#C8EBCF", "#F6CBD5", "#F8DDB8"];
   function corner(c) { const A = window.EventArt; let w = "";

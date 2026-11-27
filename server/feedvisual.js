@@ -288,10 +288,10 @@ export function makeFeedVisual(store, { C, X }) {
       badge: e.sample ? "Example" : e.date <= wk ? "This week" : "", example: !!e.sample, tags: tagsOf(`${e.title} ${e.activity || ""}`), local: here(e) });
     const up = (V.upcoming || []).filter((e) => e.id && !e.past), real = up.filter((e) => !e.sample);
     const lead = (C0 ? real.filter(here) : real).map(ev), later = [...(C0 ? real.filter((e) => !here(e)) : []), ...up.filter((e) => e.sample)].map(ev);
-    const idea = (x) => ({ key: "i:" + x.id, kind: "idea", ref: x.id, title: x.title, line: x.line || "", img: "", art: { id: x.id, title: x.title, activity: x.title, coverArt: x.art ? { kind: x.art, tone: x.tone } : null }, look: {}, url: "/ideas#" + x.id, badge: "Idea", tags: (x.interests || []).slice(0, 4) });
+    const idea = (x) => ({ key: "i:" + x.id, kind: "idea", ref: x.id, title: x.title, line: x.line || "", img: "", art: { id: x.id, title: x.title, activity: x.title, coverArt: x.art ? { kind: x.art, tone: x.tone } : null }, look: {}, url: "/ideas#" + x.id, badge: "Idea", tags: (x.interests || []).slice(0, 4), ...(x.sourceLine ? { source: x.source, sourceLine: x.sourceLine } : {}) }); // trends: who vouches for it
     const pic = (P, p) => ({ key: "p:" + p.id, kind: "host", ref: P.host.handle, title: p.title, line: p.note || "", img: p.cover || p.photos[0] || "", art: { id: p.id, title: p.title, activity: p.title }, look: {}, host: P.host, url: P.cta?.url || P.page, where: P.city || "", badge: P.example ? "Example" : "Preview", example: !!P.example, tags: tagsOf(`${p.title} ${p.note || ""}`) });
     const I0 = cleanInterests(interests), ideaL = (Array.isArray(ideas) ? ideas : []).filter((x) => x?.id && x.title).map((x, i) => ({ x, i, s: I0.length && (x.interests || []).some((k) => I0.includes(k)) ? 1 : 0 }))
-      .sort((a, b) => b.s - a.s || (parseInt(hashKey(a.x.id + today()).slice(0, 6), 16) - parseInt(hashKey(b.x.id + today()).slice(0, 6), 16))).map(({ x }) => idea(x)); // a steady daily shuffle
+      .sort((a, b) => ((+b.x.rank || 0) + b.s * 0.5) - ((+a.x.rank || 0) + a.s * 0.5) || (parseInt(hashKey(a.x.id + today()).slice(0, 6), 16) - parseInt(hashKey(b.x.id + today()).slice(0, 6), 16))).map(({ x }) => idea(x)); // a steady daily shuffle
     // launch review: no old photos from preview pages ("7.26 1st pop up"): real upcoming events lead, then ideas
     const pics = [];
     // ideas and photos side by side, so after the real events the deck alternates a photo and an illustrated idea
@@ -332,7 +332,7 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X, sendPage
   app.get("/api/feed/stories", (req, res) => { const u = viewer(req), email = u ? lc(u.email) : ""; res.set("Cache-Control", "private, no-store"); res.json({ stories: V.stories({ email, following: followingOf(email) }) }); });
   // the swipe deck on a first visit to /feed (public/swipedeck.js): real events in the visitor's city first, then ideas
   app.get("/api/public/deck", (req, res) => { if (limited(req, 600)) return bad(res, "Slow down.", 429, "rate_limited"); const u = viewer(req); res.set("Cache-Control", "private, no-store");
-    const q = { city: String(req.query.city || "").slice(0, 120), interests: String(req.query.interests || "").slice(0, 400), email: u ? lc(u.email) : "", ideas: app.locals.hooks?.IDEAS || [], limit: Math.max(5, Math.min(20, +req.query.limit || 12)) };
+    const q = { city: String(req.query.city || "").slice(0, 120), interests: String(req.query.interests || "").slice(0, 400), email: u ? lc(u.email) : "", ideas: (() => { const L = app.locals.hooks?.IDEAS || []; try { return app.locals.trends?.annotate(L, { city: String(req.query.city || "").slice(0, 60) }) || L; } catch { return L; } })() /* trends: ranked and labelled (server/trends.js) */, limit: Math.max(5, Math.min(20, +req.query.limit || 12)) };
     res.json(u ? V.deck(q) : cachedOut(`deck|${q.interests}|${q.city}|${q.limit}`, () => V.deck(q))); });
   // what an upload may be, for the browser's own check before it sends anything
   app.get("/api/public/moment-limits", (req, res) => res.json({ imageMB: Math.round((momentMaxBytes("image") / 1048576) * 10) / 10, videoMB: Math.round((momentMaxBytes("video") / 1048576) * 10) / 10, seconds: MOMENT_MAX_SECONDS, perPick: 6, types: [...MOMENT_IMAGE_TYPES, ...MOMENT_VIDEO_TYPES] }));

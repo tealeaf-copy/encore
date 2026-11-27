@@ -96,6 +96,9 @@ export function pottoReply(message, ctx = {}, { mode = "offline" } = {}) {
   }
   // ideas
   if (/\bideas?\b|\bbrainstorm|\bsuggest|\btheme(s)?\b|\bwhat should i host\b/i.test(m)) {
+    // trends (server/trends.js): what people here loved first, each with its source, so nothing general reads as measured
+    const T = (ctx.ideas || []).filter((x) => x && x.title && x.label).slice(0, 4);
+    if (T.length) return out({ intent: "ideas", answer: `A few to start from:\n${T.map((x) => `• ${x.title} (${x.label})`).join("\n")}\n\nPick one and I'll help you set it up.`, links: [{ label: "New event", href: "/?app=1&new=1#studio" }, { label: "More ideas", href: "/ideas" }] });
     if (mode === "offline") return out({ intent: "ideas", needsAi: true, answer: `${noAi} The Ideas page has plenty to start from.`, links: [{ label: "Ideas", href: "/ideas" }] });
     const I = /winter|cold|snow|cozy|december|january/i.test(m) ? IDEAS.winter : IDEAS.default;
     return out({ intent: "ideas", answer: `A few to start from:\n${I.map((x) => `• ${x}`).join("\n")}\n\nPick one and I'll help you set it up.`, links: [{ label: "New event", href: "/?app=1&new=1#studio" }, { label: "More ideas", href: "/ideas" }] });

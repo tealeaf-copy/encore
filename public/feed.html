@@ -294,12 +294,16 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   let AL = null;
   async function drawAlerts(m, { fresh = "", msg = "" } = {}) {
     if (!AL) { m.innerHTML = `<div class="empty" data-calm-wait>Loading…</div>`; try { AL = await api("/api/me/alerts"); } catch (e) { m.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } }
+    // trends (server/trends.js): what people here loved goes first, with where the numbers come from
+    let TR = []; if (myCity() && !drawAlerts.tr) { try { drawAlerts.tr = (await (await fetch("/api/public/trends?n=2&city=" + encodeURIComponent(myCity()))).json()).ideas || []; } catch { drawAlerts.tr = []; } } TR = drawAlerts.tr || [];
     if (tab !== "alerts") return; const L = AL.alerts || [], city = myCity();
     const checked = AL.checkedAt ? `Last checked ${agoWords(AL.checkedAt)}.` : "";
-    const ex = [`Runs in ${city || "my city"}`, "Free game nights in my city", "Hikes on weekends", "Dinners within 3 miles"];
+    const ex = [...TR.map((x) => `${x.label} in ${city}`), `Runs in ${city || "my city"}`, "Free game nights in my city", "Hikes on weekends", "Dinners within 3 miles"].slice(0, 5);
+    const exSrc = TR.length ? `<p class="wt-where">${TR.map((x) => `${esc(x.label)}: ${esc(x.sourceLine.replace(/^Loved here: /, "loved here, "))}`).join(". ")}.</p>` : "";
     const form = `<form class="wt-new card" id="alF"><h3>${L.length ? "Watch for something else" : "What should we watch for?"}</h3>
         <label for="alIn" class="wt-lab">Say it in your own words</label><div class="wt-row"><input id="alIn" placeholder="e.g. cooking nights within 3 miles" maxlength="300" autocomplete="off" enterkeyhint="done"><button class="btn" type="submit">Start watching</button></div>
         <div class="wt-ex" aria-label="Ideas">${ex.map((x) => `<button type="button" data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+        ${exSrc}
         <p class="wt-where">${city ? `"My city" and "near me" mean <b>${esc(city)}</b>.` : "Say a city, like \"in Austin\", or set your city at the top of the feed."}</p><p class="wt-msg" id="alMsg" role="status"></p></form>`;
     m.innerHTML = `<section class="wt" aria-labelledby="wtH"><header class="wt-head"><h2 id="wtH">Watching</h2><p>We'll tell you when something matches. Here's what we're watching for you.</p>
         <p class="wt-pulse"><span class="dot" aria-hidden="true"></span>${esc([checked, "We check every hour and each time a host posts."].filter(Boolean).join(" "))}</p></header>

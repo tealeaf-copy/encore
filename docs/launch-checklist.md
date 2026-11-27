@@ -197,6 +197,11 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `ENCORE_ORDER_HOLD_HOURS` | No | How long an unpaid order holds stock. |
 | `ENCORE_DELETE_GRACE_DAYS` | No | Days before a deleted account is gone for good. |
 | `ENCORE_REPLY_DIGEST_GAP_HOURS` | No | How often hosts get a digest of new replies. |
+| `ENCORE_POTTO_TEXT` | No | `0` turns Potto by text off even with Twilio set (sign-in codes still go out). See docs/potto-text.md. |
+| `ENCORE_INVITES_PER_MEMBER` | No | Friend invites each member can text (default 5). |
+| `TWILIO_WHATSAPP_FROM` | No | The WhatsApp sender number through Twilio. Turns on Potto by WhatsApp. |
+| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_NUMBER` | No | Meta's WhatsApp Cloud API instead of Twilio. |
+| `POTTO_WA_TEMPLATE_LANG` | No | Language code for WhatsApp templates on the Cloud API (default `en_US`). |
 | `ENCORE_LISTS_NUDGE_MIN` | No | When the lists nudge first shows. |
 | `ENCORE_TZ`, `PM_TZ`, `PM_CRON` | No | The default time zone, and the schedule of the weekday morning job (`off` turns it off). |
 | `ENCORE_DIRECTORY_CACHE_MS`, `ENCORE_INSIGHTS_CACHE_MS`, `ENCORE_LEADERBOARD_CACHE_MS`, `ENCORE_LEADERBOARD_OBSERVE_MS` | No | How long some pages cache their numbers. |

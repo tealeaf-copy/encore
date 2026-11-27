@@ -183,7 +183,9 @@ test("proactive: a host's first yes comes right away, later replies in one batch
   const ev = await (await post("/api/db/collection?path=events", { name: "Book club", pubTitle: "Book club", date: iso(9), startTime: "18:00", headcount: 10, casual: true, published: true }, maya.cookie)).json();
   for (const g of [priya, jun]) srv.app.locals.social.notify(g.email, { kind: "invite", key: "inv-" + ev.id, text: "Book club", link: "/e/" + ev.id, eventId: ev.id });
   const noon = Date.parse(iso(0) + "T12:00:00-05:00");
-  await text(priya.phone, "I'm in for book club"); await new Promise((r) => setTimeout(r, 50)); await PT.flushQueue(noon);
+  await text(priya.phone, "I'm in for book club"); await new Promise((r) => setTimeout(r, 50));
+  // the yes is queued at the real clock time: flush at noon, now, and tomorrow 9:05 so the test passes at any hour (quiet hours hold it till 9am)
+  for (const t of [noon, Date.now(), Date.parse(iso(1) + "T09:05:00-05:00")]) await PT.flushQueue(t);
   assert.match(pottoOutbox.slice(before).find((m) => m.to === maya.phone)?.text || "", /Your first yes just came in for Book club: Priya's coming\. Nice\./);
   await text(jun.phone, "maybe for book club"); await new Promise((r) => setTimeout(r, 50));
   await PT.runDue(Date.now() + 40 * 60e3 > noon ? Date.now() + 40 * 60e3 : noon);

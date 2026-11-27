@@ -16,7 +16,8 @@ const roles = () => ({ out: "", host: S.host.cookie, guest: S.guest.cookie });
 const get = (p, cookie) => fetch(srv.base + p, { redirect: "manual", headers: cookie ? { cookie } : {} });
 // the redirects pages mean to send: a signed-in person opening / lands on the feed; /pricing is part of /about; the private pages send a signed-out
 // person to sign in (and back after); an invite link opens the guest page.
-const REDIRECTS = { "/": { host: /^\/feed$/, guest: /^\/feed$/ }, "/pricing": { any: /^\/about$/ }, [`/i/${"rtOpen"}`]: { any: /^\/(e\/rtOpen|g)\b/ } };
+const REDIRECTS = { "/start?t=table": { host: /^\/\?app=1&new=1&kind=table#studio$/, guest: /^\/\?app=1&new=1&kind=table#studio$/ }, // signed in, /start goes straight to the create canvas
+  "/": { host: /^\/feed$/, guest: /^\/feed$/ }, "/pricing": { any: /^\/about$/ }, [`/i/${"rtOpen"}`]: { any: /^\/(e\/rtOpen|g)\b/ } };
 const PRIVATE = ["/saved", "/plans", "/chats", "/chats/rtOpen", "/settings", "/?app=1"];
 
 test("every page answers 200 (or its redirect), signed out, as a host and as a guest", async () => {

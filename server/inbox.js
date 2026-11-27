@@ -204,6 +204,9 @@ export function safeLink(l) { const s = String(l || "").trim(); return /^\/(?!\/
 // ---------- reading the stored list ----------
 const listPath = (email) => "system/inbox-" + hash(email);
 
+/** What a person turned off in their Inbox: { offTypes }. Read by the host's reply summary (server/replydigest.js). */
+export const inboxPrefsOf = (store, email) => { const d = store.get("system/inboxprefs-" + hash(email))?.data || {}; return { offTypes: Array.isArray(d.offTypes) ? d.offTypes.filter((t) => TYPES[t]) : [] }; };
+
 export function makeInbox({ store, C, X, safety }) {
   const items = (email) => store.get(listPath(email))?.data?.list || [];
   // what the reader turned off from a row's menu: hosts muted here, and kinds they don't want in the Inbox

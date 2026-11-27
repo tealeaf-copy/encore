@@ -65,9 +65,10 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
       <div class="row" id="pkRow"><span>New passkey<small id="pkWhere">On this device or in your password manager</small></span><button type="button" class="btn sm" id="pkAdd" aria-label="Add a passkey">Add</button></div>
       <p class="msg" id="pkMsg" role="status"></p>
     </section>
-    <section aria-labelledby="hNote"><h2 id="hNote">Notifications</h2><p>Choose what Potto taps you about. Your phone's Focus and Do Not Disturb still apply.</p>
+    <section aria-labelledby="hNote" id="notify"><h2 id="hNote">Notifications</h2><p>Choose what Potto taps you about. Your phone's Focus and Do Not Disturb still apply.</p>
       <div id="pushRows"></div>
       <div class="row"><span>Emails<small>Reminders and updates by email</small></span><input type="checkbox" class="sw" id="emails" aria-label="Emails"></div>
+      <div class="row"><span>Reply summaries<small>When you host: one short email per event every few hours with who said yes, maybe or can't. Never one email per reply.</small></span><input type="checkbox" class="sw" id="replyDigest" aria-label="Reply summaries"></div>
     </section>
     <section aria-labelledby="hFind"><h2 id="hFind">Finding you</h2><p>Off unless you turn it on. When it's on, friends who check their contacts on Find people can see you're here. We compare scrambled emails and phone numbers and keep nothing they send.</p>
       <div class="row"><span>Let people find me by email or phone<small>Your email and the phone on your account</small></span><input type="checkbox" class="sw" id="findable" aria-label="Let people find me by email or phone"></div></section>
@@ -116,8 +117,11 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     rows.onchange = async (e) => { const k = e.target.dataset.k; if (!k) return; try { await send("/api/me/push/prefs", { on: true, [k]: e.target.checked }); } catch (err) { e.target.checked = !e.target.checked; alert(err.message); } };
     $("#pushAsk")?.addEventListener("click", () => window.EncoreNativePush.ask());
   } catch {}
-  try { const E = await get("/api/me/prefs"); $("#emails").checked = E.emails !== false; } catch {}
-  $("#emails").onchange = (e) => send("/api/me/prefs", { emails: e.target.checked }).catch(() => {});
+  // Reply summaries ride on Emails: with Emails off the switch shows off and can't be turned on by itself
+  const rdSync = (E) => { const r = $("#replyDigest"), on = $("#emails").checked; r.disabled = !on; r.checked = on && E.replyDigest !== false; };
+  let E = { emails: true, replyDigest: true }; try { E = await get("/api/me/prefs"); $("#emails").checked = E.emails !== false; } catch {} rdSync(E);
+  $("#emails").onchange = (e) => { rdSync(E); send("/api/me/prefs", { emails: e.target.checked }).catch(() => {}); };
+  $("#replyDigest").onchange = (e) => { E.replyDigest = e.target.checked; send("/api/me/prefs", { replyDigest: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; }); };
   // Find people: let people find me by email or phone (server/findpeople.js), off by default
   try { const FD = await get("/api/me/findable"); $("#findable").checked = FD.on === true; } catch {}
   $("#findable").onchange = (e) => send("/api/me/findable", { on: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; });

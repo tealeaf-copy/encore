@@ -57,7 +57,8 @@ const clean = (s, n) => String(s ?? "").replace(/[\r\n]+/g, " ").trim().slice(0,
  * header and an unsubscribe footer (origin: the public address for the link, else ENCORE_PUBLIC_URL). */
 // brandWs: the workspace of the host a guest email is from. The email then also goes as simple HTML with the host's
 // accent and logo (server/brandkit.js); the plain text stays the same.
-export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin, brandWs }) {
+// html: a ready-made HTML body for a system email with one button (the host's reply summary); the text stays the fallback.
+export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin, brandWs, html: ownHtml = "" }) {
   if (!cfg) return { ok: false, error: "Email isn't set up for this workspace." };
   // the reserved .invalid domain is never mailed: phone-only accounts hold a stand-in address there (server/signin.js)
   const mailable = (x) => EMAIL_RE.test(x) && !/\.invalid$/i.test(x);
@@ -75,7 +76,7 @@ export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName,
   const subj = clean(subject, 200) || "(no subject)", body = String(text || "").slice(0, 20000 - footer.length) + footer;
   const name = clean(fromName || cfg.fromName, 80).replace(/[<>"]/g, ""), from = name ? `${name} <${cfg.from}>` : cfg.from;
   const reply = replyTo && EMAIL_RE.test(replyTo) ? replyTo : null;
-  let html = ""; if (brandWs) { try { const b = emailBrand(getWorkspace(brandWs)?.host); if (b) html = emailHtml(body, b, origin); } catch {} }
+  let html = list === "guest" ? "" : String(ownHtml || ""); if (!html && brandWs) { try { const b = emailBrand(getWorkspace(brandWs)?.host); if (b) html = emailHtml(body, b, origin); } catch {} }
   if (cfg.service === "fake") { const id = "fake-" + (fakeOutbox.length + 1); fakeOutbox.push({ id, from, to: rcpt, cc: copy, subject: subj, text: body, replyTo: reply, ...(headers ? { headers } : {}), ...(html ? { html } : {}) }); return { ok: true, id }; }
   let url, init;
   if (cfg.service === "resend") {

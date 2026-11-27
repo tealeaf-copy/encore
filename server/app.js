@@ -49,7 +49,7 @@ import { mountKudosAsk } from "./kudosask.js";
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
-import { mountInbox } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
+import { mountInbox, inboxPrefsOf } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
 import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
@@ -63,6 +63,7 @@ import { mountBrandPanel3 } from "./brandpanel3.js"; // the recovery hold and fr
 import { mountBrandbook } from "./brandbook.js"; import { mountInsights } from "./insights.js"; import { mountCampaigns } from "./campaigns.js"; // brand Insights ("What resonates") and Campaigns (server/insights.js, server/campaigns.js) // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.js"; import { mountInvites } from "./invites.js"; // People, seats by audience and the invite plan (server/people.js, seats.js, invites.js) // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
+import { makeReplyDigest } from "./replydigest.js"; // the host's reply summary: one email per event every few hours (server/replydigest.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
@@ -767,6 +768,9 @@ export function createApp({ store, dataDir }) {
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
+  const RD /* the host's reply summary */ = makeReplyDigest({ store, X, mail: (...a) => mailWs(...a), inboxPrefs: (email) => inboxPrefsOf(store, email) });
+  app.locals.replyDigest = RD;
+  if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => RD.run().catch((e) => console.warn("[replydigest]", e?.message)), 20 * 60e3); t.unref?.(); }
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
   mountFeedComments(app, { small, currentUser, X }); // ---- comments on feed cards (server/feedcomments.js), next to the feed blend it reads ----
@@ -1130,7 +1134,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, emailVerified: emailVerified(u.email), ...(getDbUser(u.email)?.phone ? { phone: getDbUser(u.email).phone } : {}), ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|chatmembers|chatreports|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
+  const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|chatmembers|chatreports|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies|replydigest)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
@@ -1792,11 +1796,11 @@ export function createApp({ store, dataDir }) {
   const hostFirstOf = (ws, ev) => firstOf(ev?.hostName) || firstOf(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name) || firstOf(C.profileOf(ws)?.name) || "Your host";
   const emailOn = (ws) => !!(emailConfig(ws, ws === DEFAULT_WS) || emailConfig(DEFAULT_WS, true));
   /** Email on behalf of a workspace when no one is signed in (a guest's reply moved something): logged in its outbox. */
-  async function mailWs(ws, { to, subject, text, eventId = "", kind = "email", fromName = "", list, origin }) {
+  async function mailWs(ws, { to, subject, text, html = "", eventId = "", kind = "email", fromName = "", list, origin }) {
     const cfg = emailConfig(ws, ws === DEFAULT_WS) || emailConfig(DEFAULT_WS, true); if (!cfg) return { ok: false, code: "email_off" };
     const St = scopeStore(store, ws), hour = Date.now() - 36e5;
     if (St.list("outbox").filter((d) => d.data?.at > hour).length >= +(process.env.ENCORE_EMAIL_PER_HOUR || 300)) return { ok: false, code: "rate_limited" };
-    const r = await sendEmail(cfg, { to, subject, text, fromName, list, origin });
+    const r = await sendEmail(cfg, { to, subject, text, fromName, list, origin, ...(html ? { html } : {}) });
     if (r.code === "unsubscribed") return r; // nothing was sent, so nothing to log
     St.add("outbox", { kind, eventId, to: [].concat(to), subject: String(subject || "").slice(0, 200), by: null, at: Date.now(), status: r.ok ? "sent" : "failed", error: r.error || null, providerId: r.id || null });
     return r;
@@ -1911,8 +1915,11 @@ export function createApp({ store, dataDir }) {
       const line = (typeof req.hostLine === "function" && req.hostLine(now, who, title)) || { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.${after.paid ? " They had paid." : after.paidClaim ? " They said they paid." : ""}` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
       // review round 7: a pre-order reply says what they ordered
       if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: now === "going" && after.order ? `🛍 ${who} ordered ${String(after.order).slice(0, 160)} (${title}).` : line, link: studio, eventId });
+      let firstYes = false;
       // the first yes on an event also reaches the host's own inbox, once: a host planning their first dinner is rarely in the app when it lands (review round 18). Every reply after it stays in the bell.
-      if (now === "going" && was !== "going" && !after.order && !ev.drop && !ev.example && X.canEmail(owner) && String(after.email || "").toLowerCase() !== String(owner).toLowerCase() && St.list("rsvps").filter((d) => d.data?.eventId === eventId && d.data?.response === "going").length === 1) { try { await mailWs(ws, { to: owner, subject: `${who} is in for ${title}`, text: `${who} said I'm in. That's the first yes for ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nSee who's coming: ${originOf(req)}${studio}\n\nThe next replies wait in your bell, not your inbox.\n`, eventId, kind: "firstyes" }); } catch {} }
+      if (now === "going" && was !== "going" && !after.order && !ev.drop && !ev.example && X.canEmail(owner) && String(after.email || "").toLowerCase() !== String(owner).toLowerCase() && St.list("rsvps").filter((d) => d.data?.eventId === eventId && d.data?.response === "going").length === 1) { try { await mailWs(ws, { to: owner, subject: `${who} is in for ${title}`, text: `${who} said I'm in. That's the first yes for ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nSee who's coming: ${originOf(req)}${studio}\n\n${RD.wants(owner) ? "After this one, replies come as one short summary every few hours, never one by one. You can turn that off in Settings." : "The next replies wait in your bell, not your inbox."}\n`, eventId, kind: "firstyes" }); firstYes = true; RD.sent(ws, eventId); } catch {} }
+      // every other reply waits for the host's summary: one email per event every few hours (server/replydigest.js)
+      if (!firstYes && !ev.example && now !== "requested" && String(after.email || "").toLowerCase() !== String(owner).toLowerCase()) { try { RD.note(ws, eventId, { rid: id, name: String(after.name || who).slice(0, 40), state: now, was, plus: +after.plusOne || 0, order: now === "going" && after.order ? String(after.order) : "", origin: originOf(req) }); } catch {} }
       if (now === "requested" && X.canEmail(owner)) { try { await mailWs(ws, { to: owner, subject: `${who} asked to join ${title}`, text: `${String(after.name || who).slice(0, 80)} asked to join ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nLet in or Not this time: ${originOf(req)}${studio}\n`, eventId, kind: "ask" }); } catch {} }
     }
     // the host let someone in: tell the guest by email, text and their bell

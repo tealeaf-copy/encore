@@ -208,12 +208,12 @@ test("Host your own: the kudos thanks and the You're in screen link to sign-up w
 });
 
 // ---------- review round 18: the host's first yes ----------
-test("The first yes on an event reaches the host's inbox once; the replies after it stay in the bell", async () => {
+test("The first yes on an event reaches the host's inbox once; the replies after it wait for the summary (test/reply-digest.test.js)", async () => {
   assert.ok((await putEv("lrFirst", { kind: "social", casual: true, published: true, date: day(6), startTime: "19:00", tz: "America/New_York", city: "Brooklyn", hood: "Bed-Stuy", headcount: 8, name: "Soup night" })).ok);
   const e0 = fakeOutbox.length;
   assert.equal((await guestReply("lrFirst", "lr-key-first1", { name: "Sam Lee", email: "sam.first@guest.example.com", response: "going" })).j.response, "going");
   const m = mailsTo("rae.lr@example.com", e0).filter((x) => /is in for Soup night/.test(x.subject)); assert.equal(m.length, 1, "one email to the host");
-  assert.equal(m[0].subject, "Sam is in for Soup night"); assert.match(m[0].text, /^Sam said I'm in\. That's the first yes for Soup night \(.+\)\.\n\nSee who's coming: http.+open=lrFirst#studio\n\nThe next replies wait in your bell, not your inbox\.\n/); assert.doesNotMatch(m[0].text, /\u2014/);
+  assert.equal(m[0].subject, "Sam is in for Soup night"); assert.match(m[0].text, /^Sam said I'm in\. That's the first yes for Soup night \(.+\)\.\n\nSee who's coming: http.+open=lrFirst#studio\n\nAfter this one, replies come as one short summary every few hours, never one by one\. You can turn that off in Settings\.\n/); assert.doesNotMatch(m[0].text, /\u2014/);
   assert.equal((await guestReply("lrFirst", "lr-key-first2", { name: "Tess Wren", email: "tess.first@guest.example.com", response: "going" })).j.response, "going");
   assert.equal(mailsTo("rae.lr@example.com", e0).filter((x) => /is in for Soup night/.test(x.subject)).length, 1, "the second yes does not email the host");
 });

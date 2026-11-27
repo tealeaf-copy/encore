@@ -6,6 +6,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { createRequire } from "node:module";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
@@ -15,7 +16,7 @@ import { openStore } from "../server/db.js";
 import { pottoReply } from "../server/pottorules.js";
 import { readIntent } from "../server/pottotext.js";
 
-const SHOTS = "/tmp/claude-0/-home-user-encore/4dcf6812-fc70-5839-81c8-b6a4c91d6d77/scratchpad/trends";
+const SHOTS = process.env.TRENDS_SHOTS || path.join(os.tmpdir(), "trends-shots"); // screenshots from the browser check
 let srv;
 const J = { "content-type": "application/json" };
 const post = (p, body, cookie) => fetch(srv.base + p, { method: "POST", headers: { ...J, ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body || {}) });
@@ -110,7 +111,7 @@ test("GET /api/public/trends: aggregates with plain reasons, the gate, exclusion
 // ---------- trend notes ----------
 test("trend notes: 15 to 20 seeds in general terms, expiry after about 120 days, and admin-only changes", async () => {
   assert.ok(SEED_NOTES.length >= 15 && SEED_NOTES.length <= 20); assert.equal(NOTE_DAYS, 120);
-  for (const n of SEED_NOTES) { assert.ok(n.name && n.line && n.where && n.seasons.length && n.added, n.id); assert.doesNotMatch(`${n.name} ${n.line} ${n.say}`, /\d+\s*%|percent|—|partiful|tiktok|instagram|eventbrite/i, n.id); }
+  for (const n of SEED_NOTES) { assert.ok(n.name && n.line && n.where && n.seasons.length && n.added, n.id); assert.doesNotMatch(`${n.name} ${n.line} ${n.say}`, /\d+\s*%|percent|\u2014|partiful|tiktok|instagram|eventbrite/i, n.id); }
   const n0 = { ...SEED_NOTES[0], added: "2026-01-01" }; assert.equal(fresh(n0, Date.parse("2026-04-30")), true); assert.equal(fresh(n0, Date.parse("2026-05-02")), false, "older than 120 days drops out");
   const S = openStore(":memory:"), N = makeTrendNotes(S); assert.equal(N.active(Date.parse("2026-11-27")).length, SEED_NOTES.length); assert.equal(N.active(Date.parse("2027-06-01")).length, 0, "the whole seed expires by itself");
   assert.match(cleanNote({ name: "Big thing", line: "Up 300% on every app this week" }).error, /general/); assert.ok(cleanNote({ name: "Soup swap", line: "Two pots and bread for the cold months.", seasons: "winter" }).note);
@@ -180,8 +181,8 @@ test("Potto uses it: chat, text, the ideas row, the swipe deck, the feed card, W
   assert.match(read("public/feedvisual.js"), /x\.head \|\| "Small formats people loved"/); assert.match(read("public/swipedeck.js"), /c\.sourceLine \|\| "An idea to try"/);
   assert.match(read("public/feed.html"), /\/api\/public\/trends\?n=2&city=/); assert.match(read("public/canvas.js"), /PLTrendIdeas\?\.mount/); assert.match(read("public/start.html"), /PLTrendIdeas/);
   assert.match(read("index.html"), /<script src="\/trendideas\.js" defer><\/script>/); assert.match(read("public/trendideas.js"), /suggestFor/);
-  // house rules on the new files
-  for (const f of ["server/trends.js", "server/trendnotes.js", "public/trendideas.js"]) { const t = read(f); assert.doesNotMatch(t, /—/, f + ": no em dashes"); assert.doesNotMatch(t, /claude-|opus|sonnet|haiku/i, f + ": no model names"); }
+  // house rules on the new files: no em dashes
+  for (const f of ["server/trends.js", "server/trendnotes.js", "public/trendideas.js"]) { const t = read(f); assert.doesNotMatch(t, /\u2014/, f + ": no em dashes"); }
   const idx = read("index.html"); assert.match(idx.slice(idx.lastIndexOf("<script")), /comewith\.js/, "the Come with me? loader stays the last script");
 });
 

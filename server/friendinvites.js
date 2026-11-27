@@ -135,7 +135,7 @@ export function mountFriendInvites(app, { store, small, currentUser, C, X, publi
 
   // ---- the invitee: the warm page and what it may show ----
   app.get("/api/public/friend-invite/:code", (req, res) => { if (limited("finvp:" + (req.ip || "?"), 120)) return bad(res, "Slow down.", 429, "rate_limited");
-    const P = isFriendCode(req.params.code) ? FI.publicOf(req.params.code) : null; if (!P) return bad(res, "That invite link doesn't work. Ask your friend for a new one.", 404, "not_found");
+    const P = isFriendCode(req.params.code) ? FI.publicOf(req.params.code) : null; if (!P) return res.set("Cache-Control", "no-store").json({ ok: false, status: "missing", from: null, message: "That invite link doesn't work. Ask your friend for a new one." }); // an answer, not a 404: the page says so kindly
     if (req.query.view === "1") FI.opened(req.params.code);
     res.set("Cache-Control", "no-store").json({ ok: P.status === "open", ...P, code: String(req.params.code).toUpperCase(), signup: `/signup?code=${encodeURIComponent(String(req.params.code).toUpperCase())}`,
       ...(P.status !== "open" ? { message: FI.check(req.params.code).message } : {}) }); });

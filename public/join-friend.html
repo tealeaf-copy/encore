@@ -60,9 +60,9 @@ ul.why{list-style:none;margin:24px 0 0;padding:0}ul.why li{padding:12px 0;border
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id), code = (location.pathname.split("/").pop() || "").toUpperCase();
-  let j = null; try { const r = await fetch("/api/public/friend-invite/" + encodeURIComponent(code) + "?view=1"); j = await r.json(); if (r.status === 404) j = { ok: false, message: j.message }; } catch {}
+  let j = null; try { const r = await fetch("/api/public/friend-invite/" + encodeURIComponent(code) + "?view=1"); j = await r.json(); } catch {}
   $("load").hidden = true;
-  if (!j || !j.ok) { $("off").hidden = false; $("offH").textContent = j && j.status === "expired" ? "This invite ran out" : j && j.status ? "This invite can't be used" : "This invite link doesn't work";
+  if (!j || !j.ok) { $("off").hidden = false; $("offH").textContent = j && j.status === "expired" ? "This invite ran out" : j && j.status && j.status !== "missing" ? "This invite can't be used" : "This invite link doesn't work";
     $("offMsg").textContent = (j && j.message) || "Ask your friend for a new one, or join the waitlist and we'll make room."; document.title = "Invite · Pottery Lab"; return; }
   const name = j.from && j.from.first ? j.from.first : "";
   $("h").textContent = name ? `${name} invited you to Pottery Lab` : "You're invited to Pottery Lab";

@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>What the host sees · Pottery Lab</title><meta name="description" content="The demo: the same request, from the host's side.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb" data-top><main class="bb-wrap" id="main" aria-busy="true"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $ } = BB; BB.top("bookings");
+  const id = location.pathname.split("/").pop(), main = $("#main");
+  const day = (d) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }) : "");
+  const LABEL = { goal: { customer: "Customer dinner", team: "Team bonding", community: "Community", workshop: "Workshop", offsite: "Team offsite", wellness: "Wellness", conference: "Conference week", celebration: "Launch or party", catering: "Food for the office", summit: "Summit help" }, invites: { brand: "The brand invites all its guests", both: "Both: the brand fills its seats, the host fills theirs", host: "The host invites from their own following" } };
+  async function load() { let D; try { D = await api("/api/teams/demo/host/" + encodeURIComponent(id)); } catch (e) { main.removeAttribute("aria-busy"); main.innerHTML = `<h1>This request isn't here</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn" href="/teams/demo">Open the demo</a>`; return; }
+    const r = D.request, h = D.host, B = D.brief, booked = ["accepted", "booked", "done"].includes(r.status);
+    main.removeAttribute("aria-busy");
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">The host's side ${BB.exampleTag("Demo")}</p><h1>${booked ? `${esc(h.person || h.name)} accepted` : `What ${esc(h.person || h.name)} sees`}</h1>
+        <p class="bb-lede">${booked ? "You're booked. The deposit is held and the date is yours. In the demo nothing is charged." : `This is the request in ${esc(h.name)}'s inbox, exactly as they'd read it. Read only.`}</p></section>
+      <div class="bb-host" style="margin:8px 0 18px"><div>${h.avatarArt && window.EncoreAvatars ? `<span class="bb-av art" aria-hidden="true">${window.EncoreAvatars.svg(h.avatarArt, h.accent || "#9A4128", 64)}</span>` : `<span class="bb-av">${esc((h.person || h.name)[0] || "")}</span>`}</div>
+        <div><p class="bb-kicker">Inbox · ${esc(h.name)}</p><h2 style="margin:0">${esc(r.statusText)}</h2><p class="bb-meta" style="margin:4px 0 0">From ${esc(r.contactName || "Sam")} at ${esc(r.company)}${r.respondedAt ? "" : ". Reply within a day."}</p></div></div>
+      <section class="bb-sec"><h2>${esc(r.pkgName)}</h2>
+        <table class="bb-lines"><tbody>
+          <tr><td>Group</td><td class="n">${r.headcount} guests</td></tr>
+          <tr><td>Date</td><td class="n">${esc(day(r.date) || r.flexText)}</td></tr>
+          <tr><td>The brand pays</td><td class="n">${money(D.payout.totalCents)}</td></tr>
+          <tr><td>You're paid</td><td class="n">${money(D.payout.hostCents)}</td></tr>
+          <tr><td>Deposit</td><td class="n">${money(D.payout.depositCents)}, ${booked ? "held" : "held when you accept"}</td></tr>
+        </tbody></table></section>
+      ${B ? `<section class="bb-sec"><h2>The brief</h2><ul class="bb-facts">
+          <li>${icon("flag")}<span><b>Goal.</b> ${esc(LABEL.goal[B.goal] || B.goal)}${B.goalNote ? ". " + esc(B.goalNote) : ""}</span></li>
+          <li>${icon("people")}<span><b>Guests.</b> ${B.mix.brand} from ${esc(r.company)}${B.mix.host ? `, ${B.mix.host} from your own following` : ""}</span></li>
+          <li>${icon("mail")}<span><b>Invites.</b> ${esc(LABEL.invites[B.invites] || "")}</span></li>
+          ${B.plan ? `<li>${icon("doc")}<span><b>The plan.</b> ${esc(B.plan)}</span></li>` : ""}
+          <li>${icon("camera")}<span><b>Photos.</b> ${B.photos === "none" ? "No photos or video" : B.photos === "host" ? "Only your recap photos" : "The brand may photograph guests who say yes"}</span></li></ul>
+          <p class="bb-meta">${B.hostAgreed ? "You agreed to this version." : "You can agree, or suggest a change. Either side's edit asks the other to agree again."}</p></section>` : ""}
+      <section class="bb-sec"><p class="bb-note">${icon("lock")} ${esc(D.hidden)}</p></section>
+      <div class="ft" style="display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 40px">${D.canAccept ? `<button class="bb-btn primary lg" type="button" id="accept">${icon("check")} Accept, as ${esc(h.person || h.name)}</button><span class="bb-meta" style="align-self:center">The host could also suggest a change or decline.</span>`
+        : booked ? `<a class="bb-btn primary lg" id="next" href="${esc(D.next || "")}">Open the guest list</a><a class="bb-btn lg" href="/teams/bookings/${esc(r.id)}">Back to the booking</a>` : `<a class="bb-btn lg" href="/teams/bookings/${esc(r.id)}">Back to the booking</a>`}</div>`;
+    const a = $("#accept"); if (a) a.onclick = async () => { a.disabled = true; try { const j = await api("/api/teams/demo/act", { act: "accept", id: r.id }); next = j.campaign || `/teams/bookings/${r.id}`; await load(); } catch (e) { a.disabled = false; BB.toast(e.message); } };
+    const n = $("#next"); if (n) n.href = next || D.next || `/teams/bookings/${r.id}`; }
+  let next = ""; load();
+})();
+</script><script src="/teams-demo.js" defer></script></body></html>

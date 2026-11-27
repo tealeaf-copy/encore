@@ -80,6 +80,8 @@ const hookJobs = setInterval(() => app.locals.hooks?.runJobs().catch((e) => cons
 setTimeout(() => app.locals.hooks?.runJobs().catch(() => {}), 90e3).unref?.();
 // Potto's nudges at each host's own rhythm, and Circles settling at the end of a period (server/hostloop.js). Hourly.
 const loopJobs = setInterval(() => app.locals.hostloop?.runJobs().catch((e) => console.warn("[hostloop]", e.message)), 3600e3); loopJobs.unref?.();
+// the marketer demo: sandboxes older than a day are deleted with everything in them (server/branddemo.js). Hourly.
+const demoJobs = setInterval(() => { try { app.locals.brandDemo?.sweep(); } catch (e) { console.warn("[demo]", e.message); } }, 3600e3); demoJobs.unref?.();
 function shutdown() {
   pmTask?.stop?.();
   server.close(() => { store.close(); process.exit(0); });

@@ -20,7 +20,7 @@
       ["Reviews", (i) => (i.stats.reviews ? `<span class="${topRating(i) ? "best" : ""}">${i.stats.rating.toFixed(1)}</span> from ${i.stats.reviews}` : "New to teams")],
       ["Events hosted", (i) => String(i.stats.events)],
       ["Replies in", (i) => (i.stats.responseHours != null ? `<span class="${fastest(i) ? "best" : ""}">${BB.hours(i.stats.responseHours)}</span>` : "No requests yet")],
-      ["Trust", (i) => [i.stats.trusted ? "Trusted host" : "", i.stats.idChecked ? "ID checked" : "", i.stats.coi?.onFile ? "Insured" : ""].filter(Boolean).join(" · ") || "Email verified"],
+      ["Trust", (i) => [i.stats.trusted ? "Trusted host" : "", i.stats.idChecked ? "ID checked" : "", i.stats.coi?.onFile ? "Insured" : ""].filter(Boolean).join(" · ") || (i.card.host.example ? "Example host" : "Email verified")],
       ["Group size", (i) => `${i.pkgInfo.minGuests} to ${i.pkgInfo.maxGuests}`],
       ["Notice", (i) => `${i.pkgInfo.leadDays} days`],
       ["Includes", (i) => esc(i.pkgInfo.includes.join(", ") || "Ask the host")],

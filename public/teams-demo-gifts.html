@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Send gifts · Pottery Lab</title><meta name="description" content="The demo: send a maker's gift to the people at your target accounts, with a note, a delivery plan and the cost up front.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css">
+<style>
+.gd-list{display:grid;gap:8px;grid-template-columns:minmax(0,1fr);margin:12px 0}
+@media (min-width:720px){.gd-list{grid-template-columns:repeat(2,minmax(0,1fr))}.gd-list.g3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.gd-pick{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--bb-line);border-radius:var(--bb-r);background:var(--bb-card);cursor:pointer;min-height:44px}
+.gd-pick:has(input:checked){border-color:var(--bb-ink);box-shadow:inset 0 0 0 1px var(--bb-ink);background:var(--bb-hi)}
+.gd-pick input{margin-top:4px;width:20px;height:20px;flex:none;accent-color:var(--bb-ink)}
+.gd-pick b{display:block;font:600 16px var(--bb-sans)}.gd-pick small{display:block;font:400 15px/1.4 var(--bb-sans);color:var(--bb-ink)}
+.gd-gift{display:grid;grid-template-rows:auto 1fr;padding:0;overflow:hidden}.gd-gift .ph{height:120px;overflow:hidden;border-bottom:1px solid var(--bb-line)}.gd-gift .ph .bb-art,.gd-gift .ph svg{width:100%;height:100%;display:block}
+.gd-gift .bd{display:flex;gap:10px;padding:12px 14px}
+.gd-steps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;padding:0;list-style:none;font:500 14px var(--bb-mono)}.gd-steps li{padding:4px 10px;border:1px solid var(--bb-line);border-radius:999px}.gd-steps li[aria-current]{border-color:var(--bb-ink);background:var(--bb-hi)}
+.gd-ft{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:16px 0 40px}
+.gd-card{border:1px solid var(--bb-ink);border-radius:var(--bb-r);background:var(--bb-card);padding:16px;margin:12px 0}
+</style></head>
+<body class="bb" data-top data-gstep="to"><main class="bb-wrap" id="main" aria-busy="true"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $, $$ } = BB; BB.top("home");
+  const main = $("#main"), S = { to: new Set(), gift: "", note: "" }; let D = null, plan = null, sent = null;
+  const STEPS = [["to", "Who"], ["gift", "Gift"], ["note", "Note"], ["plan", "Plan and cost"], ["sent", "Sent"]];
+  const day = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  const art = (g) => { try { return window.EventArt ? `<span class="bb-art" role="img" aria-label="${esc(g.name)}">${window.EventArt.cover({ title: g.name }, { kind: g.art, title: "", label: "", exact: true })}</span>` : ""; } catch { return ""; } };
+  function frame(step, html, foot) { document.body.dataset.gstep = step; main.removeAttribute("aria-busy");
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Send gifts ${BB.exampleTag("Demo")}</p><h1>${step === "sent" ? "Sent" : "A small thank-you, from a real maker"}</h1>
+      <p class="bb-lede">${step === "sent" ? "In the demo nothing is ordered, charged or shipped." : `For the people at ${esc(D.company)}'s target accounts. Every maker here is an example.`}</p></section>
+      <ol class="gd-steps" aria-label="Steps">${STEPS.map(([k, t]) => `<li${k === step ? ' aria-current="step"' : ""}>${t}</li>`).join("")}</ol>${html}<div class="gd-ft">${foot || ""}</div>`; }
+  function who() { frame("to", `<h2 class="bb-sub">Who it's for</h2><div class="gd-list" id="gTo">${D.recipients.map((r) => `<label class="gd-pick"><input type="checkbox" value="${r.id}"${S.to.has(r.id) ? " checked" : ""}><span><b>${esc(r.name)}</b><small>${esc(r.title)}, ${esc(r.company)} · ${esc(r.city)}</small></span></label>`).join("")}</div>`,
+      `<span class="bb-meta" id="gN" aria-live="polite"></span><button class="bb-btn primary lg" type="button" id="gNext">Next: pick a gift</button>`);
+    const upd = () => { $("#gN").textContent = `${S.to.size} ${S.to.size === 1 ? "person" : "people"}`; $("#gNext").disabled = !S.to.size; }; upd();
+    $$("#gTo input").forEach((c) => (c.onchange = () => { c.checked ? S.to.add(c.value) : S.to.delete(c.value); upd(); })); $("#gNext").onclick = gift; }
+  function gift() { frame("gift", `<h2 class="bb-sub">Pick a maker's gift</h2><div class="gd-list g3" id="gGift">${D.gifts.map((g) => `<label class="gd-pick gd-gift"><span class="ph">${art(g)}</span><span class="bd"><input type="radio" name="g" value="${g.id}"${S.gift === g.id ? " checked" : ""}><span><b>${esc(g.name)}</b><small>${esc(g.maker)} ${BB.exampleTag()} · ${esc(g.price)}</small><small>${esc(g.note)}</small><small>${esc(g.ships)} · ready in ${g.leadDays} days</small></span></span></label>`).join("")}</div>`,
+      `<button class="bb-btn lg" type="button" id="gBack">Back</button><button class="bb-btn primary lg" type="button" id="gNext"${S.gift ? "" : " disabled"}>Next: your note</button>`);
+    $$("#gGift input").forEach((c) => (c.onchange = () => { S.gift = c.value; $("#gNext").disabled = false; })); $("#gBack").onclick = who; $("#gNext").onclick = note; }
+  function note() { const g = D.gifts.find((x) => x.id === S.gift); S.note ||= `Thank you for spending an evening with us this fall. A small something from ${g.maker}, made by hand. Sam at ${D.company}`;
+    frame("note", `<h2 class="bb-sub">Your note</h2><label class="bb-field" id="gNote"><span>Printed on a card from ${esc(g.maker)}</span><textarea id="gT" maxlength="300" rows="4">${esc(S.note)}</textarea><small><span id="gC"></span> of 300</small></label>`,
+      `<button class="bb-btn lg" type="button" id="gBack">Back</button><button class="bb-btn primary lg" type="button" id="gNext">Next: the plan and cost</button>`);
+    const t = $("#gT"), c = () => { $("#gC").textContent = t.value.length; }; c(); t.oninput = () => { S.note = t.value; c(); }; $("#gBack").onclick = gift; $("#gNext").onclick = planStep; }
+  async function planStep() { try { const r = await api("/api/teams/demo/gifts/plan", { gift: S.gift, to: [...S.to] }); plan = r.plan; } catch (e) { return BB.toast(e.message); } const g = D.gifts.find((x) => x.id === S.gift);
+    frame("plan", `<h2 class="bb-sub">The delivery plan</h2><div id="gPlan"><table class="bb-lines"><tbody>${plan.rows.map((r) => `<tr><td>${esc(r.name)}<small>${esc(r.company)} · ${esc(r.method)} · arrives by ${esc(day(r.arrive))}</small></td><td class="n">${money(r.cents, true)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td>Gifts, ${plan.rows.length} × ${esc(g.price)}</td><td class="n">${money(plan.giftCents, true)}</td></tr><tr><td>Delivery</td><td class="n">${money(plan.shipCents, true)}</td></tr><tr><td>Pottery Lab fee</td><td class="n">None</td></tr><tr><th>Total</th><th class="n">${money(plan.totalCents, true)}</th></tr></tfoot></table>
+        <p class="bb-note">${icon("lock")} Each person gets a link to add their own address. ${esc(D.company)} never sees it, and nobody gets a gift they didn't say yes to.</p></div>`,
+      `<button class="bb-btn lg" type="button" id="gBack">Back</button><button class="bb-btn primary lg" type="button" id="gSend">Send ${plan.rows.length} ${plan.rows.length === 1 ? "gift" : "gifts"} · ${money(plan.totalCents)}</button>`);
+    $("#gBack").onclick = note; $("#gSend").onclick = async (e) => { e.currentTarget.disabled = true; try { sent = await api("/api/teams/demo/gifts", { gift: S.gift, to: [...S.to], note: S.note }); done(); } catch (er) { e.currentTarget.disabled = false; BB.toast(er.message); } }; }
+  function done() { const s = sent.sent;
+    frame("sent", `<div class="gd-card"><p class="bb-kicker">On its way, in the demo</p><h2 style="margin:4px 0 6px">${esc(s.gift.name)} to ${s.plan.rows.length} ${s.plan.rows.length === 1 ? "person" : "people"}</h2><p>${esc(sent.message)}</p>
+        <ul class="bb-facts">${s.plan.rows.map((r) => `<li>${icon("check")}<span>${esc(r.name)}, ${esc(r.company)}: arrives by ${esc(day(r.arrive))}</span></li>`).join("")}</ul></div>`,
+      `<a class="bb-btn lg" href="/teams/demo?path=gift&amp;reset=1">Start over</a><a class="bb-btn primary lg" id="gView" href="${esc(sent.view)}">See what they see</a>`); }
+  api("/api/teams/demo/gifts").then((d) => { D = d; who(); }).catch((e) => { main.removeAttribute("aria-busy"); main.innerHTML = `<section class="bb-xhead"><h1>Open the demo first</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn primary lg" href="/teams/demo?path=gift">Open the demo</a></section>`; });
+})();
+</script><script src="/teams-demo.js" defer></script></body></html>

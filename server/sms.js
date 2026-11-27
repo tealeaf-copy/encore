@@ -1,5 +1,6 @@
 // Text messages (pickup reminders for giveaways, host broadcasts). Optional: set ENCORE_TWILIO_SID, ENCORE_TWILIO_TOKEN
 // and ENCORE_TWILIO_FROM on the server. Without them, Pottery Lab hands the host tap-to-text links instead.
+import { inDemo } from "./democtx.js";
 export const fakeTexts = [];
 // numbers that replied STOP are never texted again (until they reply START)
 let stopCheck = null; export const useSmsStop = (fn) => { stopCheck = fn; };
@@ -14,6 +15,7 @@ export const smsStopped = (to) => { try { return !!(stopCheck && stopCheck(norm(
 const norm = (p) => { const d = String(p || "").replace(/[^\d+]/g, ""); return d.startsWith("+") ? d : d.length === 10 ? "+1" + d : d.length === 11 && d.startsWith("1") ? "+" + d : "+" + d; };
 /** Send one text. Returns { ok } or { ok:false, error }. Never throws. */
 export async function sendSms(cfg, { to, text }) {
+  if (inDemo()) return { ok: true, demo: true }; // the marketer demo texts nobody (server/democtx.js)
   if (!cfg) return { ok: false, error: "Texting isn't set up." };
   const num = norm(to), body = String(text || "").slice(0, 600);
   if (!/^\+\d{7,16}$/.test(num)) return { ok: false, error: "Not a phone number." };

@@ -483,13 +483,13 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
     const q = req.query || {}, people = int(q.people, 0, 2000), date = ISO.test(q.date || "") ? q.date : "", budgetCents = int(q.budget, 0, 100000) * 100, city = clean(q.city, 60), goal = goalOf(q.goal) ? q.goal : "", today = isoDay(), only = clean(q.only, 120).toLowerCase();
     if (!people) return bad(res, "How many people?"); if (date && date < today) return bad(res, "That date has passed.");
     const u = me(req), W = u ? getWorkspace(u.ws) : null, rules = u && W?.plan !== "friends" ? BB().rulesOf(u.ws) : null, cands = [];
-    for (const x of BB().allSetups({ examples: true })) { if (BB().example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; if (u && x.ws === u.ws) continue; const st = BB().statsOf(x.ws), A = approxArea(x.s.area, x.s.city || x.h.city);
+    BB().batch(() => { for (const x of BB().allSetups({ examples: true })) { if (BB().example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; if (u && x.ws === u.ws) continue; const st = BB().statsOf(x.ws), A = approxArea(x.s.area, x.s.city || x.h.city);
       for (const p of x.s.packages.filter((p) => p.on && (!only || only === `${x.h.handle}/${p.id}`))) { const card = BB().cardOf(x, p, people || p.minGuests, st), price = card.price, taken = BB().takenFor(x.ws, p.id);
         let dateState = "", altDate = ""; if (date) { const months = [date.slice(0, 7), addDays(date, 20).slice(0, 7)], days = months.flatMap((m) => availabilityFor(p, m, { taken, today }).days); dateState = days.find((d) => d.date === date)?.state || "closed";
           if (dateState !== "open") { const near = days.filter((d) => d.state === "open" && Math.abs(daysBetween(date, d.date)) <= 14).sort((a, b) => Math.abs(daysBetween(date, a.date)) - Math.abs(daysBetween(date, b.date)))[0]; altDate = near?.date || ""; } }
         const full = priceFor(p, people, u ? { feeBps: BB().feeFor(u.ws, x.ws) } : {}), terms = cancellationTerms(x.s.policy, p.depositPct);
         cands.push({ ...card, price, alsoIn: x.s.alsoIn || [], city: x.s.city || x.h.city || "", areaCity: A.city, area: A.area, access: p.access || [], diets: p.diets || [], moods: p.moods || [], quality: st.quality, trusted: st.trusted, totalCents: full.totalCents, effectivePerPersonCents: full.effectivePerPersonCents,
-          dateState, altDate, policy: x.s.policy, depositCents: full.depositCents, terms: terms.short, priceLines: full.lines.filter((l) => l.cents || l.k === "people"), summary: full.summary }); } }
+          dateState, altDate, policy: x.s.policy, depositCents: full.depositCents, terms: terms.short, priceLines: full.lines.filter((l) => l.cents || l.k === "people"), summary: full.summary }); } } });
     // services (food, photos, flowers, staff, planning) lead only for a service goal; otherwise they're suggested as add-ons.
     // Real hosts always come first: examples fill the slots left when fewer than 3 real hosts fit, never displacing one.
     const G = goalOf(goal), isSvc = (x) => x.kind === "service", rq = { date, people, budgetCents, city: only ? "" : city, goal };

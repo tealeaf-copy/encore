@@ -42,7 +42,7 @@ test("Every example host is clearly fictional and complete: packages with prices
   for (const x of L) { assert.ok(x.ws.startsWith("x_"), "examples are not workspaces"); assert.ok(x.h.theme.avatarArt, `${x.h.handle} has avatar art`); assert.ok(x.s.packages.length >= 1 && x.s.packages.length <= 6, x.h.handle);
     const E = exampleByHandle(x.h.handle); assert.ok(E.reviews.length >= 1, `${x.h.handle} has example reviews`); assert.equal(E.stats.trusted, undefined); assert.ok(E.stats.events < 10, "an example history never earns the Trusted badge");
     for (const p of x.s.packages) { assert.ok(p.perPersonCents > 0 && p.minGuests >= 1 && p.maxGuests >= p.minGuests, `${x.h.handle}/${p.id}`); assert.ok(/^[a-z0-9]{6,16}$/.test(p.id), p.id); assert.ok(p.openUntil >= day(90), "open for the next 3 months");
-      assert.ok(!/—/.test(p.story + p.name + (p.details || []).join(" ")), "no em dashes"); } }
+      assert.ok(!/\u2014/.test(p.story + p.name + (p.details || []).join(" ")), "no em dashes"); } }
   const kinds = { "private chef": ["marlow-table", "ember-and-fig"], matcha: ["still-water-matcha", "fog-leaf-matcha"], coffee: ["second-pull", "phin-and-night"], bakery: ["rise-and-crumb", "crumb-theory"], florist: ["petal-and-stem", "wild-fennel"],
     yoga: ["move-with-ava", "golden-hour-movement"], "sound bath": ["low-tide-sound", "hum-and-hollow"], staff: ["floor-crew", "crewline"], planner: ["north-star-summits", "bayline-summits"], caterer: ["corner-plate", "phin-and-night"] };
   for (const [k, [ny, sf]] of Object.entries(kinds)) { assert.equal(exampleByHandle(ny).s.city, "New York", k); assert.equal(exampleByHandle(sf).s.city, "San Francisco", k); }

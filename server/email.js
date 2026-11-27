@@ -3,6 +3,7 @@
 // encrypted with its other connections. The default workspace can use ENCORE_EMAIL_SERVICE / ENCORE_EMAIL_KEY /
 // ENCORE_EMAIL_FROM instead. ENCORE_FAKE_EMAIL=1 records messages without sending them (demos and tests).
 import { connectionTokens, getWorkspace } from "./workspaces.js";
+import { inDemo, isDemoEmail } from "./democtx.js";
 import { emailBrand, emailHtml } from "./brandkit.js"; // guest emails wear the host's accent and logo
 import { createHmac, createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
@@ -60,6 +61,9 @@ const clean = (s, n) => String(s ?? "").replace(/[\r\n]+/g, " ").trim().slice(0,
 // html: a ready-made HTML body for a system email with one button (the host's reply summary); the text stays the fallback.
 export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin, brandWs, html: ownHtml = "" }) {
   if (!cfg) return { ok: false, error: "Email isn't set up for this workspace." };
+  // the marketer demo sends nothing, and demo and example people are never mailed (server/democtx.js)
+  if (inDemo() || (brandWs && getWorkspace(brandWs)?.demo === true)) return { ok: true, demo: true, sent: 0 };
+  to = [].concat(to || []).filter((x) => !isDemoEmail(x)); cc = [].concat(cc || []).filter((x) => !isDemoEmail(x)); if (!to.length) return { ok: true, demo: true, sent: 0 };
   // the reserved .invalid domain is never mailed: phone-only accounts hold a stand-in address there (server/signin.js)
   const mailable = (x) => EMAIL_RE.test(x) && !/\.invalid$/i.test(x);
   let rcpt = [].concat(to || []).map((x) => String(x).trim()).filter(mailable);

@@ -33,6 +33,7 @@ import { isAdmin } from "./metrics.js";
 import { isNativeReq } from "./fanclub.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { isExampleEmail } from "./recognition.js";
+import { demoWsNow } from "./democtx.js";
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 const cleanText = (v, n = 1500) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, n);
@@ -352,7 +353,10 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   // ---- reading hosts ----
   const setupOf = (ws) => (isExampleWs(ws) ? exampleByWs(ws)?.s || null : S0(ws).get("teambook/setup")?.data || null);
   const verifyOf = (ws) => S0(ws).get("teambook/verify")?.data || {};
-  const reqs = () => store.listPrefix("system", "bbreq-").map((d) => d.data).filter((r) => r && r.kind === "bbreq");
+  // a demo brand's requests (server/branddemo.js) are seen by that demo only: never by another brand, a host sweep or a metric
+  const reqs = () => { if (memo) return memo; const dws = demoWsNow(); return store.listPrefix("system", "bbreq-").map((d) => d.data).filter((r) => r && r.kind === "bbreq" && (!r.demo || r.brandWs === dws)); };
+  // one read of every request for a whole listing (Discover, Quick book), instead of one per package; synchronous only
+  let memo = null; const batch = (fn) => { const prev = memo; memo = memo || reqs(); try { return fn(); } finally { memo = prev; } };
   const reqGet = (id) => store.get("system/bbreq-" + String(id || "").replace(/[^a-f0-9]/g, "").slice(0, 24))?.data || null;
   const reqSet = (r) => { r.updatedAt = Date.now(); store.set("system/bbreq-" + r.id, r); return r; };
   const ownerEmailOf = (ws) => getWorkspace(ws)?.ownerEmail || "";
@@ -411,7 +415,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   app.get("/api/bb/discover", (req, res) => { if (limited("d:" + req.ip, 600)) return bad(res, "Slow down.", 429, "rate_limited");
     const q = req.query || {}, mood = MOODS.some((m) => m.id === q.mood) ? q.mood : "", people = int(q.people, 0, 2000), budget = int(q.budget, 0, 100000) * 100, hood = lc(q.hood), diets = String(q.diet || "").split(",").filter((d) => DIETS.includes(d)), access = String(q.access || "").split(",").filter((d) => ACCESS.includes(d));
     const from = ISO.test(q.from || "") ? q.from : "", to = ISO.test(q.to || "") ? q.to : "", out = [];
-    for (const x of allSetups({ examples: true })) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; const st = statsOf(x.ws);
+    batch(() => { for (const x of allSetups({ examples: true })) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; const st = statsOf(x.ws);
       for (const p of x.s.packages.filter((p) => p.on)) {
         if (mood === "under50" ? !(p.perPersonCents && p.perPersonCents <= 5000) : mood === "remote" ? !p.remote : mood && !p.moods.includes(mood)) continue;
         if (people && (people < p.minGuests || people > p.maxGuests)) continue;
@@ -419,7 +423,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
         if (hood && !p.remote && lc(x.s.area) !== hood && lc(x.s.city || x.h.city) !== hood && lc(approxArea(x.s.area, x.s.city).city) !== hood && !(x.s.alsoIn || []).map(lc).includes(hood)) continue;
         if (diets.some((d) => !p.diets.includes(d)) || access.some((a) => !p.access.includes(a))) continue;
         if (from) { const months = new Set([from.slice(0, 7), (to || from).slice(0, 7)]); let any = false; for (const m of months) { const A = availabilityFor(p, m, { taken: takenFor(x.ws, p.id) }); if (A.days.some((d) => d.state === "open" && d.date >= from && (!to || d.date <= to))) any = true; } if (!any) continue; }
-        out.push(cardOf(x, p, people, st)); } }
+        out.push(cardOf(x, p, people, st)); } } });
     out.sort((a, b) => (b.host.example ? -1 : 0) - (a.host.example ? -1 : 0) || b.quality - a.quality || (a.perPersonCents - b.perPersonCents));
     res.set("Cache-Control", "private, no-store").json({ results: out, total: out.length, mood: MOODS.find((m) => m.id === mood) || null }); });
 
@@ -504,7 +508,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     return o;
   }
   const push = (r, by, what) => { r.history = [...(r.history || []), { at: Date.now(), by, what }].slice(-60); };
-  const tell = (email, text, link) => { try { X.notify?.(email, { kind: "teambook", text, link, eventId: "" }); } catch {} };
+  const tell = (email, text, link) => { if (demoWsNow() || /@demo\.encore$/i.test(String(email || ""))) return; try { X.notify?.(email, { kind: "teambook", text, link, eventId: "" }); } catch {} };
   const pay = payProvider();
 
   app.post("/api/bb/requests", small, async (req, res) => { const u = need(req, res); if (!u) return; if (limited("r:" + u.ws, 40)) return bad(res, "That's a lot of requests at once. Try again in a while.", 429, "rate_limited");
@@ -515,6 +519,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return no("This experience isn't bookable right now.", 404, "not_found");
     if (F.ws === u.ws) return no("That's your own experience.");
     if (example(F.ws) && !demoBrand(u.ws) && process.env.ENCORE_ALLOW_DEMO_WRITES !== "1") return no(EXAMPLE_REFUSAL, 403, "example");
+    if (demoBrand(u.ws) && !isExampleWs(F.ws)) return no("In the demo you can book the example hosts only.", 403, "demo");
     const { ws, h, s, p } = F, n = int(b.headcount, 0, 2000);
     if (n < p.minGuests || n > p.maxGuests) return no(`${p.name} is for ${p.minGuests} to ${p.maxGuests} people.`);
     const date = ISO.test(b.date || "") ? b.date : "", flex = !date && b.flex && /^\d{4}-\d{2}$/.test(b.flex.month || "") ? { month: b.flex.month, days: ["weekday", "weekend", "any"].includes(b.flex.days) ? b.flex.days : "weekday", time: ["evening", "daytime", "any"].includes(b.flex.time) ? b.flex.time : "evening" } : null;
@@ -530,7 +535,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
       date, flex, headcount: n, diets: (Array.isArray(b.diets) ? b.diets : []).filter((d) => DIETS.includes(d)), dietNotes: clean(b.dietNotes, 300), access: (Array.isArray(b.access) ? b.access : []).filter((d) => ACCESS.includes(d)), occasion: clean(b.occasion, 120), notes: scrubContact(cleanText(b.notes, 1200)),
       price, feeBps, terms, venue: { kind: p.venue, address: p.venue === "host" ? s.address || "" : "" }, deposit: { state: "none", cents: price.depositCents, provider: pay.name },
       status: approvalPending ? "approval" : "requested", approval: approvalPending ? (cg?.approval && !needsApproval(rules, price.totalCents, u.email) ? { state: "pending", approvers: cg.approval.approvers, rule: cg.approval.rule } : { state: "pending", approvers: [...new Set([...(rules.approvers || []), ...(cg?.approval?.approvers || [])])], rule: rules.approval === "always" ? "Every booking" : `Over ${money0(rules.overCents)}` }) : null, ...(cg ? { campaignId: cg.id } : {}),
-      instantWanted: I.ok || (!!p.instant && st.trusted && approvalPending && I.why === "Your team approves this first."), messages: [], history: [], reviews: {}, billing: { company }, createdAt: Date.now(), sentAt: approvalPending ? 0 : Date.now() };
+      ...(demoBrand(u.ws) ? { demo: true } : {}), instantWanted: I.ok || (!!p.instant && st.trusted && approvalPending && I.why === "Your team approves this first."), messages: [], history: [], reviews: {}, billing: { company }, createdAt: Date.now(), sentAt: approvalPending ? 0 : Date.now() };
     push(r, "brand", approvalPending ? "asked the team to approve" : "sent the request");
     if (I.ok) instantBook(r);
     reqSet(r); if (cg) X.campaignAttach?.(cg.id, r.id);
@@ -543,12 +548,12 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   // a question before booking: a thread with the host, nothing held or charged
   app.post("/api/bb/questions", small, (req, res) => { const u = need(req, res); if (!u) return; if (limited("q:" + u.ws, 30)) return bad(res, "That's a lot of questions at once. Try again later.", 429, "rate_limited");
     const b = req.body || {}, F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return bad(res, "This experience isn't bookable right now.", 404, "not_found"); if (F.ws === u.ws) return bad(res, "That's your own experience.");
-    if (example(F.ws) && !demoBrand(u.ws)) return bad(res, EXAMPLE_REFUSAL, 403, "example");
+    if (example(F.ws) && !demoBrand(u.ws)) return bad(res, EXAMPLE_REFUSAL, 403, "example"); if (demoBrand(u.ws) && !isExampleWs(F.ws)) return bad(res, "In the demo you can ask the example hosts only.", 403, "demo");
     const raw = cleanText(b.text, 1000); if (raw.length < 5) return bad(res, "Write your question first.");
     const W = getWorkspace(u.ws), n = int(b.headcount || F.p.minGuests, F.p.minGuests, F.p.maxGuests), price = priceFor(F.p, n);
     const r = { kind: "bbreq", id: rid(8), hostWs: F.ws, handle: F.h.handle, pkgId: F.p.id, pkgName: F.p.name, brandWs: u.ws, brandEmail: lc(u.email), contactName: clean(u.name || getDbUser(u.email)?.name || "", 80), company: clean(W?.plan !== "friends" ? W?.company : b.company, 120) || first(u.name || ""),
       date: "", flex: null, headcount: n, diets: [], access: [], notes: "", price, terms: cancellationTerms(F.s.policy, F.p.depositPct), venue: { kind: F.p.venue, address: "" }, deposit: { state: "none", cents: price.depositCents, provider: pay.name },
-      status: "question", messages: [{ id: rid(4), from: "brand", name: first(u.name || ""), text: scrubContact(raw), at: Date.now(), hidden: scrubContact(raw) !== raw }], history: [], reviews: {}, billing: {}, createdAt: Date.now(), sentAt: Date.now() };
+      ...(demoBrand(u.ws) ? { demo: true } : {}), status: "question", messages: [{ id: rid(4), from: "brand", name: first(u.name || ""), text: scrubContact(raw), at: Date.now(), hidden: scrubContact(raw) !== raw }], history: [], reviews: {}, billing: {}, createdAt: Date.now(), sentAt: Date.now() };
     push(r, "brand", "asked a question"); reqSet(r); tell(ownerEmailOf(F.ws), `${r.company} has a question about ${F.p.name}.`, "/host/teams#inbox");
     res.json({ ok: true, id: r.id, url: `/teams/bookings/${r.id}` }); });
   app.get("/api/bb/requests", (req, res) => { const u = need(req, res); if (!u) return; const L = reqs().filter((r) => r.brandWs === u.ws).sort((a, b) => b.updatedAt - a.updatedAt);
@@ -572,7 +577,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   app.post("/api/bb/requests/:id/pay", small, async (req, res) => { if (isNativeReq(req)) return bad(res, "Booking for teams happens on the web, at potterylab.com.", 403, "web_only");
     const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !brandSide(u, r)) return bad(res, "Not found.", 404, "not_found");
     if (!["approval", "requested", "accepted", "countered"].includes(r.status) || ["held", "charged"].includes(r.deposit?.state)) return bad(res, "Nothing to pay right now.", 409, "conflict");
-    if (pay.name === "stripe") { try { const o = publicOrigin(req); const S = await stripeCheckout(pay, { cents: r.deposit.cents, name: `Deposit: ${r.pkgName} for ${r.headcount}`, successUrl: `${o}/teams/bookings/${r.id}?paid=1`, cancelUrl: `${o}/teams/bookings/${r.id}`, ref: r.id }); r.deposit = { ...r.deposit, session: S.session }; reqSet(r); return res.json({ redirect: S.url }); } catch (e) { return bad(res, "Payment didn't start. Try again in a minute.", 502, "payment_failed"); } }
+    if (pay.name === "stripe" && !r.demo) { try { const o = publicOrigin(req); const S = await stripeCheckout(pay, { cents: r.deposit.cents, name: `Deposit: ${r.pkgName} for ${r.headcount}`, successUrl: `${o}/teams/bookings/${r.id}?paid=1`, cancelUrl: `${o}/teams/bookings/${r.id}`, ref: r.id }); r.deposit = { ...r.deposit, session: S.session }; reqSet(r); return res.json({ redirect: S.url }); } catch (e) { return bad(res, "Payment didn't start. Try again in a minute.", 502, "payment_failed"); } }
     r.deposit = { ...r.deposit, state: "held", heldAt: Date.now(), ref: "test_" + rid(6), provider: "fake" }; push(r, "brand", `deposit of ${money(r.deposit.cents)} held`);
     if (r.status === "accepted") chargeDeposit(r);
     reqSet(r); res.json({ ok: true, test: true, request: view(r, "brand") }); });
@@ -693,7 +698,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const id = saveContact(rec); console.log(`[find-host] ${email}${rec.company ? ` (${rec.company})` : ""} wants a real host like ${rec.example?.host || "?"} in ${rec.city || "?"}`);
     res.json({ ok: true, id, message: "Thanks. Someone on our team will look for a real host who fits and write back within 2 working days. Nothing is booked or charged." }); });
 
-  X.bb = { allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf, createRequest, feeFor, view, profOf, wsOf, pkgPublic, hostCard, demoBrand, chargeDeposit, instantBook };
+  X.bb = { batch, allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf, createRequest, feeFor, view, profOf, wsOf, pkgPublic, hostCard, demoBrand, chargeDeposit, instantBook };
   app.post("/api/bb/admin/verifications/:handle", small, (req, res) => { const a = admin(req, res); if (!a) return; const ws = C.wsOfHandle(lc(req.params.handle)); if (!ws) return bad(res, "No host by that name.", 404, "not_found");
     const V = verifyOf(ws); if (!V.id) return bad(res, "Nothing to review.", 409, "conflict"); V.id = { ...V.id, state: req.body?.approve ? "approved" : "declined", reviewedAt: Date.now(), reviewedBy: lc(a.email), note: clean(req.body?.note, 300) };
     S0(ws).set("teambook/verify", V); tell(ownerEmailOf(ws), req.body?.approve ? "You're ID checked. The badge is on your team listings now." : "We couldn't confirm your ID. Reply to our email and we'll sort it out.", "/host/teams#trust"); res.json({ ok: true, state: V.id.state }); });

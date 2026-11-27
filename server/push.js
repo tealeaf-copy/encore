@@ -14,6 +14,7 @@
 import crypto from "node:crypto";
 import http2 from "node:http2";
 import { DEFAULT_WS } from "./workspaces.js";
+import { inDemo, isDemoEmail } from "./democtx.js";
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 const hash = (s) => crypto.createHash("sha256").update(lc(s)).digest("hex").slice(0, 24);
@@ -104,6 +105,7 @@ export function makePush(store, env = process.env) {
 
   /** Send to all of someone's devices. msg: { title, body, link, kind }. Respects their push settings. */
   async function send(em, msg, { force = false } = {}) {
+    if (inDemo() || isDemoEmail(em)) return { sent: 0, skipped: true, demo: true }; // the marketer demo pushes nothing
     const C = pushConfig(env), devs = devicesOf(em);
     if (!devs.length || (!force && !wants(em, msg.kind))) return { sent: 0, skipped: true };
     const m = { title: String(msg.title || "Pottery Lab").slice(0, 120), body: String(msg.body || "").slice(0, 300), link: /^\/[^/]/.test(msg.link || "") || msg.link === "/" ? msg.link : "/feed", kind: msg.kind || "", thread: msg.thread };

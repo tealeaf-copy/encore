@@ -285,7 +285,7 @@ export function draftToEvent(d = {}, { now = today(), city = "", tz = "" } = {})
   if (tz && tzOk(tz)) ev.tz = tz;
   if (ISO.test(d.endDate || "") && d.endDate > date) ev.endDate = d.endDate;
   // the kind the template started from (server/kinds.js): a booked table, a weekend away, a summit
-  const kind = { table: "table", weekend: "weekend", summit: "summit", game: "game", dinner4: "dinner", table8: "dinner", soldout: "dinner", again: "dinner" }[d.t];
+  const kind = { table: "table", weekend: "weekend", summit: "summit", game: "game", dinner4: "dinner", table8: "dinner", soldout: "dinner", again: "dinner", drinks: "drinks", coffee: "brunch", potluck: "potluck", picnic: "picnic", run: "run", bookclub: "book", series: "hack" }[d.t];
   if (kind) ev.planKind = kind;
   if (kind === "table") { const place = clean(d.place, 80); ev.activity = "dinner"; ev.headcount = Math.max(1, seats - 1); ev.reservation = { restaurant: place, time: ev.startTime, party: seats, split: "even", holdUntil: addDays(date, -2) < now ? now : addDays(date, -2) }; ev.noMaybe = true; }
   if (kind === "weekend") { ev.carpool = true; ev.noMaybe = true; if (!ev.endDate) ev.endDate = addDays(date, 2); ev.lodging = { area: clean(d.place, 60) }; }

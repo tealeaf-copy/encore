@@ -91,6 +91,9 @@
   for (const w of WORDS) if (w[1] === "games" && /\|board\|/.test(w[0].source)) w[0] = new RegExp(w[0].source.replace(/\|board\|/, "|\\bboard|"));
   Object.assign(RELATED, { laptop: ["tech", "coffee", "talk"], controller: ["games", "screen", "party"], screen: ["controller", "movie", "games"] });
   Object.assign(LABEL, { laptop: "Hack night", controller: "Game night", screen: "Watch party" }); Object.assign(TONE, { laptop: "mint", controller: "lilac", screen: "sky" });
+  // the kinds on "What are you planning?" (public/canvas.js) that had no drawing of their own: existing art only
+  WORDS.push([/\bpop-?ups?\b|\bsale\b|\bbazaar\b/, "market"], [/\bsummit\b|conference|\bforum\b|offsite/, "talk"], [/\btrip\b|getaway|weekend away|\bcabin\b|road ?trip/, "pin"]);
+  Object.assign(LABEL, { pin: "Trip" }); if (!TONE.pin) TONE.pin = "sky";
   const hash = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
   function toneOf(e, kind) { const ks = Object.keys(PASTELS); kind = String(kind || "").split("+")[0]; return PASTELS[e.tone] ? e.tone : TONE[kind] || ks[hash(e.id || e.title || "") % ks.length]; }
   // the drawing on its own, as an SVG string

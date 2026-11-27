@@ -1,7 +1,9 @@
 // Event kinds, from a booked table to a weekend away to a summit. One place for the parts each scale needs, on top of
 // what every event already has (the invite, replies, the plan page, the itinerary, pay links, the invite planner).
 //
-// - planKind on the event: dinner, table, game, class, drop, weekend or summit. The create canvas sets it from "What are
+// - planKind on the event: dinner, drinks, game night, brunch, table, class, potluck, picnic, hack night, book club, run,
+//   hike, watch party, pop-up, drop, weekend, summit or other (the host names it). Only table, drop, weekend and summit
+//   carry parts of their own here; the rest set defaults on the canvas. The create canvas sets it from "What are
 //   you planning?" (public/canvas.js), /start sets it from its template (server/hostloop.js draftToEvent).
 // - A table (reservation): the restaurant, the time, the party size, the booking link or confirmation, a reply-by day
 //   ("Reply by Thursday so I can update the booking"), and how the bill is split (even, or each pays their own). The
@@ -49,7 +51,7 @@ export const money = (cents) => { const c = Math.round(+cents || 0), a = Math.ab
 export const centsOf = (v) => { if (typeof v === "number") return Number.isFinite(v) && v > 0 && v <= 1e6 ? Math.round(v * 100) : 0; const m = String(v ?? "").replace(/[,\s$]/g, "").match(/^(\d{1,6})(\.\d{1,2})?$/); return m ? Math.round(+(m[1] + (m[2] || "")) * 100) : 0; };
 
 // ================= the kinds =================
-export const PLAN_KINDS = ["dinner", "table", "game", "class", "drop", "weekend", "summit"];
+export const PLAN_KINDS = ["dinner", "drinks", "game", "brunch", "table", "class", "potluck", "picnic", "hack", "book", "run", "hike", "watch", "popup", "drop", "weekend", "summit", "other"];
 /** What the host is planning: their own pick, else read from what the event has. Pure. */
 export function planKindOf(ev) {
   if (PLAN_KINDS.includes(ev?.planKind)) return ev.planKind;

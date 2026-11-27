@@ -10,7 +10,7 @@ import { createRequire } from "node:module";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
 import { scopeStore, claimEvent } from "../server/workspaces.js";
-import { cleanReservation, tableMeter, holdLine, billSplit, splitCents, ledgerOf, ledgerFor, oweLine, claimBed, carAction, cleanCost, cleanAgenda, overlaps, conflictsOf, capOf, roomClashes, cleanSpeakers, speakerPublic, speakerFor, planKindOf, centsOf, money, cleanBeds } from "../server/kinds.js";
+import { PLAN_KINDS as SERVER_KINDS, cleanReservation, tableMeter, holdLine, billSplit, splitCents, ledgerOf, ledgerFor, oweLine, claimBed, carAction, cleanCost, cleanAgenda, overlaps, conflictsOf, capOf, roomClashes, cleanSpeakers, speakerPublic, speakerFor, planKindOf, centsOf, money, cleanBeds } from "../server/kinds.js";
 import { draftToEvent, PATH, guideHrefOf } from "../server/hostloop.js";
 import { GUIDES } from "../server/guides.js";
 
@@ -136,7 +136,13 @@ test("speakers: a public page only when the speaker opted in or the host marked 
 
 // ---------------- templates ----------------
 test("templates: What are you planning? preloads the add-ons and sections, and /start carries the kind", () => {
-  assert.deepEqual(CV.PLAN_KINDS.map((k) => k.label), ["Dinner", "Book a table", "Game night", "Class", "Drop", "Weekend away", "Summit"]);
+  assert.deepEqual(CV.PLAN_KINDS.map((k) => k.label), ["Dinner", "Drinks", "Game night", "Coffee or brunch", "Book a table", "Class", "Potluck", "Picnic", "Hack night", "Book club", "Run or walk", "Hike", "Watch party", "Pop-up", "Drop", "Weekend away", "Summit", "Something else"]);
+  // every kind the canvas offers is one the server keeps, and each sets an activity the cover art can draw
+  assert.deepEqual(CV.PLAN_KINDS.map((k) => k.k).sort(), [...SERVER_KINDS].sort());
+  for (const K of CV.PLAN_KINDS) { assert.ok(K.label.length <= 16, K.label); if (!K.handoff && !K.own) assert.ok(K.set?.activity, K.k); }
+  const oth = CV.applyKind({ date: "2026-12-05", startTime: "", headcount: 0, typeLabel: "Old", activity: "old" }, "other", new Set()); assert.equal(oth.d.planKind, "other"); assert.equal(oth.d.headcount, 8);
+  const back = CV.applyKind({ ...oth.d, typeLabel: "Clothes swap", activity: "clothes swap" }, "picnic", new Set()); assert.equal(back.d.typeLabel, "", "a named kind's own name goes when you pick another"); assert.equal(back.d.activity, "picnic");
+  const hk = CV.applyKind({ date: "2026-12-05", startTime: "", headcount: 0 }, "hike", new Set()); assert.equal(hk.d.carpool, true); assert.equal(hk.d.startTime, "08:30"); assert.ok(hk.d.bring.length);
   const at = (k) => CV.applyKind({ date: "2026-12-05", startTime: "", headcount: 0 }, k, new Set());
   const t = at("table"); assert.equal(t.d.planKind, "table"); assert.equal(t.d.reservation.party, 6); assert.equal(t.d.reservation.holdUntil, "2026-12-03"); assert.ok(t.open.has("table")); assert.equal(t.d.noMaybe, true); assert.equal(t.d.startTime, "19:30");
   const w = at("weekend"); assert.equal(w.d.endDate, "2026-12-07"); assert.ok(w.open.has("stay")); assert.ok(w.open.has("bring")); assert.equal(w.d.carpool, true); assert.ok(w.d.bring.length >= 3, "a packing list to start from");

@@ -129,18 +129,31 @@
   // kind's own blocks (the booking, where we're staying, the agenda) write the fields server/kinds.js reads; what fills
   // up over time (beds, rides, costs, sessions, speakers) lives on the plan page. What the host already typed stays.
   const isoPlus = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  // Most common first. The first two rows show; "More" opens the rest in place. Each sets an activity the cover art
+  // reads (public/eventart.js), and the table, weekend and summit write what server/kinds.js reads.
   const PLAN_KINDS = [
-    { k: "dinner", label: "Dinner", line: "At home, a few friends", addons: ["food", "bring"], n: 6, time: "19:00", set: { noMaybe: true, activity: "dinner" } },
-    { k: "table", label: "Book a table", line: "A restaurant booking for friends", addons: ["table"], n: 6, time: "19:30", set: { noMaybe: true, activity: "dinner" } },
+    { k: "dinner", label: "Dinner", line: "Dinner or a supper club, a few friends", addons: ["food", "bring"], n: 6, time: "19:00", set: { noMaybe: true, activity: "dinner" } },
+    { k: "drinks", label: "Drinks", line: "Drinks or a happy hour", addons: ["playlist"], n: 10, time: "18:30", set: { activity: "drinks" } },
     { k: "game", label: "Game night", line: "Games, snacks, a seat for someone new", addons: ["bring"], n: 6, time: "19:30", set: { activity: "game night" },
       sections: [{ icon: "star", title: "The games", body: "We'll start with something you can learn in five minutes. Bring one you love to teach." }] },
-    { k: "class", label: "Class", line: "Teach something hands-on", addons: ["included", "bring", "access"], n: 8, time: "14:00", set: { activity: "class" },
+    { k: "brunch", label: "Coffee or brunch", line: "A slow morning, coffee or brunch", addons: ["food"], n: 6, time: "10:30", set: { activity: "brunch" } },
+    { k: "table", label: "Book a table", line: "A restaurant booking for friends", addons: ["table"], n: 6, time: "19:30", set: { noMaybe: true, activity: "dinner" } },
+    { k: "class", label: "Class", line: "A class or workshop, hands-on", addons: ["included", "bring", "access"], n: 8, time: "14:00", set: { activity: "class" },
       sections: [{ icon: "clock", title: "How it goes", body: "A short demo, then hands on. You'll leave with something you made." }] },
+    { k: "potluck", label: "Potluck", line: "Everyone brings a dish", addons: ["bring"], n: 10, time: "18:00", set: { activity: "potluck" }, bring: ["A dish to share", "Something to drink"] },
+    { k: "picnic", label: "Picnic", line: "A park, a blanket, food to share", addons: ["bring"], n: 10, time: "12:00", set: { activity: "picnic" }, bring: ["Something to share", "A blanket"] },
+    { k: "hack", label: "Hack night", line: "Laptops, side projects, demos at the end", addons: ["bring", "link"], n: 15, time: "18:30", set: { activity: "hack night" }, bring: ["Your laptop and charger", "A project, or an idea"] },
+    { k: "book", label: "Book club", line: "One book, a few questions", addons: ["link"], n: 8, time: "19:00", set: { activity: "book club" } },
+    { k: "run", label: "Run or walk", line: "A route, a pace for everyone, coffee after", addons: ["parking"], n: 12, time: "08:00", set: { activity: "run" } },
+    { k: "hike", label: "Hike", line: "A trail, a meeting point, rides to share", addons: ["bring", "parking"], n: 10, time: "08:30", set: { activity: "hike", carpool: true }, bring: ["Water", "Good shoes", "A snack"] },
+    { k: "watch", label: "Watch party", line: "A game, a show or a film on the big screen", addons: ["bring"], n: 10, time: "19:00", set: { activity: "watch party" } },
+    { k: "popup", label: "Pop-up", line: "A market, a pop-up or a sale", addons: ["parking", "access"], n: 40, time: "11:00", set: { activity: "pop-up market" } },
     { k: "drop", label: "Drop", line: "Order ahead, pick up at a set time", handoff: "drop" },
     { k: "weekend", label: "Weekend away", line: "A house, a plan by day, shared costs", addons: ["stay", "bring", "included"], n: 8, time: "16:00", days: 2, set: { noMaybe: true, carpool: true, activity: "trip" },
       bring: ["A warm layer", "Comfortable shoes", "Swimsuit", "Phone charger"] },
     { k: "summit", label: "Summit", line: "Talks, tracks and rooms, a big list", addons: ["agenda", "access", "parking"], n: 80, time: "09:30", set: { kind: "summit", noMaybe: true, itineraryPublic: true, activity: "summit" },
       agenda: { tracks: ["Main stage", "Workshops"], rooms: [{ name: "Main hall", capacity: 80 }, { name: "Studio", capacity: 20 }], sessions: [] } },
+    { k: "other", label: "Something else", line: "Name it yourself", n: 8, time: "19:00", set: {}, own: true },
   ];
   const KIND_BLOCKS = [{ k: "table", title: "The booking", icon: "food" }, { k: "stay", title: "Where we're staying", icon: "key" }, { k: "agenda", title: "Agenda and rooms", icon: "clock" }];
   /** Pick a kind: its defaults fill only what's empty, its add-ons open, its sections join the host's own. Pure. */
@@ -148,6 +161,7 @@
     if (K.handoff) return { d, open, handoff: K.handoff };
     const prev = d.planKind, P = PLAN_KINDS.find((x) => x.k === prev);
     if (P && prev !== k) for (const key of Object.keys(P.set || {})) if (!(key in (K.set || {}))) { if (key === "kind") d.kind = "social"; else if (typeof P.set[key] === "boolean") d[key] = false; }
+    if (prev === "other" && k !== "other") { if (d.typeLabel && String(d.activity || "") === d.typeLabel.toLowerCase()) d.activity = ""; d.typeLabel = ""; }
     d.planKind = k; Object.assign(d, K.set || {});
     if (!/^\d{2}:\d{2}$/.test(d.startTime || "")) d.startTime = K.time;
     const hadCount = +d.headcount > 0; if (!hadCount) d.headcount = k === "table" ? K.n - 1 : K.n; // a table for 6 is you and 5 spots: more replies wait on the list
@@ -237,7 +251,7 @@
   function pickKind(k) { const r = applyKind(S.W, k, S.open);
     if (r.handoff === "drop") { const D = root.EncoreDrop; if (D?.setup) { close(); D.setup({ onDone: (j) => { if (j?.id) { location.hash = "#programs"; location.reload(); } } }); } else say("The drop setup is still loading. Try again in a moment."); return; }
     S.W = r.d; S.open = r.open; changed(true); try { root.PLFx?.haptic?.("light"); } catch {}
-    const K = PLAN_KINDS.find((x) => x.k === k); say(`${K.label}: set up. Change anything.`);
+    const K = PLAN_KINDS.find((x) => x.k === k); if (K.own) { setTimeout(() => q("#cvKindOwn", S.el)?.focus(), 30); return; } say(`${K.label}: set up. Change anything.`);
     const blk = q(`[data-kblock="${Object.keys(KIND_OF_BLOCK).find((b) => KIND_OF_BLOCK[b] === k) || ""}"]`, S.el); if (blk) { blk.classList.add("new"); setTimeout(() => blk.scrollIntoView({ block: "center", behavior: "smooth" }), 60); } }
 
   // The editor is a step in the browser's history: Back closes it (asking first when there are unsaved changes) instead of
@@ -274,7 +288,16 @@
     else if (b.k === "stay") body = `<div class="cv-kg">${f("lodging.name", "The place", "Esopus Cabin", { wide: true })}${f("lodging.area", "Area", "Phoenicia")}${f("lodging.checkIn", "Check in", "4pm")}${f("lodging.checkOut", "Check out", "11am")}${f("lodging.address", "Address", "Only people who are in see it", { wide: true })}${f("lodging.link", "Listing link", "airbnb.com/…", { wide: true, mode: "url" })}</div><p class="cv-kn">After you save: who sleeps where, rides with seats to claim and shared costs, on the plan page.</p>`;
     else body = `<div class="cv-kg">${f("agenda.tracks", "Tracks", "Main stage, Workshops", { wide: true })}${f("agenda.rooms", "Rooms and how many fit", "Main hall, 80", { wide: true, area: true })}</div><p class="cv-kn">After you save: sessions, speakers and sponsors on the plan page. Guests save sessions to their own agenda.</p>`;
     return `<section class="cv-blk cv-kind" data-kblock="${b.k}"><header>${SX().svg(b.icon)}<h3>${esc(b.title)}</h3><button type="button" class="cv-rm" data-rmk="${b.k}" aria-label="Remove ${esc(b.title.toLowerCase())}">${I.x}</button></header>${body}</section>`; }
-  function kindsRow(W) { if (!S.isNew) return ""; return `<div class="cv-kinds cv-ed" role="group" aria-labelledby="cvKindsH"><p id="cvKindsH">What are you planning?</p><div>${PLAN_KINDS.map((k) => `<button type="button" class="cv-kc" data-kind="${k.k}" aria-pressed="${W.planKind === k.k}" title="${esc(k.line)}">${esc(k.label)}</button>`).join("")}</div></div>`; }
+  // "What are you planning?": the most common kinds in two rows, "More" opens the rest in place (fitKinds hides what
+  // doesn't fit two rows at this width). "Something else" takes the host's own name for it.
+  function kindsRow(W) { if (!S.isNew) return ""; const own = W.planKind === "other";
+    return `<div class="cv-kinds cv-ed${S.kindsAll ? " all" : ""}" role="group" aria-labelledby="cvKindsH"><div class="cv-kh"><p id="cvKindsH">What are you planning?</p><button type="button" class="cv-kmore" data-kmore aria-expanded="${!!S.kindsAll}" aria-controls="cvKindsL" hidden>${S.kindsAll ? "Fewer" : "More"}</button></div><div id="cvKindsL">${PLAN_KINDS.map((k) => `<button type="button" class="cv-kc" data-kind="${k.k}" aria-pressed="${W.planKind === k.k}" title="${esc(k.line)}">${esc(k.label)}</button>`).join("")}</div>${own ? `<label class="cv-kown"><span>What is it?</span><input id="cvKindOwn" maxlength="24" value="${esc(W.typeLabel || "")}" placeholder="Like: Clothes swap" autocomplete="off"></label>` : ""}</div>`; }
+  /** Two rows of kinds unless "More" is open; the picked one always shows. */
+  function fitKinds() { const box = S?.el && q("#cvKindsL", S.el), more = S?.el && q("[data-kmore]", S.el); if (!box || !more) return; const C = qa(".cv-kc", box); C.forEach((c) => (c.hidden = false));
+    const tops = [...new Set(C.map((c) => c.offsetTop))].sort((a, b) => a - b), cut = tops[1] ?? tops[0], over = C.filter((c) => c.offsetTop > cut);
+    if (over.some((c) => c.getAttribute("aria-pressed") === "true") && !S.kindsAll) { S.kindsAll = true; q(".cv-kinds", S.el)?.classList.add("all"); more.textContent = "Fewer"; more.setAttribute("aria-expanded", "true"); }
+    more.hidden = !over.length; if (!S.kindsAll) over.forEach((c) => (c.hidden = true)); }
+  addEventListener("resize", () => { try { if (S?.el) fitKinds(); } catch {} });
   function sectionBlock(s, i) { return `<section class="cv-blk cv-own" data-sec="${i}"><header>${SX().svg(s.icon)}<h3>${esc(s.title || "A note")}</h3><button type="button" class="cv-rm cv-ed" data-secedit="${i}" aria-label="Edit ${esc(s.title || "section")}">${I.pen}</button></header>${s.body ? `<p>${esc(s.body).replace(/\n/g, "<br>")}</p>` : ""}</section>`; }
   function pills(W) { const n = (W.questions || []).length || (W.askQ ? 1 : 0);
     return [["questions", I.q, n ? `Questions (${n})` : "Add questions", n > 0], ["reminders", I.bell, "Reminders", W.autoRemind !== false], ["approval", I.lock, "Require approval", !!W.approvalRequired], ["more", I.more, "More", false]]
@@ -323,7 +346,7 @@
     document.body.appendChild(el); S.el = el; css(); draw(); wire(el);
     if (!touch() && !String(S.W.pubTitle || "").trim()) setTimeout(() => q("#cvTitle", el)?.focus(), 60); }
   function stateLine() { const live = !S.isNew; return S.dirty ? (live ? "Not saved yet. Guests see changes after you save." : "Draft, saved on this device. Only you can see it.") : live ? "Live. Guests see changes after you save." : "Draft. Only you can see it."; }
-  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); if (keepScroll) sc.scrollTop = y; preview(); }
+  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); }
   function grow(t) { if (!t || t.tagName !== "TEXTAREA") return; t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
   // the look: colours, the title font and the effect, drawn by looks.js on the page itself; the Display style is the
   // brand's display serif, or the host's brand kit display face
@@ -351,6 +374,7 @@
     el.addEventListener("input", (e) => { const t = e.target, W = S.W;
       if (t.id === "cvTitle") { pvFlash = "title"; W.pubTitle = t.value.replace(/\n/g, " "); W.name = W.pubTitle; if (t.value.includes("\n")) t.value = W.pubTitle; grow(t); q("#cvTitleErr", el).textContent = "";
         { const fb = q("#cvFromLine", el); clearTimeout(fb?.__t); if (fb) fb.__t = setTimeout(() => { const P = planFromLine(t.value); fb.hidden = !P || (!!W.date && !!W.startTime && !!(W.meetPoint || W.venueName)); if (P) { fb.textContent = planLineLabel(P); fb.__p = P; } }, 400); } const cov = q("#cvCover", el); if (cov && !W.coverPhoto && !W.coverArt?.kind) { clearTimeout(t.__c); t.__c = setTimeout(() => { const pen = q(".cv-pen", cov); cov.innerHTML = coverHTML(W); cov.appendChild(pen); }, 500); } }
+      else if (t.id === "cvKindOwn") { const v = t.value.replace(/\s+/g, " ").trimStart().slice(0, 24); W.typeLabel = v.trim(); W.activity = v.trim().toLowerCase(); pvFlash = "title"; }
       else if (t.id === "cvDesc") { W.why = t.value; grow(t); pvFlash = "desc"; }
       else if (t.dataset.af) { addonSet(W, t.dataset.af, t.value); grow(t); pvFlash = "sections"; }
       else if (t.dataset.kf) { kindSet(W, t.dataset.kf, t.value); grow(t); }
@@ -364,6 +388,7 @@
       if (b.dataset.style) { const L = { ...(W.look || {}) }; if (FONTN[b.dataset.style]) L.titleFont = FONTN[b.dataset.style]; else delete L.titleFont; W.look = L; W.titleFont = ""; qa("[data-style]", el).forEach((x) => x.setAttribute("aria-checked", String(x === b))); dress(); changed(); pulse(".cv-tw", "title"); return; }
       if (b.dataset.add) { S.open.add(b.dataset.add); pvFlash = "sections"; changed(true); const blk = q(`[data-addon="${b.dataset.add}"]`, el); blk?.scrollIntoView({ block: "center", behavior: "smooth" }); blk?.classList.add("new"); setTimeout(() => q("input,textarea", blk)?.focus({ preventScroll: true }), 250); return; }
       if (b.dataset.kind) return pickKind(b.dataset.kind);
+      if (b.hasAttribute("data-kmore")) { S.kindsAll = !S.kindsAll; const k = q(".cv-kinds", el); k?.classList.toggle("all", S.kindsAll); b.textContent = S.kindsAll ? "Fewer" : "More"; b.setAttribute("aria-expanded", String(S.kindsAll)); fitKinds(); return; }
       if (b.dataset.rmk) { S.open.delete(b.dataset.rmk); changed(true); return; }
       if (b.dataset.rm) { const k = b.dataset.rm; S.open.delete(k); addonSet(W, k, k === "link" ? [] : ""); changed(true); return; }
       if (b.dataset.secedit) return sectionSheet(+b.dataset.secedit);
@@ -626,8 +651,8 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-blk textarea{overflow:hidden;min-height:46px}
 #cv .cv-blk select{width:100%;box-sizing:border-box;height:46px;min-height:46px;padding:0 10px;border-radius:6px!important;border:1px solid var(--cv-line2)!important;background:var(--cv-field)!important;color:var(--cv-ink);font:inherit;font-size:16px}
 #cv .cv-kg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}#cv .cv-kf{display:grid;gap:4px;min-width:0;align-self:start;align-content:start}#cv .cv-kf.w{grid-column:1/-1}#cv .cv-kf>span{font:500 14px var(--cv-sans);color:var(--cv-soft)}#cv .cv-kf small{font-size:14px;line-height:1.4;color:var(--cv-soft)}#cv .cv-blk p.cv-kn{font-size:15px;color:var(--cv-soft)}
-#cv .cv-kinds{margin:0 0 14px;padding:12px 14px;border:1.5px solid var(--cv-ink);border-radius:6px;background:var(--cv-card)}#cv .cv-kinds p{margin:0 0 10px;font:600 17px/1.3 var(--cv-sans)}#cv .cv-kinds>div{display:flex;flex-wrap:wrap;gap:8px}
-#cv .cv-kc{min-height:44px;padding:0 14px;border-radius:6px!important;border:1.5px solid var(--cv-line2)!important;background:var(--cv-bg)!important;font:500 15px var(--cv-sans)}#cv .cv-kc[aria-pressed=true]{background:var(--cv-ink)!important;border-color:var(--cv-ink)!important;color:var(--cv-card)!important}#cv .cv-kc:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}
+#cv .cv-kinds{margin:0 0 14px;padding:8px 14px 14px;border:1.5px solid var(--cv-ink);border-radius:6px;background:var(--cv-card)}#cv .cv-kh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;margin:0 0 6px}#cv .cv-kinds p{margin:0;font:600 17px/1.3 var(--cv-sans);text-wrap:balance}#cv .cv-kmore{flex:none;min-height:44px;padding:0 4px 0 12px;border:0!important;background:none!important;color:var(--cv-ink);font:600 15px var(--cv-sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}#cv .cv-kmore[hidden]{display:none}#cv .cv-kmore:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}#cv #cvKindsL{display:flex;flex-wrap:wrap;gap:8px}#cv .cv-kc[hidden]{display:none}#cv .cv-kown{display:grid;gap:6px;margin:12px 0 0;font:600 14px var(--cv-sans)}#cv .cv-kown input{min-height:44px;padding:0 12px;border:1.5px solid var(--cv-line2);border-radius:6px;background:var(--cv-bg);font:400 16px var(--cv-sans);color:var(--cv-ink)}
+#cv .cv-kc{min-height:44px;padding:0 12px;white-space:nowrap;line-height:1.2;border-radius:6px!important;border:1.5px solid var(--cv-line2)!important;background:var(--cv-bg)!important;font:500 15px var(--cv-sans)}#cv .cv-kc[aria-pressed=true]{background:var(--cv-ink)!important;border-color:var(--cv-ink)!important;color:var(--cv-card)!important}#cv .cv-kc:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}
 #cv .cv-rm,.cv-sh .cv-rm{width:40px;height:40px;border-radius:999px!important;border:0!important;background:transparent!important;display:grid;place-items:center;color:var(--cv-soft)!important;padding:0;margin:0}
 #cv .cv-two,.cv-sh .cv-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}
 #cv .cv-text-btn,.cv-sh .cv-text-btn{display:inline-flex;align-items:center;gap:6px;justify-self:start;min-height:44px;padding:0!important;border:0!important;background:none!important;font-size:15px;font-weight:600;text-decoration:underline;text-underline-offset:3px;color:var(--cv-ink)!important;margin:0}

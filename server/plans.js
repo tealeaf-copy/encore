@@ -171,7 +171,7 @@ export function itineraryDays(ev, items) { if (!ISO.test(ev?.date || "")) return
 /** The chip on a plan's cover: the host's own label, else "Weekend away", "Summit", "Supper club" and so on. Pure. */
 export function typeChip(ev) {
   const own = clean(ev?.typeLabel, 24); if (own) return own;
-  const pk = { table: "Booked table", summit: "Summit", class: "Class", game: "Game night" }[ev?.planKind]; if (pk) return pk; // what the host said they were planning (server/kinds.js)
+  const pk = { table: "Booked table", summit: "Summit", class: "Class", game: "Game night", drinks: "Drinks", brunch: "Brunch", potluck: "Potluck", picnic: "Picnic", hack: "Hack night", book: "Book club", run: "Run or walk", hike: "Hike", watch: "Watch party", popup: "Pop-up" }[ev?.planKind]; if (pk) return pk; // what the host said they were planning (server/kinds.js)
   const t = lc([ev?.pubTitle, ev?.name, ev?.activity, ev?.kind, ev?.format].join(" ")), days = multiDay(ev) ? dayNo(lastDay(ev)) - dayNo(ev.date) + 1 : 1;
   if (/summit|conference|forum|offsite/.test(t) || ["summit", "owned", "conference"].includes(ev?.kind)) return "Summit";
   if (/retreat/.test(t)) return "Retreat";

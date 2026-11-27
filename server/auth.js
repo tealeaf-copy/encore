@@ -2,6 +2,7 @@
 import { createHmac, createHash, timingSafeEqual, scryptSync, randomBytes } from "node:crypto";
 import { useSsoStore, ssoForEmail } from "./sso.js";
 import { DEFAULT_WS, useWorkspaceStore, signupEnabled, getDbUser, putDbUser, getWorkspace, membersOf } from "./workspaces.js";
+import { capture } from "./posthog.js";
 
 const COOKIE = "encore_auth";
 const MAX_AGE_S = 60 * 60 * 24 * 30;
@@ -219,7 +220,7 @@ export function loginHandler(req, res) {
     // Accounts made by sign-up or invite always have one.
     const personal = checkPersonal(u, password);
     if (personal === false || (personal === null && (u.ws !== DEFAULT_WS || !process.env.APP_PASSWORD || !same(password, process.env.APP_PASSWORD)))) return deny(1, "That email and password don't match.");
-    value = makeCookie(u.email, u.ws);
+    value = makeCookie(u.email, u.ws); capture("signed_in", { ws: u.ws, method: "password" }); // server/posthog.js, off unless configured
   } else if (!process.env.APP_PASSWORD || !same(password, process.env.APP_PASSWORD)) {
     return deny(1, "That email and password don't match.");
   } else value = makeCookie("*", DEFAULT_WS);

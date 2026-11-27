@@ -42,7 +42,7 @@ import { mountSignin, signinEmailConfig } from "./signin.js";
 import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountHostLoop } from "./hostloop.js"; // streaks with rest passes, small moves, warmth, Circles, Potto's nudges, /start, /path (server/hostloop.js)
-import { mountExperiments } from "./experiments.js"; // deterministic A/B tests and /admin/experiments (server/experiments.js)
+import { mountExperiments, addSink } from "./experiments.js"; // deterministic A/B tests and /admin/experiments (server/experiments.js)
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountFeedComments } from "./feedcomments.js"; // comments under feed cards: list, add, delete, fresh counts
 import { mountKudosAsk } from "./kudosask.js";
@@ -79,6 +79,7 @@ import { runPm } from "./pm.js";
 import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVICES, EMAIL_RE, useUnsubStore, readUnsubToken, setUnsubscribed, isUnsubscribed } from "./email.js";
 import { runReminders } from "./reminders.js";
 import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from "./metrics.js";
+import { mountPosthog, capture, cspWith } from "./posthog.js"; // product analytics, off unless ENCORE_POSTHOG_KEY is set (server/posthog.js, docs/analytics.md)
 import { mountMcp } from "./mcp.js";
 import { mountMap } from "./map.js"; // the map view (/map) and its geodata (server/geo.js)
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
@@ -295,10 +296,11 @@ export function createApp({ store, dataDir }) {
   app.use((req, res, next) => { const canon = String(process.env.ENCORE_CANONICAL_HOST || "").trim().toLowerCase(), host = String(req.hostname || "").toLowerCase();
     if (!canon || !host || host === canon || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) || !/^(GET|HEAD)$/.test(req.method) || req.path.startsWith("/api/") || req.path.startsWith("/.well-known/")) return next(); // app store: Apple and Google read /.well-known on every host, with no redirect
     res.redirect(301, `https://${canon}${req.originalUrl}`); });
-  const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
+  const CSP_RO = cspWith(["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; "));
   // enforced since every page ran clean under report-only; violations are still reported to /api/csp-report
   // (ENCORE_CSP=report puts it back in report-only mode without a deploy of new code)
   app.use((req, res, next) => { if (req.method === "GET" && !/^\/(api|_blob)\//.test(req.path)) res.set(process.env.ENCORE_CSP === "report" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy", CSP_RO); next(); });
+  mountPosthog(app, { store, currentUser, isAdmin, addSink }); // PostHog: route events, /api/me/analytics, /api/admin/analytics (nothing runs without a key)
   let cspSeen = 0; app.post("/api/csp-report", express.json({ type: () => true, limit: "16kb" }), (req, res) => { if (cspSeen++ < 200) { const r = req.body?.["csp-report"] || req.body || {}; console.warn("[csp]", String(r["violated-directive"] || r.effectiveDirective || "").slice(0, 60), String(r["blocked-uri"] || r.blockedURL || "").slice(0, 120), String(r["document-uri"] || r.documentURL || "").slice(0, 80)); } res.status(204).end(); });
   // A readable "signed in" hint (never the session itself) so pages skip calls that need a session when there isn't one.
   // Kept in step with the real session on every page and API request.
@@ -542,7 +544,7 @@ export function createApp({ store, dataDir }) {
       const who = await finishSso(readState(cookie), { code: req.query.code, returnedState: String(req.query.state || "") });
       const u = ensureSsoMember(who, (e) => users().some((x) => x.email === e));
       scopeStore(store, who.ws).add("audit", { eventId: "", what: `${u.name} signed in with SSO`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
-      startSession(req, res, u.email, who.ws);
+      startSession(req, res, u.email, who.ws); capture("signed_in", { ws: who.ws, method: "sso" });
       res.append("Set-Cookie", clear);
       res.redirect(302, "/");
     } catch (e) {
@@ -1685,6 +1687,7 @@ export function createApp({ store, dataDir }) {
     if (isEv && !req.guest && before) app.locals.chat?.onEventEdit(req, req.ws, p.split("/")[1], before, after);
     if (isEv && !req.guest) app.locals.fanclub?.onEventWrite(req, req.ws, p.split("/")[1], before, after); // a new event tells members and followers (server/fanclub.js) // "Ada moved it to 7:30pm." in the group chat
     if (isEv && !req.guest && !before && !after?.sample && !after?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: p.split("/")[1] });
+    if (isEv && !req.guest && after?.published && !before?.published && !after?.sample && !after?.example) capture("event_published", { ws: req.ws, kind: after.kind, region: after.city, private: !after.discoverable });
     const extra = {};
     if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });
       if (before && (before.headcount !== after.headcount || before.autoWait !== after.autoWait || before.plusOnes !== after.plusOnes || !same(before.guests || [], after.guests || []))) { try { const pr = await promoteWaitlist(req, req.ws, p.split("/")[1]); if (pr.length) extra.promoted = pr; } catch {} } }
@@ -1939,6 +1942,8 @@ export function createApp({ store, dataDir }) {
     }
     const fin = St.get("rsvps/" + id)?.data, all = St.list("rsvps").filter((d) => d.data?.eventId === eventId);
     // funnel: a host's first reply from a guest, and an event's third (people the host added by hand don't count)
+    if (req.guest && now && now !== was) capture("reply_received", { ws, answer: now === "declined" ? "no" : now, first: !was, ...(ev.drop && Array.isArray(after?.orderLines) ? { kind: "drop" } : {}) }); // no guest identity, only the answer
+    if (req.guest && !before && ev.drop && Array.isArray(after?.orderLines) && after.orderLines.length) capture("drop_order_placed", { ws, count: after.orderLines.length });
     if (req.guest && after && !before && ws !== DEFAULT_WS) { trackOnce("first_reply", ws, { ws, eventId }); if (all.filter((d) => d.data?._k).length >= 3) trackOnce("three_replies", eventId, { ws, eventId }); }
     // the guest's own confirmation email, once per reply (never for a reply the host added by hand)
     let confirmed = false; if (req.guest && fin) { try { confirmed = await confirmReply(req, ws, id, ev, was, fin); } catch (e) { console.warn("[confirm]", e?.message); } }
@@ -1991,7 +1996,7 @@ export function createApp({ store, dataDir }) {
         return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, merged: true, ...a, response: a.response || next.response }); }
       const r0 = S(req).add(p, body), a = await afterRsvp(req, req.ws, r0.id, null, body).catch(() => ({})); return res.json({ ...r0, ...a, response: a.response || body.response }); }
     const r = S(req).add(p, body);
-    if (p === "events" && !req.guest) { claimEvent(r.id, req.ws); if (!body?.sample && !body?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: r.id }); }
+    if (p === "events" && !req.guest) { claimEvent(r.id, req.ws); if (!body?.sample && !body?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: r.id }); if (body?.published && !body?.sample && !body?.example) capture("event_published", { ws: req.ws, kind: body.kind, region: body.city, private: !body.discoverable }); }
     // a guest's reply says where it landed (a full event puts "going" on the waitlist)
     res.json(p === "rsvps" && body?.response ? { ...r, response: body.response } : r);
   });

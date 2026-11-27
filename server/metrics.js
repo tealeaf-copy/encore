@@ -3,6 +3,7 @@
 // timestamp, the workspace id and the event id. No names, emails or phones are ever stored here.
 // GET /api/admin/funnel (people listed in ENCORE_ADMIN_EMAILS only; 404 for everyone else) reads the counts.
 import { scopeStore, allWorkspaceIds, DEFAULT_WS, getDbUser } from "./workspaces.js";
+import { captureStep } from "./posthog.js"; // every step also goes to PostHog when it is configured (server/posthog.js)
 
 export const FUNNEL_STEPS = ["signup", "first_event_created", "share_clicked", "first_reply", "three_replies", "event_done", "kudos_received", "guest_follow", "guest_became_host"];
 // what a browser may send to POST /api/track (everything else is recorded by the server itself)
@@ -21,7 +22,7 @@ export function track(name, props = {}, at = Date.now()) {
     for (const k of ["ws", "eventId", "ref"]) if (props[k] != null && ID_OK.test(String(props[k]))) row[k] = String(props[k]);
     if (props.code != null) row.code = !!props.code;
     if (props.via != null && /^[a-z_-]{1,20}$/.test(String(props.via))) row.via = String(props.via);
-    S.add(COL, row); return true;
+    S.add(COL, row); captureStep(name, row); return true;
   } catch { return false; }
 }
 /** Record a step only the first time for this key (e.g. first_event_created per workspace). */

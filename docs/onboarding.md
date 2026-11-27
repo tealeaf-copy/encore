@@ -92,6 +92,7 @@ Every signed-in page, and every onboarding step before the account exists (`/sig
 - **Potto offers help once a session** ("Stuck? I can help, or get you a person.") when someone stays on a sign-up, onboarding, wizard, page-setup or share step for 60 seconds without moving on, sees the same error twice, or signup fails because of a host code or an email already in use.
 - `ENCORE_SIGNUP_PER_HOUR`: sign-ups and invite joins allowed from one IP address per hour. Default 20, so a class or a party on one wifi network can all start pages. Raise it for a big in-person launch.
 - `ENCORE_ADMIN_EMAILS`: comma-separated emails that may read the funnel at `/api/admin/funnel`. Everyone else gets a 404.
+- `ENCORE_POSTHOG_KEY`, `ENCORE_POSTHOG_HOST`, `ENCORE_POSTHOG_REPLAY`, `ENCORE_ANALYTICS_SALT`: product analytics with PostHog, off unless the key is set. See `docs/analytics.md`.
 - `ENCORE_LEGAL_NAME`, `ENCORE_LEGAL_ADDRESS`: the company name and address shown on `/privacy` and `/terms`. Without them the pages say "Pottery Lab" and show no address.
 
 ## Sign-up limits behind Vercel

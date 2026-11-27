@@ -11,6 +11,7 @@
 // GET /api/me/map?ids=          signed in: hosts you follow, friends going (server/hooks.js), events you went to
 import { scopeStore, workspaceOfEvent, getWorkspace, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
 import { makeGeocoder, cityCentre, hoodsIn, distanceKm } from "./geo.js";
+import { cspWith } from "./posthog.js";
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
@@ -100,8 +101,8 @@ export function tilesConfig(env = process.env) { const t = String(env.ENCORE_MAP
   return { kind: "openfreemap", source: "https://tiles.openfreemap.org/planet", glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf", hosts: ["tiles.openfreemap.org", ...extra] }; }
 export const MAP_LIB = { js: "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js", css: "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" };
 export function mapCsp(env = process.env) { const hosts = tilesConfig(env).hosts.map((h) => "https://" + h).join(" ");
-  return ["default-src 'self'", "script-src 'self' 'unsafe-inline' https://unpkg.com", "worker-src 'self' blob:", "child-src 'self' blob:", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
-    "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", `connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com${hosts ? " " + hosts : ""}`, "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; "); }
+  return cspWith(["default-src 'self'", "script-src 'self' 'unsafe-inline' https://unpkg.com", "worker-src 'self' blob:", "child-src 'self' blob:", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+    "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", `connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com${hosts ? " " + hosts : ""}`, "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ")); }
 
 export function mountMap(app, { store, C, currentUser, sendStatic }) {
   const H = app.locals.hooks || null, M = makeMap({ store, C, H }); app.locals.map = M; app.locals.geo = M.geo;

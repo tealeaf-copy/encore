@@ -51,6 +51,10 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `ENCORE_SIGNUP` | `0` | `1` = self-serve sign-up with workspaces and 14-day trials (needs `SESSION_SECRET`) |
 | `ENCORE_SIGNUP_PER_HOUR` | `20` | Sign-ups and invite joins allowed per IP per hour. Behind a Vercel rewrite every visitor shares one IP: see docs/onboarding.md |
 | `ENCORE_ADMIN_EMAILS` | unset | Comma list of emails that may read `GET /api/admin/funnel` (404 for everyone else) |
+| `ENCORE_POSTHOG_KEY` | unset | PostHog project API key (`phc_...`, public by design). Unset = no analytics at all. See docs/analytics.md |
+| `ENCORE_POSTHOG_HOST` | `https://us.i.posthog.com` | PostHog host. EU projects: `https://eu.i.posthog.com` |
+| `ENCORE_POSTHOG_REPLAY` | `0` | `1` = masked session replay for people who said OK (all text and inputs masked) |
+| `ENCORE_ANALYTICS_SALT` | `SESSION_SECRET` | Salt for the hashed ids sent to PostHog. Leave unset so experiment rows join their host |
 | `ENCORE_LEGAL_NAME` / `ENCORE_LEGAL_ADDRESS` | unset | Company name and address on `/privacy` and `/terms` (default "Pottery Lab", no address) |
 | `ANTHROPIC_API_KEY` | unset | Claude key. Stays on the server |
 | `ENCORE_FAKE_AI` | `0` | `1` = offline demo mode, no network calls |

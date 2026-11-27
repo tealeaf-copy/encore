@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import zlib from "node:zlib";
+import { analyticsTag } from "./posthog.js";
 
 // ---------------------------------------------------------------- versioned assets
 const hashes = new Map(); // abs path -> { at, mtime, v }
@@ -90,7 +91,8 @@ const atHeadStart = (html, tag) => { const cs = /<meta charset=[^>]*>/i.exec(htm
 export function withPreload(html, reqPath, cookie) { const tag = dataPreload(reqPath, cookie); return tag && !String(html).includes(tag) ? atHeadStart(String(html), tag) : html; }
 
 /** Every change a page gets on the way out (fonts first: they rewrite links the versioning then leaves alone). */
-export function optimizeHtml(html, dir) { return versionAssets(localFonts(html, dir), dir); }
+// (and, only when PostHog is configured, the analytics loader in the head: server/posthog.js analyticsTag)
+export function optimizeHtml(html, dir) { return versionAssets(localFonts(analyticsTag(html), dir), dir); }
 
 // ---------------------------------------------------------------- compression
 const accepts = (req, enc) => new RegExp(`\\b${enc}\\b`).test(req.headers["accept-encoding"] || "");

@@ -42,6 +42,7 @@ import { campaignRole, can, rollup } from "./campaigns.js";
 import { K, prefsOf } from "./insights.js";
 import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { isAdmin } from "./metrics.js";
+import { capture } from "./posthog.js";
 import * as CRM from "./crmsync.js";
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
@@ -469,6 +470,7 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
         availability: { date, state: x.dateState, alt: x.altDate, line: !date ? "Pick a date to check it" : x.dateState === "open" ? `Open on ${short(date)}` : x.altDate ? `Not ${short(date)}. Open ${short(x.altDate)}` : `Not open near ${short(date)}` },
         exposure: exposureSchedule({ policy: x.policy, totalCents: x.totalCents, depositCents: x.depositCents, date: when, today }), access: accessNotes({ access: x.access, diets: x.diets }),
         approval: rules ? (BB().needsApproval(rules, x.totalCents, u.email) ? { needed: true, line: `Needs an OK from ${(rules.approvers || []).map((e) => first(nameOf(e)) || e).join(" or ")} first` } : { needed: false, line: "No approval needed" }) : null }; });
+    capture("brand_quickbook_searched", { ws: u?.ws, guests: people, goal, results: top.length, signed_in: !!u }); // counts only (server/posthog.js)
     res.set("Cache-Control", "private, no-store").json({ results: top, total: cands.length, query: { date, people, budget: budgetCents / 100, city, goal }, goals: Object.values(GOALS).map(({ id, label, line }) => ({ id, label, line })),
       brief: { goals: GOALS, together: TOGETHER, creative: CREATIVE, invites: INVITES, photos: PHOTOS, followup: FOLLOWUP, defaults: briefDefaults(goal || "customer", people) } }); });
 

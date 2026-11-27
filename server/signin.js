@@ -30,6 +30,7 @@
 // id_tokens with a local key, so the same verification code runs in tests and demos.
 import crypto from "node:crypto";
 import express from "express";
+import { capture } from "./posthog.js"; // signed_in with the method used (server/posthog.js; off unless configured)
 import { currentUser, startSession, users } from "./auth.js";
 import { DEFAULT_WS, getDbUser, getWorkspace, putDbUser, signupEnabled } from "./workspaces.js";
 import { ssoForEmail } from "./sso.js";
@@ -243,6 +244,7 @@ export function mountSignin(app, { store, createAccount, needInvite, checkCode, 
     const signIn = (acct, isNew, redirect) => {
       const sso = ssoBlock(acct); if (sso) return { error: "sso_required", message: "Your company uses single sign-on. Sign in with SSO instead.", sso };
       if (idn.provider !== "passkey") linkIdentity(acct.email, idn); if (idn.emailVerified && lc(idn.email) === lc(acct.email)) markVerified(acct.email);
+      capture("signed_in", { ws: acct.ws, method: { email: "email_code", phone: "phone_code" }[idn.provider] || idn.provider, first: !!isNew });
       const to = next || redirect || homeOf(acct.ws); // where they were headed wins over the welcome screen: a dinner drafted on /start comes back to be saved
       if (ctx.native) { const t = crypto.randomBytes(24).toString("base64url"); put("system/handoff-" + h40(t), { email: acct.email, ws: acct.ws, to }, 2 * MIN); clearJoin(req, res); return { ok: true, redirect: `${appScheme()}://auth/app?t=${t}`, isNew }; } // the browser sheet hands back to the app
       startSession(req, res, acct.email, acct.ws); clearJoin(req, res);

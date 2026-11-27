@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { complete, isFake, aiMode, parseJsonLoose } from "./ai.js";
 import { scopeStore, getWorkspace, getDbUser, DEFAULT_WS } from "./workspaces.js";
+import { cspWith } from "./posthog.js";
 import { STORE } from "./community.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { schedulePottoReminders, pottoSettings, cleanPottoSettings, runPottoReminders } from "./reminders.js";
@@ -363,7 +364,7 @@ export function mountOnboard(app, { store, currentUser, C, sendStatic, publicOri
 
   app.get("/onboard", (req, res) => {
     // this page may load pdf.js (a pinned UMD build) from cdnjs to read PDFs in the browser; nothing else is widened
-    res.set("Content-Security-Policy", ["default-src 'self'", "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com", "worker-src 'self' blob: https://cdnjs.cloudflare.com", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob:", "connect-src 'self' https://cdnjs.cloudflare.com", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self' https://accounts.google.com"].join("; "));
+    res.set("Content-Security-Policy", cspWith(["default-src 'self'", "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com", "worker-src 'self' blob: https://cdnjs.cloudflare.com", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob:", "connect-src 'self' https://cdnjs.cloudflare.com", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self' https://accounts.google.com"].join("; ")));
     sendStatic(res, "onboard.html", "<p>Onboarding page missing.</p>"); });
 
   app.get("/api/onboard/state", (req, res) => { const u = me(req, res); if (!u) return; const W = getWorkspace(u.ws), g = gmailConfig(), tok = S(u.ws).get("onboard/gmail")?.data;

@@ -54,8 +54,8 @@ input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #1B1D1C;border-
     body.innerHTML = `<h1>Add your photos from <em>${esc(j.title)}</em></h1>
       <p class="sub">${esc([day(j.date), j.host?.name ? "hosted by " + j.host.name : ""].filter(Boolean).join(", "))}. ${j.name ? `Thanks for coming, ${esc(j.name)}.` : "Thanks for coming."}</p>
       <div class="drop"><label class="f" for="cap">A caption <small>Optional. Shows under your photos, without emails or phone numbers.</small><input type="text" id="cap" maxlength="120" placeholder="e.g. the dumpling line"></label>
-        <button type="button" class="pick" id="pick"><span aria-hidden="true">📸</span>Pick photos or a short video</button>
-        <p class="note"><span aria-hidden="true">${j.public ? "🌍" : "🔒"}</span><span>${j.public ? `<b>These go in the feed.</b> ${esc(j.title)} is open on Discover, so your photos show on the event's page and in the Pottery Lab feed, where people can react.` : `<b>Only people who were there see these.</b> ${esc(j.title)} isn't open to everyone, so your photos stay with the host and guests.`}</span></p>
+        <button type="button" class="pick" id="pick">Pick photos or a short video</button>
+        <p class="note"><span>${j.public ? `<b>These go in the feed.</b> ${esc(j.title)} is open on Discover, so your photos show on the event's page and in the Pottery Lab feed, where people can react.` : `<b>Only people who were there see these.</b> ${esc(j.title)} isn't open to everyone, so your photos stay with the host and guests.`}</span></p>
         <p class="err-l" id="err"></p></div>
       <div class="wall" id="wall" aria-label="Photos from ${esc(j.title)}"></div>
       <div class="acts" id="acts" hidden>${j.public ? `<a class="btn primary" href="/feed">See it in the feed</a>` : ""}<a class="btn" href="/g#rsvp-${esc(id)}">Back to the invite</a></div>`;
@@ -67,7 +67,7 @@ input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #1B1D1C;border-
       window.MomentUpload.pick({ q: { eventId: id, rid, code, ...(caption ? { caption } : {}) },
         onStart: (fs, extra) => { pick.disabled = true; fs.forEach((f, i) => { const u = URL.createObjectURL(f), v = /^video\//.test(f.type); wall.insertAdjacentHTML("afterbegin", pol(v ? `<video src="${u}" muted playsinline></video>` : `<img src="${u}" alt="">`, "Adding…", n0 + i, "new")); }); if (extra) $("#err").textContent = `The first ${fs.length} are going up. Add the rest after.`; },
         onEach: (f, r, err, i) => { const el = wall.querySelector(`[data-i="${n0 + i}"]`); if (!el) return; el.classList.toggle("err", !!err); el.querySelector("b").textContent = err ? err.message : caption || "Added"; },
-        onDone: (n, total) => { pick.disabled = false; pick.innerHTML = `<span aria-hidden="true">📸</span>Add more`; n0 = wall.children.length; $("#acts").hidden = false;
+        onDone: (n, total) => { pick.disabled = false; pick.textContent = "Add more"; n0 = wall.children.length; $("#acts").hidden = false;
           if (n < total) $("#err").textContent = n ? `${n} of ${total} added. The others were too big, too long or not a photo.` : "Those didn't add. Photos, or videos up to 15 seconds."; } }); };
   }
 })();

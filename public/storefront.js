@@ -425,7 +425,7 @@
   }
   window.EncoreInlineEdit = function (e) {
     const box = document.getElementById("nextUp"); if (!box || !e?.id || box.dataset.ieInit === e.id) return; box.dataset.ieInit = e.id; const id = e.id;
-    if (!box.querySelector(".ie-hint")) box.insertAdjacentHTML("afterbegin", `<p class="ie-hint">✏️ Tap anything to edit it.</p>`);
+    if (!box.querySelector(".ie-hint")) box.insertAdjacentHTML("afterbegin", `<p class="ie-hint">Tap anything to edit it.</p>`);
     const tEl = box.querySelector(".nu-title"); if (tEl && !tEl.textContent.trim()) { tEl.classList.add("ie-empty"); tEl.textContent = "Add a title"; }
     editable(tEl, { id, field: "title", required: true, get: () => e.dinnerTheme || e.title, toPatch: (v) => { e.title = v; return e.dinnerTheme ? { dinnerTheme: v } : { pubTitle: v }; } });
     const spans = [...box.querySelectorAll(".nu-meta span")];

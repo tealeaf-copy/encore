@@ -21,7 +21,7 @@
 
   const CSS = `.pin-bg{position:fixed;inset:0;z-index:8000;background:rgba(31,26,23,.45);display:grid;place-items:center;padding:12px;animation:pinFade .25s ease}
 @keyframes pinFade{from{opacity:0}}
-.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:26px;box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif;
+.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif;
   background-image:radial-gradient(rgba(102,90,81,.08) 1px,transparent 1.2px);background-size:7px 7px;animation:pinUp .4s cubic-bezier(.3,1.4,.5,1)}
 @keyframes pinUp{from{transform:translateY(30px) rotate(-1deg);opacity:0}}
 .pin h2{font:600 clamp(28px,6vw,38px)/1.02 var(--sys-display);margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:var(--pl-accent)}
@@ -35,7 +35,7 @@
 .pin-chip[aria-pressed=true]::after{content:"✓";margin-left:2px;font:700 14px "IBM Plex Sans",system-ui}
 .pin-chip:focus-visible,.pin button:focus-visible,.pin input:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}
 .pin-city{display:grid;gap:6px;margin:0 0 16px}.pin-city label{font:600 16px var(--sys-title)}
-.pin-city input{min-height:48px;border:2px solid var(--pl-ink);border-radius:16px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
+.pin-city input{min-height:48px;border:2px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
 .pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid var(--pl-ink);background:var(--pl-surface);border-radius:999px;padding:4px 12px;font:600 14px "IBM Plex Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
 .pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,var(--pl-page) 30%);padding:14px 0 4px;margin-top:4px}
 .pin-main{min-height:52px;padding:0 24px;border:1.5px solid var(--pl-accent);border-radius:var(--pl-r-btn,6px);background:var(--pl-accent);color:#fff;font:600 17px "IBM Plex Sans",system-ui;cursor:pointer;box-shadow:none}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
@@ -43,20 +43,20 @@
 .pin-n{font:600 14px "IBM Plex Sans",system-ui;color:var(--pl-soft)}
 .pin h3{font:600 20px var(--pl-font-text);margin:18px 0 8px}
 .pin-hosts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:12px}
-.pin-host{position:relative;background:#fff;border:2px solid var(--pl-ink);border-radius:18px;padding:12px;display:grid;gap:6px;align-content:start;box-shadow:2px 2px 0 var(--pl-ink);transform:rotate(var(--r,0deg))}
+.pin-host{position:relative;background:#fff;border:2px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);padding:12px;display:grid;gap:6px;align-content:start;box-shadow:2px 2px 0 var(--pl-ink);transform:rotate(var(--r,0deg))}
 .pin-host .av{width:54px;height:54px;border-radius:50%;border:2px solid var(--pl-ink);display:grid;place-items:center;font-size:26px;background:var(--pl-sand-soft);overflow:hidden}.pin-host .av img{width:100%;height:100%;object-fit:cover}
 .pin-host b{font:600 16px/1.15 var(--sys-title)}.pin-host small{color:var(--pl-soft);font-size:13px;line-height:1.3}
 .pin-host .why{display:inline-block;background:var(--pl-sand);border-radius:6px;padding:1px 7px;font:600 12px "IBM Plex Sans",system-ui;color:var(--pl-ink);justify-self:start}
 .pin-host .ex{position:absolute;top:8px;right:8px;border:1.5px solid var(--pl-ink);border-radius:999px;padding:1px 8px;font:700 11px "IBM Plex Sans",system-ui;background:#fff}
 .pin-fol{min-height:40px;border:2px solid var(--pl-ink);border-radius:999px;background:var(--pl-ink);color:#fff;font:600 14px "IBM Plex Sans",system-ui;cursor:pointer;margin-top:4px}.pin-fol[aria-pressed=true]{background:#fff;color:var(--pl-ink)}
-.pin-host form{display:grid;gap:6px}.pin-host form input{min-height:40px;border:1.5px solid var(--pl-line-strong);border-radius:10px;padding:6px 10px;font:inherit;font-size:16px}
+.pin-host form{display:grid;gap:6px}.pin-host form input{min-height:40px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);padding:6px 10px;font:inherit;font-size:16px}
 .pin-evs{display:grid;gap:10px}
-.pin-ev{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--pl-ink);border-radius:16px;padding:8px;text-decoration:none;color:var(--pl-ink);box-shadow:2px 2px 0 var(--pl-ink)}
-.pin-ev .th{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1.5px solid var(--pl-ink);background:var(--pl-sand)}.pin-ev .th img{width:100%;height:100%;object-fit:cover}.pin-ev .th .ea-cover .ea-txt{display:none}
+.pin-ev{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);padding:8px;text-decoration:none;color:var(--pl-ink);box-shadow:2px 2px 0 var(--pl-ink)}
+.pin-ev .th{position:relative;width:76px;height:76px;border-radius:var(--pl-r-md,6px);overflow:hidden;border:1.5px solid var(--pl-ink);background:var(--pl-sand)}.pin-ev .th img{width:100%;height:100%;object-fit:cover}.pin-ev .th .ea-cover .ea-txt{display:none}
 .pin-ev b{font:600 16px/1.15 var(--sys-title);display:block}.pin-ev small{color:var(--pl-soft);font-size:13.5px;display:block}.pin-ev .fr{color:#4F6B3A;font-weight:600}
-.pin-empty{background:var(--pl-surface);border:2px dashed #C9BBA7;border-radius:16px;padding:14px;color:var(--pl-soft)}
+.pin-empty{background:var(--pl-surface);border:2px dashed #C9BBA7;border-radius:var(--pl-r-md,6px);padding:14px;color:var(--pl-soft)}
 @media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:118px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
-@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:24px 24px 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
+@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:var(--pl-r-lg,6px) var(--pl-r-lg,6px) 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
 /* round 11 UX pass: UI controls take the app's one line (1.5px) and no sticker shadows or tilts; the thick ink line
    stays on illustrations. Picked chips fill with their colour and gain Potto's brown line */
 .pin{border:1.5px solid var(--pl-frame);box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
@@ -67,7 +67,7 @@
 .pin-chip[aria-pressed=true]{transform:none;box-shadow:inset 0 0 0 1px var(--pl-frame);border-color:var(--pl-frame)}
 .pin-main{border:0;box-shadow:none}
 .pin-main:disabled{border:0}
-.pin-city input{border:1.5px solid var(--pl-line-strong);border-radius:12px}
+.pin-city input{border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px)}
 .pin-cities button{border-color:var(--pl-line-strong)}
 .pin-host,.pin-ev{border:1.5px solid var(--pl-line);box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);transform:none}
 .pin-ev .th{border:0}.pin-host .av{border:1.5px solid var(--pl-line)}

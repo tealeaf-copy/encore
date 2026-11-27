@@ -2,26 +2,27 @@
 <script src="/authguard.js"></script>
 <title>A year of hosting · Pottery Lab</title>
 <meta name="description" content="A host's year on Pottery Lab: the gatherings, the people who came, and the ones who came back.">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--paper:var(--pl-page);--ink:var(--pl-ink);--smoke:var(--pl-soft);--line:var(--pl-line);--acc:var(--pl-accent)}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 .wrap{max-width:460px;margin:0 auto;padding:22px 16px 60px}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.top a{color:inherit;text-decoration:none;font:700 18px var(--sys-title)}.top small{color:var(--smoke)}
-.card{position:relative;border-radius:28px;overflow:hidden;color:#fff;background:linear-gradient(160deg,var(--acc),color-mix(in srgb,var(--acc) 55%,var(--pl-ink)));padding:26px 22px 22px;box-shadow:0 30px 60px -36px rgba(31,26,23,.7)}
-.card .who{display:flex;gap:12px;align-items:center}.card .av{width:58px;height:58px;border-radius:50%;background:#fff;overflow:hidden;display:grid;place-items:center;font-size:28px;flex:none}.card .av img,.card .av svg{width:100%;height:100%;object-fit:cover}
-.card .who b{display:block;font:700 20px/1.15 var(--pl-font-text)}.card .who small{opacity:.85}
-.card .potto-c{position:absolute;right:10px;top:96px;width:118px;transform:rotate(8deg)}.yr-sub em{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600}.yr{font:700 clamp(64px,22vw,96px)/.9 var(--sys-display);margin:22px 0 2px;letter-spacing:-.02em}.yr-sub{font-size:18px;opacity:.92;margin:0 0 18px}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.st{background:rgba(255,255,255,.14);border-radius:18px;padding:12px 14px}.st b{display:block;font:700 34px/1 var(--sys-display)}.st span{font-size:13.5px;opacity:.9}
-.bars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:64px;margin:18px 0 4px}.bars i{display:block;background:rgba(255,255,255,.85);border-radius:4px 4px 2px 2px;min-height:3px}.bars i.z{background:rgba(255,255,255,.25)}
-.months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;font-size:13px;opacity:.9;text-align:center}
-.line{margin:16px 0 0;font-size:15px}.line b{font-weight:700}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.tags span{background:rgba(255,255,255,.18);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
-.quote{margin:16px 0 0;padding:12px 14px;background:rgba(255,255,255,.12);border-radius:16px;font-size:15px}.quote small{display:block;opacity:.8;margin-top:4px}
-.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.badges span{background:#fff;color:var(--ink);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:700}
-.brand{margin-top:18px;font-size:13px;opacity:.9;display:flex;justify-content:space-between}
-.actions{display:flex;gap:10px;margin-top:16px}.actions a,.actions button{flex:1;text-align:center;padding:12px;border-radius:999px;font-weight:600;font-size:15px;font-family:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;cursor:pointer}.actions .go{background:var(--ink);color:#fff;border-color:var(--ink)}
-.years{display:flex;gap:6px;justify-content:center;margin-top:14px}.years a{font-size:13px;color:var(--smoke)}.years a[aria-current]{color:var(--ink);font-weight:700}
+/* review round 19: the year in review is a page from the notebook (it was a gradient poster with 28px corners and emoji tags): paper, ink, 6px corners, the host's colour as the rule on top and in the bars */
+.card{position:relative;border-radius:var(--pl-r-md,6px);overflow:hidden;color:var(--pl-ink);background:var(--pl-surface,#FAF8F3);border:1.5px solid var(--pl-line-strong,#1B1D1C);border-top:6px solid var(--acc);padding:22px 20px 20px}
+.card .who{display:flex;gap:12px;align-items:center}.card .av{width:58px;height:58px;border-radius:50%;background:var(--pl-raised,#fff);border:1px solid var(--pl-line);overflow:hidden;display:grid;place-items:center;font-size:28px;flex:none}.card .av img,.card .av svg{width:100%;height:100%;object-fit:cover}
+.card .who b{display:block;font:600 20px/1.15 var(--pl-font-text)}.card .who small{color:var(--pl-soft)}
+.card .potto-c{position:absolute;right:10px;top:92px;width:104px;transform:rotate(8deg)}.yr{font:600 clamp(64px,22vw,96px)/.9 var(--sys-display);margin:22px 0 2px;letter-spacing:-.02em}.yr-sub{font-size:18px;color:var(--pl-soft);margin:0 0 18px}.yr-sub em{font-style:normal;color:var(--pl-ink);font-weight:600}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--pl-line);border-left:1px solid var(--pl-line)}.st{padding:12px 14px;border-right:1px solid var(--pl-line);border-bottom:1px solid var(--pl-line);background:var(--pl-page)}.st b{display:block;font:600 34px/1 var(--sys-display)}.st span{font-size:14px;color:var(--pl-soft)}
+.bars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:64px;margin:18px 0 4px}.bars i{display:block;background:var(--acc);border-radius:2px 2px 0 0;min-height:3px}.bars i.z{background:var(--pl-line)}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;font:500 13px var(--pl-font-mono,ui-monospace,monospace);color:var(--pl-soft);text-align:center}
+.line{margin:16px 0 0;font-size:15px}.line b{font-weight:600}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.tags span{border:1px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-sm,6px);padding:4px 10px;font-size:13px;font-weight:500}.tags span i{font:500 13px var(--pl-font-mono,ui-monospace,monospace);font-style:normal;color:var(--pl-soft);margin-left:6px}
+.quote{margin:16px 0 0;padding:10px 14px;border-left:3px solid var(--acc);background:var(--pl-page);font-size:15px}.quote small{display:block;color:var(--pl-soft);margin-top:4px;font-size:13px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.badges span{background:var(--pl-sand-soft,var(--pl-page));color:var(--ink);border:1px dashed var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-sm,6px);padding:4px 10px;font-size:13px;font-weight:600}
+.brand{margin-top:18px;padding-top:12px;border-top:1px dashed var(--pl-line);font:500 13px var(--pl-font-mono,ui-monospace,monospace);color:var(--pl-soft);display:flex;justify-content:space-between}
+.actions{display:flex;gap:10px;margin-top:16px}.actions a,.actions button{flex:1;display:flex;align-items:center;justify-content:center;min-height:48px;text-align:center;padding:0 12px;border-radius:var(--pl-r-btn,6px);font-weight:600;font-size:15px;font-family:inherit;border:1.5px solid var(--pl-line-strong,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--ink);text-decoration:none;cursor:pointer}.actions .go{background:var(--pl-accent,#29489A);color:var(--pl-on-accent,#fff);border-color:var(--pl-accent,#29489A)}.actions a:focus-visible,.actions button:focus-visible{outline:3px solid var(--pl-accent,#29489A);outline-offset:2px}
+.years{display:flex;gap:6px;justify-content:center;margin-top:14px}.years a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;font-size:14px;color:var(--smoke)}.years a[aria-current]{color:var(--ink);font-weight:700}
 .empty{text-align:center;color:var(--smoke);padding:40px 10px}
 </style></head><body>
 <div class="wrap"><div class="top"><a href="/">pottery lab</a><small>Year in review</small></div><div id="m"><p class="empty">Loading…</p></div></div>
@@ -47,9 +48,9 @@
       <div class="st"><b>${d.returning}</b><span>came back again</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.streakUnit === "month" ? (d.longestStreak === 1 ? "month" : "months") : d.longestStreak === 1 ? "week" : "weeks"} in a row, at best</span></div></div>
     <div class="bars" aria-label="Gatherings by month">${d.months.map((n) => `<i class="${n ? "" : "z"}" style="height:${Math.max(4, (n / max) * 100)}%" title="${n}"></i>`).join("")}</div><div class="months">${M.map((x) => `<span>${x}</span>`).join("")}</div>
     ${d.busiestMonth ? `<p class="line">Busiest month: <b>${esc(d.busiestMonth.month)}</b>, with ${d.busiestMonth.n} ${d.busiestMonth.n === 1 ? "gathering" : "gatherings"}.</p>` : ""}
-    ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.emoji)} ${esc(t.label)} ×${t.n}</span>`).join("")}</div>` : ""}
+    ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.label)}<i>×${t.n}</i></span>`).join("")}</div>` : ""}
     ${d.quote ? `<div class="quote">“${esc(d.quote.love)}”<small>${esc(d.quote.name)}${d.quote.event ? `, after ${esc(d.quote.event)}` : ""}</small></div>` : ""}
-    ${(d.badges || []).length ? `<div class="badges">${d.badges.slice(0, 4).map((b) => `<span>${esc(b.emoji)} ${esc(b.label)}</span>`).join("")}</div>` : ""}
+    ${(d.badges || []).length ? `<div class="badges">${d.badges.slice(0, 4).map((b) => `<span>${esc(b.label)}</span>`).join("")}</div>` : ""}
     <div class="brand"><span>pottery lab</span><span>@${esc(h.handle)}</span></div></div>
     <div class="actions"><button type="button" id="shareBtn">Share</button><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`;
   document.getElementById("shareBtn").onclick = async () => { const text = `${h.name}'s ${d.year} on Pottery Lab: ${d.events} gatherings, ${d.guests} people.`;

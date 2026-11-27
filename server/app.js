@@ -15,6 +15,7 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
+import { mountReplyFill } from "./replyfill.js"; // Potto fills in the reply form from what you told us before
 import { PREVIEW_LABEL } from "./previews.js";
 import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos, partyUnit, partyMax, dueCents } from "./social.js";
 import { ordersClosed, tzOk, todayIn, eventTz } from "./tz.js";
@@ -815,6 +816,7 @@ export function createApp({ store, dataDir }) {
   mountSeries(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: episodes and the changelog (server/series.js)
   mountSlots(app, { store, small, X, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: slots and quiet guests (server/slots.js)
   const PL = mountPlans(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
+  mountReplyFill(app, { store, small, currentUser, X });
   mountKinds(app, { store, small, big: express.json({ limit: "300kb" }), currentUser, C, X, P: PL, sendStatic }); // the parts each scale needs: a booked table, a weekend away, a summit (server/kinds.js)
   mountHooksOut(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req) }); // review round 13: Discord/Slack and calendars (server/hooksout.js)
   // ---- end repeats ----

@@ -10376,7 +10376,7 @@ window.gProfile={
 };
 function gProfileRead(){ const v=id=>(document.getElementById(id)?.value||"").trim(), c=gContact0();
   return { name:v("g-name"), email:c.email||"", phone:c.phone||"", contactVia:c.contactVia||"", dietary:v("g-diet"), severe:!!document.getElementById("g-severe")?.checked, access:v("g-access") } }
-async function gProfileFill(){ try{ const f=document.getElementById("gForm"), e=window.__gEv; if(!f||!e||f.dataset.prof) return; if(myRsvp(e.id)?.response) return; const P=await window.gProfile.get(); if(!P) return; f.dataset.prof=1;
+async function gProfileFill(){ try{ if(window.ReplyFill) return; /* public/replyfill.js fills the form now, with Potto's line and Clear */ const f=document.getElementById("gForm"), e=window.__gEv; if(!f||!e||f.dataset.prof) return; if(myRsvp(e.id)?.response) return; const P=await window.gProfile.get(); if(!P) return; f.dataset.prof=1;
     const put=(id,val)=>{ const el=document.getElementById(id); if(el&&val&&!el.value.trim()){ el.value=val; el.dispatchEvent(new Event("input",{bubbles:true})); return true } return false };
     let n=0; if(put("g-name",P.name)) n++;
     const via=P.contactVia&&f.querySelector(`[data-via="${P.contactVia}"]`); if(via&&!document.getElementById("g-email")?.value) via.click();
@@ -12663,7 +12663,7 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
      channels" panel in the studio; and the plain-text power path on Home: paste a Discord message or Markdown, or drop
      an .ics file (public/plain.js). Server: server/slots.js, server/series.js, server/episodes.js, server/hooksout.js.
      ================================================================== -->
-<link rel="stylesheet" href="/slots.css"><script src="/drop.js" defer></script><script src="/plain.js" defer></script><script src="/slots.js" defer></script><script src="/series.js" defer></script>
+<link rel="stylesheet" href="/slots.css"><script src="/drop.js" defer></script><script src="/plain.js" defer></script><script src="/slots.js" defer></script><script src="/replyfill.js" defer></script><script src="/series.js" defer></script>
 <script>
 (function(){
   const q=(s,el=document)=>el.querySelector(s), PT=()=>window.PlainText;

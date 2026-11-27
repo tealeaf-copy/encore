@@ -44,6 +44,19 @@
     { q: "How many sets?", type: "number", min: 1, max: 6, biz: true },
     { q: "One fun fact about you", type: "long" },
   ];
+  /** A question's stable key: the same question in different words gets the same key (dietary, plusone, tshirt, song,
+   *  instagram, phone, access), else "q:" and its own words. Used to fill a reply from earlier answers (server/replyfill.js). */
+  function keyOf(text, type = "") { const t = String(text ?? "").trim().toLowerCase().replace(/[^\p{L}\p{N}\s+'-]/gu, " ").replace(/\s+/g, " ").trim();
+    if (type === "instagram" || /\binstagram\b|\binsta\b|\big handle\b/.test(t)) return "instagram";
+    if (type === "phone" || /\b(phone|mobile|cell) (number|no)\b/.test(t)) return "phone";
+    if (/\b(eat|diet|dietary|allerg\w*|food restrictions?)\b/.test(t)) return "dietary";
+    if (/\bplus[ -]?one\b|\+1\b|\bbring(ing)? (someone|a friend|anyone|a guest|a date|a partner)\b|\bguest'?s name\b/.test(t)) return "plusone";
+    if (/\bt-?shirt\b|\bshirt size\b|\btee size\b/.test(t)) return "tshirt";
+    if (/\bsong\b|\bplaylist\b/.test(t)) return "song";
+    if (/\baccess(ibility)? needs?\b|\bstep-free\b|\bwheelchair\b/.test(t)) return "access";
+    return t ? "q:" + t.slice(0, 120) : ""; }
+  /** Health-like answers: only ever filled from the person's own saved details or their own past answers. */
+  const sensitive = (key, text = "") => key === "dietary" || key === "access" || /allerg|medic|health|disab|pregnan|injur|condition|medication/i.test(String(text));
   const friendsEv = (ev) => { try { return typeof isCasual === "function" ? !!isCasual(ev) : !!ev.casual; } catch { return !!ev.casual; } };
   const norm = (q) => ({ id: q.id || uid(), q: String(q.q || "").slice(0, 160), type: TYPES[q.type] ? q.type : "short", required: !!q.required, options: (q.options || []).map((x) => String(x).slice(0, 60)).filter(Boolean).slice(0, 10), placeholder: String(q.placeholder || "").slice(0, 80), min: +q.min || 1, max: +q.max || 6 });
 
@@ -177,6 +190,7 @@
    *  live preview that draws it must never take the keyboard away from someone typing elsewhere. */
   function flow(box, ev, answers, { preview = false, onDone } = {}) { css(); const Q = (ev.questions || []).map(norm).filter((q) => q.q.trim()); if (!Q.length) return { missing: () => null };
     const Wd = wording(ev, Q.length); let i = 0, moved = false; const el = document.createElement("div"); el.className = "tf"; box.appendChild(el);
+    const live = { id: ev.id || "", Q, answers, el, filled: {}, redraw: () => { if (el.isConnected && !el.contains(document.activeElement)) draw(); }, peek: () => { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f && Q[i] && f.value.trim()) answers[Q[i].id] = f.value.trim(); } }; LIVE.push(live); if (LIVE.length > 8) LIVE.shift();
     const val = (q) => answers[q.id], has = (q) => { const v = val(q); return Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== ""; };
     const draw = (done = false) => { const pct = Math.round(((done ? Q.length : i) / Q.length) * 100);
       if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : ""}<b>${preview ? esc(Wd.thanks || "Got it, thank you.") : "Got it. Now tap " + esc(T(document.querySelector("#send,#g-send")?.textContent) || Wd.button) + "."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:var(--pl-soft);cursor:pointer;min-height:44px">Change an answer</button></div>`; onDone?.(); return; }
@@ -203,5 +217,13 @@
     draw();
     return { missing: () => { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f && Q[i]) answers[Q[i].id] = f.value.trim(); const k = Q.findIndex((q) => q.required && !has(q)); if (k < 0) return null; i = k; moved = true; draw(); el.querySelector(".tf-err").textContent = "One more question."; el.scrollIntoView({ behavior: "smooth", block: "center" }); return Q[k]; } };
   }
-  window.Questions = { builder, flow, TYPES, STARTERS, norm, askDiet, wording };
+  // ---- the guest cards on this page, so Potto can fill answers given before (public/replyfill.js) ----
+  const LIVE = [], liveOf = (id) => LIVE.filter((f) => f.el.isConnected && (!id || f.id === id || !f.id));
+  /** Fill empty answers by question id; returns how many it filled. Never touches the answer being typed. */
+  function fill(id, vals) { let n = 0; for (const f of liveOf(id)) { for (const q of f.Q) { const v = vals[q.id]; if (v == null || (f.answers[q.id] != null && String(f.answers[q.id]).trim() !== "")) continue; f.answers[q.id] = v; f.filled[q.id] = v; n++; } f.redraw(); } return n; }
+  /** Empty the answers fill() put in, unless the guest changed them. */
+  function clear(id) { for (const f of liveOf(id)) { for (const [qid, v] of Object.entries(f.filled)) if (JSON.stringify(f.answers[qid]) === JSON.stringify(v)) delete f.answers[qid]; f.filled = {}; f.redraw(); } }
+  /** What was answered on this page's card: [{ q, type, key, a }]. */
+  const answered = (id) => liveOf(id).flatMap((f) => (f.peek(), f.Q).filter((q) => f.answers[q.id] != null && String(f.answers[q.id]).trim() !== "").map((q) => ({ q: q.q, type: q.type, key: keyOf(q.q, q.type), a: f.answers[q.id] })));
+  window.Questions = { builder, flow, TYPES, STARTERS, norm, askDiet, wording, keyOf, sensitive, fill, clear, answered };
 })();

@@ -86,7 +86,7 @@
           : `<p class="ip-sub">Tap a list above. People who came before and said they'd go again are the best place to start.</p>`}</section>`; }
   // co-host hook (public/cohost.html): Potto's line for each friend before sending, and a time that suits most of them
   function cohostRow(d) { const planned = d.rows.filter((r) => r.planned); if (!planned.length || d.event.past || d.event.today) return ""; const id = encodeURIComponent(d.event.id), waiting = planned.some((r) => r.status === "planned");
-    return `<div class="ip-acts ip-cohost">${waiting ? `<a class="ip-b" href="/cohost/${id}?m=lines">Add a line for each friend</a>` : ""}<a class="ip-b" href="/cohost/${id}?m=time">Find a time that works</a></div>`; }
+    return `<div class="ip-acts ip-cohost">${waiting ? `<a class="ip-b" style="flex:1 1 220px" href="/cohost/${id}?m=lines">Add a line for each friend</a>` : ""}<a class="ip-b" style="flex:1 1 220px" href="/cohost/${id}?m=time">Find a time that works</a></div>`; }
   function fillHTML(d) { return `<div class="ip-note" role="note"><div><p>${E(d.fill.text)}</p><p class="ip-muted" style="margin-top:4px">${d.fill.people.slice(0, 5).map((p) => `${E(first(p.name))} (${p.rate}%)`).join(", ")}</p><div class="ip-acts"><button class="ip-b pri sm" type="button" data-fill>Invite ${d.fill.ids.length}</button></div></div></div>`; }
 
   // ---------------- Waves ----------------

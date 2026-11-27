@@ -763,6 +763,7 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
   const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
   window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
+  window.FeedVisual.actRow = actRow; // list cards (public/listcards.js) reuse the kudos, comment and share row
   // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:
   // on a first visit it used to cover the whole feed and its tab bar
 })();

@@ -353,5 +353,6 @@ export function mountInbox(app, { store, small, currentUser, C, X, sendStatic, a
     try { X?.bust?.(); } catch {}
     M.mark(u.email, [n.id], { read: true });
     res.json({ ok: true, needs: { type: "approve", state: decision === "in" ? "in" : "not" }, name: first(before.name) || "They", unread: M.unread(u) }); });
-  return { make: I };
+  app.locals.inbox = { make: I }; // GET /api/me/unread (server/chat.js) reads the bell's count from here
+  return app.locals.inbox;
 }

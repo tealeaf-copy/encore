@@ -125,7 +125,9 @@ export function makePush(store, env = process.env) {
   async function fromInbox(path) {
     const d = store.get(path)?.data; if (!d?.email || !Array.isArray(d.list)) return;
     const em = lc(d.email); if (!devicesOf(em).length) return;
-    const last = store.get(logPath(em))?.data?.lastAt || 0, fresh = d.list.filter((n) => !n.read && (n.at || 0) > last).sort((a, b) => a.at - b.at);
+    // chat messages push themselves (server/chat.js: who said what, and not while the person has the app open), so
+    // their bell item doesn't push a second time
+    const last = store.get(logPath(em))?.data?.lastAt || 0, fresh = d.list.filter((n) => !n.read && (n.at || 0) > last && n.kind !== "chat").sort((a, b) => a.at - b.at);
     if (!fresh.length) return;
     store.set(logPath(em), { kind: "pushlog", email: em, lastAt: Math.max(...fresh.map((n) => n.at || 0)) });
     const unread = d.list.filter((n) => !n.read).length;

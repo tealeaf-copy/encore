@@ -256,7 +256,7 @@ test("the poller: failures back off (doubling, capped) and a success resets; a t
   await Y.advance(1000); assert.equal(most, 1); release(); await Y.flush();
 });
 test("the chat badge and the chats inbox use the shared poller", () => {
-  assert.match(read("public/chatnav.js"), /window\.PLPoll\.every\("chat-badge", check, \{ ms: 30000, now: true \}\)/);
+  assert.match(read("public/chatnav.js"), /window\.PLPoll\.every\("unread", check, \{ ms: 45000, max: 5 \* 60000, now: true \}\)/);
   assert.match(read("public/chat.js"), /window\.PLPoll\.every\("chat-inbox"/); assert.match(read("public/chats.html"), /<script src="\/poller\.js"><\/script>/);
 });
 

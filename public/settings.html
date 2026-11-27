@@ -68,6 +68,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     </section>
     <section aria-labelledby="hNote" id="notify"><h2 id="hNote">Notifications</h2><p>Choose what Potto taps you about. Your phone's Focus and Do Not Disturb still apply.</p>
       <div id="pushRows"></div>
+      <div class="row"><span>Message pop-ups<small>A short note when a chat message comes in while you're using Pottery Lab. Muted chats stay quiet.</small></span><input type="checkbox" class="sw" id="msgPopups" aria-label="Message pop-ups" checked></div>
       <div class="row"><span>Emails<small>Reminders and updates by email</small></span><input type="checkbox" class="sw" id="emails" aria-label="Emails"></div>
       <div class="row"><span>Reply summaries<small>When you host: one short email per event, every few hours, with who's in, who's a maybe and who can't go. Never one email per reply.</small></span><input type="checkbox" class="sw" id="replyDigest" aria-label="Reply summaries"></div>
     </section>
@@ -131,6 +132,10 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
   const rdSync = (E) => { const r = $("#replyDigest"), on = $("#emails").checked; r.disabled = !on; r.checked = on && E.replyDigest !== false; };
   let E = { emails: true, replyDigest: true }; try { E = await get("/api/me/prefs"); $("#emails").checked = E.emails !== false; } catch {} rdSync(E);
   $("#emails").onchange = (e) => { rdSync(E); send("/api/me/prefs", { emails: e.target.checked }).catch(() => {}); };
+  // Message pop-ups (public/chatnav.js): saved to the account, and on this device so it takes effect at once
+  const popKeep = (on) => { try { localStorage.setItem("pl.msgPopups", on ? "1" : "0"); } catch {} };
+  $("#msgPopups").checked = E.chatPopups !== false; popKeep(E.chatPopups !== false);
+  $("#msgPopups").onchange = (e) => { popKeep(e.target.checked); send("/api/me/prefs", { chatPopups: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; popKeep(e.target.checked); }); };
   $("#replyDigest").onchange = (e) => { E.replyDigest = e.target.checked; send("/api/me/prefs", { replyDigest: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; }); };
   // Find people: let people find me by email or phone (server/findpeople.js), off by default
   try { const FD = await get("/api/me/findable"); $("#findable").checked = FD.on === true; } catch {}

@@ -548,10 +548,11 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     res.json({ ok: true, bell: true, push, pushDevices: devices }); });
   // event profile
   app.get("/api/me/recap", (req, res) => { const u = me(req, res); if (!u) return; res.json(X.recap(u.email)); });
-  app.get("/api/me/prefs", (req, res) => { const u = me(req, res); if (!u) return; const p = X.prefs(u.email); res.json({ ...p, replyDigest: p.replyDigest !== false }); });
+  app.get("/api/me/prefs", (req, res) => { const u = me(req, res); if (!u) return; const p = X.prefs(u.email); res.json({ ...p, replyDigest: p.replyDigest !== false, chatPopups: p.chatPopups !== false }); });
   app.post("/api/me/prefs", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, cur = X.prefs(u.email) || {}, flag = (k, d) => (typeof b[k] === "boolean" ? b[k] : cur[k] !== undefined ? cur[k] !== false : d);
-    // emails: every email. replyDigest: the host's reply summary (server/replydigest.js). A switch the page didn't send keeps its value.
-    const p = { kind: "prefs", emails: flag("emails", true), replyDigest: flag("replyDigest", true), ...(cur.chatEmails === false ? { chatEmails: false } : {}), at: Date.now() }; store.set("system/prefs-" + hash(u.email), p); res.json(p); });
+    // emails: every email. replyDigest: the host's reply summary (server/replydigest.js). chatPopups: the in-app note when a
+    // chat message comes in (public/chatnav.js, via /api/me/unread). A switch the page didn't send keeps its value.
+    const p = { kind: "prefs", emails: flag("emails", true), replyDigest: flag("replyDigest", true), chatPopups: flag("chatPopups", true), ...(cur.chatEmails === false ? { chatEmails: false } : {}), at: Date.now() }; store.set("system/prefs-" + hash(u.email), p); res.json(p); });
   // "Priya and 2 friends are going" for a signed-in member looking at an invite
   app.get("/api/me/mutuals/:eventId", (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.json({ friends: [] }); const id = clean(req.params.eventId, 80), I = X.index(), F = X.friendsOf(u.email).map((f) => f.email);
     const ws = workspaceOfEvent(id), following = !!ws && C.followersOf(ws).some((x) => x.email === String(u.email).toLowerCase());

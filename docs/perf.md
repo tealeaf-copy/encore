@@ -167,8 +167,11 @@ collection, bumped on any write to it, and dropped on a prefix delete), and read
   the drawn cover; a sign-in that runs out shows one calm bar with a way back in; a fetch rejected by a dropped
   connection doesn't surface as a crash.
 - `public/poller.js`: one shared poller. One task per key, no overlapping runs, paused while the tab is hidden or the
-  phone is offline, caught up when it comes back, failures back off (doubling, capped). The chat badge and the chats
-  inbox use it.
+  phone is offline, caught up when it comes back, failures back off (doubling, capped). The chats inbox uses it, and so
+  does the nav's one unread check (public/chatnav.js, key "unread"): GET /api/me/unread every 45 s while the tab shows,
+  at once on focus, visibilitychange and pageshow (at most every 5 s), feeding the Chats badge, the bell's count and the
+  new-message pop-up. The endpoint counts without building the chat list (no members, faces or previews), answers
+  `private, no-store`, and a burst past 120 a minute gets a 429 with Retry-After, which the poller backs off from.
 - `public/shell.js`: a finger landing on any link to one of our pages warms that page into the service worker's cache.
 - View Transitions run 150 ms (were 200), and a transition the browser skips is no longer an error.
 

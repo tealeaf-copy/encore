@@ -15,8 +15,10 @@
 // Privacy: guests see first names and initials (the host's own avatar if they set one), never emails or phones.
 // Emails and phone numbers typed by guests are hidden on the way in (the same rule as photo captions); the host's
 // aren't (they're the guests' contact already), and the composer warns them that everyone will see it.
-// Notifications: one bell item per chat every few hours, a push when the App Store bridge is there (never in quiet
-// hours), and at most one email digest per chat per DIGEST_GAP, only for messages still unread after DIGEST_DELAY.
+// Notifications: one bell item per chat every few hours; a push to the iOS and Android apps (server/push.js) for each new
+// message, at most one per chat per PUSH_GAP, never in quiet hours, never while the person has Pottery Lab open (they get
+// the in-app pop-up, public/chatnav.js); and at most one email digest per chat per DIGEST_GAP, only for messages still
+// unread after DIGEST_DELAY. Muted chats get none of these. GET/POST /api/me/unread is the cheap count every page polls.
 import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { momentKind, momentMaxBytes, sniffedAs } from "./feedvisual.js";
@@ -36,6 +38,7 @@ export const REACTIONS = ["❤️", "😂", "👍", "😮", "🙌", "🔥"];
 export const DIGEST_GAP = 4 * 3600e3; // at most one email per chat per person in this window
 export const DIGEST_DELAY = 15 * 60e3; // only for messages still unread this long after they were sent
 export const BELL_WINDOW = 3 * 3600e3; // one bell item per chat in this window
+export const PUSH_GAP = 120e3; // at most one push per chat per person in this window
 export const MSG_PER_MIN = 20, MSG_PER_HOUR = 300, PHOTO_PER_HOUR = 20, MAX_TEXT = 1000;
 const EMAIL_IN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, PHONE_IN = /\(?(?:\+?\d[\s().-]*){7,}\d/g;
 
@@ -73,6 +76,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
   const over = (k, n, ms) => { const now = Date.now(); let h = hits.get(k); if (!h || now - h.start > ms) { h = { n: 0, start: now }; hits.set(k, h); } if (hits.size > 50000) hits.clear(); return ++h.n > n; };
   const typing = new Map(); // eventId|mk -> { at, name }
   const pushedAt = new Map();
+  const seenAt = new Map(), ACTIVE_MS = 100e3; // email -> when a visible tab last checked in (/api/me/unread, an open chat)
   // ---- people ----
   const ownerOf = (ws) => lc(getWorkspace(ws)?.ownerEmail || "");
   const hostName = (ws) => { const p = C?.profileOf?.(ws), o = ownerOf(ws); return first(p?.name || (o ? getDbUser(o)?.name : "") || "") || "Your host"; };
@@ -168,8 +172,11 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
     const line = m.kind === "photo" ? `${m.by} sent a photo` : `${m.by}: ${String(m.text).replace(/\s+/g, " ").slice(0, 90)}`;
     for (const p of M) { if (p.mk === W.mk || !p.email) continue; const st = p.state || stateOf(S, eventId, p.mk); if (st?.muted || st?.removed || st?.blocked?.includes(W.mk)) continue;
       X?.notify?.(p.email, { kind: "chat", key: `chat-${eventId}-${Math.floor(now / BELL_WINDOW)}`, text: `💬 ${title}. ${line}`, link: `/chats/${encodeURIComponent(eventId)}`, eventId });
-      const push = app.locals.push?.send; const pk = eventId + "|" + p.mk;
-      if (typeof push === "function" && !quiet && X?.prefs?.(p.email)?.push !== false && now - (pushedAt.get(pk) || 0) > 120e3) { pushedAt.set(pk, now); try { Promise.resolve(push(p.email, { title, body: line, url: `/chats/${encodeURIComponent(eventId)}`, tag: "chat-" + eventId })).catch(() => {}); } catch {} } }
+      // a push to their phone (server/push.js, "Replies and messages" in Settings): not in quiet hours, not while they have
+      // Pottery Lab open (they get the in-app pop-up instead), at most one per chat every PUSH_GAP
+      const P = app.locals.appstore?.push || app.locals.push, pk = eventId + "|" + p.mk;
+      if (typeof P?.send === "function" && !quiet && X?.prefs?.(p.email)?.push !== false && now - (seenAt.get(lc(p.email)) || 0) > ACTIVE_MS && now - (pushedAt.get(pk) || 0) > PUSH_GAP) { pushedAt.set(pk, now); if (pushedAt.size > 50000) pushedAt.clear();
+        try { Promise.resolve(P.send(p.email, { title: `${m.by || "Someone"} in ${title}`, body: m.kind === "photo" ? "Sent a photo" : String(m.text).replace(/\s+/g, " ").slice(0, 140), link: `/chats/${encodeURIComponent(eventId)}`, kind: "chat", thread: "chat-" + eventId })).catch(() => {}); } catch {} } }
   } catch (e) { console.warn("[chat] fan out", e?.message); } }
 
   // ---- routes ----
@@ -182,7 +189,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
   const markRead = (W, at = Date.now()) => { if (W.mk) setState(W.S, W.eventId, W.mk, { readAt: at, ...(W.role === "guest" && !stateOf(W.S, W.eventId, W.mk)?.joinedAt && W.r?.response === "going" ? { joinedAt: Date.now() } : {}) }); };
   const limitedMsg = (W, res) => { if (over("m1|" + W.eventId + "|" + W.mk, MSG_PER_MIN, 60e3) || over("mh|" + W.eventId + "|" + W.mk, MSG_PER_HOUR, 3600e3)) { bad(res, "Slow down a little. Try again in a minute.", 429, "rate_limited"); return true; } return false; };
 
-  app.get("/api/chats/:eventId", (req, res) => { const G = gate(req, res); if (!G) return; const { W, A } = G;
+  app.get("/api/chats/:eventId", (req, res) => { const G = gate(req, res); if (!G) return; const { W, A } = G; if (W.u) sawYou(req);
     const readBefore = A.state?.readAt || 0; if (req.query.read === "1") { markRead(W); A.state = stateOf(W.S, W.eventId, W.mk); }
     const T = { ...thread(W, A), unreadFrom: readBefore }, v = versionOf(T); res.set("Cache-Control", "private, no-store");
     if (req.query.v && req.query.v === v) return res.json({ same: true, v, typing: T.typing, seen: T.seen });
@@ -250,18 +257,24 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
     try { app.locals.safety?.block?.({ kind: "chat", ws: W.ws, eventId: W.eventId, by: W.mk, about: t.mk, on: req.body?.on !== false }); } catch {} res.json({ ok: true }); });
 
   // ---- the inbox: every chat you're in. Signed in: your events and replies; and any reply proofs this browser holds ----
-  function inbox(req, proofs = []) {
-    let u = null; try { u = currentUser(req); } catch {} if (u && (u.ws === DEFAULT_WS || !u.email)) u = null;
+  const userOf = (req) => { let u = null; try { u = currentUser(req); } catch {} return u && u.ws !== DEFAULT_WS && u.email ? u : null; };
+  /** Every chat this request could be in: a signed-in person's events, replies, co-hosting and fan clubs, plus the reply proofs this browser holds. */
+  function chatIds(u, proofs = []) {
     const ids = new Map(); // eventId -> proof
     if (u) { for (const d of scopeStore(store, u.ws).list("events")) { const e = d.data; if (!e || e.example || e.sample || !(e.published || e.discoverable || e.date)) continue; ids.set(d.id, {}); }
       try { for (const id of app.locals.fanclub?.chatIdsFor?.(u.email) || []) ids.set(id, {}); } catch {} // fan club chats (server/fanclub.js)
       try { const I = X.index(); for (const a of I.att.get(lc(u.email)) || []) ids.set(a.eventId, {}); for (const x of I.events.values()) if (cohostEmails(x.e).includes(lc(u.email))) ids.set(x.id, {});
       } catch {} }
     for (const p of (Array.isArray(proofs) ? proofs : []).slice(0, 60)) { const id = String(p?.eventId || ""); if (ID.test(id) && !ids.get(id)?.rid) ids.set(id, { rid: String(p.rid || ""), code: String(p.code || "") }); }
+    return ids;
+  }
+  const draftNobodySaw = (W) => W.role === "host" && !W.ev.published && !W.ev.discoverable && !W.S.list("rsvps").some((d) => d.data?.eventId === W.eventId);
+  function inbox(req, proofs = []) {
+    const u = userOf(req), ids = chatIds(u, proofs);
     const out = [], today = new Date().toISOString().slice(0, 10), byWs = new Map();
     for (const [eventId, q] of ids) { const W = resolve(req, eventId, q); if (!W || !W.role) continue; const A = access(W);
       if (!A.read) { if (["asked", "waitlist", "maybe"].includes(A.why) && W.role === "guest") out.push({ id: eventId, title: W.ev.pubTitle || W.ev.name || "Event", date: W.ev.date || "", when: whenLine(W.ev), locked: A.why, lockedLine: WHY(hostName(W.ws))[A.why], art: { name: W.ev.pubTitle || W.ev.name || "", activity: W.ev.activity || "" }, cover: MEDIA_OK(W.ev.coverPhoto) ? W.ev.coverPhoto : "", upcoming: !W.ev.date || W.ev.date >= today, at: W.r?.changedAt || W.r?.createdAt || 0, unread: 0 }); continue; }
-      if (W.role === "host" && !W.ev.published && !W.ev.discoverable && !W.S.list("rsvps").some((d) => d.data?.eventId === eventId)) continue; // a draft nobody has seen yet has no one to chat with
+      if (draftNobodySaw(W)) continue; // a draft nobody has seen yet has no one to chat with
       if (!byWs.has(W.ws)) byWs.set(W.ws, scopeStore(store, W.ws).list("chat").map((d) => ({ id: d.id, ...d.data })));
       const blocked = A.state?.blocked || [], L = byWs.get(W.ws).filter((m) => m.eventId === eventId && visible(m, W, blocked)).sort((a, b) => (a.at || 0) - (b.at || 0));
       const last = L[L.length - 1], readAt = A.state?.readAt || 0, unread = L.filter((m) => m.at > readAt && legacyMk(m, W.ws) !== W.mk && m.role !== "system" && !m.removedAt).length;
@@ -277,7 +290,32 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
   }
   app.post("/api/chats", small, (req, res) => { res.set("Cache-Control", "private, no-store"); res.json(inbox(req, req.body?.proofs)); });
   app.get("/api/chats", (req, res) => { res.set("Cache-Control", "private, no-store"); res.json(inbox(req, [])); });
-  app.post("/api/chats/badge", small, (req, res) => { const B = inbox(req, req.body?.proofs); res.set("Cache-Control", "private, no-store").json({ unread: B.unread, messages: B.messages }); });
+  // ---- the counts every page polls (public/chatnav.js): no chat list, no members, no faces ----
+  /** { chats, messages, latest } for this request: chats with something new, unread messages, and the newest unread
+   * message (for the in-app pop-up). Muted chats count for nothing; the sender's own messages and Pottery Lab's lines never count. */
+  function counts(req, proofs = []) {
+    const u = userOf(req), ids = chatIds(u, proofs), byWs = new Map(); let chats = 0, messages = 0, latest = null;
+    for (const [eventId, q] of ids) { const W = resolve(req, eventId, q); if (!W || !W.role) continue; const A = access(W);
+      if (!A.read || A.state?.muted || draftNobodySaw(W)) continue;
+      if (!byWs.has(W.ws)) { const M = new Map(); for (const d of scopeStore(store, W.ws).list("chat")) { const m = d.data; if (!m?.eventId || m.role === "system" || m.removedAt) continue; if (!M.has(m.eventId)) M.set(m.eventId, []); M.get(m.eventId).push({ id: d.id, ...m }); } byWs.set(W.ws, M); }
+      const readAt = A.state?.readAt || 0, blocked = A.state?.blocked || []; let n = 0;
+      for (const m of byWs.get(W.ws).get(eventId) || []) { if ((m.at || 0) <= readAt || legacyMk(m, W.ws) === W.mk || !visible(m, W, blocked)) continue; n++;
+        if (!latest || m.at > latest.at) latest = { chat: eventId, title: W.ev.pubTitle || W.ev.name || "Event", by: first(m.by) || "Someone", text: m.kind === "photo" ? "" : String(m.text || "").replace(/\s+/g, " ").slice(0, 140), photo: m.kind === "photo", at: m.at || 0 }; }
+      if (n) { chats++; messages += n; } }
+    return { chats, messages, latest, signedIn: !!u };
+  }
+  // someone with a visible tab polls every 45 seconds or so: a chat message that arrives then is a pop-up, not a push
+  const sawYou = (req) => { const u = userOf(req); if (u) { seenAt.set(lc(u.email), Date.now()); if (seenAt.size > 50000) seenAt.clear(); } };
+  const unreadRoute = (req, res) => { res.set({ "Cache-Control": "private, no-store", Vary: "Cookie" });
+    const u = userOf(req), who = u ? "u:" + lc(u.email) : "ip:" + (req.ip || "");
+    if (over("ur|" + who, 120, 60e3)) return res.set("Retry-After", "30").status(429).json({ code: "rate_limited", message: "Too many checks. Try again in a moment." });
+    const B = counts(req, req.method === "POST" ? req.body?.proofs : []); let inboxN = 0;
+    if (u) { sawYou(req); try { inboxN = +app.locals.inbox?.make?.().unread(u) || 0; } catch {} }
+    const popups = u ? X?.prefs?.(u.email)?.chatPopups !== false : true;
+    res.json({ chats: B.chats, messages: B.messages, inbox: inboxN, popups, ...(popups && B.latest ? { latest: B.latest } : {}) }); };
+  app.get("/api/me/unread", unreadRoute);
+  app.post("/api/me/unread", small, unreadRoute);
+  app.post("/api/chats/badge", small, (req, res) => { const B = counts(req, req.body?.proofs); res.set("Cache-Control", "private, no-store").json({ unread: B.chats, messages: B.messages }); });
 
   // ---- hooks from replies and event edits (server/app.js) ----
   /** After a reply changes: guests who are in join the chat; the host letting someone in, a friend coming with a friend,

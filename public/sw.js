@@ -106,5 +106,12 @@ self.addEventListener("fetch", (e) => {
   }
 });
 
-// Web push is not used yet (the iOS and Android apps get pushes through APNs and FCM); this opens a link if one arrives.
-self.addEventListener("notificationclick", (e) => { e.notification.close(); const link = e.notification.data?.link || "/feed"; e.waitUntil(self.clients.openWindow(link)); });
+// Web push is not sent yet (the iOS and Android apps get pushes through APNs and FCM, server/push.js). When it is, a
+// push carries { title, body, link, tag }: one note per chat (the tag), and a tap opens the chat in a tab that's
+// already open when there is one. Unread counts are never cached here (/api/me/unread is no-store and not in DATA_APIS).
+self.addEventListener("push", (e) => { let d = {}; try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data?.text?.() || "" }; }
+  const link = typeof d.link === "string" && /^\/[^/]/.test(d.link) ? d.link : "/feed";
+  e.waitUntil(self.registration.showNotification(String(d.title || "Pottery Lab").slice(0, 120), { body: String(d.body || "").slice(0, 300), tag: d.tag || undefined, renotify: !!d.tag, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", data: { link } })); });
+self.addEventListener("notificationclick", (e) => { e.notification.close(); const link = e.notification.data?.link || "/feed";
+  e.waitUntil((async () => { const L = await self.clients.matchAll({ type: "window", includeUncontrolled: true }); const hit = L.find((c) => new URL(c.url).pathname === link) || L[0];
+    if (hit && "focus" in hit) { try { if (new URL(hit.url).pathname !== link && hit.navigate) await hit.navigate(link); } catch {} return hit.focus(); } return self.clients.openWindow(link); })()); });

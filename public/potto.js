@@ -2,7 +2,8 @@
 //
 // 1. The bell opens the Inbox: a click on the feed's bell (#bell), Home's bell (#homeBell) or [data-inbox-open] goes to
 //    /inbox. The side rail gains an Inbox item after Feed, and the Me sheet an Inbox row.
-// 2. The badge: GET /api/inbox/badge every 45 seconds while the tab is visible (and right away on "pl:inbox"), written
+// 2. The badge: the inbox count from GET /api/me/unread (public/chatnav.js, on the shared poller; GET /api/inbox/badge
+//    every 45 seconds on a page without the nav), and right away on "pl:inbox", written
 //    to every [data-inbox-badge], the feed's #bellN, Home's bell dot and the app icon (navigator.setAppBadge).
 // 3. Ask Potto: a dock at the bottom of the Inbox and the host's Home (search, the "Ask Potto" pill with a mic, compose)
 //    and the sheet it opens: Potto's line face at the top with history on the left and a new chat on the right, the
@@ -129,10 +130,12 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
     document.querySelectorAll("[data-inbox-badge]").forEach((b) => { b.hidden = !unread; b.textContent = txt; });
     const fb = document.getElementById("bellN"); if (fb) { fb.hidden = !unread; fb.textContent = txt; }
     const hb = document.querySelector("#homeBell i"); if (hb) { hb.hidden = !unread; hb.textContent = unread > 9 ? "9+" : txt; }
-    document.querySelectorAll("#bell,#homeBell,[data-inbox-open]").forEach((b) => b.setAttribute("aria-label", unread ? `Inbox, ${unread} new` : "Inbox"));
+    document.querySelectorAll('#bell,#homeBell,[data-inbox-open],.es-rail a[href="/inbox"]').forEach((b) => b.setAttribute("aria-label", unread ? `Inbox, ${unread} new` : "Inbox"));
     try { if (navigator.setAppBadge) unread ? navigator.setAppBadge(unread) : navigator.clearAppBadge?.(); } catch {}
     try { window.dispatchEvent(new CustomEvent("pl:inbox-count", { detail: unread })); } catch {} }
-  async function poll() { clearTimeout(bt); if (!signed()) return; if (!document.hidden) { try { const j = await api("/api/inbox/badge"); setBadge(j.unread); } catch {} } bt = setTimeout(poll, 45000); }
+  // with the nav's unread check on the page (public/chatnav.js, one task on the shared poller), the bell's count comes
+  // from there: no second timer. The old loop is only for a page without it.
+  async function poll() { clearTimeout(bt); if (!signed()) return; if (window.PLChatNav || window.__plChatNavLoad) { const k = window.PLChatNav?.inbox; if (k != null) setBadge(k); window.PLChatNav?.kick?.(); return; } if (!document.hidden) { try { const j = await api("/api/inbox/badge"); setBadge(j.unread); } catch {} } bt = setTimeout(poll, 45000); }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
   window.addEventListener("pl:inbox", (e) => { if (e.detail != null) setBadge(e.detail); else poll(); });
 

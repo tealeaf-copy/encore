@@ -194,3 +194,9 @@ body.ch-kb .ch-comp{padding-bottom:8px}
 .ch-past{margin:4px 0 0}.ch-past summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0 10px;font:600 14px var(--ch-sans);color:var(--ch-smoke)}
 .ch-past summary::-webkit-details-marker{display:none}.ch-past summary::before{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);margin-right:10px;transition:transform .2s}.ch-past[open] summary::before{transform:rotate(45deg)}
 .ch-past summary:focus-visible{outline:2px solid var(--ch-ink);outline-offset:2px;border-radius:6px}
+/* unread: an ink-blue dot before the title, and the title and time stand out (the count chip stays at the end of the line) */
+.ch-row.unread .ch-rtop::before{content:"";flex:none;align-self:center;width:8px;height:8px;border-radius:50%;background:var(--pl-accent)}
+.ch-row.unread .ch-rname{font-weight:700;color:var(--ch-ink)}.ch-row.unread .ch-rtime{color:var(--pl-accent-text);font-weight:600}
+/* "New messages" at the first unread message when a chat opens */
+.ch-new{margin:14px 0;color:var(--pl-accent-text);font:600 13px/1.2 var(--ch-sans)}.ch-new::before,.ch-new::after{background:rgba(41,72,154,.32)}
+.ch-new span{flex:none;padding:3px 10px;border-radius:6px;background:var(--pl-accent-soft)}

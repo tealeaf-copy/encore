@@ -213,7 +213,7 @@ test("Plain text only: markup is kept as words by the server and escaped by the 
   // the sheet escapes every comment it draws, and carries Report and Block for other people's
   // the post page's thread escapes every comment it draws, and carries Report and Block for other people's
   const sheet = fs.readFileSync(new URL("../public/feedcomments.js", import.meta.url), "utf8"), page = fs.readFileSync(new URL("../public/post.html", import.meta.url), "utf8");
-  assert.match(sheet, /<p class="pp-t\$\{[^}]*\}">\$\{esc\(c\.text\)\}<\/p>/); assert.match(sheet, /<b>\$\{esc\(c\.mine \? "You" : c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
+  assert.match(sheet, /<p class="pp-t\$\{[^\n]{0,160}?\}" id="t-\$\{esc\(c\.id\)\}">\$\{S\(\)\.mention\?\.\(c\) \|\| ""\}\$\{esc\(c\.text\)\}<\/p>/); assert.match(fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), /const mention = \(c\) => \{[^\n]*const t = esc\(m\.guest \? "a guest" : "@" \+ m\.name\)[^\n]*href="\$\{esc\(m\.href\)\}"/, "the mention in front of a reply is escaped too"); assert.match(sheet, /<b>\$\{esc\(c\.mine \? "You" : c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
   // the group chat is a quiet link on the post page, never in the comment flow on the card
   assert.match(page, /Open the group chat/); assert.ok(!/group chat/i.test(html), "no group chat link on the card");
   for (const f of [sheet, page, fs.readFileSync(new URL("../server/feedcomments.js", import.meta.url), "utf8")]) assert.ok(!/—/.test(f), "no em dashes");

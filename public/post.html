@@ -26,9 +26,17 @@
 .pp-kl li{display:flex;align-items:center;gap:8px;min-height:36px;font-size:15px}.pp-kl li b{font-weight:600}.pp-kl li.g{color:var(--pl-soft,#444845)}
 .pp-kl .fb-f,.pp-c>.fb-f,.pp-row>.fb-f{width:32px;height:32px;font-size:13px;border-color:var(--pl-page,#EFEBE2)}
 .pp-none{margin:0 0 8px;color:var(--pl-soft,#444845);font-size:15px}
-.pp-list,.pp-rs ol{list-style:none;margin:0;padding:0}
-.pp-c{display:flex;gap:10px;padding:12px 0}.pp-list>.pp-c+.pp-c,.pp-list>.pp-rs+.pp-c{border-top:1px solid var(--pl-line,#CFC8B9)}
-.pp-rs{padding:0 0 4px 42px}.pp-c.re{padding:8px 0}.pp-c.re>.fb-f{width:24px;height:24px;font-size:11px}
+.pp-list,.pp-rs{list-style:none;margin:0;padding:0}
+.pp-c{display:flex;gap:10px;padding:12px 0;border-radius:var(--pl-r-md,6px)}.pp-list>.pp-th+.pp-th{border-top:1px solid var(--pl-line,#CFC8B9)}.pp-c:focus{outline:none}.pp-c:focus-visible{outline:2px solid var(--pl-ink,#1B1D1C);outline-offset:2px}
+/* ==== replies to a comment: start ==== */
+/* replies: indented under their comment, a thin line down the side, smaller faces; the reply box opens in the slot right under the comment it answers */
+.pp-rs{margin:0 0 8px 15px;padding:0 0 0 25px;border-left:2px solid var(--pl-line,#CFC8B9)}.pp-c.re{padding:8px 0}.pp-c.re>.fb-f{width:24px;height:24px;font-size:11px}
+.pp-more .pp-mb{margin:-2px 0 -2px -10px;color:var(--pl-ink,#1B1D1C);font-weight:600}
+.pp-slot:empty{display:none}.pp-slot .rb{margin:0 0 12px 42px}.pp-rs .pp-slot .rb{margin-left:34px}.pp-slot .rb{border-left:2px solid var(--pl-line,#CFC8B9)}html.rb-on #ppBox{position:static}
+.pp-c.gone{padding-bottom:6px}.ppg .pp-b>p.pp-rm{display:flex;align-items:center;min-height:32px;color:var(--pl-soft,#444845);font-size:15px}
+/* ==== replies to a comment: end ==== */
+.pp-t.cl{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}.pp-b>.pp-see{display:flex;margin:-8px 0 -10px -10px;color:var(--pl-accent-text,#29489A);font-weight:600}
+.pp-fail{display:inline-flex;align-items:center;min-height:44px;padding:0 4px 0 10px;font-size:13px;font-weight:600;color:var(--pl-accent-text,#29489A)}
 .pp-c.wait{opacity:.7}.pp-c.hl .pp-b{background:color-mix(in srgb,var(--pl-accent,#29489A) 8%,transparent);border-radius:var(--pl-r-md,6px);box-shadow:0 0 0 6px color-mix(in srgb,var(--pl-accent,#29489A) 8%,transparent)}
 .pp-b{flex:1;min-width:0}.ppg .pp-b>p{margin:0}.ppg .pp-b>p.pp-t{margin-top:2px}.ppg .pp-b>p.pp-do{margin:0 0 -10px -10px}
 .pp-who{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;margin:0;padding-right:40px;font-size:15px;line-height:1.35}.pp-who b{font-weight:600}
@@ -36,8 +44,8 @@
 .pp-at{font:400 12px/1.35 var(--sys-mono,ui-monospace,monospace);color:var(--pl-soft,#444845);font-variant-numeric:tabular-nums;text-decoration:none}a.pp-at{padding:14px 6px;margin:-14px -6px}a.pp-at:hover{text-decoration:underline;text-underline-offset:3px}
 .pp-t.big{font-size:28px;line-height:1.2}.pp-b .fx-gif{height:180px}.pp-b .fx-stk{width:96px;height:96px}
 .pp-t{margin:2px 0 0;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
-.pp-do{display:flex;gap:4px;margin:0 0 -10px -10px}
-.pp-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--pl-soft,#444845);font:500 13px var(--sys-sans,"IBM Plex Sans",system-ui);cursor:pointer}.pp-btn:hover{color:var(--pl-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}.pp-btn.sure{color:var(--pl-accent-text,#29489A);font-weight:600}
+.pp-do{display:flex;flex-wrap:wrap;gap:0 4px;margin:0 0 -10px -10px}
+.pp-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--pl-soft,#444845);font:500 13px var(--sys-sans,"IBM Plex Sans",system-ui);cursor:pointer;-webkit-tap-highlight-color:transparent}@media (hover:hover){.pp-btn:hover{color:var(--pl-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}}.pp-btn:active{color:var(--pl-ink,#1B1D1C)}.pp-btn.sure{color:var(--pl-accent-text,#29489A);font-weight:600}
 .pp-c .sf-more{top:6px;right:-6px;width:36px;height:36px;background:transparent;border-color:transparent;color:var(--pl-soft,#444845)}.pp-c{position:relative}
 .pp-empty{padding:12px 0 16px;color:var(--pl-soft,#444845);font-size:15px}
 /* the box: at the bottom of the conversation, and it stays in reach while you read */
@@ -46,8 +54,6 @@
 .pp-row textarea{flex:1;min-width:0;min-height:44px;max-height:160px;resize:none;margin:0;padding:11px 12px;border:1px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-md,6px);background:#fff;color:var(--pl-ink,#1B1D1C);font:16px/1.3 var(--sys-sans,"IBM Plex Sans",system-ui)}
 .pp-row textarea::placeholder{color:var(--pl-soft,#444845);opacity:1}.pp-row textarea:focus-visible{outline:2px solid var(--pl-accent,#29489A);outline-offset:0;border-color:var(--pl-accent,#29489A)}
 .pp-send{flex:none;min-height:44px;padding:0 18px;border:0;border-radius:var(--pl-r-btn,6px);background:var(--pl-accent,#29489A);color:var(--pl-on-accent,#fff);font:600 15px var(--sys-sans,"IBM Plex Sans",system-ui);cursor:pointer}.pp-send:hover{background:var(--pl-accent-press,#1F3878)}.pp-send[disabled]{opacity:.5;cursor:default}
-.pp-re{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px 42px;font-size:13px;color:var(--pl-soft,#444845)}.pp-re[hidden]{display:none}
-.pp-re-x{display:grid;place-items:center;width:44px;height:44px;margin:-12px -10px -12px 0;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--pl-soft,#444845);cursor:pointer}.pp-re-x svg{width:16px;height:16px}.pp-re-x:hover{color:var(--pl-ink,#1B1D1C)}
 .pp-meta{display:flex;justify-content:space-between;gap:12px;margin:0 0 0 42px;font-size:13px;line-height:1.4}.pp-meta:has(span:empty+span:empty){display:none}
 .pp-err{color:var(--pl-accent-text,#29489A);font-weight:600;padding-top:6px}.pp-err:empty,.pp-cnt:empty{display:none}.pp-cnt{margin-left:auto;padding-top:6px;font-family:var(--sys-mono,ui-monospace,monospace);color:var(--pl-soft,#444845)}
 .pp-in{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--pl-r-btn,6px);background:var(--pl-accent,#29489A);color:var(--pl-on-accent,#fff);font:600 16px var(--sys-sans,"IBM Plex Sans",system-ui);text-decoration:none}.pp-in:hover{background:var(--pl-accent-press,#1F3878)}
@@ -63,8 +69,8 @@
   <div class="pp-top"><a class="pp-back" id="ppBack" href="/feed" aria-label="Back to the feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></a></div>
   <h1 class="fb-sr" id="ppH">Post</h1>
   <div id="ppCard"></div>
-  <section class="pp-sec" id="kudos" aria-labelledby="ppKH"><h2 id="ppKH">Kudos</h2><div id="ppK"></div></section>
-  <section class="pp-sec" id="comments" aria-labelledby="ppCH"><h2 id="ppCH">Comments</h2><ol class="pp-list" id="ppList"></ol>
+  <section class="pp-sec" id="kudos" aria-labelledby="ppKH" hidden><h2 id="ppKH">Kudos</h2><div id="ppK"></div></section>
+  <section class="pp-sec" id="comments" aria-labelledby="ppCH" hidden><h2 id="ppCH">Comments</h2><ol class="pp-list" id="ppList"></ol>
     <a class="pp-chat" id="ppChat" hidden>You were there. Open the group chat</a>
     <div id="ppBox" class="pp-fab"></div><!-- pp-fab: "Need a hand?" (public/help.js) sits above the box --></section>
 </main>
@@ -84,6 +90,8 @@
   FV.css(); $("#ppCard").innerHTML = S.card(P.item, { signedIn: !!P.signedIn, me: P.me || null }); FV.wire($("#ppCard"));
   // the host (or the person) moves to the very top, next to Back: the only Follow on the page
   { const lead = $("#ppCard .fb-lead"); if (lead) $(".pp-top").appendChild(lead); }
+  // the lists show once the card is above them, so nothing drawn first is pushed down the page
+  const reveal = () => { for (const s of document.querySelectorAll(".pp-sec[hidden]")) s.hidden = false; };
   // everyone who gave kudos: you first, then the newest; "A guest" for someone who keeps their name to themselves
   let K = P.kudos || { count: 0, people: [] };
   function drawKudos() { const L = K.people || [];
@@ -93,8 +101,8 @@
   drawKudos();
   document.addEventListener("pl:kudos", (e) => { const d = e.detail || {}; if (d.target !== P.target || !d.kudos) return; const k = d.kudos, mineBefore = (K.people || []).some((p) => p.mine);
     K = { ...K, count: k.count, line: k.line }; if (k.mine && !mineBefore) K.people = [{ name: "You", mine: true, face: { ...(P.me || {}), me: 1 } }, ...(K.people || [])]; if (!k.mine && mineBefore) K.people = (K.people || []).filter((p) => !p.mine); drawKudos(); });
-  // the whole conversation, with one level of replies
-  window.PLThread.mount(document, P, { onChange: (c) => S.setComments(P.target, c) });
+  // the whole conversation: replies sit under the comment they answer
+  reveal(); window.PLThread.mount(document, P, { onChange: (c) => S.setComments(P.target, c) });
   // the group chat: a quiet link for the people who were in it
   if (P.chat && /^\/g#/.test(P.chat)) { const a = $("#ppChat"); a.href = P.chat; a.hidden = false; }
   if (location.hash === "#kudos") $("#kudos").scrollIntoView({ block: "start" });

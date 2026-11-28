@@ -123,7 +123,7 @@
     closeBar(); css(); const mine = new Set([...row.querySelectorAll(".fx-rx[aria-pressed=true]")].map((b) => b.dataset.rx)), el = document.createElement("div");
     el.className = "fx-bar" + (RM() ? "" : " in"); el.setAttribute("role", "group"); el.setAttribute("aria-label", "React to this comment");
     el.innerHTML = RX.map(([r, g, n]) => `<button type="button" data-rx-pick="${r}" aria-label="${n}" aria-pressed="${mine.has(r)}"><span aria-hidden="true">${g}</span></button>`).join("");
-    const host = row.closest("li") || row; if (getComputedStyle(host).position === "static") host.style.position = "relative";
+    const host = row.matches(".pp-c") ? row : row.closest("li") || row; if (getComputedStyle(host).position === "static") host.style.position = "relative";
     host.appendChild(el); const top = host.getBoundingClientRect().top; el.style.left = "0"; if (top < 80) el.style.top = "100%"; else el.style.bottom = "calc(100% - 6px)";
     bar = { el, row, opener }; document.addEventListener("keydown", barKey, true); document.addEventListener("pointerdown", barOut, true);
     el.addEventListener("click", (e) => { const b = e.target.closest("[data-rx-pick]"); if (!b) return; const r = b.dataset.rxPick; closeBar(); react(row, r); });

@@ -54,7 +54,7 @@ test("Each guest who was in gets exactly one ask, by text if they gave a phone, 
   const r1 = await run(); assert.equal(r1.asked, 2, JSON.stringify(r1)); assert.equal(r1.sms, 1); assert.equal(r1.email, 1);
   const texts = fakeTexts.slice(t0), mails = fakeOutbox.slice(e0);
   const ana = texts.find((t) => t.to === "+14155550201"); assert.ok(ana, "Ana gets a text");
-  assert.match(ana.text, /^How was Dumpling night at Rae's\? Leave kudos in one tap: https:\/\/pl\.example\/k\/kaDinner\?rid=[A-Za-z0-9_-]+&code=[A-Za-z0-9]+ Reply STOP to opt out\.$/);
+  assert.match(ana.text, /^How was Dumpling night at Rae's\? Leave kudos in one tap: https:\/\/pl\.example\/k\/kaDinner\?rid=[A-Za-z0-9_-]+&code=[A-Za-z0-9]+ Got photos\? Add them there too\. Reply STOP to opt out\.$/); // story prompts: photos ride on this text, never one of their own
   assert.equal(texts.length, 1, "one text in all: not Cy (no-show), not Di (maybe), not Fy (reminders off for that event)");
   const bo = mails.find((m) => m.to.includes("bo.kask@guest.example.com")); assert.ok(bo, "Bo has no phone, so an email");
   assert.equal(bo.subject, "How was Dumpling night?"); assert.match(bo.text, /How was Dumpling night at Rae's\? Leave kudos in one tap: https:\/\/pl\.example\/k\/kaDinner\?rid=/);

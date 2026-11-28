@@ -329,7 +329,7 @@ If you didn't ask for this, ignore it and nothing happens.`, fromName: "Pottery 
 
   // ---- photo drops (server/photodrop.js): the morning after, "Add your photos from X" by email and in the inbox, on the
   // same hourly job as the kudos asks. The upload page is /p/<event>?rid=..&code.. (public/photos.html). ----
-  const PD = makePhotoDrop(store, { C, X, canEmail: (e) => X.canEmail(e), guestsOf });
+  const PD = makePhotoDrop(store, { C, X, canEmail: (e) => X.canEmail(e), guestsOf, storyBell: (em, id) => app.locals.storyPrompt?.bellFor?.(em, id) || null });
   app.locals.photoDrops = PD;
   const PHOTOS_HTML = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "photos.html");
   app.get(/^\/p\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { res.set("Referrer-Policy", "no-referrer").set("Cache-Control", "private, no-store"); fs.readFile(PHOTOS_HTML, "utf8", (err, html) => (err ? res.status(500).type("text/plain").send("Photos page missing.") : res.type("html").send(html))); });

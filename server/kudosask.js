@@ -15,6 +15,7 @@ import { localParts, pottoSettings } from "./reminders.js";
 import { eventTz } from "./tz.js";
 import { KUDOS_TAGS, kudosTagsFor, replyKey } from "./social.js";
 import { mountKudosNudge } from "./kudosnudge.js";
+import { TEXT_TAIL } from "./storyprompt.js";
 import { teamUpNames } from "./collab.js";
 import { nextFor } from "./repeats.js"; // review round 7: "Nothing like it coming up" shows the series' next date // kudos nudges: the host's sheet, the group link, Send for me, the reminder
 
@@ -68,7 +69,7 @@ export async function runKudosAsks(store, { now = Date.now(), workspaces = null,
         if (dryRun) { row.preview = row.preview || line; if (bySms || byEmail) row.asked++; else row.skipped++; continue; }
         S.set(key, { eventId, rid, at: now, channel: "pending" }); // logged first: a crash mid-send never means a second ask
         let channel = "none", error = null;
-        if (bySms) { const x = await sendSms(sms, { to: r.phone, text: `${line} Reply STOP to opt out.` }); if (x.ok) channel = "sms"; else error = x.error || "text failed"; }
+        if (bySms) { const x = await sendSms(sms, { to: r.phone, text: `${line} ${ev.noPhotos ? "" : TEXT_TAIL + " " /* story prompts: photos ride on this text, never one of their own */}Reply STOP to opt out.` }); if (x.ok) channel = "sms"; else error = x.error || "text failed"; }
         if (channel === "none" && byEmail) { const x = await sendEmail(email, { list: "guest", origin, to: em, subject: `How was ${title}?`, text: `Hi ${first(r.name) || "there"},\n\n${line}\n`, fromName: C?.profileOf?.(ws)?.name || "" }); if (x.ok) channel = "email"; else error = x.error || "email failed"; }
         S.set(key, { eventId, rid, at: now, channel, ...(error && channel === "none" ? { error: String(error).slice(0, 200) } : {}) });
         if (channel === "none") { row.skipped++; continue; }

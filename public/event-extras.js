@@ -36,6 +36,10 @@
     if (!window.PLFollow && !document.querySelector('script[src="/follow.js"]')) load("/follow.js").catch(() => {}); }; // the shared Follow (window.PLFollow)
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", watch) : watch();
 })();
+// ---- story prompts (public/storyprompt.js): "Add a photo from the night" on a past event's invite, for someone who went ----
+(function () { try { if (window.__plStoryLoad || window.StoryPrompt || location.pathname === "/e/_preview" || !/^\/[ei]\//.test(location.pathname)) return; window.__plStoryLoad = 1;
+  const go = () => { const s = document.createElement("script"); s.src = "/storyprompt.js"; s.defer = true; document.head.appendChild(s); };
+  document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go(); } catch {} })();
 // ---- delight after (public/delightafter.js): the morning-of card, live photos and "How was it?" on the guest event pages ----
 (function () { try { if (window.__plDelightLoad || location.pathname === "/e/_preview" || !/^\/([ei]\/|g$)/.test(location.pathname)) return; window.__plDelightLoad = 1;
   const go = () => { const s = document.createElement("script"); s.src = "/delightafter.js"; s.defer = true; document.head.appendChild(s); };

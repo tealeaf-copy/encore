@@ -92,8 +92,9 @@ test("Photo drops: the morning after, one email and one inbox item per guest who
   assert.doesNotMatch(mine.find((x) => /Birthday/.test(x.subject)).text, /feed/, "friends-only: only people who were there");
   assert.ok(r.sent >= 5 && r.inbox >= 5);
   const inbox = await (await get("/api/me/inbox", linh.cookie)).json();
-  const item = inbox.items.find((i) => i.kind === "photos" && /Add your photos from Dumpling night/.test(i.text)); assert.ok(item, "inbox item");
-  assert.match(item.link, /^\/p\/nuPast\?rid=nuR0&code=NC0$/);
+  // a guest with an account gets the story prompt's words and its link to the feed (server/storyprompt.js); the email keeps the /p link
+  const item = inbox.items.find((i) => i.kind === "photos" && /^Photos from Dumpling night\? Add yours to the story\.$/.test(i.text)); assert.ok(item, "inbox item");
+  assert.equal(item.link, "/feed?story=nuPast"); assert.equal(inbox.items.filter((i) => i.kind === "photos" && i.eventId === "nuPast" && /story|Add your photos/.test(i.text)).length, 1, "one bell note about this event's photos");
   const again = await PD.run({ now: nowNY + 3600e3, origin: "https://pl.example", workspaces: [S.mai.ws] }); assert.equal(again.sent, 0, "once per guest per event");
   // the hourly job runs drops after the kudos follow-ups (server/kudosask.js calls this object)
   assert.equal(typeof srv.app.locals.kudosNudge.runFollowUps, "function");

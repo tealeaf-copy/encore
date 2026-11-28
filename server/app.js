@@ -51,6 +51,7 @@ import { mountExperiments, addSink } from "./experiments.js"; // deterministic A
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountFeedComments } from "./feedcomments.js"; // comments under feed cards: list, add, delete, fresh counts
 import { mountKudosAsk } from "./kudosask.js";
+import { mountStoryPrompt } from "./storyprompt.js"; // story prompts: the after-event card, the bell note, Ask guests for photos (server/storyprompt.js)
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
@@ -334,6 +335,7 @@ export function createApp({ store, dataDir }) {
   let cspSeen = 0; app.post("/api/csp-report", express.json({ type: () => true, limit: "16kb" }), (req, res) => { if (cspSeen++ < 200) { const r = req.body?.["csp-report"] || req.body || {}; console.warn("[csp]", String(r["violated-directive"] || r.effectiveDirective || "").slice(0, 60), String(r["blocked-uri"] || r.blockedURL || "").slice(0, 120), String(r["document-uri"] || r.documentURL || "").slice(0, 80)); } res.status(204).end(); });
   // A readable "signed in" hint (never the session itself) so pages skip calls that need a session when there isn't one.
   // Kept in step with the real session on every page and API request.
+  app.use((req, res, next) => { try { app.locals.storyPrompt?.hint?.(req, res); } catch {} next(); }); // story prompts: Home's card arrives with the page (server/storyprompt.js)
   app.use((req, res, next) => { if (/\.[a-z0-9]{1,5}$/i.test(req.path)) return next(); const hint = /(?:^|;\s*)encore_in=1/.test(req.headers.cookie || ""), authed = authEnabled() ? isAuthed(req) : true;
     if (authed && !hint) res.append("Set-Cookie", `encore_in=1; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${req.secure ? "; Secure" : ""}`); else if (!authed && hint && authEnabled()) res.append("Set-Cookie", "encore_in=; Path=/; SameSite=Lax; Max-Age=0"); next(); });
   const assetsDir = path.join(dataDir, "assets");
@@ -899,6 +901,7 @@ export function createApp({ store, dataDir }) {
   mountSurprise(app, { store, small, currentUser, C, X, H: HK, invitedGuest: (...a) => app.locals.invitedGuest?.(...a) }); // ---- surprise touches: drawn covers, milestones, regulars, invite lines, send-offs (server/surprise.js) ----
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountPlaces(app, { store, small, currentUser, C, X, sendStatic }); // after the map: it reads its geo (server/places.js)
+  mountStoryPrompt(app, { store, small, currentUser, C, X }); // ---- story prompts (server/storyprompt.js) ----
   mountDelightAfter(app, { store, small, currentUser, C, X }); // ---- delight after: after plans, places and Potto by text, which it reads (server/delightafter.js) ----
   mountSuggest(app, { store, small, currentUser, X }); mountPlaceSuggest(app, { store, small, currentUser, C, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)
   mountLibrary(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, sendStatic, express }); // server/library.js, after hooks: it reads saves and boards

@@ -39,7 +39,7 @@ export function dropWindow(ev, now, tz = eventTz(ev)) {
 export const droppable = (ev) => !!ev && !ev.example && !ev.cancelled && ev.stage !== "interest" && !ev.noPhotos && ev.autoRemind !== false && ev.photoDrops !== false && ISO.test(ev.date || "");
 
 /** guestsOf(S, eventId): every guest who was in, one per person (server/kudosnudge.js). */
-export function makePhotoDrop(store, { C, X, canEmail = () => true, guestsOf }) {
+export function makePhotoDrop(store, { C, X, canEmail = () => true, guestsOf, storyBell = null }) {
   /** Send the drops that are due, for every host (or `workspaces`). */
   async function run({ now = Date.now(), workspaces = null, origin = process.env.ENCORE_PUBLIC_URL || "", dryRun = false } = {}) {
     const out = { sent: 0, email: 0, inbox: 0, skipped: 0, events: [] };
@@ -58,7 +58,9 @@ export function makePhotoDrop(store, { C, X, canEmail = () => true, guestsOf }) 
           const tries = (prev?.tries || (prev ? 1 : 0)) + 1;
           S.set(key, { eventId, rid: g.rid, at: now, channel: "pending", tries }); // logged first: a crash mid-send never means a second nudge
           const link = photoLink(origin, eventId, g.rid, code), path = link.slice(origin.length);
-          const inbox = X?.notify ? X.notify(em, { kind: "photos", key: `pd-${eventId}`, text: `📸 ${dropLine(title)}`, link: path, eventId }) !== false : false;
+          // story prompts (server/storyprompt.js): a guest with an account gets the story prompt's words and its link to the feed, under the same key, so one bell note per event
+          const sb = storyBell ? storyBell(em, eventId) : null;
+          const inbox = X?.notify ? X.notify(em, { kind: "photos", key: `pd-${eventId}`, text: sb?.text || `📸 ${dropLine(title)}`, link: sb?.link || path, eventId }) !== false : false;
           let channel = inbox ? "inbox" : "none", error = null;
           if (cfg && canEmail(em) !== false && capped()) error = "rate_limited";
           else if (cfg && canEmail(em) !== false) { const x = await sendEmail(cfg, { list: "guest", origin, to: em, subject: dropLine(title), fromName: C?.profileOf?.(ws)?.name || "",

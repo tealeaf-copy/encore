@@ -292,8 +292,8 @@ export function makeSocial(store, { C, saveBlob }) {
       againYes: K.filter((k) => (k.tags || []).includes("again") || k.compare === "better").length, againOf: K.filter((k) => (k.tags || []).length || k.love || k.compare).length,
       // what the host page's kudos cards show (public/kudoswall.js): a first name ("A guest" when there is none or the account was deleted),
       // the event and its month only for events on the host's page, and the guest's own photo from that night only where the event's photos are on the page
-      kudosShown: K.filter((k) => k.love || (k.tags || []).length).length, kudosEvents: new Set(K.filter((k) => k.love || (k.tags || []).length).map((k) => k.eventId)).size,
-      kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => { const e = I.events.get(k.eventId)?.e, listed = !!e && !!e.discoverable && !e.cancelled, em = lc(k.email || ""),
+      kudosShown: K.filter((k) => (k.love || (k.tags || []).length) && !k.reviewed).length, kudosEvents: new Set(K.filter((k) => k.love || (k.tags || []).length).map((k) => k.eventId)).size,
+      kudos: K.filter((k) => (k.love || (k.tags || []).length) && !k.reviewed /* reviews hook: their review shows instead (server/reviews.js) */).slice(0, 30).map((k) => { const e = I.events.get(k.eventId)?.e, listed = !!e && !!e.discoverable && !e.cancelled, em = lc(k.email || ""),
         ph = em && momentsOnPage(e) ? I.moments.filter((m) => m.ws === ws && m.eventId === k.eventId && m.type === "image" && lc(m.authorEmail || "") === em).sort((a, b) => (b.at || 0) - (a.at || 0))[0] : null;
         return { name: (!k.deletedAccount && first(k.name)) || "A guest", love: String(k.love || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), tags: k.tags || [], at: k.at, verified: k.verified || null, verifiedLabel: VERIFIED_LABEL[k.verified] || "", event: listed ? e.pubTitle || e.name || "" : "", month: listed && /^\d{4}-\d{2}/.test(e.date || "") ? e.date.slice(0, 7) : "",
           ...(ph ? { photo: { url: ph.url, ...(ph.w && ph.h ? { w: ph.w, h: ph.h } : {}) } } : {}) }; }),

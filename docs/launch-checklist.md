@@ -217,6 +217,7 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `ENCORE_CONFNOM_PER_HOUR`, `ENCORE_CWM_PER_HOUR`, `ENCORE_INTEREST_PER_IP_HOUR` | No | Nominations, "Come with me?" asks, and interest sign-ups. |
 | `ENCORE_FEED_PER_IP_HOUR`, `ENCORE_FEED_COMMENTS_PER_HOUR`, `ENCORE_FEED_COMMENTS_PER_IP_HOUR`, `ENCORE_FEED_KUDOS_PER_HOUR`, `ENCORE_FEED_KUDOS_PER_IP_HOUR`, `ENCORE_REACTS_PER_IP` | No | Limits on the feed: reads, comments, kudos and reactions. |
 | `ENCORE_KUDOS_AT_WRONG`, `ENCORE_KUDOS_GROUP_PER_CONTACT`, `ENCORE_KUDOS_GROUP_PER_EVENT`, `ENCORE_KUDOS_GROUP_PER_IP` | No | Limits on kudos asks and wrong-code tries. |
+| `ENCORE_REVIEWS_PER_IP_HOUR` | No | How many times one place may write, edit or delete a review in an hour (server/reviews.js). Default 20. |
 | `ENCORE_GIFT_DRAFTS_PER_HOUR`, `ENCORE_DIRECTORY_PER_HOUR`, `ENCORE_ORDER_ITEMS_PER_IP_HOUR`, `ENCORE_MCP_RATE_PER_MIN` | No | Limits on gift drafts, the directory, shop orders and the MCP API. |
 | `ENCORE_ORDER_HOLD_HOURS` | No | How long an unpaid order holds stock. |
 | `ENCORE_DELETE_GRACE_DAYS` | No | Days before a deleted account is gone for good. |

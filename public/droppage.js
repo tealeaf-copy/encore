@@ -236,5 +236,7 @@
       if (R && R.response === "going" && (R.orderLines || []).length) ticket({ ...mine, name: R.name || mine.name, lines: R.orderLines, total: Math.round((+R.orderTotal || 0) * 100), slot: R.slot || mine.slot, order: R.order, paid: !!R.paid, paidClaim: !!R.paidClaim }, false);
       else if (R && R.response === "going" && mine.order) ticket(mine, false);
       else $("#dgDue")?.remove(); /* no order here after all (cancelled, or another phone's) */ }
+    // reviews hook: this drop's reviews and, once an order is picked up, "Write a review" (public/reviews.js)
+    if (!d.example) { const s = document.createElement("script"); s.src = "/reviews.js"; s.onload = () => { const b = document.createElement("section"); b.hidden = true; b.id = "dgReviews"; m.appendChild(b); window.EncoreReviews?.block(b, { event: id }, { title: "Reviews" }); }; document.head.appendChild(s); }
   };
 })();

@@ -205,7 +205,15 @@
     if (path === "reservation.restaurant" && (!d.venueName || d.venueName === was)) d.venueName = d.reservation.restaurant; // the place guests see is the restaurant
     return d; }
 
-  const pure = { PLAN_KINDS, KIND_BLOCKS, applyKind, kindText, kindSet, planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, FX_GROUPS, effectOf, effectName, effectLevel, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
+  /** What the invite still needs before it's shared, each with the one tap that fixes it. Only a name and a date block Save. */
+  function shareGaps(d) { const g = [], has = (v) => !!String(v || "").trim();
+    if (!has(d?.pubTitle || d?.name)) g.push({ k: "title", label: "Name it", word: "a name" });
+    if (!d?.date && !(d?.stage === "interest" && (d.dateOptions || []).length)) g.push({ k: "when", label: "Pick a date", word: "a date" });
+    if (!has(d?.meetPoint || d?.venueName || d?.reservation?.restaurant || d?.lodging?.name)) g.push({ k: "place", label: "Add a place", word: "a place" });
+    if (!has(d?.why)) g.push({ k: "desc", label: "Say what to expect", word: "a few words on what to expect" });
+    return g; }
+  const STALL_MS = 60000; // a new invite with no date after a minute: Potto offers to ask friends, once, and opens nothing
+  const pure = { shareGaps, STALL_MS, PLAN_KINDS, KIND_BLOCKS, applyKind, kindText, kindSet, planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, FX_GROUPS, effectOf, effectName, effectLevel, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
   root.EventCanvas = { ...pure };
   if (typeof document === "undefined") return;
 
@@ -312,10 +320,24 @@
     for (const x of K.sections || []) if (x?.title) did.push(`"${x.title}"`);
     const BL = { table: "the booking details", stay: "where you're staying", agenda: "the agenda", runsignup: "the run sign-up" }; if (BL[blockKey]) did.push(BL[blockKey]);
     return { k: K.k, label: K.label, did: did.slice(0, 5), block: blockKey, next: !W.date ? "when" : !(W.meetPoint || W.venueName) ? "place" : "" }; }
+  // ---- a stall: no date a minute into a new invite. One line, where Potto already speaks if he does, and a tap asks friends ----
+  const ASK_BTN = `<button type="button" class="cv-text-btn" data-knote="ask">Ask friends which date works</button>`;
+  const stallOn = () => !!(S?.stalled && S.isNew && !S.W.date && !isFeeler(S.W));
+  const stallHTML = () => (stallOn() && !kindNoteHTML() ? `<p class="cv-stall cv-ed" id="cvStall" role="status"><span>No date yet. Want me to ask your friends which date works?</span>${ASK_BTN.replace("Ask friends which date works", "Yes, ask them")}</p>` : "");
+  let stallT = 0;
+  function stall() { if (!S?.el || !S.isNew || S.stalled || S.W.date || isFeeler(S.W) || q(".cv-sh-bg")) return; S.stalled = true;
+    const acts = q(".cv-knote-a", S.el), x = acts && q('[data-knote="x"]', acts);
+    if (acts) { if (q('[data-knote="when"]', acts) && !q('[data-knote="ask"]', acts)) x.insertAdjacentHTML("beforebegin", ASK_BTN); } // Potto is already speaking: the offer joins his note
+    else q("#cvWhen", S.el)?.insertAdjacentHTML("afterend", stallHTML()); }
+  /** "Before you share": what's unset, each a tap away. Only the host sees it, at the foot of the invite. */
+  function gapsHTML(W) { const G = shareGaps(W), w = G.map((g) => g.word), list = w.length > 1 ? w.slice(0, -1).join(", ") + " and " + w.slice(-1) : w[0];
+    return `<div class="cv-gaps" id="cvGaps" role="status"><span>${G.length ? "Before you share" : "Ready to share"}</span><p>${G.length ? `It still needs ${esc(list)}.` : `It has a name, a date, a place and what to expect.${S.isNew ? " Save, then send the link." : ""}`}</p>${G.length ? `<div class="cv-pills">${G.map((g) => `<button type="button" class="cv-pill" data-gap="${g.k}">${I.plus}<span>${esc(g.label)}</span></button>`).join("")}</div>` : ""}</div>`; }
+  const gapsSync = () => { const el = S?.el && q("#cvGaps", S.el); if (!el) return; const h = gapsHTML(S.W); if (el.outerHTML !== h && !el.contains(document.activeElement)) el.outerHTML = h; };
   function kindNoteHTML() { const N = S.kindNote; if (!N || N.k !== (S.W.planKind || (N.own ? "other" : ""))) return "";
     const list = N.did.length ? N.did.length > 1 ? N.did.slice(0, -1).join(", ") + " and " + N.did.slice(-1) : N.did[0] : "";
     const line = N.own ? "I named the invite and drew a cover to match." : list ? `I set up ${esc(list)}.` : "It's set up.";
-    return `<div class="cv-knote" role="status"><p style="margin:0 0 10px;font:400 16px/1.45 var(--cv-sans);letter-spacing:0;text-wrap:pretty"><b style="font-weight:600">${esc(N.own ? N.title : N.label)}.</b> ${line} Change anything.</p><div class="cv-knote-a">${N.next === "when" ? `<button type="button" class="cv-b pri" data-knote="when">Pick a date</button>` : N.next === "place" ? `<button type="button" class="cv-b pri" data-knote="place">Add a place</button>` : ""}${N.block ? `<button type="button" class="cv-b" data-knote="show">Show me</button>` : ""}<button type="button" class="cv-text-btn" data-knote="x">Got it</button></div></div>`; }
+    const next = !S.W.date && !isFeeler(S.W) ? "when" : !(S.W.meetPoint || S.W.venueName) ? "place" : "";
+    return `<div class="cv-knote" role="status"><p style="margin:0 0 10px;font:400 16px/1.45 var(--cv-sans);letter-spacing:0;text-wrap:pretty"><b style="font-weight:600">${esc(N.own ? N.title : N.label)}.</b> ${line} Change anything.</p><div class="cv-knote-a">${next === "when" ? `<button type="button" class="cv-b pri" data-knote="when">Pick a date</button>${S.stalled ? ASK_BTN : ""}` : next === "place" ? `<button type="button" class="cv-b pri" data-knote="place">Add a place</button>` : ""}${N.block ? `<button type="button" class="cv-b" data-knote="show">Show me</button>` : ""}<button type="button" class="cv-text-btn" data-knote="x">Got it</button></div></div>`; }
   /** "Something else": the host typed what it is. Potto names the event, draws a cover for it and points at the next step. */
   function ownKindDone() { const W = S.W, v = String(W.typeLabel || "").trim(); if (v.length < 3) return; const nice = v.charAt(0).toUpperCase() + v.slice(1);
     if (S.kindNote?.own && S.kindNote.title === nice) return; let named = false;
@@ -429,7 +451,7 @@
       <p class="cv-err" id="cvTitleErr" role="alert"></p><button type="button" class="cv-fromline cv-ed" id="cvFromLine" hidden></button><div id="cvNight" class="cv-ed" hidden></div>
       <div class="cv-styles" role="radiogroup" aria-label="Title style">${TITLE_STYLES.map(([k, l, f]) => { const ff = f ? root.EncoreLooks?.FONTS?.[f]?.css : KF?.display || "var(--pl-font-display)"; return `<button type="button" role="radio" aria-checked="${st === k}" data-style="${k}" style="font-family:${esc(ff || "inherit")}">${f ? l : KF ? "Your kit" : l}</button>`; }).join("")}</div>
       ${S.isNew ? `<div id="cvPicks" class="cv-picks" hidden></div>` : ""}
-      <button type="button" class="cv-when cv-ed${when ? "" : " empty"}" data-cv="when" id="cvWhen">${when ? (F ? `<small>A feeler. Nothing's booked yet.</small><b>Friends pick a date</b><span>${esc(when.replace(/^Asking friends · /, ""))}</span>` : `<b>${esc(wd)}</b>${wt ? `<span>${esc(wt)}</span>` : ""}`) : `<b>Pick a date and time</b><span>Or ask friends which date works first</span>`}</button>
+      <button type="button" class="cv-when cv-ed${when ? "" : " empty"}" data-cv="when" id="cvWhen">${when ? (F ? `<small>A feeler. Nothing's booked yet.</small><b>Friends pick a date</b><span>${esc(when.replace(/^Asking friends · /, ""))}</span>` : `<b>${esc(wd)}</b>${wt ? `<span>${esc(wt)}</span>` : ""}`) : `<b>Pick a date and time</b><span>Or ask friends which date works first</span>`}</button>${stallHTML()}
       <div class="cv-rows">
         <div class="cv-row"><span class="cv-av" style="--c:${esc(PROFILE?.color || "#E3D7BE")}">${PROFILE?.avatarUrl ? `<img src="${esc(PROFILE.avatarUrl)}" alt="">` : esc(hostName().slice(0, 1).toUpperCase())}</span><span class="cv-rt"><small>Hosted by</small><b>${esc(hostName())}${cohostLine(W)}</b></span><button type="button" class="cv-mini" data-cv="cohost">${I.plus}<span>Co-host</span></button></div>
         <button type="button" class="cv-row cv-ed" data-cv="place" id="cvPlace"><span class="cv-ic">${I.pin}</span><span class="cv-rt"><small>Where</small>${place ? `<b>${esc(place)}</b>${W.city ? `<em>${esc(W.city)}</em>` : ""}` : `<b class="ph">Add a place</b>`}</span>${I.chev}</button>
@@ -441,12 +463,14 @@
       <div class="cv-reply" id="cvReply"><p>${F ? "Would you come?" : W.approvalRequired ? "Want in?" : "Are you in?"}</p><div>${replyWords(W).map((t) => `<span>${esc(t)}</span>`).join("")}</div></div>
       <div class="cv-host">
         <p class="cv-tag"><span class="cv-dot"></span>Only you see this part</p>
+        ${gapsHTML(W)}
         <div class="cv-field"><span>How the link looks in a chat</span>${unfurlHTML(W)}<small>Friends see this card when you send the link.</small></div>
         <label class="cv-field"><span>Who can find this event?</span><select id="cvVis">${visList(CLUB?.on).map(([k, l]) => `<option value="${k}"${k === V ? " selected" : ""}>${esc(l)}</option>`).join("")}</select><small id="cvVisHint">${esc(visList(true).find((x) => x[0] === V)[2])}</small></label>
         <div class="cv-qa"><span class="cv-qa-h">Quick actions for hosts</span><div class="cv-pills">${pills(W)}</div></div>
       </div>`; }
 
-  function build() { document.body.classList.add("cv-open"); histIn(); const el = document.createElement("div"); el.id = "cv"; el.className = "kit-off"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", S.isNew ? "New event" : "Edit event");
+  function build() { clearTimeout(stallT); if (S?.isNew) stallT = setTimeout(() => { try { stall(); } catch {} }, STALL_MS);
+    document.body.classList.add("cv-open"); histIn(); const el = document.createElement("div"); el.id = "cv"; el.className = "kit-off"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", S.isNew ? "New event" : "Edit event");
     el.innerHTML = `<header class="cv-top"><button type="button" class="cv-x" data-cv="close" aria-label="Close">${I.x}</button>
         <div class="cv-mode" role="group" aria-label="View"><button type="button" data-mode="edit" aria-pressed="true">Edit</button><button type="button" data-mode="guest" aria-pressed="false">Guest view</button></div>
         <button type="button" class="cv-save" data-cv="save">Save</button></header>
@@ -521,7 +545,7 @@
 
   // ---------- autosave on this device ----------
   let saveT = 0;
-  function changed(redraw) { S.dirty = true; clearTimeout(saveT); saveT = setTimeout(() => { if (!S) return; ls.set(S.key, { at: Date.now(), base: S.base, d: S.W, club: S.club }); const st = S.el && q("#cvState", S.el); if (st) st.textContent = stateLine(); }, 350); if (redraw) draw(); else { preview(); try { funMarks(); } catch {} } }
+  function changed(redraw) { S.dirty = true; try { gapsSync(); } catch {} clearTimeout(saveT); saveT = setTimeout(() => { if (!S) return; ls.set(S.key, { at: Date.now(), base: S.base, d: S.W, club: S.club }); const st = S.el && q("#cvState", S.el); if (st) st.textContent = stateLine(); }, 350); if (redraw) draw(); else { preview(); try { funMarks(); } catch {} } }
 
   function wire(el) {
     el.addEventListener("input", (e) => { const t = e.target, W = S.W;
@@ -544,6 +568,9 @@
       if (b.dataset.mode) return setMode(b.dataset.mode);
       if (b.dataset.style) { const L = { ...(W.look || {}) }; if (FONTN[b.dataset.style]) L.titleFont = FONTN[b.dataset.style]; else delete L.titleFont; W.look = L; W.titleFont = ""; qa("[data-style]", el).forEach((x) => x.setAttribute("aria-checked", String(x === b))); dress(); changed(); pulse(".cv-tw", "title"); return; }
       if (b.dataset.add) { S.open.add(b.dataset.add); pvFlash = "sections"; changed(true); const blk = q(`[data-addon="${b.dataset.add}"]`, el); blk?.scrollIntoView({ block: "center", behavior: "smooth" }); blk?.classList.add("new"); setTimeout(() => q("input,textarea", blk)?.focus({ preventScroll: true }), 250); return; }
+      if (b.dataset.gap) { const k = b.dataset.gap; if (k === "when" || k === "place") { q(k === "when" ? "#cvWhen" : "#cvPlace", el)?.click(); return; }
+        const t = q(k === "title" ? "#cvTitle" : "#cvDesc", el); if (t) { t.scrollIntoView({ block: "center", behavior: "smooth" }); t.focus({ preventScroll: true }); } return; }
+      if (b.dataset.knote === "ask") { whenSheet(undefined, true); return; }
       if (b.dataset.knote) { const N = S.kindNote, how = b.dataset.knote; if (how === "x") { S.kindNote = null; q(".cv-knote", el)?.remove(); return; }
         if (how === "show" && N?.block) { const blk = q(`[data-kblock="${N.block}"]`, el); if (blk) { blk.classList.add("new"); blk.scrollIntoView({ block: "center", behavior: "smooth" }); } return; }
         const t = q(how === "when" ? "#cvWhen" : "#cvPlace", el); if (t) { t.click(); } return; }
@@ -861,6 +888,8 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-blk textarea{overflow:hidden;min-height:46px}
 #cv .cv-blk select{width:100%;box-sizing:border-box;height:46px;min-height:46px;padding:0 10px;border-radius:6px!important;border:1px solid var(--cv-line2)!important;background:var(--cv-field)!important;color:var(--cv-ink);font:inherit;font-size:16px}
 #cv .cv-kg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}#cv .cv-kf{display:grid;gap:4px;min-width:0;align-self:start;align-content:start}#cv .cv-kf.w{grid-column:1/-1}#cv .cv-kf>span{font:500 14px var(--cv-sans);color:var(--cv-soft)}#cv .cv-kf small{font-size:14px;line-height:1.4;color:var(--cv-soft)}#cv .cv-blk p.cv-kn{font-size:15px;color:var(--cv-soft)}
+#cv .cv-stall{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:8px 0 0;padding:10px 14px;border-radius:16px;background:var(--cv-card);border:1px solid var(--cv-line);font-size:15px;line-height:1.4}#cv .cv-stall .cv-text-btn,#cv .cv-knote-a [data-knote=ask]{min-height:44px}
+#cv .cv-gaps{display:grid;gap:6px;margin:0 0 4px}#cv .cv-gaps>span{font-weight:600}#cv .cv-gaps p{margin:0;font-size:15px;line-height:1.4;color:var(--cv-soft)}
 #cv .cv-knote{margin:2px 0 12px;padding:12px 14px;border-radius:16px;background:var(--cv-bg);border:1px solid var(--cv-line);scroll-margin-top:72px}#cv .cv-kinds .cv-knote p{margin:0 0 10px;font:400 16px/1.45 var(--cv-sans);letter-spacing:0;color:var(--cv-ink);text-wrap:pretty}#cv .cv-kinds .cv-knote p b{font-weight:600}#cv .cv-knote-a{display:flex;flex-wrap:wrap;gap:8px;align-items:center}#cv .cv-knote-a .cv-b{min-height:44px;border-radius:999px!important;padding:0 16px;border:1.5px solid var(--cv-ink)!important;background:var(--cv-card)!important;color:var(--cv-ink)!important;font:600 15px var(--cv-sans);box-shadow:none!important;cursor:pointer}#cv .cv-knote-a .cv-b.pri{background:var(--pl-accent,#29489A)!important;border-color:var(--pl-accent,#29489A)!important;color:#fff!important}#cv .cv-knote-a .cv-text-btn{min-height:44px}#cv .cv-ideas-d{margin:-4px 0 0}#cv .cv-ideas-d[hidden]{display:none}#cv .cv-ideas-d>summary{min-height:44px;display:flex;align-items:center;gap:8px;padding:0 4px;font:600 15px var(--cv-sans);color:var(--cv-ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;list-style:none}#cv .cv-ideas-d>summary::-webkit-details-marker{display:none}#cv .cv-ideas-d>summary::after{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px)}#cv .cv-ideas-d[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}#cv .cv-ideas-d>summary:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}#cv .cv-kinds{margin:0 0 10px;padding:4px 14px 10px;border:1.5px solid var(--cv-ink);border-radius:6px;background:var(--cv-card)}#cv .cv-kh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;margin:0 0 6px}#cv .cv-kinds p{margin:0;font:600 17px/1.3 var(--cv-sans);text-wrap:balance}#cv .cv-kmore{flex:none;min-height:44px;padding:0 4px 0 12px;border:0!important;background:none!important;color:var(--cv-ink);font:600 15px var(--cv-sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}#cv .cv-kmore[hidden]{display:none}#cv .cv-kmore:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}#cv #cvKindsL{display:flex;flex-wrap:wrap;gap:8px}#cv .cv-kc[hidden]{display:none}#cv .cv-kown{display:grid;gap:6px;margin:12px 0 0;font:600 14px var(--cv-sans)}#cv .cv-kown input{min-height:44px;padding:0 12px;border:1.5px solid var(--cv-line2);border-radius:6px;background:var(--cv-bg);font:400 16px var(--cv-sans);color:var(--cv-ink)}
 #cv .cv-kinds.pl-fun{position:relative;margin-top:38px;padding:6px 13px 14px;border:0;border-radius:20px;background:linear-gradient(180deg,var(--pl-fun-tint-2,var(--cv-card)),var(--cv-card) 78%);transition:background-color .25s}#cv .cv-kinds.pl-fun p{font:600 24px/1.15 var(--pl-font-display,var(--cv-sans));letter-spacing:-.025em}
 #cv .cv-potto{position:absolute;right:64px;bottom:100%;width:92px;height:56px;overflow:hidden;pointer-events:none}#cv .cv-potto>span{display:block;position:absolute;left:0;top:0;width:92px;height:87px;pointer-events:auto}

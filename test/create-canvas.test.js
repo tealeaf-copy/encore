@@ -108,3 +108,21 @@ test("Wiring: the light invite stays small, the preview is inert, and the app op
   assert.match(js, /PhotoSheet/, "the cover pencil opens the shared photo sheet"); assert.match(js, /\/api\/host\/club\/events\//, "fan club only goes through the fan club");
   assert.doesNotMatch(js + read("public/sections.js") + pv, /\u2014/, "no em dashes");
 });
+
+// QA round 4: Potto says what's unset before sharing, and offers to ask friends for a date when someone stalls
+test("Before you share lists what's unset with a one-tap fix each, and a stalled draft gets one offer to ask friends", () => {
+  assert.deepEqual(C.shareGaps({}).map((g) => g.k), ["title", "when", "place", "desc"]);
+  assert.deepEqual(C.shareGaps({ pubTitle: "Clothes swap", date: "2026-12-05" }).map((g) => g.label), ["Add a place", "Say what to expect"]);
+  assert.deepEqual(C.shareGaps({ name: "Swap", stage: "interest", dateOptions: ["2026-12-05"], venueName: "The Commons", why: "Bring a bag." }), [], "a feeler's date options count as a date");
+  assert.deepEqual(C.shareGaps({ pubTitle: "Dinner", date: "2026-12-05", reservation: { restaurant: "Lilia" }, why: " " }).map((g) => g.word), ["a few words on what to expect"]);
+  assert.equal(C.missing({ pubTitle: "Clothes swap", date: "2026-12-05" }), "", "only a name and a date block Save");
+  assert.equal(C.STALL_MS, 60000);
+  const js = read("public/canvas.js");
+  assert.match(js, /Only you see this part<\/p>\s*\$\{gapsHTML\(W\)\}/, "the line sits in the part only the host sees");
+  assert.match(js, /b\.dataset\.gap\) \{ const k = b\.dataset\.gap; if \(k === "when" \|\| k === "place"\) \{ q\(k === "when" \? "#cvWhen" : "#cvPlace", el\)\?\.click\(\)/, "a tap opens the same sheet the row does");
+  assert.match(js, /function stall\(\) \{ if \(!S\?\.el \|\| !S\.isNew \|\| S\.stalled \|\| S\.W\.date \|\| isFeeler\(S\.W\) \|\| q\("\.cv-sh-bg"\)\) return; S\.stalled = true;/, "once, only on a new invite with no date, never over an open sheet");
+  assert.match(js, /stallOn\(\) && !kindNoteHTML\(\) \?/, "one voice: with Potto's note showing, the offer joins it");
+  assert.match(js, /dataset\.knote === "ask"\) \{ whenSheet\(undefined, true\); return; \}/, "the tap opens Ask friends first; nothing opens by itself");
+  assert.doesNotMatch(js.slice(js.indexOf("function stall()"), js.indexOf("function gapsHTML")), /whenSheet|\.click\(\)/, "the stall itself opens nothing");
+  assert.match(js, /const next = !S\.W\.date && !isFeeler\(S\.W\) \? "when" : !\(S\.W\.meetPoint \|\| S\.W\.venueName\) \? "place" : "";/, "the note's next step follows the invite as it is now");
+});

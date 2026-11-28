@@ -12,6 +12,7 @@
 // - Kudos quotes on public cards come from open events only, with emails and phone numbers scrubbed.
 // Showcase (prepared) pages fill the signed-out feed with their covers and illustrated art, so it never looks empty.
 import { coverOf } from "./eventcover.js"; // one cover per event everywhere
+import { makeStoryApprove } from "./storyapprove.js"; // your stories: what waits for the host, captions, order, covers, highlights
 import crypto from "node:crypto";
 import { previewListed } from "./previews.js";
 import fs from "node:fs";
@@ -102,7 +103,7 @@ export function makeFeedVisual(store, { C, X }) {
   // writes that change what the feed shows: a host page (system/ws-), an event, reply, photo, kudos, badge or reaction
   let wsGen = 0, feedGen = 0;
   store.events?.on?.("change", (e) => { const p = String(e?.path || ""); if (p.startsWith("system/ws-")) wsGen++;
-    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide|prefs)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes)\/[^/]+$/.test(p)) feedGen++; });
+    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide|prefs|stories|recap)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes)\/[^/]+$/.test(p)) feedGen++; });
   function G(I) { let g = groups.get(I); if (g && g.gen !== wsGen) { g.gen = wsGen; g.host = new Map(); g.sample = new Map(); } if (g) return g;
     g = { gen: wsGen, mom: new Map(), momWs: new Map(), kud: new Map(), came: new Map(), host: new Map(), sample: new Map(), when: new Map() };
     const push = (M, k, v) => { let L = M.get(k); if (!L) M.set(k, (L = [])); L.push(v); };
@@ -211,6 +212,7 @@ export function makeFeedVisual(store, { C, X }) {
   // host's next date or "Follow". Strangers see recaps of open events only (momentsPublic); people who were there see
   // their own events' recaps too. Every photo still goes through momentSeen, and the quote is scrubbed.
   const recapKey = (id) => "system/recap-" + hashKey("recap:" + id);
+  const A = makeStoryApprove(store, { C, X }); // your stories (server/storyapprove.js): a guest's photo and a recap wait for the host unless they said otherwise
   const norm = (s) => lc(s).replace(/[^a-z0-9]+/g, " ").trim();
   /** The host's next public date: the same event's next date first, else their next one. */
   function nextOf(I, x, t) { const name = norm(x.e.pubTitle || x.e.name);
@@ -221,19 +223,24 @@ export function makeFeedVisual(store, { C, X }) {
   function cameTo(x) { const seen = new Set(); try { for (const d of scopeStore(store, x.ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== x.id || r.response !== "going" || r.noShow === true) continue; seen.add(lc(r.email) || lc(r.phone) || d.id); } } catch {}
     for (const g of x.e.guests || []) if (/Going|Attended/.test(g.status || "") && !/no.?show/i.test(g.status || "")) seen.add(lc(g.email) || lc(g.name)); return seen.size; }
   /** One event's recap story for this viewer, or null. Makes (stores) the recap the first time it qualifies. */
-  function recapOf(I, x, { email = "", now = Date.now() } = {}) {
+  function recapOf(I, x, { email = "", now = Date.now(), keep = false /* a highlight keeps a recap past its 24 hours */ } = {}) {
     const e = x.e, t = today(now); if (!e || !/^\d{4}-\d{2}-\d{2}$/.test(e.date || "") || e.date >= t || e.cancelled || e.example || e.stage === "interest") return null;
     if (!momentsPublic(e) && !wasThere(I, x.id, email)) return null;
-    const photos = momentsOf(I, x.id).filter((m) => momentSeen(I, m, email)).sort((a, b) => (a.at || 0) - (b.at || 0));
+    const photos = A.ordered(x.ws, x.id, momentsOf(I, x.id).filter((m) => momentSeen(I, m, email) && !A.waiting(m, x)).sort((a, b) => (a.at || 0) - (b.at || 0)));
     const K = kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length);
-    if (photos.length + K.length < RECAP_MIN) return null;
+    if (photos.length + K.length < RECAP_MIN && !(keep && photos.length + K.length > 0)) return null;
     let d = store.get(recapKey(x.id))?.data;
     if (!d) { const end = /^\d{4}-\d{2}-\d{2}$/.test(e.endDate || "") && e.endDate >= e.date ? e.endDate : e.date; if (now - (Date.parse(end + "T12:00:00Z") + DAY) > RECAP_WINDOW) return null;
-      d = { kind: "recap", eventId: x.id, madeAt: now, photos: photos.length, kudos: K.length }; store.set(recapKey(x.id), d); }
-    if (now < d.madeAt || now - d.madeAt > RECAP_SHOWS) return null;
-    const c = card(I, x, { email }), h = c.host; if (!h) return null;
+      d = { kind: "recap", eventId: x.id, madeAt: now, photos: photos.length, kudos: K.length }; store.set(recapKey(x.id), d); if (A.recapState(x, d) === "waiting") A.tellHost(x, 0); }
+    // your stories: a recap waits for its host (unless they show guests' photos without asking); its 24 hours start when it's approved
+    if (A.recapState(x, d) !== "ok") return null;
+    if (!keep && (now < d.madeAt || now - Math.max(d.madeAt, d.okAt || 0) > RECAP_SHOWS)) return null;
+    const c0 = card(I, x, { email }), h = c0.host; if (!h) return null;
+    // the host's own title line, quote (one of the real kudos, or none) and cover
+    const kq = d.quote && d.quote !== "none" && (momentsPublic(e) || c0.quote) ? kudosOf(I, x.id).find((k) => k.id === d.quote && k.love) : null;
+    const c = { ...c0, title: d.title || c0.title, quote: d.quote === "none" ? null : kq ? { text: scrub(kq.love).slice(0, 220), name: first(kq.name) || "A guest" } : c0.quote };
     const label = [c.title, new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" })].filter(Boolean).join(" · ");
-    const P = photos.slice(-6).map(momentOut), still = P.find((m) => m.type === "image")?.url || P.find((m) => m.poster)?.poster || (MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "");
+    const P = photos.slice(-6).map(momentOut), still = (d.cover && photos.find((m) => m.id === d.cover && m.type === "image")?.url) || P.find((m) => m.type === "image")?.url || P.find((m) => m.poster)?.poster || (MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "");
     const see = c.cta; // the next date, something to book, or Follow
     const items = [{ id: `r:${x.id}:t`, type: "recap", ev: x.id, recap: { title: c.title, date: e.date, came: cameTo(x), photos: photos.length, kudos: K.length, where: e.hood || e.city || "", cover: still, art: { title: c.title, activity: e.activity || "", coverArt: artOf(e), id: x.id } }, look: lookOf(e), caption: label, at: d.madeAt, past: true, cta: see }];
     for (const m of P) items.push({ id: `r:${x.id}:m:${m.id}`, type: m.type === "video" ? "video" : "image", ev: x.id, url: m.url, ...(m.poster ? { poster: m.poster } : {}), caption: label, note: m.caption, by: m.by, at: d.madeAt, past: true, cta: see });
@@ -253,7 +260,7 @@ export function makeFeedVisual(store, { C, X }) {
     const add = (ws, it) => { const h = hostOf(ws, I); if (!h) return null; if (!by.has(h.handle)) by.set(h.handle, { key: "h:" + h.handle, host: h, items: [], showcase: false, _ws: ws, ...(sample(ws, I) ? { sample: true } : {}) }); if (it) by.get(h.handle).items.push(it); return by.get(h.handle); };
     const CT = new Map(), ctaOf = (x) => memo(CT, x.id, () => ((x.e.date || "") >= t ? eventCta(x.e, x.id) : afterCta(I, x, t)));
     const when = (e) => memo(G(I).when, e.date || "", () => { const d = e.date ? new Date(e.date + "T12:00:00") : null; return d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short" }) : ""; });
-    for (const m of I.moments) { if (!(m.at > since) || !momentSeen(I, m, email)) continue; const x = I.events.get(m.eventId);
+    for (const m of I.moments) { if (!(m.at > since) || !momentSeen(I, m, email)) continue; const x = I.events.get(m.eventId); if (A.waiting(m, x)) continue; // your stories: a guest's photo waits for the host
       add(x.ws, { id: "m:" + m.id, ev: x.id, type: m.type === "video" ? "video" : "image", url: m.url, ...(MEDIA_OK(m.poster) ? { poster: m.poster } : {}), thumb: m.type === "video" ? (MEDIA_OK(m.poster) ? m.poster : "") : m.url, caption: [x.e.pubTitle || x.e.name, when(x.e)].filter(Boolean).join(" · "), note: momentOut(m).caption, by: first(m.authorName) || "", at: m.at, past: true, cta: ctaOf(x) }); }
     for (const x of I.events.values()) { const e = x.e; if (!cardPublic(e) && !wasThere(I, x.id, email)) continue; const at = e.updatedAt || e.createdAt || 0, up = (e.date || "") >= t;
       if (up && (at > since || Date.parse(e.date) - now < 21 * DAY)) add(x.ws, { id: "f:" + x.id, type: MEDIA_OK(e.coverPhoto) ? "image" : "art", url: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", thumb: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", art: { title: e.pubTitle || e.name || "", activity: e.activity || "", coverArt: artOf(e), date: e.date || "", id: x.id }, look: lookOf(e), caption: [e.pubTitle || e.name, when(e)].filter(Boolean).join(" · "), at: Math.max(at, since + 1), past: false, cta: eventCta(e, x.id) });
@@ -262,8 +269,10 @@ export function makeFeedVisual(store, { C, X }) {
       const R = !up ? recapOf(I, x, { email, now }) : null; if (R) { const s = add(x.ws, null); if (s) (s.recaps ||= []).push(R); } }
     const F = new Set(following); let L = [...by.values()].map((s) => { const R = (s.recaps || []).sort((a, b) => b.madeAt - a.madeAt), done = new Set(R.map((r) => r.eventId));
       s.items.sort((a, b) => (!!a.past === !!b.past ? a.at - b.at : a.past ? -1 : 1)); /* what happened, oldest first, then what's next */
+      s.items = A.arrange(s._ws, s.items); // the host's own order within an event
+      const rc = A.ringCover(s._ws), rcm = rc ? I.moments.find((m) => m.id === rc && m.type === "image" && momentSeen(I, m, email) && !A.waiting(m, I.events.get(m.eventId))) : null;
       const rest = s.items.filter((i) => !(i.ev && done.has(i.ev))); s.items = [...R.flatMap((r) => r.items).slice(0, 14), ...rest.filter((i) => i.past).slice(-7), ...rest.filter((i) => !i.past).slice(0, 3)];
-      s.latestAt = Math.max(0, ...s.items.map((i) => i.at)); s.thumb = (MEDIA_OK(s.host?.avatarUrl) ? s.host.avatarUrl : "") /* the host's own profile picture on their ring, like a face */ || R[0]?.thumb || (s.items.slice().reverse().find((i) => i.thumb) || {}).thumb || photoOf(I, s._ws, email);
+      s.latestAt = Math.max(0, ...s.items.map((i) => i.at)); s.thumb = (rcm ? rcm.url : "") /* the cover the host chose for their ring */ || (MEDIA_OK(s.host?.avatarUrl) ? s.host.avatarUrl : "") /* the host's own profile picture on their ring, like a face */ || R[0]?.thumb || (s.items.slice().reverse().find((i) => i.thumb) || {}).thumb || photoOf(I, s._ws, email);
       if (R.length) s.recap = { eventId: R[0].eventId, title: R[0].items[0].recap.title };
       delete s.recaps; delete s._ws; return s; }).filter((s) => s.items.length)
       .sort((a, b) => (F.has(b.host.handle) - F.has(a.host.handle)) || (!!b.recap - !!a.recap) || (!!a.sample - !!b.sample) || b.latestAt - a.latestAt).slice(0, 20);
@@ -300,7 +309,7 @@ export function makeFeedVisual(store, { C, X }) {
     const out = [], seenK = new Set(); for (const c of [...lead, ...mid, ...later]) { if (out.length >= limit || seenK.has(c.key)) continue; seenK.add(c.key); out.push(c); }
     return { cards: out, city: C0 ? clean(city, 60) : "", local: lead.length };
   }
-  return { gen: () => feedGen, sections, stories, recapOf, deck, card, react, reactsOf, myReacts, showcases, momentsPublic, momentsOnPage, wasThere,
+  return { approve: A, gen: () => feedGen, sections, stories, recapOf, deck, card, react, reactsOf, myReacts, showcases, momentsPublic, momentsOnPage, wasThere,
     // for the blended feed (server/feedblend.js)
     hostOf, sample, momentSeen, momentsOf, kudosOf, cardPublic, eventCta, nextOf, artOf, lookOf, momentOut, MEDIA_OK };
 }

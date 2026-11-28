@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/calm.js"></script><script src="/authguard.js"></script>
+<title>Your stories · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lists.css">
+<style>
+/* /your-stories: approve what shows under your name and make it yours (public/yourstories.js, server/storyapprove.js) */
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--pl-page,#F4F1EA);color:var(--pl-ink,#1B1D1C);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.wrap{max-width:760px}
+h1{font:600 var(--fs-28-40,28px)/1.08 var(--sys-display,"IBM Plex Serif",serif);letter-spacing:-.015em;margin:0}
+.ys-lede{margin:8px 0 16px;color:var(--pl-soft,#444845)}
+.ys-top{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.ys-sec{margin:28px 0 0}.ys-sec>h2{margin:0 0 4px;font:600 20px/1.25 "IBM Plex Sans",system-ui,sans-serif}.ys-sec>p{margin:0 0 12px;color:var(--pl-soft,#444845);font-size:15px}
+.ys-ev{margin:12px 0 0;padding:16px;background:var(--pl-surface,#FAF8F3);border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px}
+.ys-ev h3{margin:0;font:600 17px/1.3 "IBM Plex Sans",system-ui,sans-serif;overflow-wrap:anywhere}.ys-ev .ys-meta{margin:2px 0 0;color:var(--pl-soft,#444845);font-size:15px}
+.ys-b{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;margin:0;padding:0 14px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-raised,#fff);color:var(--pl-ink,#1B1D1C);font:600 15px/1.2 "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.ys-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-accent,#29489A);color:#fff}.ys-b:disabled{opacity:.45;cursor:default}.ys-b[aria-pressed=true]{background:var(--pl-ink,#1B1D1C);color:#fff}
+@media (hover:hover){.ys-b:not(:disabled):not(.go):not([aria-pressed=true]):hover{background:var(--pl-sand-soft,#EFEBE2)}.ys-b.go:not(:disabled):hover{filter:brightness(1.1)}}
+.ys-b:focus-visible,.ys-in:focus-visible,.ys-sw:focus-visible,.ys-hl-thumbs button:focus-visible{outline:3px solid var(--pl-accent,#29489A);outline-offset:2px}
+.ys-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:12px}
+.ys-ph{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px 12px;padding:12px 0 0;border-top:1px solid var(--pl-line,#CFC8B9);background:var(--pl-surface,#FAF8F3)}.ys-list>.ys-ph:first-child{border-top:0;padding-top:0}
+.ys-ph.drag{opacity:.6;outline:2px dashed var(--pl-accent,#29489A);outline-offset:2px}
+.ys-img{position:relative;width:88px;height:88px;border-radius:6px;overflow:hidden;background:var(--pl-sand-soft,#EFEBE2);touch-action:pan-y;cursor:grab}.ys-img img,.ys-img video{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.ys-f{display:block;font-weight:600;font-size:15px}.ys-by{color:var(--pl-soft,#444845);font-size:15px;font-weight:400}
+.ys-in{display:block;width:100%;min-height:44px;margin-top:4px;padding:8px 12px;border:1.5px solid var(--pl-line-strong,#8E897D);border-radius:6px;background:var(--pl-raised,#fff);color:var(--pl-ink,#1B1D1C);font:16px/1.4 "IBM Plex Sans",system-ui,sans-serif}
+.ys-acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.ys-msg{margin:6px 0 0;min-height:22px;font-size:15px;color:var(--pl-soft,#444845)}
+.ys-set{display:flex;gap:12px;align-items:center;justify-content:space-between;min-height:56px;padding:12px 16px;background:var(--pl-surface,#FAF8F3);border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px}.ys-set b{display:block;font-weight:600}.ys-set small{display:block;color:var(--pl-soft,#444845);font-size:15px}
+.ys-sw{flex:none;position:relative;width:52px;height:44px;border:0;background:none;padding:0;cursor:pointer}.ys-sw::before{content:"";position:absolute;left:0;top:8px;width:52px;height:28px;border-radius:999px;background:var(--pl-raised,#fff);border:1.5px solid var(--pl-ink,#1B1D1C)}.ys-sw::after{content:"";position:absolute;left:4px;top:12px;width:20px;height:20px;border-radius:50%;background:var(--pl-ink,#1B1D1C)}
+.ys-sw[aria-checked=true]::before{background:var(--pl-accent,#29489A);border-color:var(--pl-accent,#29489A)}.ys-sw[aria-checked=true]::after{left:28px;background:#fff}
+.ys-recap{margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--pl-line,#CFC8B9)}.ys-recap fieldset{margin:12px 0 0;padding:0;border:0}.ys-recap legend{padding:0;font-weight:600;font-size:15px}
+.ys-radio{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:8px 0;cursor:pointer}.ys-radio input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--pl-accent,#29489A)}
+.ys-hl{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px 12px;margin:12px 0 0;padding:16px;background:var(--pl-surface,#FAF8F3);border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px}
+.ys-ring{width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid var(--pl-accent,#29489A);padding:3px;background:var(--pl-surface,#FAF8F3)}.ys-ring img,.ys-ring span{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;background:var(--pl-sand-soft,#EFEBE2)}
+.ys-hl-thumbs{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}.ys-hl-thumbs button{width:56px;height:56px;padding:0;border:2px solid transparent;border-radius:6px;overflow:hidden;background:var(--pl-sand-soft,#EFEBE2);cursor:pointer}.ys-hl-thumbs button[aria-pressed=true]{border-color:var(--pl-accent,#29489A)}.ys-hl-thumbs img{display:block;width:100%;height:100%;object-fit:cover}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ys-empty{padding:16px;background:var(--pl-surface,#FAF8F3);border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px}.ys-empty p{margin:0 0 8px}
+.ys-scrim{position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center;background:rgba(27,29,28,.4)}
+.ys-sheet{width:100%;max-width:520px;max-height:calc(100dvh - 24px);overflow-y:auto;background:var(--pl-surface,#FAF8F3);border-radius:6px 6px 0 0;padding:16px 20px calc(20px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.ys-scrim{align-items:center}.ys-sheet{border-radius:6px}}
+.ys-sheet h2{margin:0;font:600 20px/1.25 "IBM Plex Sans",system-ui,sans-serif}.ys-sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.ys-sheet .ys-list{gap:8px}
+.ys-x{flex:none;min-height:44px;padding:0 8px;border:0;background:none;color:inherit;font:600 15px "IBM Plex Sans",system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ys-wait{min-height:60vh}
+</style></head><body>
+<main class="ls-wrap wrap" id="m"><h1>Your stories</h1><p class="ys-lede">What shows under your name, and how it looks.</p><div id="ys" class="ys-wait" aria-live="polite"></div></main>
+<script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/emoji.js"></script><script src="/community.js"></script><script src="/avatars.js"></script><script src="/feedvisual.js" defer></script>
+<script src="/yourstories.js"></script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

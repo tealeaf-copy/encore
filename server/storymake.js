@@ -210,16 +210,16 @@ export function makeStoryMake(store, { C, X, V, blocksOf = () => [] }) {
   function answer(st, u, sticker, text) { const s = (st.stickers || []).find((y) => y.id === sticker && y.t === "question"); if (!s) return { error: "No such question.", status: 404, code: "not_found" };
     const t = cleanText(text, STORY_LIMITS.answer); if (!t) return { error: "Write something first." }; const p = textProblem(t); if (p) return { error: p.message, code: p.code };
     const W = who(u), d = xOf(st.id); if (d.answers.filter((a) => a.k === W.k).length >= 5) return { error: "That's plenty for one story.", code: "too_many", status: 429 };
-    d.answers.push({ k: W.k, e: W.e, name: W.name, sticker: s.id, text: t, at: Date.now() }); xSave(st.id, d); try { X.dm?.storyNote?.(st, u, { t: "answer", sticker: s.id + "-" + d.answers.length, prompt: s.prompt, text: t }); } catch {}
+    d.answers.push({ k: W.k, e: W.e, name: W.name, sticker: s.id, text: t, at: Date.now() }); xSave(st.id, d); try { X.dm?.storyNote?.(st, u, { t: "answer", sticker: s.id + "-" + d.answers.length, prompt: s.prompt, text: t }); } catch {} /* [dm hook] a small row in the DM thread (server/dm.js) */
     const n = d.answers.filter((a) => a.sticker === s.id).length; tell(st.author, "st-q-" + st.id, n === 1 ? `${W.name} answered "${s.prompt}": ${t.slice(0, 80)}` : `${n} answers to "${s.prompt}"`, link(st)); return { ok: true }; }
   function reply(st, u, text) { const t = cleanText(text, STORY_LIMITS.reply); if (!t) return { error: "Write something first." }; const p = textProblem(t); if (p) return { error: p.message, code: p.code };
     const W = who(u), d = xOf(st.id); if (d.replies.filter((a) => a.k === W.k).length >= 20) return { error: "That's plenty for one story.", code: "too_many", status: 429 };
-    // the reply is a direct message to the author, quoting this story (server/dm.js); where that can't be, the older bell note
+    // [dm hook] the reply is a direct message to the author, quoting this story (server/dm.js); where that can't be, the older bell note
     let dm = null; try { dm = X.dm?.storyReply?.(st, u, t) || null; } catch {} if (dm?.error) return { error: dm.error.message, code: dm.error.code, status: dm.error.status };
     d.replies.push({ k: W.k, e: W.e, name: W.name, text: t, at: Date.now() }); xSave(st.id, d); if (dm) return { ok: true, dm: dm.id, ...(dm.request ? { request: true } : {}) };
     const n = d.replies.filter((a) => a.k === W.k).length; tell(st.author, `st-re-${st.id}-${W.k.slice(0, 8)}`, n === 1 ? `${W.name} replied to your story: ${t.slice(0, 100)}` : `${W.name} sent ${n} replies to your story`, link(st)); return { ok: true }; }
   function react(st, u, emoji) { if (!REACTIONS.includes(emoji)) return { error: "Pick one of the reactions." }; const W = who(u), d = xOf(st.id), had = d.reacts[W.k]?.emoji;
-    if (had === emoji) delete d.reacts[W.k]; else d.reacts[W.k] = { e: W.e, name: W.name, emoji, at: Date.now() }; xSave(st.id, d); try { X.dm?.storyNote?.(st, u, had === emoji ? { t: "react", off: true } : { t: "react", emoji }); } catch {}
+    if (had === emoji) delete d.reacts[W.k]; else d.reacts[W.k] = { e: W.e, name: W.name, emoji, at: Date.now() }; xSave(st.id, d); try { X.dm?.storyNote?.(st, u, had === emoji ? { t: "react", off: true } : { t: "react", emoji }); } catch {} /* [dm hook] a small row in the DM thread (server/dm.js) */
     const n = Object.keys(d.reacts).length; if (had == null && n) tell(st.author, "st-rx-" + st.id, n === 1 ? `${W.name} reacted ${emoji} to your story` : `${n} people reacted to your story`, link(st)); return { ok: true, mine: d.reacts[W.k]?.emoji || "" }; }
   /** For the author only: who saw it, and what came back. */
   function insights(st) { const d = xOf(st.id), byT = (a, b) => (b.at || 0) - (a.at || 0), R = d.reacts || {}, avgOf = (L) => (L.length ? Math.round(L.reduce((a, b) => a + b, 0) / L.length) : 0);

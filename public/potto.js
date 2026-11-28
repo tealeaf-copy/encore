@@ -11,6 +11,8 @@
 //    Answers come from POST /api/potto/ask (server/potto.js). Support questions go to the help guide
 //    (POST /api/help/ask, public/help.js keeps "Talk to a person"), so the Help links in the rail and the Me sheet open
 //    this sheet too. An action (send a reminder, tell people) runs only after the person taps Send on its confirm line.
+//    A nudge ("Nudge the people who haven't replied", "Message the maybes") draws its confirm card in the answer
+//    (public/pottonudge.js): who gets it, the exact message, Send / Edit / Not now.
 (function () {
   if (window.PLPotto) return;
   const signed = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
@@ -249,10 +251,11 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
     const links = (t.links || []).filter((l) => /^\/(?!\/)/.test(l.href || ""));
     return `<div class="pt-turn" data-i="${i}"><div class="pt-po">${esc(t.text)}</div>${links.length ? `<div class="pt-links">${links.map((l) => `<a href="${esc(l.href)}">${esc(l.label)}${I(IC.arrow, 18)}</a>`).join("")}</div>` : ""}
       ${(t.actions || []).filter((a) => a.url).map((a, k) => `<div class="pt-act" data-k="${k}">${a.preview ? `<q>${esc(a.preview)}</q>` : ""}<div class="pt-btns"><button type="button" class="pt-b pri" data-do>${esc(a.label)}</button></div></div>`).join("")}
+      ${(t.actions || []).map((a, k) => (a.type === "nudge" ? `<div class="pt-act" data-nk="${k}"></div>` : "")).join("")}
       ${t.person ? `<button type="button" class="pt-person" data-a="person">${I(IC.person, 18)}Talk to a person</button>` : ""}</div>`; }
   function wireTurns(b) {
     b.querySelectorAll(".pt-turn[data-i]").forEach((row) => { const t = S.turns[+row.dataset.i];
-      row.querySelectorAll(".pt-act").forEach((box) => { const a = t.actions[+box.dataset.k]; const go = box.querySelector("[data-do]");
+      row.querySelectorAll(".pt-act[data-k]").forEach((box) => { const a = t.actions[+box.dataset.k]; const go = box.querySelector("[data-do]");
         if (a.sent) { box.querySelector(".pt-btns").innerHTML = `<span class="pt-done">${esc(a.done || "Done.")}</span>`; return; }
         go.onclick = () => { // confirm first: nothing is sent until the person says so
           const btns = box.querySelector(".pt-btns"); btns.insertAdjacentHTML("beforebegin", `<p>${esc(a.confirm || "Go ahead?")}</p>`);
@@ -262,6 +265,9 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
             if (!/^\/api\/(chats\/[A-Za-z0-9_-]{1,80}\/messages|host\/broadcast|host\/announce)$/.test(a.url)) return;
             try { await api(a.url, a.body || {}, a.method || "POST"); a.sent = true; box.querySelector("p")?.remove(); btns.innerHTML = `<span class="pt-done">${esc(a.done || "Done.")}</span>`; }
             catch (err) { e.target.disabled = false; btns.insertAdjacentHTML("afterend", `<p style="color:var(--pl-danger);margin:8px 0 0;font-weight:500">${esc(err.message)}</p>`); } }; }; });
+      // a nudge (public/pottonudge.js): who gets it, the message, and Send / Edit / Not now, here in the answer
+      row.querySelectorAll("[data-nk]").forEach((box) => { const a = t.actions[+box.dataset.nk], go = () => window.PLNudge?.card(box, { eventId: a.eventId, who: a.who, inline: true, keep: (a.keep = a.keep || {}), onReady: () => { if (S && !a.shown) { a.shown = 1; box.scrollIntoView({ block: "nearest" }); } } });
+        if (window.PLNudge) return go(); box.innerHTML = `<span class="pt-dots"><i></i><i></i><i></i></span>`; let s = document.querySelector('script[src="/pottonudge.js"]'); if (!s) { s = document.createElement("script"); s.src = "/pottonudge.js"; document.head.appendChild(s); } s.addEventListener("load", () => box.isConnected && go()); });
       row.querySelector('[data-a="person"]')?.addEventListener("click", person); }); }
   function person() { close(); const go = () => { try { window.EncoreHelp?.person ? window.EncoreHelp.person() : (location.href = "/settings#hHelp"); } catch {} };
     if (window.EncoreHelp) return go(); const s = document.createElement("script"); s.src = "/help.js"; s.onload = () => setTimeout(go, 50); document.head.appendChild(s); }

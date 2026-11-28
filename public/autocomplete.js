@@ -66,7 +66,7 @@
   const ALERTS = ["Free game nights in my city", "Runs in my city on weekends", "Dinners within 3 miles", "Supper clubs in my city", "Pottery classes near me", "Book clubs near me", "Hikes on weekends",
     "Picnics on weekends", "Free events near me", "Trivia nights in my city", "Pop-up markets this weekend", "Run clubs near me", "Cooking classes within 5 miles", "Dinner parties in my city"].map((t) => I(t, ""));
   // Ask Potto (public/potto.js)
-  const ASKS = ["Plan a dinner for 6 this Saturday", "Who hasn't replied to my dinner?", "What's on this weekend that's small and cozy?", "Find a run club near me", "Find a supper club near me",
+  const ASKS = ["Plan a dinner for 6 this Saturday", "Who hasn't replied to my dinner?", "Nudge the people who haven't replied", "What's on this weekend that's small and cozy?", "Find a run club near me", "Find a supper club near me",
     "Ideas for a first dinner I could host", "Write a reminder for my guests", "Write a thank-you note to everyone who came", "Help me plan a game night", "What should I bring to a potluck?",
     "Plan a weekend away for 8", "Who's going to Friday's game night?"].map((t) => I(t, ""));
   // the feed composer (public/composer.js)

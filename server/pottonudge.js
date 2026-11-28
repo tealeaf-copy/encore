@@ -160,6 +160,7 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
       if (last && t - last < LIMITS.gapMs) { skip(`nudged ${dayLabel(last, t, tz)}, next from ${dayLabel(last + LIMITS.gapMs, t, tz)}`); continue; }
       ok.push(row);
     }
+    const byName = (a, b) => a.name.localeCompare(b.name); ok.sort(byName); skipped.sort(byName); // a steady order, so the sheet and the report read the same each time
     return { ev, tz, ok, skipped, known: X0.list.length, rec: r };
   }
 
@@ -240,13 +241,14 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
     return { eventId: id, waiting: ok.length + skipped.length, can: g ? 0 : ok.length, gate: g, linkOnly: !X0.known, nudged, suggest: suggestOf(ws, id, { t, X0 }) };
   }
   function suggestOf(ws, id, { t = clock(), X0 = null } = {}) {
-    X0 = X0 || sortOut(ws, id, "noreply", { t }); if (!X0) return null; const { ev, tz, ok, rec: r } = X0;
+    X0 = X0 || sortOut(ws, id, "noreply", { t }); if (!X0) return null; const { ev, tz, ok, skipped, rec: r } = X0;
     if (gate(ws, ev, t) || ok.length < LIMITS.minToSuggest || !ISO.test(ev.date || "")) return null;
     if (r.dismissedAt && t - r.dismissedAt < LIMITS.gapMs) return null;
     const lastSend = Math.max(0, ...r.sends.map((s) => +s.at || 0), ...Object.values(r.people).flatMap((P) => [...(P.at || []), P.queued || 0]), ...ok.map((p) => p.last || 0)); if (lastSend && t - lastSend < LIMITS.gapMs) return null;
     const start = startOf(ev, tz), known = ok.map((p) => p.at).filter(Boolean), sentAt = known.length ? Math.min(...known) : 0;
     const aged = (sentAt && t - sentAt >= LIMITS.afterInviteMs) || (start && t >= start - LIMITS.beforeEventMs); if (!aged) return null;
-    const title = titleOf(ev); return { eventId: id, title, n: ok.length, line: `${people(ok.length)} haven't replied to ${title}. Want me to nudge them?` };
+    // the count is everyone still to reply (the overview says the same number); the sheet then shows who gets it and who doesn't
+    const title = titleOf(ev), n = ok.length + skipped.length; return { eventId: id, title, n, can: ok.length, line: `${people(n)} haven't replied to ${title}. Want me to nudge them?` };
   }
   const upcoming = (ws, t = clock()) => { const today = new Date(t - DAY).toISOString().slice(0, 10); try { return S0(ws).list("events").map((d) => ({ id: d.id, e: d.data || {} })).filter(({ e }) => !e.example && !e.sample && !e.cancelled && ISO.test(e.date || "") && e.date >= today && (e.published || e.discoverable)).sort((a, b) => a.e.date.localeCompare(b.e.date)).slice(0, 12); } catch { return []; } };
   /** One line at a time: the soonest event that needs it. */

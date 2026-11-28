@@ -224,14 +224,15 @@ test("Ask Potto: the nudge is an action to confirm, never a send; remind everyon
 });
 
 test("the proactive line: 48 hours after the invite or 72 before the event, two or more to nudge, quiet for 3 days after a nudge or a dismiss", async () => {
-  const pa = await host("Pat Proactive", "pat-pro"); const t0 = NOON();
-  await event("pro1", { name: "Hot pot", date: nyDay(10) }, pa); N.setClock(() => t0);
+  const pa = await host("Pat Proactive", "pat-pro");
+  await event("pro1", { name: "Hot pot", date: nyDay(10) }, pa);
   await invite(pa, "pro1", "Ed One <ed.one@example.com>, Flo Two <flo.two@example.com>, Hal Three <hal.three@example.com>");
+  const t0 = Date.now(), noon3 = at(nyDay(3), "12:00"); N.setClock(() => t0 + 60e3); // the invite plan stamps the real time; noon3 is noon in New York three days on (48 to 84 hours from now)
   const top = async () => (await getJ("/api/host/nudge/suggest", pa.cookie)).suggest;
   assert.equal(await top(), null, "too soon after the invite");
   N.setClock(() => t0 + 47 * 3600e3); assert.equal(await top(), null);
   N.setClock(() => t0 + 49 * 3600e3);
-  assert.deepEqual(await top(), { eventId: "pro1", title: "Hot pot", n: 3, line: "3 people haven't replied to Hot pot. Want me to nudge them?" });
+  assert.deepEqual(await top(), { eventId: "pro1", title: "Hot pot", n: 3, can: 3, line: "3 people haven't replied to Hot pot. Want me to nudge them?" });
   assert.equal((await getJ("/api/host/nudge/pro1/state", pa.cookie)).suggest.n, 3);
   // only one to nudge: no line
   for (const [nm, em] of [["Ed One", "ed.one@example.com"], ["Flo Two", "flo.two@example.com"]]) assert.equal((await guestRsvp(pa.ws, { eventId: "pro1", name: nm, email: em, response: "going", code: "X" + nm.length })).status, 200);
@@ -242,8 +243,118 @@ test("the proactive line: 48 hours after the invite or 72 before the event, two 
   // dismissed: gone for 3 days
   assert.equal((await post("/api/host/nudge/pro2/dismiss", {}, pa.cookie)).status, 200); assert.equal(await top(), null);
   // after a nudge: quiet too
-  await event("pro3", { name: "Slow stew", date: nyDay(12) }, pa); N.setClock(() => t0); await invite(pa, "pro3", "Yan A <yan.a@example.com>, Zed B <zed.b@example.com>");
-  N.setClock(() => t0 + 50 * 3600e3); assert.equal((await top())?.eventId, "pro3");
+  await event("pro3", { name: "Slow stew", date: nyDay(12) }, pa); await invite(pa, "pro3", "Yan A <yan.a@example.com>, Zed B <zed.b@example.com>");
+  N.setClock(() => noon3); assert.equal((await top())?.eventId, "pro3");
   assert.equal((await send(pa, "pro3")).sent, 2); assert.equal(await top(), null);
-  N.setClock(() => t0 + 50 * 3600e3 + 3 * 864e5 + 60e3); assert.equal((await top())?.eventId, "pro3", "three days on it may ask again");
+  N.setClock(() => noon3 + 3 * 864e5 + 60e3); assert.equal((await top())?.eventId, "pro3", "three days on it may ask again");
 });
+
+// ---------- the browser walk ----------
+let chromium = null, browser = null;
+try { ({ chromium } = createRequire(import.meta.url)("playwright")); } catch {}
+const SHOTS = process.env.NUDGE_SHOTS || ""; // a folder for viewport screenshots, when set
+async function walk(t, width, touch) {
+  if (!chromium) return t.skip("playwright isn't installed");
+  browser = browser || (await chromium.launch());
+  const tag = `w${width}`, id = "walk" + width, wd = () => new Date(N_now()).toLocaleDateString("en-US", { weekday: "short", timeZone: TZ });
+  let now = NOON(); const N_now = () => now; N.setClock(N_now);
+  const h = await host("Wren Walker", "wren-" + tag);
+  assert.equal((await event(id, { name: "Dumpling night", guests: [{ name: "Gil Listed", email: `gil.${tag}@example.com`, status: "Invited", invitedAt: now }] }, h)).status, 200);
+  await invite(h, id, `Sam Diaz <sam.${tag}@example.com>, Ana Lima <ana.${tag}@example.com>, Uma Unsub <uma.${tag}@example.com>`); setUnsubscribed(`uma.${tag}@example.com`);
+  assert.equal((await guestRsvp(h.ws, { eventId: id, name: "Ines In", email: `ines.${tag}@example.com`, response: "going", code: "I1" })).status, 200); srv.app.locals.social.bust();
+  now = at(nyDay(3), "12:00"); // noon three days on (the invite plan stamps the real time): time for Potto's line, and out of quiet hours
+  const ctx = await browser.newContext({ viewport: { width, height: touch ? 844 : 800 }, hasTouch: touch, isMobile: touch, timezoneId: TZ });
+  const [k, ...v] = h.cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: srv.base }, { name: "encore_in", value: "1", url: srv.base }]);
+  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" }));
+  const page = await ctx.newPage(), errs = [];
+  page.on("pageerror", (e) => errs.push("pageerror " + e.message)); page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push("console " + m.text()); });
+  page.on("requestfailed", (r) => { if (r.url().startsWith(srv.base) && !/ERR_ABORTED/.test(r.failure()?.errorText || "")) errs.push("failed " + r.url()); });
+  page.on("response", (r) => { if (r.url().startsWith(srv.base) && r.status() >= 400) errs.push(`${r.status()} ${r.url()}`); });
+  const shot = async (name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await page.waitForTimeout(250); await page.screenshot({ path: `${SHOTS}/${tag}-${name}.png` }); };
+  // an element the person can really tap: on screen, at least 44px tall, and nothing (tab bar, dock) on top of it
+  const tappable = async (sel) => { const el = page.locator(sel).first(); for (let i = 0; i < 4; i++) { try { await el.scrollIntoViewIfNeeded({ timeout: 5000 }); break; } catch (e) { if (i === 3) throw e; } } const r = await el.evaluate((n) => { const b = n.getBoundingClientRect(), top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { h: b.height, w: b.width, hit: !!top && (top === n || n.contains(top)), inView: b.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth, cut: n.scrollWidth > n.clientWidth + 1 }; }); assert.ok(r.h >= 44 && r.hit && r.inView && !r.cut, `${sel} ${JSON.stringify(r)}`); return el; };
+  const noSideScroll = async (what) => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${what}: the page scrolls sideways`);
+  const fontOf = (sel) => page.locator(sel).first().evaluate((n) => { const c = getComputedStyle(n); return `${c.fontFamily.split(",")[0].replace(/"/g, "")} ${c.fontSize} ${c.fontWeight}`; });
+  try {
+    // 1. Home: one line from Potto, and nothing opens by itself
+    await page.goto(srv.base + "/?app=1"); const home = page.locator("#pnHome"); await home.waitFor({ timeout: 20000 });
+    assert.equal((await home.locator("p").first().innerText()).trim(), "4 people haven't replied to Dumpling night. Want me to nudge them?");
+    assert.equal(await page.locator("#pnHome").count(), 1); assert.equal(await page.locator("#pnSheet,#ptSheet").count(), 0, "nothing opens by itself");
+    assert.equal(await fontOf("#pnHome p"), "IBM Plex Sans 16px 400");
+    await tappable("#pnHome [data-pn-open]"); await tappable("#pnHome [data-pn-no]"); await noSideScroll("home"); await shot("1-home-line");
+    // 2. the overview: the same line, and "3 haven't replied" with "Nudge 3 people" in Who's coming
+    await page.goto(srv.base + `/?app=1&open=${id}#studio`); await page.locator("#hv .pn-hvrow").waitFor({ timeout: 20000 });
+    assert.equal((await page.locator("#hv .pn-line p").first().innerText()).trim(), "4 people haven't replied to Dumpling night. Want me to nudge them?");
+    assert.equal(await page.locator("#hv .pn-line, #hv .hv-potto").count(), 1, "one line from Potto at a time");
+    assert.match(await page.locator("#hv .pn-hvrow p").innerText(), /^4 haven't replied/); assert.equal(await fontOf("#hv .pn-hvrow p"), "IBM Plex Sans 16px 500");
+    const nb = await tappable("#hv .pn-hvrow [data-pn-open]"); assert.equal((await nb.innerText()).trim(), "Nudge 3 people"); await shot("2-overview-row");
+    // the button opens the confirm sheet: who, by which channel, the exact message; Esc closes and focus goes back
+    await nb.click(); const sheet = page.locator("#pnSheet [role=dialog]"); await sheet.locator(".pn-who li").first().waitFor();
+    assert.equal(await sheet.getAttribute("aria-modal"), "true"); assert.equal((await sheet.locator("h2").innerText()).trim(), "Nudge the people who haven't replied");
+    assert.deepEqual((await sheet.locator(".pn-who li").allInnerTexts()).map((x) => x.replace(/\s+/g, " ").trim()).sort(), ["Ana Lima by email", "Gil Listed by email", "Sam Diaz by email"]);
+    assert.match(await sheet.locator(".pn-skip").innerText(), /Not getting it: Uma Unsub \(unsubscribed from emails\)\./);
+    const txt = (await sheet.locator(".pn-text").innerText()).replace(/\s+/g, " ").trim(); assert.match(txt, /^Hi \w+, Wren here\. Are you in for Dumpling night on \w{3}, \w{3} \d+ at 7pm\? One tap to reply: http\S+$/);
+    assert.ok(!/@example\.com/.test(await sheet.innerText()), "no addresses in the sheet");
+    assert.equal(await fontOf("#pnSheet .pn-text"), "IBM Plex Sans 16px 400"); assert.equal(await fontOf("#pnSheet .pn-who .pn-n"), "IBM Plex Sans 16px 500"); assert.equal(await fontOf("#pnSheet h2"), "IBM Plex Sans 20px 600");
+    assert.equal(await sheet.locator(".pn-b.pri").count(), 1, "one primary"); for (const s of ["#pnSheet [data-send]", "#pnSheet [data-edit]", "#pnSheet [data-no]", "#pnSheet .pn-x"]) await tappable(s);
+    assert.ok(await sheet.locator(".pn-text").evaluate((n) => n.scrollWidth <= n.clientWidth + 1), "the message wraps, never cut"); await noSideScroll("sheet"); await shot("3-confirm-sheet");
+    await page.keyboard.press("Escape"); await page.locator("#pnSheet").waitFor({ state: "detached" });
+    assert.ok(await page.evaluate(() => document.activeElement?.matches?.("[data-pn-open]")), "focus returns to the button"); assert.equal(fakeOutbox.filter((m) => m.to[0].endsWith(`.${tag}@example.com`) && /^Are you in/.test(m.subject)).length, 0, "looking sends nothing");
+    // the line dismisses, here and on Home
+    await (await tappable("#hv .pn-line [data-pn-no]")).click(); await page.locator("#hv .pn-line").waitFor({ state: "detached" }); await page.locator("#hv .hv-potto").waitFor();
+    assert.equal((await getJ("/api/host/nudge/suggest", h.cookie)).suggest, null);
+    await page.goto(srv.base + "/?app=1"); await page.locator("#ptDock [data-pt=ask]").waitFor({ timeout: 20000 }); await page.waitForTimeout(1200); assert.equal(await page.locator("#pnHome").count(), 0, "dismissed");
+    // 3. Ask Potto: the answer names who gets it, the card shows the message; Edit, then Send
+    await page.locator("#ptDock [data-pt=ask]").click(); const ta = page.locator("#ptSheet textarea[aria-label='Ask Potto']"); await ta.waitFor(); await ta.fill("Nudge the people who haven't replied"); await ta.press("Enter");
+    const card = page.locator("#ptSheet [data-nk]"); await card.locator(".pn-who li").first().waitFor({ timeout: 20000 });
+    assert.match(await page.locator("#ptSheet .pt-po").last().innerText(), /^I can nudge 3 people about Dumpling night: .* I'd skip Uma \(unsubscribed from emails\)\. Here's the message\. Nothing goes out until you tap Send\.$/);
+    assert.deepEqual((await card.locator(".pn-btns button").allInnerTexts()).map((x) => x.trim()), ["Send to 3", "Edit", "Not now"]); await shot("4-potto-card");
+    await (await tappable("#ptSheet [data-nk] [data-edit]")).click(); const body = card.locator("textarea"); await body.waitFor();
+    assert.ok(await body.evaluate((n) => document.activeElement === n && !!n.labels?.length), "the editor is focused and labelled");
+    await body.fill("Dumplings on Saturday, are you in? See https://evil.example/x");
+    assert.match((await card.locator(".pn-text").innerText()).replace(/\s+/g, " "), /Wren here\. Dumplings on Saturday, are you in\? See One tap to reply: /, "the preview is what goes out: the pasted link is left out");
+    await tappable("#ptSheet [data-nk] [data-send]"); await shot("5-potto-edit");
+    await card.locator("[data-send]").click(); await card.locator(".pn-done").waitFor();
+    assert.equal((await card.locator(".pn-done").innerText()).trim(), "Sent to Ana, Gil and Sam. I skipped Uma (unsubscribed from emails).");
+    const sent = fakeOutbox.filter((m) => m.to[0].endsWith(`.${tag}@example.com`) && /^Are you in/.test(m.subject)); assert.deepEqual(sent.map((m) => m.to[0]).sort(), [`ana.${tag}@example.com`, `gil.${tag}@example.com`, `sam.${tag}@example.com`]);
+    assert.ok(sent.every((m) => /Dumplings on Saturday, are you in\? See One tap to reply: http/.test(m.text) && !m.text.includes("evil.example") && /Unsubscribe: /.test(m.text)), "the edited line, no other link, the unsubscribe footer"); await shot("6-potto-sent");
+    // asking again: Potto says what's true
+    await ta.fill("Who did I nudge?"); await ta.press("Enter"); await page.locator("#ptSheet .pt-po", { hasText: "you nudged" }).waitFor({ timeout: 20000 });
+    assert.match(await page.locator("#ptSheet .pt-po").last().innerText(), new RegExp(`^For Dumpling night you nudged .*Sam \\(${wd()}\\)`));
+    assert.equal((await card.locator(".pn-done").innerText()).trim(), "Sent to Ana, Gil and Sam. I skipped Uma (unsubscribed from emails).", "the sent card stays sent");
+    // 4. the overview: "Nudged <day>" beside the person, and no button while no one can be nudged again
+    await page.goto(srv.base + `/?app=1&open=${id}&step=6#studio`); const row = page.locator("#hv .hv-g", { hasText: "Gil Listed" }); await row.waitFor({ timeout: 20000 });
+    await page.locator("#hv .hv-g small", { hasText: "Nudged " + wd() }).waitFor({ timeout: 20000 }); assert.match(await row.innerText(), new RegExp("Nudged " + wd())); await row.scrollIntoViewIfNeeded(); await noSideScroll("guests"); await shot("7-guests-nudged");
+    await page.locator("#hv [data-tab=overview]").click(); await page.locator("#hv .pn-hvrow").waitFor();
+    assert.match((await page.locator("#hv .pn-hvrow").innerText()).replace(/\s+/g, " "), /^4 haven't replied No one to nudge right now\. Each person gets two at most, three days apart\.$/); assert.equal(await page.locator("#hv .pn-hvrow button").count(), 0);
+    await page.locator("#hv .pn-hvrow").scrollIntoViewIfNeeded(); await shot("8-overview-after");
+    assert.deepEqual(errs, [], "console clean, no failed requests");
+  } finally { await ctx.close(); N.setClock(NOON); }
+}
+test("browser, 390 touch: Home line, the overview row and sheet, dismiss, Ask Potto, edit, send, Nudged on the overview", { timeout: 200000 }, (t) => walk(t, 390, true));
+test("browser, 1280: the same walk", { timeout: 200000 }, (t) => walk(t, 1280, false));
+test("browser, 390 touch: a link-only event gets a message to copy or share, and the group chat on a second tap", { timeout: 120000 }, async (t) => {
+  if (!chromium) return t.skip("playwright isn't installed"); browser = browser || (await chromium.launch());
+  const h = await host("Lin Linkwalk", "lin-linkwalk"); await event("linkw", { name: "Link picnic" }, h);
+  assert.equal((await guestRsvp(h.ws, { eventId: "linkw", name: "Kai In", email: "kai.linkw@example.com", response: "going", code: "K1" })).status, 200); srv.app.locals.social.bust();
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, timezoneId: TZ, permissions: ["clipboard-read", "clipboard-write"] });
+  const [k, ...v] = h.cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: srv.base }, { name: "encore_in", value: "1", url: srv.base }]);
+  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" }));
+  const page = await ctx.newPage(), errs = []; page.on("pageerror", (e) => errs.push("pageerror " + e.message)); page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push("console " + m.text()); });
+  page.on("response", (r) => { if (r.url().startsWith(srv.base) && r.status() >= 400) errs.push(`${r.status()} ${r.url()}`); });
+  try { const m0 = fakeOutbox.length;
+    await page.goto(srv.base + "/?app=1"); await page.locator("#ptDock [data-pt=ask]").click(); const ta = page.locator("#ptSheet textarea[aria-label='Ask Potto']"); await ta.waitFor(); await ta.fill("Nudge the people who haven't replied"); await ta.press("Enter");
+    const card = page.locator("#ptSheet [data-nk]"); await card.locator("[data-copy]").waitFor({ timeout: 20000 });
+    assert.match(await page.locator("#ptSheet .pt-po").last().innerText(), /^You shared Link picnic as a link, so I can't see who has it and I can't message them myself\./); assert.equal(await card.locator(".pn-lead").count(), 0, "said once");
+    const msg = (await card.locator(".pn-text").innerText()).trim(); assert.match(msg, /^Hi all, Lin here\. Are you in for Link picnic on .+\? One tap to reply: http\S+\/e\/linkw$/);
+    assert.equal(await card.locator(".pn-b.pri").count(), 1); assert.ok((await card.locator(".pn-btns button").allInnerTexts()).map((x) => x.trim()).includes("Post to the group chat"));
+    for (const b of await card.locator(".pn-btns button").all()) assert.ok((await b.boundingBox()).height >= 44);
+    if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.waitForTimeout(250); await page.screenshot({ path: `${SHOTS}/w390-9-link-only.png` }); }
+    await card.locator("[data-copy]").click(); await page.locator("#ptSheet [data-said]", { hasText: "Copied" }).waitFor(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), msg);
+    // the group chat is a send, so it asks first
+    await card.locator("[data-chat]").click(); assert.match(await card.locator(".pn-quiet").innerText(), /^Post this to the 1 guest in the group chat\?$/); await card.locator("[data-back]").click(); await card.locator("[data-chat]").click(); await card.locator("[data-post]").click();
+    await card.locator(".pn-done").waitFor(); assert.equal((await card.locator(".pn-done").innerText()).trim(), "Posted to the group chat for the 1 guest already in. I didn't message anyone else.");
+    assert.equal(fakeOutbox.length, m0, "no emails"); assert.deepEqual(errs, []);
+  } finally { await ctx.close(); }
+});
+after(async () => { await browser?.close(); });

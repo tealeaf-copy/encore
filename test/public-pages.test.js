@@ -62,9 +62,11 @@ test("Discover and the homepage reserve space for late sections", () => {
 // /about tells why Pottery Lab exists (docs/about-story.md): the host first, then guests, then brands, in the house voice.
 test("/about: the host's story, four host pillars, three readers, three community rules, the tagline word for word, and plain words", () => {
   const home = read("public/home.html"), text = home.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "");
-  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>Your co-host for every plan\.<\/h1>/);
-  // one primary action, worded for a first event; signed in (encore_in) it reads Plan an event
-  assert.equal((home.match(/href="\/start" data-plan>Plan your first event<\/a>/g) || []).length, 3, "hero, hosts card and close");
+  // the first screen: Potto, the tagline, the supporting line in grey, two pills (public/fun.css), then the demo
+  assert.match(home, /<span class="fun-potto" id="heroPotto"><\/span>\s*<h1 id="heroH">Your co-host for every plan\.<\/h1>\s*<p class="deck">Potto brainstorms the idea, finds the time that works for everyone, designs the invite, chases the replies and keeps the group going\.<\/p>/);
+  assert.match(home, /<a class="fun-pill is-primary" href="\/start" id="heroGo">Plan with Potto<\/a><a class="fun-pill is-quiet" href="\/feed">Explore what's on<\/a>/);
+  // further down the action is worded for a first event; signed in (encore_in) it reads Plan an event
+  assert.equal((home.match(/href="\/start" data-plan>Plan your first event<\/a>/g) || []).length, 2, "hosts card and close");
   assert.doesNotMatch(text, /Plan a dinner/);
   assert.match(home, /encore_in=1[^\n]*\[data-plan\][^\n]*"Plan an event"/);
   const shell = read("public/shell.js"); // the shell says the same thing: the signed-out tab and the "New here?" line

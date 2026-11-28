@@ -59,12 +59,34 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 .list{list-style:none;margin:16px 0 0;padding:0;border-top:1px dashed var(--pl-line-strong)}.list li{padding:12px 0;border-bottom:1px dashed var(--pl-line-strong);display:flex;gap:10px;align-items:flex-start;font-size:15px}
 .list b{font:500 12px var(--pl-font-mono);color:var(--pl-soft);min-width:22px;padding-top:2px}
 .msg{color:var(--pl-danger);font-size:14px;min-height:20px;margin:6px 0 0}
+/* ---- the soft, playful look (.pl-fun, public/fun.css): plush Potto on top, dressed for what you're planning; pill
+   chips with a drawn icon; a round invite card; a pastel that follows the kind. Same words, same fields ---- */
+body.pl-fun{background:var(--pl-fun-bg,#FAF8F3)}
+.pl-fun #plan{position:relative;z-index:0}
+.pl-fun #plan::before{content:"";position:absolute;z-index:-1;left:50%;top:-70px;width:min(720px,170vw);height:420px;transform:translateX(-50%);background:radial-gradient(closest-side,var(--pl-fun-tint),rgba(255,255,255,0));opacity:.7;pointer-events:none}
+.pl-fun .fun-potto{--fun-potto:116px;margin-top:0}@media (min-width:861px){.pl-fun .fun-potto{--fun-potto:140px;margin-top:20px}}
+.pl-fun .eyebrow{text-align:center;margin:2px 0 8px;color:var(--pl-fun-grey)}
+.pl-fun h1{text-align:center;font-size:34px;line-height:1.04;letter-spacing:-.03em;margin:0 0 8px}@media (min-width:600px){.pl-fun h1{font-size:44px}}
+.pl-fun .lede{text-align:center;color:var(--pl-fun-grey);margin:0 auto 18px;max-width:26em}
+.pl-fun .chip{display:inline-flex;align-items:center;gap:6px;padding:0 14px 0 12px;border-radius:var(--pl-fun-pill);border-color:var(--pl-fun-line);background:var(--pl-fun-card);font-size:15px;transition:transform .18s var(--pl-fun-ease),background-color .18s}
+.pl-fun .chip svg{flex:none}.pl-fun .chip[aria-pressed="true"]{background:var(--pl-ink);color:var(--pl-surface);border-color:var(--pl-ink)}
+@media (prefers-reduced-motion:no-preference){.pl-fun .chip:active{transform:scale(.96)}.pl-fun .card.is-new{animation:st-pop .22s var(--pl-fun-ease)}}
+@keyframes st-pop{from{transform:scale(.985)}to{transform:none}}
+.pl-fun .card{border:0;border-radius:var(--pl-fun-r);background:var(--pl-fun-card);padding:22px 20px 20px;box-shadow:0 18px 40px -30px rgba(27,29,28,.4)}
+.pl-fun .card .t{font-weight:600;letter-spacing:-.02em}
+.pl-fun input,.pl-fun textarea,.pl-fun .dfield,.pl-fun .step{border-radius:var(--pl-fun-r-sm);border-color:var(--pl-fun-line);background:var(--pl-fun-card)}
+.pl-fun .dfield input{border-radius:0;background:none}
+.pl-fun .go{background:var(--pl-fun-bg);border-top:0}
+.pl-fun .sheet{border:0;border-radius:28px 28px 0 0;background:var(--pl-fun-bg)}@media (min-width:600px){.pl-fun .sheet{border-radius:28px}}
+.pl-fun .list{border-top:0}.pl-fun .list li{border-bottom:1px solid var(--pl-fun-line)}
 </style>
-</head><body>
+<link rel="stylesheet" href="/fun.css"><script src="/pottoplush.js" defer></script>
+</head><body class="pl-fun">
 <main>
   <header class="top"><a class="brand" href="/about" aria-label="Pottery Lab"><svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent)"/></svg>pottery lab</a><a class="in" id="signIn" href="/login?next=%2Fstart%3Fsave%3D1">Sign in</a></header>
 
   <div id="plan">
+    <span class="fun-potto" id="stPotto" aria-hidden="true"></span>
     <span class="eyebrow" id="eyebrow">Plan a dinner</span>
     <h1 id="h1">Plan a dinner. It takes a minute.</h1>
     <p class="lede" id="lede">No account yet. Your plan stays on this phone until you want to send it.</p>
@@ -116,6 +138,27 @@ addEventListener("DOMContentLoaded", () => window.PLTrendIdeas?.mount(document.g
   set("title", x.title); if (x.line && !(f?.elements?.note?.value || "").trim()) set("note", x.source === "platform" ? "" : x.line); document.getElementById("card")?.scrollIntoView({ block: "start", behavior: "smooth" }); f?.elements?.title?.focus({ preventScroll: true }); } })); // ---- end trends ----
 </script>
 <script>
+// ---- a little play: plush Potto (public/pottoplush.js) above the plan. He wears what suits the kind you tap or the
+// title you type, looks at the field you're in, and hops when you pick a night and when the link is ready. The page's
+// script below tells him what's going on through PLStartFun; he arrives after first paint in a box already reserved.
+window.PLStartFun = (function () {
+  var WEAR = { dinner4: "dinner", table: "drinks", coffee: "coffee", game: "games", run: "run", drinks: "drinks", potluck: "dinner", picnic: "garden", bookclub: "book", table8: "dinner", weekend: "sun", summit: "games", ticketed: "music", series: "party" };
+  var TINT = { dinner4: "butter", table: "plum", coffee: "clay", game: "sky", run: "coral", drinks: "plum", potluck: "butter", picnic: "moss", bookclub: "ink", weekend: "sky", summit: "ink", series: "coral" };
+  var IC = { dinner4: "M7 3v8M5 3v4a2 2 0 004 0V3M7 11v10M17 3c-2 2-2 6 0 8v10", table: "M3 8h18M6 8v11M18 8v11", coffee: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5zM16 10h2a2 2 0 010 5h-2M8 3v3M12 3v3", game: "M7 4h10a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3zM9 9h.01M15 15h.01M12 12h.01", run: "M3 16l3-6 4 2 3-2 3 5 5 1v3H3z", drinks: "M5 4h14l-7 8zM12 12v8M8 20h8",
+    potluck: "M5 10h14v5a4 4 0 01-4 4H9a4 4 0 01-4-4zM3 10h18M9 6h6", picnic: "M4 11h16l-2 8H6zM8 11a4 4 0 018 0", bookclub: "M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3zM5 17a3 3 0 013-3h10", series: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", weekend: "M4 20V10l8-6 8 6v10zM10 20v-6h4v6", summit: "M12 3a3 3 0 00-3 3v5a3 3 0 006 0V6a3 3 0 00-3-3zM6 11a6 6 0 0012 0M12 17v4" };
+  var m = null, last = { t: "", title: "", date: "" }, seen = false;
+  function type() { var P = window.PottoPlush; return (P && P.typeFor(last.title)) || WEAR[last.t] || ""; }
+  function apply(hop) { document.body.dataset.funTint = TINT[last.t] || (m ? m.state.color : "clay"); if (!m) return; var ch = m.set({ type: type() }); if (hop && !ch) m.react("hop"); }
+  addEventListener("DOMContentLoaded", function () { var el = document.getElementById("stPotto"), P = window.PottoPlush; if (!el || !P) return;
+    m = P.mount(el.appendChild(document.createElement("span")), { size: 132, type: type() || undefined }); apply(false);
+    document.addEventListener("focusin", function (e) { if (m && e.target && e.target.closest && e.target.closest("#f")) m.look(e.target, 1200); }); });
+  return { icon: function (k) { return IC[k] ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + IC[k] + '"/></svg>' : ""; },
+    // called on every draw: the kind, the title so far and the date
+    draw: function (t, title, date) { var kind = seen && t !== last.t, night = seen && date && date !== last.date; last = { t: t, title: title || "", date: date || "" }; seen = true; apply(false); if (m && (kind || night)) m.react(kind ? "tilt" : "hop"); },
+    hop: function () { if (m) m.react("hop"); } };
+})();
+</script>
+<script>
 // one top heading at a time: the "done" screen takes it over from the plan
 function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => { const tag = el.closest("[hidden]") ? "h2" : "h1"; if (el.localName === tag) return; const n = document.createElement(tag); for (const a of el.attributes) n.setAttribute(a.name, a.value); while (el.firstChild) n.appendChild(el.firstChild); n.toggleAttribute("data-h1", tag === "h2"); el.replaceWith(n); }); }
 
@@ -165,10 +208,11 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
     $("#cSeats").innerHTML = Array.from({ length: Math.min(24, d.seats) }, () => "<i></i>").join("") + (d.seats > 24 ? `<span class="meta">+${d.seats - 24}</span>` : "");
     $("#cNote").hidden = !d.note && !hold; $("#cNote").textContent = [d.note || "", hold ? `Reply by ${hold} so I can update the booking.` : ""].filter(Boolean).join(" "); $("#seatsOut").textContent = d.seats;
     document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.t === t)));
+    try { window.PLStartFun.draw(t, d.title, d.date); } catch {}
   }
   let savedT; const keep = () => { d.at = Date.now(); ls.set(KEY, d); clearTimeout(savedT); savedT = setTimeout(() => { $("#saved").innerHTML = (fx.check ? fx.check() : "") + " Saved on this phone"; }, 250); };
   const fill = () => { F.title.value = d.title || ""; F.date.value = d.date || ""; F.time.value = d.time || ""; F.place.value = d.place || ""; F.note.value = d.note || ""; };
-  $("#chips").innerHTML = [...new Set([t, ...CHIPS])].map((k) => `<button type="button" class="chip" data-t="${k}" aria-pressed="false">${T[k].chip}</button>`).join("");
+  $("#chips").innerHTML = [...new Set([t, ...CHIPS])].map((k) => `<button type="button" class="chip" data-t="${k}" aria-pressed="false">${window.PLStartFun.icon(k)}${T[k].chip}</button>`).join("");
   $("#chips").onclick = (e) => { const b = e.target.closest(".chip"); if (!b) return; const keepPlace = d.place; t = b.dataset.t; d = { ...fresh(t), place: keepPlace }; fill(); draw(); keep(); copy(); fx.haptic?.("light"); };
   F.addEventListener("click", (e) => { const i = e.target.closest?.(".dfield input"); if (i) try { i.showPicker?.(); } catch {} });
   F.addEventListener("input", () => { d.title = F.title.value; d.date = F.date.value; d.time = F.time.value; d.place = F.place.value; d.note = F.note.value; if (d.endDate && d.date && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); draw(); keep(); });
@@ -211,7 +255,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
       done(j.id, out, S?.celebrate);
     } catch (e) { $("#err").textContent = e.message || "Couldn't save it. Try again."; b.disabled = false; copy(); }
   }
-  function done(id, out, cel) {
+  function done(id, out, cel) { try { window.PLStartFun.hop(); } catch {}
     $("#plan").hidden = true; $("#done").hidden = false; oneH1(); history.replaceState(null, "", "/start?saved=" + encodeURIComponent(id)); window.scrollTo(0, 0);
     const link = location.origin + "/e/" + id; $("#link").value = link; $("#openApp").href = "/?app=1&open=" + encodeURIComponent(id) + "&canvas=1#studio"; /* opens this one in the create canvas (index.html) */
     if (!out) { $("#doneH").textContent = "Saved. One tap and it's out."; $("#doneLine").textContent = "Tap the link we just emailed you to confirm it's you. This page sends it out by itself when you do. Your dinner is safe in your account."; $("#copy").disabled = true; $("#link").value = "Ready after you confirm your email"; if (fx.stamp) fx.stamp("Saved", $("#doneStamp"));

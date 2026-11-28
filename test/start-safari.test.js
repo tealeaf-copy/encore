@@ -132,7 +132,7 @@ test("the service worker: network first for every page, and only a plain 200 HTM
 // Every script /start loads (its own, the ones the server adds to every page, and the ones those load), the shell's,
 // the deck's and the app's: no syntax or API older iPhones lack, unless guarded.
 const ON_PATH = ["public/start.html", "public/authguard.js", "public/mascot.js", "public/fx.js", "public/hostloop.js", "public/shell.js", "public/netguard.js", "public/native.js", "public/calm.js",
-  "public/help.js", "public/chatnav.js", "public/potto.js", "public/save.js", "public/interests.js", "public/nudges.js", "public/swipedeck.js", "public/feedvisual.js", "public/feed.html", "public/home.html", "public/canvas.js"];
+  "public/help.js", "public/chatnav.js", "public/potto.js", "public/save.js", "public/interests.js", "public/nudges.js", "public/swipedeck.js", "public/feedvisual.js", "public/feed.html", "public/home.html", "public/canvas.js", "public/pottoplush.js", "public/funhome.js"];
 const UNSAFE = [
   [/\(\?<[=!]/, "regex lookbehind (Safari 16.4)"], [/\bstructuredClone\(/, "structuredClone (15.4)"], [/\.(findLast|findLastIndex|toSorted|toReversed|toSpliced)\(/, "ES2023 array methods (16.0 to 16.4)"],
   [/\]\.with\(|\)\.with\(\d/, "Array.prototype.with (16)"], [/\bObject\.hasOwn\(/, "Object.hasOwn (15.4)"], [/\bstatic\s*\{/, "class static blocks (16.4)"], [/\.at\(-?\d/, "Array.prototype.at (15.4)"],

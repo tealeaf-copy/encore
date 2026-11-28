@@ -3,7 +3,7 @@
    kit's 6px corners. Pills and large radii come from the tokens below; colour, type and focus stay the kit's
    (public/system.css): ink-blue is still the one primary action, IBM Plex is still the face. */
 .pl-fun{--pl-fun-r:24px;--pl-fun-r-sm:16px;--pl-fun-pill:999px;--pl-fun-bg:#FAF8F3;--pl-fun-card:#FFFFFF;--pl-fun-grey:#5E625F;--pl-fun-line:#E4DFD3;
-  --pl-fun-tint:#F3E4DA;--pl-fun-tint-2:#F7EFE6;--pl-fun-ease:cubic-bezier(.3,.7,.3,1)}
+  --pl-fun-tint:#F3E4DA;--pl-fun-tint-2:#F7EFE6;--pl-fun-ease:cubic-bezier(.3,.7,.3,1);--btn-radius:var(--pl-fun-pill)}
 /* a pastel that follows Potto's colour (set once per visit) or the event type being made */
 .pl-fun[data-fun-tint="clay"]{--pl-fun-tint:#F3E1D5;--pl-fun-tint-2:#F8EEE6}
 .pl-fun[data-fun-tint="butter"]{--pl-fun-tint:#F6EBC4;--pl-fun-tint-2:#FAF4DF}
@@ -32,3 +32,10 @@
 .pl-fun .fun-potto>.plp{position:absolute;inset:0;width:100%;height:100%;opacity:1}
 @media (prefers-reduced-motion:no-preference){.pl-fun .fun-potto>.plp{animation:fun-in .35s ease-out both}}
 @keyframes fun-in{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
+
+/* ---- the top of the app's Home (index.html #qsPanel): the same character and softness. Paint only: these arrive
+   after the page is up, so nothing here may change a size ---- */
+.pl-fun#qsPanel{position:relative;z-index:0}
+.pl-fun#qsPanel .fun-potto::before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:340px;height:240px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,var(--pl-fun-tint),rgba(255,255,255,0));opacity:.7;pointer-events:none}
+html body .pl-fun#qsPanel .cg-box{border-radius:var(--pl-fun-r)!important;border-color:var(--pl-fun-line)}
+html body .pl-fun#qsPanel .btn.primary,html body .pl-fun#qsPanel .cg-sugg button{border-radius:var(--pl-fun-pill)!important}

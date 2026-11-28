@@ -233,5 +233,5 @@ test("the sheet opens with three questions about this person's own events, and e
   s = await getJ("/api/potto/status?eventId=not-mine", h.cookie); assert.equal(s.here, null);
   // the sheet uses them, and no longer offers questions about events that may not exist
   const src = (await import("node:fs")).readFileSync(new URL("../public/potto.js", import.meta.url), "utf8");
-  assert.match(src, /st\.suggest\.slice\(0, 3\)/); assert.doesNotMatch(src, /Friday's game night|Draft a reminder for Saturday/);
+  assert.match(src, /st\.suggest\.slice\(0, 3\)/); assert.match(src, /chips\(\); \} if \(!S\.turns\.length && S\.view === "chat"\) view\("chat"\)/, "the sheet redraws once it knows what to offer"); assert.match(src, /HostEvent\?\.draft\?\.\(\)/, "the event open in the app counts as the one on screen"); assert.doesNotMatch(src, /Friday's game night|Draft a reminder for Saturday/);
 });

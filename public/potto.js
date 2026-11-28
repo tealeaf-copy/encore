@@ -179,7 +179,7 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
   // ---------- the sheet ----------
   let S = null; // { el, threadId, turns, status, attach: { eventId, title } | null, photo: { type, data, url } | null, view }
   // the event on screen: the one open in the app (?open=), its chat, its invite or its plan page
-  const hereId = () => { try { const o = new URLSearchParams(location.search).get("open"); if (o) return o; const m = /^\/(?:chats|e|i|plans|post\/e)\/([A-Za-z0-9_-]{1,80})$/.exec(location.pathname); return m ? m[1] : ""; } catch { return ""; } };
+  const hereId = () => { try { const o = new URLSearchParams(location.search).get("open"); if (o) return o; if (P === "/" && location.hash === "#studio") { const d = window.HostEvent?.draft?.(); if (d?.id && !d.example) return String(d.id); } const m = /^\/(?:chats|e|i|plans|post\/e)\/([A-Za-z0-9_-]{1,80})$/.exec(location.pathname); return m ? m[1] : ""; } catch { return ""; } };
   // asked each time the sheet opens, so the three questions fit what's on screen now
   const status = () => api(`/api/potto/status?eventId=${encodeURIComponent(hereId())}&tz=${encodeURIComponent(tz())}`).catch(() => ({ ai: "missing_key", can: {}, unavailable: "" }));
   /** Three questions to start from: the server's, about this person's own events and the one on screen; else plain ones. */
@@ -226,7 +226,7 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
     for (const h of [hd, grab]) { h.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true }); h.addEventListener("touchmove", (e) => { if (y0 == null) return; const dy = e.touches[0].clientY - y0; if (dy > 0) sheet.style.transform = `translateY(${dy}px)`; }, { passive: true }); h.addEventListener("touchend", (e) => { const dy = (e.changedTouches[0].clientY - (y0 ?? 0)); y0 = null; if (dy > 90) close(); else sheet.style.transform = ""; }); }
     view("chat"); setTimeout(() => ta.focus({ preventScroll: true }), 60);
     S.status = await status(); if (!S) return; note(S.status.unavailable);
-    if (S.status.here && !S.attach && !S.turns.length) { S.attach = { eventId: S.status.here.eventId, title: S.status.here.title }; chips(); } // questions are about the event on screen if (!S.turns.length && S.view === "chat") view("chat");
+    if (S.status.here && !S.attach && !S.turns.length) { S.attach = { eventId: S.status.here.eventId, title: S.status.here.title }; chips(); } if (!S.turns.length && S.view === "chat") view("chat");
     if (o.q) { ta.value = o.q; fit(); }
     if (o.listen && SR) listen(ta, mic, fit);
   }

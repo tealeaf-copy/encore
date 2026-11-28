@@ -12,7 +12,7 @@
   const G = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
   const ARROW = `<svg ${G} width="14" height="14"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
   const CSS = `.sk{position:absolute;left:0;top:0;transform-origin:center;box-sizing:border-box;font:500 14px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#1B1D1C;letter-spacing:0;text-align:left;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.sk *{box-sizing:border-box}.sk a,a.sk{color:inherit;text-decoration:none}
+.sk *{box-sizing:border-box;text-transform:none;letter-spacing:0;font-style:normal}.sk a,a.sk{color:inherit;text-decoration:none}
 .sk-card{display:block;width:210px;background:#FAF8F3;border:1.5px solid #1B1D1C;border-radius:6px;overflow:hidden;box-shadow:0 6px 18px -8px rgba(0,0,0,.55)}
 .sk-cov{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#EFEBE2;border-bottom:1.5px solid #1B1D1C}.sk-cov svg{display:block;width:100%;height:100%}
 .sk-b{display:block;padding:9px 11px 10px}.sk-k{display:block;font:500 10.5px/1.2 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:#444845}

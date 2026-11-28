@@ -16,6 +16,7 @@
 // and hosts are left out. The model (server/ai.js complete, with ENCORE_FAKE_AI=1 for tests and offline) answers in
 // JSON; links must be ones the context holds, and actions are built here, only for the host's own events, from a fixed
 // list of existing endpoints. Nothing is sent until the person taps Send in the sheet.
+// Nudges (server/pottonudge.js) answer here too: who would get one, by which channel, and a card that sends on Send only.
 // Without a key the same context is answered by plain rules (server/pottorules.js): search, who's going, who hasn't
 // replied, finding pages, help, and a plain reminder template. The sheet says what needs AI.
 //
@@ -185,7 +186,8 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
   const me = (req, res) => { let u = null; try { u = currentUser(req); } catch {} if (!u || !u.email || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in to ask Potto." }); return null; } res.set("Cache-Control", "private, no-store"); return u; };
   const hits = new Map(); const limited = (k) => { const now = Date.now(), h = (hits.get(k) || []).filter((t) => now - t < 3600e3); if (h.length >= perHour()) { hits.set(k, h); return true; } h.push(now); hits.set(k, h); if (hits.size > 20000) hits.clear(); return false; };
   const ctxOf = (req, u, eventId = "") => { const c = buildContext({ store, C, X, F: app.locals.fanclub, safety: app.locals.appstore?.safety, user: u, tz: String(req.body?.tz || req.query?.tz || "").slice(0, 60), eventId });
-    try { const I = app.locals.trends?.forPotto(u); if (I?.length) c.ideas = I; } catch {} return c; }; // ideas to host, labelled by source (server/trends.js)
+    try { const I = app.locals.trends?.forPotto(u); if (I?.length) c.ideas = I; } catch {}
+    try { app.locals.pottoNudge?.enrich?.(u, c); } catch {} return c; }; // people on the invite plan who haven't replied, and who was nudged (server/pottonudge.js) // ideas to host, labelled by source (server/trends.js)
   const status = (u) => { const mode = aiMode(), used = P.usage(u.email).tokens, cap = tokensPerDay(); return { ai: mode, left: Math.max(0, cap - used), limit: cap, can: { search: true, help: true, navigation: true, drafting: mode !== "missing_key", photos: mode === "live" },
     unavailable: mode === "missing_key" ? "AI isn't set up on this server. I can still search, find pages, look things up and answer help questions." : used >= cap ? "You've used today's AI allowance. I'll keep to plain answers until tomorrow." : "" }; };
   app.locals.potto = { P, ctxOf, lastPrompt: "" };
@@ -201,15 +203,19 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
     const T = P.threads(u.email), thread = b.threadId ? T.find((t) => t.id === String(b.threadId)) : null;
     if (isSupport(message)) { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }]); return res.json({ route: "help", threadId: t.id }); }
     const eventId = clean(b.eventId, 80), ctx = ctxOf(req, u, eventId);
+    // nudge hook (server/pottonudge.js): "nudge the people who haven't replied", "message the maybes", "who did I nudge?".
+    // The answer names who would get it; the sheet's card (public/pottonudge.js) shows the message and sends only on Send.
+    let nudged = null; try { nudged = b.photo ? null : app.locals.pottoNudge?.pottoAnswer?.(u, message, ctx, { origin: process.env.ENCORE_PUBLIC_URL || `${req.protocol}://${req.get("host")}` }); } catch (e) { console.warn("[potto] nudge:", e?.message); }
+    if (nudged && !nudged.reply) { const links = allowedLinks(ctx, nudged.links), actions = nudged.actions || []; const t = P.append(u.email, thread?.id, [{ role: "me", text: message, ...(ctx.attached ? { eventId: ctx.attached } : {}) }, { role: "potto", text: nudged.answer, links, actions: [] }]); return res.json({ threadId: t.id, answer: nudged.answer, links, actions, mode: "rules" }); }
     // trips hook: a trip question gets the trip's own answer and links (server/trips.js tripAnswer), never a made-up booking
     const tr = b.photo ? null : app.locals.trips?.answerFor?.(u, message); if (tr) { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }, { role: "potto", text: tr.answer, links: tr.links, actions: [] }]); return res.json({ threadId: t.id, answer: tr.answer, links: tr.links, actions: [], mode: "rules" }); }
     // co-host hook (server/cohost.js): a sentence that reads as a plan gets "Here's your night"; "find a time" gets the times
-    const co = b.photo || runPottoReply(message, ctx) ? null : app.locals.cohost?.pottoAnswer?.(u, message, ctx); if (co) { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }, { role: "potto", text: co.answer, links: co.links, actions: [] }]); return res.json({ threadId: t.id, answer: co.answer, links: co.links, actions: [], mode: "rules" }); }
+    const co = b.photo || nudged || runPottoReply(message, ctx) ? null : app.locals.cohost?.pottoAnswer?.(u, message, ctx); if (co) { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }, { role: "potto", text: co.answer, links: co.links, actions: [] }]); return res.json({ threadId: t.id, answer: co.answer, links: co.links, actions: [], mode: "rules" }); }
     const photo = b.photo && /^image\/(jpeg|png|webp|gif)$/.test(String(b.photo.type || "")) && typeof b.photo.data === "string" && b.photo.data.length < 2_200_000 && /^[A-Za-z0-9+/=]+$/.test(b.photo.data.slice(0, 200)) ? { type: b.photo.type, data: b.photo.data } : null;
     const mode0 = aiMode(), cap = tokensPerDay(), used = P.usage(u.email).tokens, capped = mode0 !== "missing_key" && used >= cap;
     let mode = capped || mode0 === "missing_key" ? "offline" : mode0, note = capped ? "You've used today's AI allowance, so this is the plain version." : "";
     // New York run templates (server/runtemplates.js): the templates for a run host in New York, a run filled in from its words
-    let reply = runPottoReply(message, ctx);
+    let reply = nudged?.reply || runPottoReply(message, ctx); // "remind everyone who's in" goes to the reminder that already exists
     if (!reply && mode !== "offline") {
       const prompt = pottoPrompt(photo && mode === "fake" ? { ...ctx, photo: true } : ctx, message || "What's in this photo?", thread?.turns || []); app.locals.potto.lastPrompt = prompt;
       const content = photo && mode === "live" ? [{ type: "image", source: { type: "base64", media_type: photo.type, data: photo.data } }, { type: "text", text: prompt }] : prompt;

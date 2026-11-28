@@ -62,6 +62,7 @@ import { mountErrors, noteServerError } from "./errors.js";
 import { mountLaunch } from "./launch.js";
 import { mountInbox, inboxPrefsOf } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
 import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
+import { mountPottoNudge } from "./pottonudge.js"; // Potto nudges the people who haven't replied (server/pottonudge.js)
 import { mountCohost } from "./cohost.js"; // Potto as a co-host before the event: Here's your night, a time that works, a line per friend, the rescue (server/cohost.js)
 import { mountPottoText } from "./pottotext.js"; import { mountFriendInvites } from "./friendinvites.js"; // Potto by text, friend invites by text
 import { mountPayMethods } from "./paymethods.js"; // Get paid: Venmo, PayPal, Cash App on a person's profile, shown to guests who are in
@@ -904,6 +905,7 @@ export function createApp({ store, dataDir }) {
   mountPottoText(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
   mountFriendInvites(app, { store, small, currentUser, C, X, sendStatic: (...a) => sendStatic(...a), publicOrigin: (req) => originOf(req), emailConfig: () => signinEmailConfig(), textOnce: (p, t) => app.locals.pottoText.textOnce(p, t) });
   mountCohost(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) }); // co-host (server/cohost.js): after invites, the host loop and Potto by text, which it uses
+  mountPottoNudge(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // "Nudge the people who haven't replied" (server/pottonudge.js)
   // ---- end Potto by text ----
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
   const HK = mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
@@ -1334,6 +1336,7 @@ export function createApp({ store, dataDir }) {
   });
   // Signed personal invites: a token per (event, guest) lets that guest's RSVP page greet them by name.
   const inviteToken = (ws, eventId, key) => hmac32(`${tag(ws)}${eventId}|${key}`);
+  app.locals.inviteTokenOf = inviteToken; // the nudge's personal link for a guest on the list (server/pottonudge.js)
   app.post("/api/invitetoken", json, (req, res) => {
     const b = req.body || {}, eventId = String(b.eventId || ""), ws = sessionWorkspace(req);
     if (!ownEvent(req, res, eventId)) return;

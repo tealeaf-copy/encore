@@ -238,8 +238,9 @@
       if (!sec && W.length) { const at = document.querySelector("main .s-past") || o.at; if (!at) return; const tpl = document.createElement("template");
         tpl.innerHTML = `<section class="kd kd-few s-kudos" id="kudos" aria-labelledby="kdH"><div class="kd-head"><h2 class="sec" id="kdH">Kudos and reviews</h2></div></section>`; sec = tpl.content.firstElementChild; if (at.classList.contains("s-past")) at.before(sec); else at.prepend(sec); }
       if (!sec) return; if (wasAll) $(".kd-all", sec)?.click();
-      if (W.length) { const head = $(".kd-head", sec), b = document.createElement("button"); b.type = "button"; b.className = "rv-btn rv-write"; b.textContent = W.every((x) => x.mine) ? "Edit your review" : "Write a review";
-        b.onclick = () => write(W.map((x) => ({ ...x })), again); ($(".kd-ctl", head) || head).prepend(b); }
+      const todo = W.filter((x) => !x.mine); // their own reviews carry Edit on the card; the button is for what they haven't reviewed yet
+      if (todo.length) { const head = $(".kd-head", sec), b = document.createElement("button"); b.type = "button"; b.className = "rv-btn rv-write"; b.textContent = "Write a review";
+        b.onclick = () => write(todo.map((x) => ({ ...x })), again); ($(".kd-ctl", head) || head).prepend(b); }
       wireActs(sec, (id) => { const r = get(id), w = r?.mine ? W.find((x) => x.subject === r.subject) : null; return w ? { ...r, proof: proofOf(w) } : r; }, again); };
     await load(); draw();
   }
@@ -247,10 +248,10 @@
   // ---------- one event, drop or booking: its reviews and the way in ----------
   /** el: where it goes. q: { event } | { booking, t } | { host, exp }. o: { title (the heading), empty: draw the way in even with no reviews } */
   async function block(el, q, o = {}) { if (!el) return null; style();
-    let V; const load = async () => { try { V = await view(q); } catch { V = null; } };
+    let V, pre = o.pre; const load = async () => { try { V = await (pre || view(q)); } catch { V = null; } pre = null; };
     const draw = () => { if (!V || (!V.reviews.length && !V.write)) { el.innerHTML = ""; el.hidden = true; return; } el.hidden = false; el.classList.add("rv-block");
-      const w = o.entry === false ? null : V.write, sum = sumHTML(V.count, V.rating); if (!V.reviews.length && !w) { el.innerHTML = ""; el.hidden = true; return; }
-      el.innerHTML = `<div class="rv-head"><div><h2 id="rvH">${esc(o.title || "Reviews")}</h2>${sum}</div>${w ? `<button type="button" class="rv-btn rv-write" id="rvWrite">${w.mine ? "Edit your review" : "Write a review"}</button>` : ""}</div>`
+      const w = o.entry === false || V.write?.mine ? null : V.write, sum = sumHTML(V.count, V.rating); // their own review carries Edit on its card if (!V.reviews.length && !w) { el.innerHTML = ""; el.hidden = true; return; }
+      el.innerHTML = `<div class="rv-head"><div><h2 id="rvH">${esc(o.title || "Reviews")}</h2>${sum}</div>${w ? `<button type="button" class="rv-btn rv-write" id="rvWrite">Write a review</button>` : ""}</div>`
         + (V.reviews.length ? `<div class="rv-list">${V.reviews.map((r, i) => card(r, i, V.reviews.length, false)).join("")}</div>` : `<p class="rv-note" style="margin-top:6px">No reviews yet. Yours would be the first.</p>`);
       const b = $("#rvWrite", el); if (b) b.onclick = () => write({ ...w }, again);
       const list = $(".rv-list", el); if (list) { delete el.dataset.rvMore; wireMore(el); el._rvCheck?.(); } wireActs(el, (id) => { const r = V.reviews.find((x) => x.id === id); return r && V.write && r.mine ? { ...r, proof: proofOf(V.write) } : r; }, again); };
@@ -263,12 +264,17 @@
     b.onclick = () => open("event:" + id, proof, (r) => { b.textContent = r ? "Edit your review" : "Write a review"; o.done?.(r); }); el.appendChild(b); return b; }
   // the full invite (/g#rsvp-<id>) after the day: the button sits in the kudos ask, the event's reviews under the page
   function invite() { if (location.pathname !== "/g") return; let last = "";
-    const go = () => { const id = decodeURIComponent((location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/) || [])[1] || ""), ask = document.getElementById("kudosAsk"), home = document.getElementById("view-guest"); if (!id) return;
+    const idOf = () => decodeURIComponent((location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/) || [])[1] || "");
+    // asked for with the page, so the reviews are in hand when the invite draws and go in with it (nothing drops in later)
+    let pre = null; const ask0 = (id) => { pre = id ? { id, p: view({ event: id }), V: undefined } : null; if (pre) { const me = pre; me.p.then((V) => { me.V = V; go(); }, () => { me.V = null; }); } };
+    const go = () => { const id = idOf(), ask = document.getElementById("kudosAsk"), home = document.getElementById("view-guest"); if (!id) return; if (!pre || pre.id !== id) ask0(id);
       const p = proofs().find((x) => x.id === id) || {};
-      if (ask && !ask.querySelector(".rv-write") && (p.rid || signedIn())) { const w = document.createElement("div"); w.className = "rv-entry"; w.style.cssText = "margin-top:4px"; entry(w, id, p.rid ? { rid: p.rid, code: p.code } : {}, { done: () => { last = ""; go(); } }); (ask.querySelector(":scope > div") || ask).appendChild(w); }
-      if (last === id || !home || !home.children.length || home.hidden) return; last = id; let box = document.getElementById("rvEvent"); if (!box) { box = document.createElement("section"); box.id = "rvEvent"; box.hidden = true; home.appendChild(box); }
-      block(box, { event: id }, { title: "Reviews", entry: false }).then((V) => { const a = document.getElementById("kudosAsk"), b = a?.querySelector(".rv-write"); if (b && V?.write?.mine) b.textContent = "Edit your review"; if (V && !V.write) a?.querySelector(".rv-entry")?.remove(); }); };
-    const start = () => { go(); new MutationObserver(() => { clearTimeout(go.t); go.t = setTimeout(() => { if (!document.getElementById("rvEvent")) last = ""; go(); }, 80); }).observe(document.body, { childList: true, subtree: true }); addEventListener("hashchange", () => { last = ""; document.getElementById("rvEvent")?.remove(); go(); }); };
+      if (ask && !ask.querySelector(".rv-write") && (p.rid || signedIn()) && !(pre.V && (!pre.V.write || pre.V.write.mine))) { const w = document.createElement("div"); w.className = "rv-entry"; w.style.cssText = "margin-top:4px"; entry(w, id, p.rid ? { rid: p.rid, code: p.code } : {}, { label: pre.V?.write?.mine ? "Edit your review" : "", done: () => { last = ""; document.getElementById("rvEvent")?.remove(); ask0(id); } }); (ask.querySelector(":scope > div") || ask).appendChild(w); }
+      if (pre.V && (!pre.V.write || pre.V.write.mine)) ask?.querySelector(".rv-entry")?.remove(); // not theirs to write, or written: their review is under the page, with Edit
+      if (pre.V === undefined || !home || !home.children.length || home.hidden || (last === id && document.getElementById("rvEvent"))) return; last = id;
+      let box = document.getElementById("rvEvent"); if (!box) { box = document.createElement("section"); box.id = "rvEvent"; box.hidden = true; home.appendChild(box); }
+      if (pre.V) block(box, { event: id }, { title: "Reviews", entry: false, pre: Promise.resolve(pre.V) }); };
+    const start = () => { go(); new MutationObserver(() => { if (!go.q) { go.q = 1; queueMicrotask(() => { go.q = 0; go(); }); } }).observe(document.body, { childList: true, subtree: true }); addEventListener("hashchange", () => { last = ""; pre = null; document.getElementById("rvEvent")?.remove(); go(); }); };
     if (document.body) start(); else addEventListener("DOMContentLoaded", start); }
   invite();
 

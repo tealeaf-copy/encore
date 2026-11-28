@@ -347,8 +347,8 @@ test("in a browser, at 390 and 1280: write from the kudos page, read it on the h
       await gp.keyboard.press("Escape"); assert.equal(await gp.locator(".rv-bg").count(), 0, "Escape closes it");
       // the guest's own host-page view: Edit on theirs, no Report on it
       await gp.goto(`${srv.base}/k/rvPaid?rid=${rid[who]}&code=${code[who]}`); await gp.evaluate(([id, r, c]) => localStorage.setItem("encore-rsvp-" + id, JSON.stringify({ rid: r, code: c, response: "going" })), ["rvPaid", rid[who], code[who]]);
-      await gp.goto(`${srv.base}/@maya-rv`); await gp.waitForSelector("#kudos .rv-write"); const mineCard = gp.locator("#kudos .rv-card", { hasText: "We booked two seats" });
-      assert.equal(await mineCard.locator('[data-rv-act="edit"]').count(), 1); assert.equal(await mineCard.locator('[data-rv-act="report"]').count(), 0, "no Report on your own"); assert.equal(await gp.locator("#kudos .rv-write").textContent(), "Edit your review");
+      await gp.goto(`${srv.base}/@maya-rv`); await gp.waitForSelector('#kudos [data-rv-act="edit"]'); const mineCard = gp.locator("#kudos .rv-card", { hasText: "We booked two seats" });
+      assert.equal(await mineCard.locator('[data-rv-act="edit"]').count(), 1); assert.equal(await mineCard.locator('[data-rv-act="report"]').count(), 0, "no Report on your own"); assert.equal(await gp.locator("#kudos .rv-write").count(), 0, "Edit is on their card; no second button for the same thing");
       await gp.locator("#kudos").scrollIntoViewIfNeeded(); await shot(gp, `${tag}-5-host-page-author`); await g.close();
 
       // ---- a visitor on the host page ----

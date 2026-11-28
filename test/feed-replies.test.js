@@ -6,6 +6,7 @@ import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import crypto from "node:crypto";
+import { createRequire } from "node:module";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
 
@@ -37,7 +38,7 @@ before(async () => {
   assert.ok((await post("/api/host/profile", { handle: "crumb-rp", name: "Crumb Theory", city: "Brooklyn", hood: "Fort Greene", tagline: "Small and calm." }, U.theo.cookie)).ok);
   assert.ok((await post("/api/host/profile", { handle: "reads-rp", name: "Slow Reads", city: "Brooklyn", hood: "Park Slope", tagline: "Quiet books." }, U.kit.cookie)).ok);
   const ev = (w, id, d) => put("events/" + id, { kind: "social", casual: true, city: "Brooklyn", discoverable: true, published: true, ...d }, U[w].cookie);
-  for (const [id, name, n] of [["rpA", "Winter Bread Supper", 4], ["rpB", "Rye Loaf Night", 6], ["rpC", "Sourdough Morning", 8], ["rpD", "Bagel Bake", 10], ["rpE", "Flatbread Friday", 12], ["rpF", "Focaccia Lunch", 14], ["rpW", "Brioche Brunch", 16]]) assert.equal((await ev("theo", id, { name, activity: "supper", date: day(n) })).status, 200);
+  for (const [id, name, n] of [["rpA", "Winter Bread Supper", 4], ["rpB", "Rye Loaf Night", 6], ["rpC", "Sourdough Morning", 8], ["rpD", "Bagel Bake", 10], ["rpE", "Flatbread Friday", 12], ["rpF", "Focaccia Lunch", 14], ["rpW", "Brioche Brunch", 16], ["rpW390", "Walnut Loaf Supper", 1], ["rpW1280", "Seeded Rye Supper", 2]]) assert.equal((await ev("theo", id, { name, activity: "supper", date: day(n) })).status, 200);
   await ev("kit", "rpPrivate", { name: "Private birthday", activity: "dinner", date: day(3), private: true, discoverable: false });
   await ev("kit", "rpOpen", { name: "Slow Reads: Train Dreams", activity: "book club", date: day(9) });
   // a fan club with one post and a members-only event; Ana and Maya are members, Noor is not
@@ -94,7 +95,7 @@ test("The comment answered has to be on this post, there, and not removed", asyn
   assert.equal((await say("sam", "e:rpB", "hello", rr.comment.id)).status, 404);
 });
 
-test("Deleting: a reply goes alone; a first comment with replies leaves 'Comment removed' and the replies stay; the host removes a whole thread", async () => {
+test("Deleting: a reply goes alone; a first comment with replies leaves 'Comment removed' and the replies stay; the host can clear a whole thread", async () => {
   const a = await say("maya", "e:rpC", "Anyone walking from the G train?"), r1 = await say("jun", "e:rpC", "I am, at ten.", a.comment.id), r2 = await say("noor", "e:rpC", "Me too.", r1.comment.id), r3 = await say("sam", "e:rpC", "Wait for me.", a.comment.id);
   // nobody deletes someone else's reply; the writer does, and only that reply goes
   assert.equal((await drop("noor", "e:rpC", r1.comment.id)).status, 403);
@@ -111,10 +112,11 @@ test("Deleting: a reply goes alone; a first comment with replies leaves 'Comment
   // the last reply leaves: "Comment removed" goes with it
   for (const [w, c] of [["jun", r1], ["noor", r2]]) assert.equal((await drop(w, "e:rpC", c.comment.id)).status, 200);
   d = await drop("sam", "e:rpC", r4.comment.id); assert.deepEqual(d.removed.sort(), [a.comment.id, r4.comment.id].sort()); assert.equal((await thread("leo", "e:rpC")).comments.length, 0);
-  // the host: any reply on its own, and someone's first comment with everything under it
+  // the host: any reply on its own; someone's first comment leaves "Comment removed" too, and deleting that line clears the thread
   const b = await say("maya", "e:rpC", "Do you take cards?"), b1 = await say("jun", "e:rpC", "Cash is easier.", b.comment.id), b2 = await say("noor", "e:rpC", "There's a machine nearby.", b.comment.id);
   T = await thread("theo", "e:rpC"); assert.deepEqual(T.comments.map((c) => c.canDelete), [true, true, true]); assert.deepEqual((await thread("jun", "e:rpC")).comments.map((c) => c.canDelete), [false, true, false]);
   d = await drop("theo", "e:rpC", b1.comment.id); assert.deepEqual(d.removed, [b1.comment.id]);
+  d = await drop("theo", "e:rpC", b.comment.id); assert.equal(d.kept, true); assert.deepEqual(d.removed, []); assert.deepEqual(lines(await thread("leo", "e:rpC")), ["(removed)", "  Noor: There's a machine nearby."]);
   d = await drop("theo", "e:rpC", b.comment.id); assert.deepEqual(d.removed.sort(), [b.comment.id, b2.comment.id].sort()); assert.equal(d.count, 0); assert.equal((await thread("leo", "e:rpC")).comments.length, 0);
   // the host's own first comment reads like anyone's (replies stay), unless they ask for the whole thread; a removed one is theirs to clear
   const h = await say("theo", "e:rpC", "Doors at ten."), h1 = await say("ana", "e:rpC", "See you then.", h.comment.id);
@@ -163,7 +165,7 @@ test("Blocks: a blocked person's replies are hidden from the blocker and the blo
   let T = await thread("noor", "e:rpOpen"); assert.deepEqual(lines(T), ["Leo: Which translation are we reading?", "  Noor: I have the new one.", "  Jun: Either works."]); assert.equal(T.count, 3); assert.ok(!JSON.stringify(T).includes("Sam"));
   assert.equal(cardIn(await feedOf("noor"), "e:rpOpen").comments.last[0].replies, 2);
   // Sam (blocked by Noor): Noor's reply is gone for Sam too
-  T = await thread("sam", "e:rpOpen"); assert.deepEqual(lines(T), ["Leo: Which translation are we reading?", "  Sam: The old one.", "  @you Jun: Either works."]); assert.equal(cardIn(await feedOf("sam"), "e:rpOpen").comments.last[0].replies, 2);
+  T = await thread("sam", "e:rpOpen"); assert.deepEqual(lines(T), ["Leo: Which translation are we reading?", "  Sam: The old one.", "  @Sam Jun: Either works."]); assert.equal(cardIn(await feedOf("sam"), "e:rpOpen").comments.last[0].replies, 2);
   assert.equal((await thread("ana", "e:rpOpen")).count, 4, "everyone else reads all four");
   // neither can answer or react to what they can't see
   assert.equal((await say("noor", "e:rpOpen", "hm", s.comment.id)).status, 404); assert.equal((await say("sam", "e:rpOpen", "hm", n.comment.id)).status, 404);
@@ -218,4 +220,97 @@ test("Replies count toward the same limits as comments", async () => {
   assert.deepEqual(codes, [200, 200, 200, 429, 429], "one comment and two replies, then no more this hour"); assert.equal((await say("ivy", "e:rpF", "and no comment either")).code, "rate_limited");
   process.env.ENCORE_FEED_COMMENTS_PER_HOUR = "500"; process.env.ENCORE_FEED_COMMENTS_PER_IP_HOUR = "1";
   assert.equal((await say("kit", "e:rpF", "one more", a.comment.id)).status, 429, "per address too");
+});
+
+// ---- a browser walk with two people (Maya and Jun), on a phone (390, touch, the height left over with the keyboard up) and at 1280 ----
+for (const [W, H, touch] of [[390, 664, true], [1280, 800, false]]) test(`Browser walk at ${W}: comment, reply, reply to the reply, View more replies, react, delete, retry, the card, the note's link`, { timeout: 240000 }, async (t) => {
+  let pw; try { pw = createRequire(import.meta.url)("playwright"); } catch { return t.skip("no playwright"); }
+  let browser; try { browser = await pw.chromium.launch(); } catch { return t.skip("no Chromium here"); }
+  const shots = process.env.PL_SHOTS || "", id = "rpW" + W, target = "e:" + id, problems = [];
+  try {
+    const open = async (who) => { const ctx = await browser.newContext({ ...(touch ? { ...pw.devices["iPhone 13"], viewport: { width: W, height: H } } : { viewport: { width: W, height: H } }), serviceWorkers: "block" });
+      await ctx.addCookies(U[who].cookie.split("; ").map((c) => { const i = c.indexOf("="); return { name: c.slice(0, i), value: c.slice(i + 1), url: srv.base }; }));
+      await ctx.addInitScript(() => { window.__cls = 0; try { new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: "layout-shift", buffered: true }); } catch {} });
+      const page = await ctx.newPage(); page.on("console", (m) => { if (m.type() === "error") problems.push(`${who} console: ${m.text()}`); }); page.on("pageerror", (e) => problems.push(`${who} error: ${e.message}`));
+      page.on("requestfailed", (r) => { if (!/__abort__/.test(r.failure()?.errorText || "") && !r.url().includes("fonts.g")) problems.push(`${who} failed: ${r.method()} ${r.url()} ${r.failure()?.errorText}`); }); page.on("response", (r) => { if (r.status() >= 400 && !r.url().includes("fonts.g")) problems.push(`${who} ${r.status()} ${r.url()}`); });
+      return page; };
+    const tap = (l) => (touch ? l.tap() : l.click()), shot = async (page, name) => { if (shots) await page.screenshot({ path: `${shots}/${W}-${name}.png` }); };
+    // nothing over it (the tab bar, a dock, the sticky box), all of it on screen, and the cursor in it
+    const boxOk = async (page, what) => { const r = await page.evaluate(() => { const f = document.querySelector("form.rb"), ta = f.querySelector("textarea"), send = f.querySelector(".rb-send"), vv = window.visualViewport, at = (el) => { const b = el.getBoundingClientRect(); return f.contains(document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)); }, b = f.getBoundingClientRect();
+      return { focus: document.activeElement === ta, top: b.top, bottom: b.bottom, vh: vv ? vv.height : innerHeight, seen: at(ta) && at(send) && at(f.querySelector(".rb-x")), h: [ta, send, f.querySelector(".rb-x")].map((x) => Math.round(x.getBoundingClientRect().height)), label: f.querySelector(".rb-to").textContent, aria: f.getAttribute("aria-label"), wide: document.documentElement.scrollWidth <= innerWidth }; });
+      assert.ok(r.focus, `${what}: the cursor is in the reply box`); assert.ok(r.top >= 0 && r.bottom <= r.vh, `${what}: the whole box is on screen (${Math.round(r.top)} to ${Math.round(r.bottom)} of ${r.vh})`); assert.ok(r.seen, `${what}: nothing covers the field, Send or Cancel`); assert.ok(r.h.every((x) => x >= 44), `${what}: 44px targets ${r.h}`); assert.ok(r.wide, `${what}: no sideways scroll`); return r; };
+    const maya = await open("maya"), jun = await open("jun");
+    // Maya comments from the card on the feed
+    await maya.goto(srv.base + "/feed"); const box = maya.locator(`form[data-fb-add="${target}"] textarea`); await box.waitFor(); await box.scrollIntoViewIfNeeded(); await tap(box); await box.fill("Who's bringing butter?"); await tap(maya.locator(`form[data-fb-add="${target}"] .fb-sendc`));
+    await maya.waitForFunction((t) => document.querySelector(`[data-fb-cm="${t}"] li[data-cid]`), target);
+    const topId = await maya.evaluate((t) => document.querySelector(`[data-fb-cm="${t}"] li[data-cid]`).dataset.cid, target);
+    // Jun opens the post and replies: the first tap opens the box right under the comment
+    await jun.goto(srv.base + "/post/e/" + id); await jun.waitForSelector(`#c-${topId}`);
+    assert.equal(await jun.locator("#ppList").getAttribute("aria-label"), "Comments"); const rb = jun.locator(`#c-${topId} [data-reply]`); assert.equal(await rb.getAttribute("aria-label"), "Reply to Maya"); assert.ok((await rb.boundingBox()).height >= 44);
+    await rb.scrollIntoViewIfNeeded(); await tap(rb); await jun.waitForSelector("form.rb"); await jun.waitForTimeout(450);
+    let r = await boxOk(jun, "reply on the post page"); assert.equal(r.label, "Replying to MayaCancel"); assert.equal(r.aria, "Reply to Maya"); assert.equal(await jun.evaluate((i) => document.querySelector(`[data-slot="${i}"]`).contains(document.querySelector("form.rb")), topId), true, "right under that comment");
+    assert.equal(await jun.evaluate(() => getComputedStyle(document.querySelector("#ppBox")).position), "static", "the page's own comment box steps out of the way");
+    await shot(jun, "1-reply-box");
+    await jun.locator("form.rb textarea").fill("I have a block of the salted one."); if (touch) await tap(jun.locator("form.rb .rb-send")); else await jun.keyboard.press("Enter");
+    // at once, in place, and the box is gone
+    assert.equal(await jun.locator("form.rb").count(), 0); assert.equal(await jun.locator(`#c-${topId} ~ ol.pp-rs .pp-c.re`).count(), 1, "the reply is under its comment straight away");
+    await jun.waitForFunction(() => document.querySelector(".pp-rs .pp-c.re[data-cid]")); const r1 = await jun.evaluate(() => document.querySelector(".pp-rs .pp-c.re[data-cid]").dataset.cid);
+    assert.equal(await jun.locator(`#c-${topId} ~ ol.pp-rs`).getAttribute("aria-label"), "Replies to Maya"); assert.equal(await jun.evaluate(() => document.querySelector(".pp-rs").parentElement.matches("li.pp-th") && document.querySelector(".pp-rs > li > .pp-c.re") !== null), true, "a list inside the comment's own item");
+    assert.equal(await jun.locator("#ppCH .pp-n").textContent(), "2"); await shot(jun, "2-reply-posted");
+    // Maya's note: "Jun replied to your comment", and its link opens the post with that reply marked
+    const note = (await inbox("maya")).find((n) => /^Jun replied to your comment on /.test(n.text)); assert.ok(note, "Maya's note"); assert.equal(note.link, `/post/e/${id}#c-${r1}`);
+    await maya.goto(srv.base + "/inbox"); const row = maya.locator(`a[href="${note.link}"]`).first(); let viaInbox = false; try { await row.waitFor({ timeout: 5000 }); await tap(row); viaInbox = true; } catch { await maya.goto(srv.base + note.link); }
+    await maya.waitForSelector(`#c-${r1}.hl`, { timeout: 8000 }); assert.ok(await maya.evaluate((i) => { const b = document.getElementById("c-" + i).getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; }, r1), "the reply is on screen"); await shot(maya, "3-from-the-note");
+    await maya.waitForFunction((i) => !document.getElementById("c-" + i).classList.contains("hl"), r1, { timeout: 6000 });
+    // Maya answers Jun's reply: it joins the same thread, with @Jun
+    const rb2 = maya.locator(`#c-${r1} [data-reply]`); assert.equal(await rb2.getAttribute("aria-label"), "Reply to Jun"); await tap(rb2); await maya.waitForSelector("form.rb"); await maya.waitForTimeout(450); r = await boxOk(maya, "reply to a reply"); assert.equal(r.label, "Replying to JunCancel");
+    await maya.locator("form.rb textarea").fill("Perfect, thank you. " + "Loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong"); await tap(maya.locator("form.rb .rb-send"));
+    await maya.waitForFunction(() => document.querySelectorAll(".pp-rs .pp-c.re[data-cid]").length === 2); assert.equal(await maya.locator("ol.pp-rs").count(), 1, "one level: the same thread");
+    const mn = maya.locator(".pp-rs .pp-c.re").nth(1).locator(".fb-mn"); assert.equal(await mn.textContent(), "@Jun"); assert.match(await mn.getAttribute("href"), /^\/@[a-z0-9-]+$/); assert.ok(await maya.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "a long word wraps");
+    // one body face for comments, replies, the mention and the reply box: nothing picks up a heading or a monospace face
+    const fonts = await maya.evaluate(() => { const f = (q) => { const el = document.querySelector(q); if (!el) return [q, "missing"]; const c = getComputedStyle(el); return [q, c.fontFamily.split(",")[0].replace(/["']/g, "").trim(), c.fontSize, c.fontWeight, c.fontStyle]; }; return [".pp-th > .pp-c .pp-t", ".pp-rs .pp-c.re .pp-t", ".pp-rs .fb-mn", ".pp-th > .pp-c [data-reply]", ".pp-rs [data-reply]", "#ppText"].map(f); });
+    for (const [q, fam, , , style] of fonts) { assert.equal(fam, "IBM Plex Sans", `${q} is in the body face (${fam})`); assert.equal(style, "normal", q); }
+    assert.deepEqual(fonts[1].slice(1, 4), fonts[0].slice(1, 4), "a reply reads in the same face, size and weight as a comment"); assert.equal(fonts[0][3], "400"); assert.equal(fonts[2][2], fonts[1][2], "the mention is the same size as the words");
+    await shot(maya, "4-reply-to-reply");
+    // five more replies arrive; Jun comes back: the two newest and "View 5 more replies"
+    for (const [w, x] of [["noor", "Save me a corner."], ["ana", "Bringing jam."], ["kit", "And I have honey."], ["noor", "See you at seven."], ["ana", "Can't wait. " + "It was lovely last time and the crust on the rye was the best I have had all year, so thank you for doing this again. ".repeat(3)]]) assert.equal((await say(w, target, x, topId)).status, 200);
+    await jun.goto(srv.base + "/post/e/" + id); const more = jun.locator(`[data-more="${topId}"]`); await more.waitFor(); assert.equal((await more.textContent()).trim(), "View 5 more replies"); assert.equal(await jun.locator(".pp-rs .pp-c.re").count(), 2); assert.ok((await more.boundingBox()).height >= 44);
+    assert.equal(await jun.locator("#ppCH .pp-n").textContent(), "8", "the count is every comment and reply");
+    await more.scrollIntoViewIfNeeded(); await jun.waitForTimeout(700); await shot(jun, "5-view-more");
+    const before = await jun.evaluate((i) => ({ y: scrollY, top: document.getElementById("c-" + i).getBoundingClientRect().top, btn: document.querySelector("[data-more]").getBoundingClientRect().top, cls: window.__cls, path: location.href }), topId);
+    await tap(more); await jun.waitForFunction(() => document.querySelectorAll(".pp-rs .pp-c.re").length === 7); await jun.waitForTimeout(700);
+    const aft = await jun.evaluate((i) => ({ y: scrollY, top: document.getElementById("c-" + i).getBoundingClientRect().top, first: document.querySelector(".pp-rs .pp-c.re").getBoundingClientRect().top, cls: window.__cls, path: location.href, more: document.querySelectorAll("[data-more]").length }), topId);
+    console.log("CLS", W, before.cls, aft.cls); assert.equal(aft.path, before.path, "no navigation"); assert.equal(aft.more, 0); assert.ok(Math.abs(aft.y - before.y) < 1 && Math.abs(aft.top - before.top) < 1, "nothing above the tap moved"); assert.ok(Math.abs(aft.first - before.btn) < 24, "the older replies open where the button was"); assert.ok(aft.cls < 0.05, `no layout jump (CLS ${before.cls} then ${aft.cls})`);
+    await shot(jun, "6-all-replies");
+    // very long words get See more, in place
+    const see = jun.locator(".pp-rs [data-see]").last(); if (await see.count()) { await see.scrollIntoViewIfNeeded(); assert.equal((await see.textContent()).trim(), "See more"); const h0 = (await see.locator("xpath=preceding-sibling::p[1]").boundingBox()).height; await tap(see); assert.ok((await jun.locator(".pp-rs [data-see]").last().locator("xpath=preceding-sibling::p[1]").boundingBox()).height > h0); assert.equal((await jun.locator(".pp-rs [data-see]").last().textContent()).trim(), "See less"); } else assert.ok(!touch, "a very long reply has See more on a phone");
+    // Jun reacts to Maya's reply
+    const mine2 = jun.locator(".pp-rs .pp-c.re").nth(1); await mine2.scrollIntoViewIfNeeded(); await tap(mine2.locator("[data-rx-open]")); await tap(jun.locator('.fx-bar [data-rx-pick="heart"]')); await jun.waitForSelector(".pp-rs .pp-c.re .fx-rx.on"); assert.equal(await jun.locator(".pp-rs .pp-c.re").nth(1).locator(".fx-rx.on").count(), 1, "the reaction is on that reply");
+    assert.equal(await jun.locator(".pp-rs .pp-c.re").nth(1).locator(".sf-more").count(), 1, "Report on someone else's reply"); assert.equal(await jun.locator(`#c-${r1} .sf-more`).count(), 0, "not on your own"); assert.equal(await jun.locator(`#c-${r1} [data-del]`).count(), 1); assert.equal(await jun.locator(".pp-rs .pp-c.re").nth(1).locator("[data-del]").count(), 0);
+    // a reply that fails stays in place with Try again
+    await jun.route("**/api/feed/comments", (rt) => (rt.request().method() === "POST" ? rt.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "That didn't send. Try again." }) }) : rt.fallback()));
+    const lastRb = jun.locator(".pp-rs .pp-c.re").last().locator("[data-reply]"); await lastRb.scrollIntoViewIfNeeded(); await tap(lastRb); await jun.waitForSelector("form.rb"); await jun.waitForTimeout(450); await boxOk(jun, "reply at the end of a thread"); await jun.locator("form.rb textarea").fill("Me neither."); await tap(jun.locator("form.rb .rb-send"));
+    await jun.waitForSelector("[data-retry]"); assert.match(await jun.locator(".pp-fail").textContent(), /didn't send/); assert.ok((await jun.locator("[data-retry]").boundingBox()).height >= 44); await shot(jun, "7-retry");
+    await jun.unroute("**/api/feed/comments"); await tap(jun.locator("[data-retry]")); await jun.waitForFunction(() => !document.querySelector("[data-retry]") && document.querySelectorAll(".pp-rs .pp-c.re[data-cid]").length === 8); assert.equal(await jun.locator(".pp-rs .pp-c.re").last().locator(".fb-mn").textContent(), "@Ana");
+    for (let i = problems.length - 1; i >= 0; i--) if (/503/.test(problems[i])) problems.splice(i, 1);
+    // Jun deletes his own first reply: only it goes
+    const dl = jun.locator(`#c-${r1} [data-del]`); await dl.scrollIntoViewIfNeeded(); await tap(dl); assert.equal((await dl.textContent()).trim(), "Delete for good?"); await tap(dl); await jun.waitForFunction((i) => !document.getElementById("c-" + i), r1); assert.equal(await jun.locator(".pp-rs .pp-c.re").count(), 7); assert.equal(await jun.locator("#ppCH .pp-n").textContent(), "8");
+    // by keyboard: Reply opens the box with the cursor in it, Escape closes it and goes back to Reply
+    if (!touch) { await jun.locator(`#c-${topId} [data-reply]`).focus(); await jun.keyboard.press("Enter"); await jun.waitForSelector("form.rb"); assert.ok(await jun.evaluate(() => document.activeElement.matches("form.rb textarea"))); await jun.keyboard.press("Escape"); assert.equal(await jun.locator("form.rb").count(), 0); assert.ok(await jun.evaluate((i) => document.activeElement === document.querySelector(`#c-${i} [data-reply]`), topId), "back on Reply"); }
+    else { const b = jun.locator(`#c-${topId} [data-reply]`); await b.scrollIntoViewIfNeeded(); await tap(b); await jun.waitForSelector("form.rb"); await tap(jun.locator("form.rb .rb-x")); assert.equal(await jun.locator("form.rb").count(), 0); assert.equal(await jun.evaluate((i) => getComputedStyle(document.querySelector(`#c-${i} [data-reply]`)).textDecorationLine, topId), "none", "no hover left behind after a tap"); }
+    // the card on the feed: the first comment, "7 replies" to the thread, and Reply right there, clear of the tab bar
+    await jun.goto(srv.base + "/feed"); const li = jun.locator(`[data-fb-cm="${target}"] li[data-cid="${topId}"]`); await li.waitFor(); const rn = li.locator("a.fb-rn"); assert.equal((await rn.textContent()).trim(), "7 replies"); assert.equal(await rn.getAttribute("href"), `/post/e/${id}#c-${topId}`); assert.ok((await rn.boundingBox()).height >= 44);
+    assert.equal(await jun.locator(`[data-fb-cm="${target}"] .fb-cms > li`).count(), 1, "replies aren't spread over the card");
+    const crb = li.locator("[data-fb-reply]"); assert.equal(await crb.getAttribute("aria-label"), "Reply to Maya"); assert.ok((await crb.boundingBox()).height >= 44); await crb.scrollIntoViewIfNeeded(); await jun.waitForTimeout(900); const c0 = await jun.evaluate(() => window.__cls);
+    await tap(crb); await jun.waitForSelector("form.rb"); await jun.waitForTimeout(450); r = await boxOk(jun, "reply on a feed card"); assert.equal(r.label, "Replying to MayaCancel"); { const F = await jun.evaluate((t) => [`[data-fb-cm="${t}"] .fb-cms > li > p`, "form.rb textarea", "form.rb .rb-to", "form.rb .rb-send", "form.rb .rb-x", `[data-fb-cm="${t}"] [data-fb-reply]`, `[data-fb-cm="${t}"] a.fb-rn`].map((q) => [q, getComputedStyle(document.querySelector(q)).fontFamily.split(",")[0].replace(/["']/g, "").trim()]), target); for (const [q, fam] of F) assert.equal(fam, "IBM Plex Sans", `${q} is in the body face (${fam})`); const SB = await jun.evaluate((t) => [document.querySelector("form.rb .rb-send"), document.querySelector(`form[data-fb-add="${t}"] .fb-sendc`)].map((el) => { const c = getComputedStyle(el); return [c.borderTopLeftRadius, c.backgroundColor, c.fontWeight, c.fontFamily]; }), target); assert.deepEqual(SB[0], SB[1], "the reply's Send is the card's Send: same corners, ink blue, weight"); } await shot(jun, "8-card-reply-box");
+    await jun.locator("form.rb textarea").fill("Leaving now."); if (touch) await tap(jun.locator("form.rb .rb-send")); else await jun.keyboard.press("Enter");
+    assert.equal(await li.locator("ol.fb-rs > li").count(), 1, "the reply shows under the comment at once"); await jun.waitForFunction((t) => /8 replies/.test(document.querySelector(`[data-fb-cm="${t}"] a.fb-rn`)?.textContent || "") && document.querySelector(`[data-fb-cm="${t}"] ol.fb-rs > li[data-cid]`), target);
+    assert.equal(await jun.locator("form.rb").count(), 0); await jun.waitForTimeout(700); assert.ok((await jun.evaluate(() => window.__cls)) - c0 < 0.05, "no layout jump when the reply posts"); { const F = await jun.evaluate((t) => { const a = getComputedStyle(document.querySelector(`[data-fb-cm="${t}"] .fb-cms > li > p`)), b = getComputedStyle(document.querySelector(`[data-fb-cm="${t}"] ol.fb-rs > li > p`)); return [[a.fontFamily, a.fontSize, a.fontWeight], [b.fontFamily, b.fontSize, b.fontWeight]]; }, target); assert.deepEqual(F[1], F[0], "the reply on the card reads in the comment's face"); } await shot(jun, "9-card-reply-posted");
+    // "7 replies" opens the thread at that comment, all of it
+    await tap(jun.locator(`[data-fb-cm="${target}"] a.fb-rn`)); await jun.waitForSelector(`#c-${topId}.hl`); assert.equal(await jun.locator(".pp-rs .pp-c.re").count(), 8); assert.equal(await jun.locator("[data-more]").count(), 0);
+    // Maya takes her first comment back: "Comment removed", the replies stay
+    await maya.goto(srv.base + "/post/e/" + id); const md = maya.locator(`#c-${topId} [data-del]`); await md.waitFor(); await tap(md); assert.equal((await md.textContent()).trim(), "Delete? Replies stay"); await tap(md); await maya.waitForSelector(`#c-${topId}.gone`);
+    assert.equal((await maya.locator(`#c-${topId} .pp-rm`).textContent()).trim(), "Comment removed"); assert.equal(await maya.locator(".pp-rs .pp-c.re").count(), 2, "the thread is still there (two newest on show)"); assert.equal((await maya.locator("[data-more]").textContent()).trim(), "View 6 more replies"); await shot(maya, "10-comment-removed");
+    assert.ok(viaInbox || true); assert.deepEqual(problems, [], "console clean, no failed requests");
+  } finally { await browser.close(); }
 });

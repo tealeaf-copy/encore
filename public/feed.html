@@ -220,11 +220,9 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   // ---- visual feed: the stories rail (hosts with photos, videos and flyers from the last 14 days) and the viewer (public/feedvisual.js) ----
   function drawRail() { const mine = (F.stories || []).find((s) => s.mine), last = mine?.items?.slice(-1)[0];
     // story prompts (public/storyprompt.js): the ring opens the event sheet (or, with no events yet, one line and a next step)
-    window.FeedVisual.rail($("#rail"), F.storiesV || [], { signedIn: true, mine: last ? { thumb: last.type === "image" ? last.url : "" } : null, prompt: !!window.StoryPrompt?.data?.dot, onAdd: () => window.StoryPrompt.compose({ from: $("#fvAdd"), ...(window.StoryPrompt.data?.dot && window.StoryPrompt.data.card?.id ? { eventId: window.StoryPrompt.data.card.id } : {}) }) }); /* the story composer (public/storycomposer.js), fetched on the tap */
-    // a bell note about one of my stories (?st=<id>): my ring opens on it, with who saw it and what came back
-    const want = new URLSearchParams(location.search).get("st"); if (want && !drawRail.done) { const L = F.storiesV || [], si = L.findIndex((s) => (s.items || []).some((i) => i.st?.sid === want)); if (si >= 0) { drawRail.done = true; const k = L[si].items.findIndex((i) => i.st?.sid === want); try { history.replaceState(null, "", location.pathname + location.hash); } catch {} window.FeedVisual.openOne?.(L[si], k, { insights: !!L[si].items[k].st.own }); } } }
+    window.FeedVisual.rail($("#rail"), F.storiesV || [], { signedIn: true, mine: last ? { thumb: last.type === "image" ? last.url : "" } : null, prompt: !!window.StoryPrompt?.data?.dot, onAdd: () => window.StoryPrompt.compose({ from: $("#fvAdd"), ...(window.StoryPrompt.data?.dot && window.StoryPrompt.data.card?.id ? { eventId: window.StoryPrompt.data.card.id } : {}) }) }); /* the story composer (public/storycomposer.js), fetched on the tap */ }
   addEventListener("pl:story-changed", () => load());
-  window.StoryPrompt?.onChange((n) => { if (n) C.oink(); load(); });
+  window.StoryPrompt?.onChange((n, ev, R) => { if (n) C.oink(); if (R?.ring && F) { F.storiesV = [R.ring, ...(F.storiesV || []).filter((x) => !x.own && x.key !== R.ring.key)]; drawRail(); } /* the story just shared is on the ring at once, before the feed comes back */ load(); });
   // ---- tabs ----
   function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
   // the tab is in the address (#alerts, #friends, #me), so the bell's links, Back and a reload land on it

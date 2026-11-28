@@ -50,7 +50,7 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
   let D = null, loading = null, hush = false; const subs = []; // hush: after Add photos or Not now, no second card in the same visit
   function load(force) { if (!inHint()) { D = EMPTY; return Promise.resolve(D); } if (loading && !force) return loading;
     loading = fetch("/api/me/story-prompt" + (linked ? "?for=" + encodeURIComponent(linked) : ""), { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => (D = j || D || EMPTY)).catch(() => (D = D || EMPTY)); return loading; }
-  const changed = (n, ev) => { for (const f of subs) { try { f(n, ev); } catch {} } };
+  const changed = (n, ev, R) => { for (const f of subs) { try { f(n, ev, R); } catch {} } };
 
   // ---------- the picker: the file chooser, already set to one event ----------
   /** ev: { id, title, open }. o: { proof: { rid, code }, msg: element for words, onDone } */
@@ -67,8 +67,19 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
   function compose(o = {}) { if (!inHint()) { location.href = "/login?next=" + encodeURIComponent(PATH + location.search); return Promise.resolve(null); }
     if (!q("#scCss")) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/storycomposer.css"; l.id = "scCss"; document.head.appendChild(l); }
     return Promise.all([window.EventArt ? 0 : need("/eventart.js"), window.Potto ? 0 : need("/mascot.js"), window.PLStoryKit ? 0 : need("/storykit.js"), window.PLStoryComposer ? 0 : need("/storycomposer.js")])
-      .then(() => window.PLStoryComposer.open({ ...o, onDone: (R, msg) => { say(msg); o.onDone?.(R); hush = true; loading = null; load(true).then(() => changed(R.ids?.length || 1, { id: o.eventId || "" })); } }))
+      .then(() => { const had = q("#spCard"), host = had?.parentElement || null;
+        return window.PLStoryComposer.open({ ...o, onDone: (R, msg) => { hush = true; loading = null; changed(R.ids?.length || 1, { id: o.eventId || "" }, R); /* the page shows it now (the feed's ring), before anything is fetched again */
+          if (R.ring && host) { doneR = R; doneCard(host); } o.onDone?.(R); load(true);
+          if (R.ring) watch(R.ring, R.first || 0, { live: { hours: R.hours || 24, waitingFor: R.waitingFor || "" } }).catch(() => say(msg)); else say(msg); } }); })
       .catch(() => { say("Couldn't open the story maker. Check your connection and tap again."); return null; }); }
+
+  /** Play a ring in the viewer (public/feedvisual.js, fetched here on pages that don't have it, like Home). */
+  const watch = (ring, k, o = {}) => (window.FeedVisual?.openOne ? Promise.resolve() : need("/feedvisual.js")).then(() => window.FeedVisual.openOne(ring, k, o));
+  // after sharing, the card that asked says what happened instead, with View (this visit only)
+  let doneR = null;
+  function doneCard(host) { let el = q("#spCard"); if (el && el.dataset.ev !== "done") { el.remove(); el = null; } if (el || !host || !doneR?.ring) return el; css(); el = document.createElement("section"); el.className = "sp-card"; el.id = "spCard"; el.dataset.ev = "done"; el.setAttribute("aria-labelledby", "spCardH");
+    const w = doneR.waitingFor; el.innerHTML = `<span class="sp-cov" aria-hidden="true">${doneR.ring.thumb ? `<img src="${esc(doneR.ring.thumb)}" alt="">` : ""}</span><div><p class="sp-h" id="spCardH" role="heading" aria-level="2">You added to your story</p><p class="sp-s">It's live for ${doneR.hours || 24} hours.${w ? ` Waiting for ${esc(w)} to add it to the event's photos.` : ""}</p></div><div class="sp-row"><button type="button" class="sp-b go" data-sp-view>View</button><button type="button" class="sp-b" data-sp-more>Add another</button></div>`;
+    host.prepend(el); q("[data-sp-view]", el).onclick = () => watch(doneR.ring, doneR.first || 0); q("[data-sp-more]", el).onclick = (e) => compose({ from: e.currentTarget }); return el; }
 
   // ---------- sheets ----------
   function sheet({ title, body, from }) { css(); q("#spSheet")?.remove(); const prev = from || document.activeElement, bg = document.createElement("div"); bg.className = "sp-scrim"; bg.id = "spSheet";
@@ -85,7 +96,7 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
   function cardHtml(c) { return `<span class="sp-cov" aria-hidden="true">${thumb(c)}</span><div><p class="sp-h" id="spCardH" role="heading" aria-level="2">How was ${esc(c.title)}?</p><p class="sp-s">Add a photo to your story.</p>${c.added ? `<p class="sp-who">${esc(c.added)}.</p>` : ""}</div>
 <div class="sp-row"><button type="button" class="sp-b go" data-sp-add>Add photos</button><button type="button" class="sp-b" data-sp-not>Not now</button></div><p class="sp-msg" role="status" aria-live="polite"></p>`; }
   /** Put the one card at the top of `host` (or take it away). Returns the card or null. Never more than one on a page. */
-  function card(host, { before = null } = {}) { const c = hush ? null : (D || EMPTY).card, old = q("#spCard"); if (old && (!c || old.dataset.ev !== c.id || !host.contains(old))) old.remove(); if (!c || !host) return null; if (q("#spCard")) return q("#spCard");
+  function card(host, { before = null } = {}) { if (doneR?.ring) return doneCard(host); const c = hush ? null : (D || EMPTY).card, old = q("#spCard"); if (old && (!c || old.dataset.ev !== c.id || !host.contains(old))) old.remove(); if (!c || !host) return null; if (q("#spCard")) return q("#spCard");
     css(); uploader(); const el = document.createElement("section"); el.className = "sp-card"; el.id = "spCard"; el.dataset.ev = c.id; el.setAttribute("aria-labelledby", "spCardH"); el.innerHTML = cardHtml(c);
     before && before.parentElement === host ? host.insertBefore(el, before) : host.prepend(el);
     q("[data-sp-add]", el).onclick = (e) => compose({ eventId: c.id, from: e.currentTarget }); // the composer, already set to this event
@@ -121,7 +132,7 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
     const put = () => { if (hush) return; const v = document.getElementById("view-programs"); if (!v || v.hidden || document.body?.classList.contains("guestmode") || !D?.card) return; const f = v.firstElementChild; if (!f) return; /* with Home's own first content, in the same frame */
       if (f.id !== "spCard") card(v); if (!placed && q("#spCard")) { placed = true; mo.disconnect(); mo.observe(v, { attributes: true, attributeFilter: ["hidden"], childList: true }); } };
     // this file is loaded before the app draws (index.html), so the watcher is in place when Home's first content lands
-    mo = new MutationObserver(put); mo.observe(document.documentElement, { childList: true, subtree: true }); subs.push(() => { dropCookie(); q("#spCard")?.remove(); }); put(); }
+    mo = new MutationObserver(put); mo.observe(document.documentElement, { childList: true, subtree: true }); subs.push(() => { dropCookie(); mo?.disconnect(); q("#spCard")?.remove(); }); put(); }
 
   // ---------- the host: "Ask guests for photos" (in the Ask for photos sheet) and how many are in ----------
   const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
@@ -136,7 +147,7 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
         catch (e) { b.disabled = false; let m = q(".sp-msg", el); if (!m) { m = document.createElement("p"); m.className = "sp-msg"; m.setAttribute("role", "status"); el.appendChild(m); } m.textContent = e.message; } }; };
     draw(); }
 
-  window.StoryPrompt = { load, card, open, compose, pick, line, hostAsk, onChange: (f) => subs.push(f), get data() { return D; }, linked, css };
+  window.StoryPrompt = { load, card, open, compose, watch, pick, line, hostAsk, onChange: (f) => subs.push(f), get data() { return D; }, linked, css };
   const start = () => { if (/^\/([ei]\/|g$)/.test(PATH)) { invitePage(); if (PATH === "/g") addEventListener("hashchange", () => { invFor = ""; invitePage(); }); }
     else if (PATH === "/feed") { load(); feedKudos(); }
     };

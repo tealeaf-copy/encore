@@ -55,7 +55,7 @@ test("on a phone: every kind is one card, compact, with one row of equal actions
     const R = await page.evaluate(() => { const px = (v) => parseFloat(v) || 0, cards = [...document.querySelectorAll(".fb-stream>*")], out = { cards: [], rules: [], acts: [], fonts: {}, gaps: [] };
       const tabs = document.querySelector(".es-tabs")?.getBoundingClientRect();
       cards.forEach((c, i) => { const s = getComputedStyle(c), r = c.getBoundingClientRect();
-        out.cards.push({ kind: c.dataset.kind || "?", id: c.dataset.fvId || "", ok: c.matches(".fb-card,.fv-post"), h: Math.round(r.height), w: Math.round(r.width), bg: s.backgroundColor, bw: s.borderTopWidth + s.borderBottomWidth + s.borderLeftWidth + s.borderRightWidth, bs: s.borderTopStyle, bc: s.borderTopColor, rad: s.borderTopLeftRadius, pad: s.paddingLeft });
+        out.cards.push({ kind: c.dataset.kind || "?", id: c.dataset.fvId || "", ok: c.matches(".fb-card,.fv-post"), h: Math.round(r.height), toActs: Math.round((c.querySelector(".fb-acts")?.getBoundingClientRect().bottom ?? r.bottom) - r.top), w: Math.round(r.width), bg: s.backgroundColor, bw: s.borderTopWidth + s.borderBottomWidth + s.borderLeftWidth + s.borderRightWidth, bs: s.borderTopStyle, bc: s.borderTopColor, rad: s.borderTopLeftRadius, pad: s.paddingLeft });
         if (i) out.gaps.push(Math.round(r.top - cards[i - 1].getBoundingClientRect().bottom));
         // a rule inside the card: a top or bottom line (or an hr) nearly as wide as the card, with no sides
         for (const el of c.querySelectorAll("*")) { const e = getComputedStyle(el), b = el.getBoundingClientRect(); if (!b.width || e.display === "none") continue;
@@ -80,9 +80,10 @@ test("on a phone: every kind is one card, compact, with one row of equal actions
     for (const g of R.gaps) assert.ok(g >= 12 && g <= 16, "12 to 16px between cards, got " + g);
     assert.deepEqual(R.rules, [], "no rule inside a card that reads as the gap between two posts");
     assert.equal(R.sticky, 0, "nothing in a post sticks to the top of the screen");
-    // compact: an event post with its action row (and its latest comments) fits a 390x664 screen above the tab bar
+    // compact: an event post down to its action row fits a 390x664 screen above the 80px tab bar; with its two latest
+    // comments, each with Reply under it (public/feedvisual.js, the replies block), it stays within 75% of a 390x844 screen
     const ev = R.cards.filter((c) => c.kind === "event"); assert.equal(ev.length, 4);
-    for (const c of ev) { assert.ok(c.h <= 844 * 0.75, `${c.id} is ${c.h}px, over 75% of the screen`); assert.ok(c.h <= 664 - 62, `${c.id} fits a short screen`); }
+    for (const c of ev) { assert.ok(c.h <= 844 * 0.75, `${c.id} is ${c.h}px, over 75% of the screen`); assert.ok(c.toActs <= 664 - 80, `${c.id}: header to action row is ${c.toActs}px, more than a short screen shows`); }
     for (const c of ev.filter((x) => x.id !== "evphoto")) assert.ok(c.h <= 844 * 0.6, `${c.id} without comments is ${c.h}px`);
     assert.ok(R.primaries.every((n) => n <= 1), "one primary button a card");
     // the action row: one row of equals (same height, width, type and quiet style), 44px tall
@@ -97,6 +98,17 @@ test("on a phone: every kind is one card, compact, with one row of equal actions
     const card = page.locator(".fb-ev").first(); await card.locator("[data-fb-comment]").scrollIntoViewIfNeeded(); await card.locator("[data-fb-comment]").tap(); await page.waitForTimeout(500);
     const O = await card.evaluate((c) => { const f = c.querySelector("form.fb-add"); return { d: getComputedStyle(f).display, focus: document.activeElement === f.querySelector("textarea"), fun: [...f.querySelectorAll(".fx-b")].map((b) => getComputedStyle(b).display), others: [...document.querySelectorAll(".fb-stream form.fb-add")].filter((x) => x !== f && getComputedStyle(x).display !== "none").length }; });
     assert.notEqual(O.d, "none"); assert.ok(O.focus, "the cursor is in the box after one tap"); assert.ok(O.fun.length && O.fun.every((d) => d !== "none"), "emoji and GIF show once you are in the box"); assert.equal(O.others, 0);
+    // Reply under a previewed comment: the reply box opens right there, on screen, with the cursor in it, in the same
+    // type as the comments; the card's own comment box is not needed for it
+    const P = await page.evaluate(() => { const c = document.querySelector(".fb-ev"), rb = [...c.querySelectorAll(".fb-cm [data-fb-reply]")], f = (el) => { const e = getComputedStyle(el); return [e.fontFamily.split(",")[0].replace(/"/g, ""), e.fontSize, e.fontWeight].join(" "); };
+      return { n: rb.length, h: rb.map((b) => Math.round(b.getBoundingClientRect().height)), font: rb.map(f), act: f(c.querySelector(".fb-act")) }; });
+    assert.equal(P.n, 2, "Reply under each previewed comment"); assert.ok(P.h.every((h) => h >= 44), "Reply is a 44px target"); assert.ok(P.font.every((x) => x === P.act), "Reply reads like the action labels: " + P.font[0] + " / " + P.act);
+    const card2 = page.locator('.fb-card[data-fv-id="rc1"]'), rp = card2.locator(".fb-cm [data-fb-reply]").first(); await rp.scrollIntoViewIfNeeded(); await rp.tap(); await page.waitForSelector("form.rb"); await page.waitForTimeout(450);
+    const Q = await card2.evaluate((c) => { const f = c.querySelector("form.rb"), ta = f?.querySelector("textarea"), b = f?.getBoundingClientRect(), tabs = document.querySelector(".es-tabs").getBoundingClientRect(), own = c.querySelector("form.fb-add");
+      return { inLi: !!f?.closest("li.fb-c"), shown: !!b && b.height > 0 && getComputedStyle(f).display !== "none", focus: document.activeElement === ta, top: b?.top, bottom: b?.bottom, tabs: tabs.top, own: getComputedStyle(own).display, font: getComputedStyle(ta).fontFamily.split(",")[0].replace(/"/g, "") }; });
+    assert.ok(Q.inLi && Q.shown, "the reply box is open under its comment"); assert.ok(Q.focus, "the cursor is in the reply box after one tap"); assert.ok(Q.top >= 0 && Q.bottom <= Q.tabs, `the reply box is on screen above the tab bar (${Math.round(Q.top)} to ${Math.round(Q.bottom)} of ${Q.tabs})`);
+    assert.equal(Q.own, "none", "the card's own comment box stays closed while you reply"); assert.equal(Q.font, "IBM Plex Sans");
+    await card2.locator("form.rb [data-rb-x]").tap(); assert.equal(await page.locator("form.rb").count(), 0);
     // nothing under the tab bar: scrolled to the end, the last card ends above it; no control of a post sits under the "+"
     await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(400);
     const E = await page.evaluate(() => { const last = [...document.querySelectorAll(".fb-stream>*")].pop().getBoundingClientRect(), tabs = document.querySelector(".es-tabs").getBoundingClientRect(), f = document.querySelector(".pc-fab"), fr = f?.getBoundingClientRect(), fs = f && getComputedStyle(f);

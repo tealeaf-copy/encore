@@ -882,6 +882,8 @@ html body .fb-cover>.pl-type.pl-type--b{position:absolute;left:10px;top:10px;z-i
 .fb-stream:not(.fb-full) .fb-c p{font-size:14px;line-height:1.4;-webkit-line-clamp:2}.fb-stream .fb-c .fb-at{font:400 12px/1.4 var(--pl-font-text,"IBM Plex Sans",system-ui);letter-spacing:0}
 .fb-stream:not(.fb-full) .fb-cm-all{min-height:44px;margin:-4px 0 -6px;font-size:13px}
 .fb-stream:not(.fb-full) .fb-soc:not(.fb-open)>.fb-add{display:none}
+/* replies on a card (the replies block above owns the markup): Reply and "3 replies" sit close under their comment; replies and the reply box read as comment text */
+.fb-stream:not(.fb-full) .fb-cm .fb-cdo{margin:-8px 0 -10px -8px}.fb-stream:not(.fb-full) .fb-cm .fb-rs{margin:6px 0 4px}.fb-stream:not(.fb-full) .fb-cm .rb{margin:6px 0 6px}
 .fb-stream:not(.fb-full) .fb-add{margin:4px 0 8px}.fb-stream .fb-add textarea:focus{outline:2px solid var(--fb-acc)!important;outline-offset:0!important}
 .fb-stream:not(.fb-full) .fb-add:not(:focus-within):not(.on):not(:has([aria-expanded=true])) .fx-b{display:none}
 /* the other kinds: the same container and scale, only the body differs */

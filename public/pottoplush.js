@@ -78,7 +78,7 @@
     const armL = holdL ? nub(66, 150, 10, 8, -20) : nub(o.shape === "squat" ? 36 : 44, 124, 8, 11, 18), armR = holdR ? nub(137, 149, 10, 8, 20) : nub(o.shape === "squat" ? 164 : 156, 124, 8, 11, -18);
     const body = `<svg class="plp-l" viewBox="0 0 200 190" aria-hidden="true" focusable="false">${defs}<ellipse cx="100" cy="178" rx="62" ry="8" fill="url(#${id}s)"/>
 <g${f("a")} opacity="${flat ? 0 : 0.5}">${feet}<path d="${path}" fill="${fill}"/></g>
-<g${f("b")}>${feet}${lip}<path d="${path}" fill="${fill}"/>${holdL ? "" : armL}${holdR ? "" : armR}</g>
+<g${f("b")}>${feet}${lip}<path d="${path}" fill="${fill}"/>${holdL ? "" : holdR ? `<g class="plp-arm plp-arm-l">${armL}</g>` : armL}${holdR ? "" : `<g class="plp-arm">${armR}</g>`}</g>
 <g${f("w")}><g clip-path="url(#${id}c)">${part("clip")}</g>${part("soft")}</g><g${f("b")}>${holdL ? armL : ""}${holdR ? armR : ""}</g></svg>`;
     const eye = (x) => `<g class="plp-eye"><ellipse cx="${x}" cy="103" rx="4.3" ry="5" fill="${INK}"/><circle cx="${x + 1.4}" cy="101.2" r="1.5" fill="#fff"/></g>`;
     const face = `<svg class="plp-l plp-f" viewBox="0 0 200 190" aria-hidden="true" focusable="false"><g class="plp-look"><ellipse cx="72" cy="114" rx="8" ry="5" fill="${pale ? "#F2A08F" : "#FFD9CF"}" opacity="${pale ? 0.55 : 0.42}"/><ellipse cx="128" cy="114" rx="8" ry="5" fill="${pale ? "#F2A08F" : "#FFD9CF"}" opacity="${pale ? 0.55 : 0.42}"/>
@@ -87,11 +87,18 @@ ${noEyes ? "" : eye(86) + eye(114)}<path d="M94.5 ${noEyes ? 119 : 113}q5.5 5.5 
   }
 
   const CSS_TEXT = `.plp{display:inline-block;position:relative;width:var(--plp-s,160px);height:calc(var(--plp-s,160px)*.95);flex:none;vertical-align:middle;line-height:0;-webkit-tap-highlight-color:transparent}
-.plp-j,.plp-b{position:absolute;inset:0;transform-origin:50% 92%}.plp-l{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.plp-j,.plp-b{position:absolute;inset:0;transform-origin:50% 92%}.plp.plp-tap{cursor:pointer}.plp-hi{position:absolute;left:68%;top:2%;z-index:1;padding:.35em .7em;border-radius:999px 999px 999px 4px;background:#fff;color:#1B1D1C;border:1.5px solid #1B1D1C;font:600 calc(var(--plp-s,160px)*.11)/1 "IBM Plex Sans",system-ui,sans-serif;white-space:nowrap;pointer-events:none;animation:plp-hi 1.25s ease-out both}.plp-l{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .plp-look{transform:translate(calc(var(--plp-x,0)*1px),calc(var(--plp-y,0)*1px));transition:transform .25s ease-out}.plp-eye{transform-box:fill-box;transform-origin:50% 60%}
 @media (prefers-reduced-motion:no-preference){.plp-b{animation:plp-bob 4.6s ease-in-out infinite;will-change:transform}.plp-eye{animation:plp-blink 5.2s infinite}
 .plp.is-off .plp-b,.plp.is-off .plp-eye{animation-play-state:paused}
+.plp-arm{transform-box:fill-box;transform-origin:10% 90%}.plp-arm-l{transform-origin:90% 90%}
+.plp.is-wave .plp-arm{animation:plp-wave 1s ease-in-out}.plp.is-wave .plp-arm-l{animation-name:plp-wave-l}.plp.is-wave .plp-j{animation:plp-tilt .9s ease-in-out}
+.plp.is-spin .plp-j{transform-origin:50% 56%;animation:plp-spin .8s cubic-bezier(.45,0,.2,1)}
 .plp.is-hop .plp-j{animation:plp-hop .52s cubic-bezier(.3,.7,.3,1)}.plp.is-tilt .plp-j{animation:plp-tilt .5s ease-in-out}.plp.is-pop .plp-j{animation:plp-pop .24s ease-out}}
+@keyframes plp-wave{0%,100%{transform:none}18%{transform:translate(34%,-125%) rotate(-58deg)}34%{transform:translate(34%,-125%) rotate(-26deg)}50%{transform:translate(34%,-125%) rotate(-58deg)}66%{transform:translate(34%,-125%) rotate(-26deg)}82%{transform:translate(34%,-125%) rotate(-58deg)}}
+@keyframes plp-wave-l{0%,100%{transform:none}18%{transform:translate(-34%,-125%) rotate(58deg)}34%{transform:translate(-34%,-125%) rotate(26deg)}50%{transform:translate(-34%,-125%) rotate(58deg)}66%{transform:translate(-34%,-125%) rotate(26deg)}82%{transform:translate(-34%,-125%) rotate(58deg)}}
+@keyframes plp-spin{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-6%) rotate(40deg)}80%{transform:translateY(-6%) rotate(330deg)}100%{transform:translateY(0) rotate(360deg)}}
+@keyframes plp-hi{0%{opacity:0;transform:translateY(30%) scale(.7)}18%,78%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-12%) scale(.96)}}
 @keyframes plp-bob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-2.2%) scale(.992,1.012)}}
 @keyframes plp-blink{0%,94%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.1)}}
 @keyframes plp-hop{0%{transform:translateY(0) scale(1,1)}18%{transform:translateY(0) scale(1.06,.93)}50%{transform:translateY(-11%) scale(.97,1.04)}82%{transform:translateY(0) scale(1.04,.96)}100%{transform:translateY(0) scale(1,1)}}
@@ -123,7 +130,10 @@ ${noEyes ? "" : eye(86) + eye(114)}<path d="M94.5 ${noEyes ? 119 : 113}q5.5 5.5 
         const next = { ...cur, color: n.color || cur.color, shape: n.shape || cur.shape, wear: n.wear || t || (n.type != null ? base.wear : cur.wear) };
         if (next.color === cur.color && next.shape === cur.shape && next.wear.join() === cur.wear.join()) return false;
         cur = next; draw(); lx = ly = 0; m.react("pop"); return true; },
-      react(kind = "hop") { if (still()) return; const c = "is-" + kind; el.classList.remove("is-hop", "is-tilt", "is-pop"); void el.offsetWidth; el.classList.add(c); setTimeout(() => el.classList.remove(c), 620); },
+      react(kind = "hop") { if (still()) return; const c = "is-" + kind; el.classList.remove("is-hop", "is-tilt", "is-pop", "is-wave", "is-spin"); void el.offsetWidth; el.classList.add(c); clearTimeout(m.rt); m.rt = setTimeout(() => el.classList.remove(c), kind === "wave" ? 1050 : kind === "spin" ? 850 : 620); },
+      // a tap: he waves and says hi, and the next tap he spins once
+      hi() { el.querySelector(".plp-hi")?.remove(); if (size >= 72) { const b = document.createElement("span"); b.className = "plp-hi"; b.setAttribute("aria-hidden", "true"); b.textContent = "Hi!"; el.appendChild(b); setTimeout(() => b.remove(), 1300); } m.react("wave"); },
+      tap() { m.taps = (m.taps || 0) + 1; if (m.taps % 2) m.hi(); else m.react("spin"); },
       // look toward a field (or anything) for a moment, e.g. while typing
       look(target, ms = 1600) { if (still() || !target) return; const a = el.getBoundingClientRect(), b = target.getBoundingClientRect(), dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2), d = Math.hypot(dx, dy) || 1; m.eyes(dx / d * 3.2, dy / d * 2.6); clearTimeout(m.held); m.held = setTimeout(() => { m.held = 0; m.eyes(0, 0); }, ms); },
       destroy() { live.delete(m); io?.unobserve(el); } };
@@ -132,8 +142,8 @@ ${noEyes ? "" : eye(86) + eye(114)}<path d="M94.5 ${noEyes ? 119 : 113}q5.5 5.5 
       if (!live.size) addEventListener("pointermove", onMove, { passive: true });
       if (!io && "IntersectionObserver" in window) io = new IntersectionObserver((L) => L.forEach((e) => { const t = e.target.__potto; if (t) { t.off = !e.isIntersecting; e.target.classList.toggle("is-off", t.off); } }));
       io?.observe(el); live.add(m);
-      if (o.tap !== false) el.addEventListener("click", () => m.react("hop"));
     }
+    if (o.tap !== false) { el.classList.add("plp-tap"); el.addEventListener("click", () => m.tap()); }
     return m;
   }
   window.PottoPlush = { mount, svg, typeFor, pick, seed: SEED, COLORS: Object.keys(COLORS), WEAR: Object.keys(WEAR), SHAPES: Object.keys(SHAPES), OUTFITS, TYPES };

@@ -156,7 +156,9 @@
       const it = R.find((x) => priceIn(x.price)) || { name: "Pandan cake", price: "18" }; return payVis(D.pay, money(priceIn(it.price) * 2), it.name || "Pandan cake", paid4); };
     const exLabel = () => (!exOn() ? "" : step <= 2 ? `Example: ${EX[exI].who}` : "Example");
     const sayText = () => (step === 3 ? (() => { const l = winLabels()[sel3]; return l ? `A guest who picks ${l} gets ${D.address ? "your exact spot" : "the exact spot, if you add one,"} the day before.` : "Add a time and it shows here."; })() : step === 4 ? PAYSAY[D.pay] : "");
-    const refresh = () => { pull(); const v = $("#dsVis", S.bg); if (v) v.innerHTML = visIn(visInner(), exLabel(), step <= 2); const s = $("#dsSay", S.bg); if (s) s.textContent = sayText();
+    // the visual is only redrawn when it would differ: a tap on one of its chips must never land on a chip that was just replaced
+    const paintVis = () => { const v = $("#dsVis", S.bg); if (!v) return; const h = visIn(visInner(), exLabel(), step <= 2); if (v.__h !== h) { v.innerHTML = h; v.__h = h; } };
+    const refresh = () => { pull(); paintVis(); const s = $("#dsSay", S.bg); if (s && s.textContent !== sayText()) s.textContent = sayText();
       if (step === 2) $$(".dp-item [data-ih]", S.bg).forEach((h, i) => { const t = itemName(D.items[i] || {}, i); if (h.textContent !== t) h.textContent = t; }); };
 
     // ---- the fields ----
@@ -203,12 +205,12 @@
     /** dir: 1 or -1 a new step, 0 the same step again (the fields and the visual only: the headline and Potto stay). */
     function draw(dir = 0, first = false) {
       const same = !dir && !first && $("#dsBody", S.bg);
-      if (same) { same.innerHTML = fields(); const t = $(".ds-tog", S.bg); if (t) t.outerHTML = togHTML(); S.ft.innerHTML = footHTML(); const v = $("#dsVis", S.bg); if (v) v.innerHTML = visIn(visInner(), exLabel(), step <= 2); const s = $("#dsSay", S.bg); if (s) s.textContent = sayText(); }
+      if (same) { same.innerHTML = fields(); const t = $(".ds-tog", S.bg); if (t) t.outerHTML = togHTML(); S.ft.innerHTML = footHTML(); paintVis(); const s = $("#dsSay", S.bg); if (s) s.textContent = sayText(); }
       else S.set({ dir, first, top: edit ? `<button type="button" class="ds-rb" id="dpBack" aria-label="Close">${I.x}</button><p class="ds-et">Edit your drop</p><span></span>` : topBar(step, LAST, step === 1),
         tabs: edit ? `<div class="ds-tabs" role="tablist" aria-label="Parts of your drop">${TABS.map((t, i) => `<button type="button" role="tab" aria-selected="${i + 1 === step}" data-tab="${i + 1}">${t}</button>`).join("")}</div>` : "",
         pane: edit ? `${togHTML()}${step >= 3 ? `<p class="ds-help" id="dsSay" style="margin:-8px 0 16px" aria-live="polite">${step === 4 ? esc(sayText()) : ""}</p>` : ""}<div class="ds-body" id="dsBody">${fields()}</div>`
           : `<h2 class="ds-h" id="dsH">${HEAD[step][0]}</h2><p class="ds-sub">${HEAD[step][1]}</p>${togHTML()}${visWrap(visInner(), { ex: exLabel(), exBtn: step <= 2, cls: step === 2 ? "ds-s2" : "" })}${step >= 3 ? `<p class="ds-say" id="dsSay" aria-live="polite">${esc(sayText())}</p>` : ""}<div class="ds-body" id="dsBody">${fields()}</div>`, foot: footHTML() });
-      if (!same && !edit) { pm = null; potto(S, ["apron"]).then((m) => (pm = m)); }
+      if (!same && !edit) { pm = null; potto(S, ["apron"]).then((m) => (pm = m)); paintVis(); }
       fresh.clear();
       // ---- Get paid (public/paymethods.js): "Guests pay you through" the host's profile methods, Change opens a small sheet ----
       if (step === 4 && $("#dpPayM", S.bg)) { const pmr = () => { const P = window.PayMethods, el = $("#dpPayM", S.bg); if (P && el) P.dropRow(el); }; if (window.PayMethods) pmr(); else loadJs("/paymethods.js", pmr); } }

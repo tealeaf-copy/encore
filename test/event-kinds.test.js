@@ -314,7 +314,7 @@ test("speaker pages: public only when the speaker opted in or the host marked th
 
 test("every script on the pages this touches parses", () => {
   for (const f of ["public/start.html", "public/plan.html", "public/speaker.html"]) for (const [, src] of read(f).matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function("return async () => {" + src + "\n}"), f);
-  for (const f of ["public/kinds.js", "public/planhook.js", "public/canvas.js", "public/timeline.js", "public/drop.js"]) assert.doesNotThrow(() => new Function(read(f)), f);
+  for (const f of ["public/kinds.js", "public/planhook.js", "public/canvas.js", "public/timeline.js", "public/drop.js", "public/dropsetup.js"]) assert.doesNotThrow(() => new Function(read(f)), f);
 });
 
 test("pages: the plan page draws each kind, the invite links to it, the canvas asks first, copy stays plain", () => {

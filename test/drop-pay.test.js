@@ -219,7 +219,7 @@ test("the maker's Orders: Paid, Claimed, Not paid with totals per window, Mark p
   assert.equal(nj.ok, true); assert.deepEqual(nj.methods, []); assert.equal(nj.text, "", "no buttons: the page says Noor will tell them how to pay");
   const need = await getJ("/api/me/pay", { cookie: noor }); assert.equal(need.has, false); assert.equal(need.need?.drop, true, "Home's Get paid card names the drop");
   assert.match(read("public/paymethods.js"), /Add Venmo, PayPal or Cash App so buyers can pay you ahead\./);
-  assert.ok(ui.includes('["either", I.share, "Pay ahead or at pickup"'), "the setup offers pay ahead, ahead or at pickup, and at pickup");
+  assert.ok(read("public/dropsetup.js").includes('[["ahead", "Pay ahead"], ["either", "Either"], ["pickup", "At pickup"]]'), "the setup offers pay ahead, either, and at pickup");
 });
 
 test("in a browser at 390px: order, the pay step, the unpaid line, I paid, and the maker's Orders", async (t) => {

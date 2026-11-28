@@ -89,7 +89,7 @@ test("Get paid saves on the person's profile and loads back, for hosts and guest
   // the settings page, the editor and the guest pages load the one small script; the light invite stays under its cap
   assert.match(read("public/settings.html"), /id="getpaid"[\s\S]*\/paymethods\.js/); assert.match(read("public/invite.html"), /more\("\/paymethods\.js"\)/); assert.ok(read("public/invite.html").length < 40000);
   const idx = read("index.html"), scripts = [...idx.matchAll(/<script\b/g)].length; assert.match(idx, /<script src="\/paymethods\.js" defer><\/script>/); assert.ok(idx.lastIndexOf("/paymethods.js") < idx.lastIndexOf('"Come with me?"'), "the Come with me? loader stays last"); assert.ok(scripts > 1);
-  assert.match(read("public/canvas.js"), /PayMethods\.editor\(/); assert.match(read("public/drop.js"), /P\.dropRow\(/);
+  assert.match(read("public/canvas.js"), /PayMethods\.editor\(/); assert.match(read("public/dropsetup.js"), /P\.dropRow\(/);
 });
 
 test("an event uses the profile's methods; it can turn some off; guests who are in see only those, with their amount", async () => {

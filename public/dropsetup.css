@@ -112,3 +112,4 @@ body:has(#dpSheet.ds-bg) #dpToast{bottom:auto;top:calc(64px + env(safe-area-inse
 .ds .ds-f .ds-money input:focus{outline:none!important;box-shadow:none!important;border:0!important}
 .ds-url{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:20px;background:#fff;box-shadow:0 1px 0 rgba(31,26,23,.04),0 4px 18px rgba(31,26,23,.06);margin:0 0 4px}.ds-url span{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}.ds-url .ds-sm{flex:none;background:#F1ECE2}
 @media (max-height:700px){.ds-vis{padding-top:36px}.ds-tp{aspect-ratio:4/3}}
+.ds #dpPayM .pm-ln{min-height:44px;display:inline-flex;align-items:center;font-size:16px}

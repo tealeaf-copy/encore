@@ -78,3 +78,16 @@ test("the host's Library (past events, menus, playlists) sends the same cover to
   assert.ok(cards.length, "the past event is in the Library: " + Object.keys(L));
   for (const c of cards) assert.deepEqual(c.coverSpec, coverOf(await stored("cvPast1"), "cvPast1"));
 });
+
+// The event's look colours the drawing everywhere: the server sends the look's cover tone and spot with the recipe, and
+// every card draws with them (the invite, the feed, link cards), so a Bone event isn't pastel in the feed and bone on its invite.
+test("a look's colours ride along in the cover recipe, and the drawing uses them", async () => {
+  const fs = await import("node:fs"), vm = await import("node:vm");
+  const { coverOf: C } = await import("../server/eventcover.js");
+  const bone = C({ name: "Game night", look: { palette: ["#EFE7D8", "#1D1B18", "#9A4128"] } }, "lk1"), plain = C({ name: "Game night" }, "lk1");
+  assert.match(bone.art.bg, /^#[0-9A-F]{6}$/); assert.match(bone.art.spot, /^#[0-9A-F]{6}$/); assert.equal(plain.art.bg, undefined, "no look, the drawing keeps its own tone");
+  const box = { window: {}, document: undefined }; vm.runInNewContext(fs.readFileSync(new URL("../public/eventart.js", import.meta.url), "utf8"), box);
+  const A = box.window.EventArt, withLook = A.cover({ name: "Game night", coverSpec: bone }, { title: "", label: "" }), without = A.cover({ name: "Game night", coverSpec: plain }, { title: "", label: "" });
+  assert.ok(withLook.includes(`--ea-bg:${bone.art.bg}`)); assert.ok(withLook.includes(bone.art.spot), "the spot of colour is the look's");
+  assert.ok(without.includes(`--ea-bg:${A.PASTELS[plain.art.tone]}`)); assert.ok(!without.includes(bone.art.spot));
+});

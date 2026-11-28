@@ -72,7 +72,8 @@
   // ---- the pictures ----
   const loadImg = (src) => new Promise((ok) => { if (!src) return ok(null); const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
   async function artImage(e) { const A = window.EventArt; if (!A) return null; try { const pick = e?.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, k = A.valid?.(pick.kind) ? pick.kind : A.kindOf(e || {}), tone = A.PASTELS?.[pick.tone] ? pick.tone : A.toneOf(e || {}, k);
-    const svg = A.drawing(k, A.SPOT[tone]), img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg)); return img ? { img, bg: A.PASTELS[tone] } : null; } catch { return null; } }
+    const cs = e?.coverSpec?.art, LT = cs && /^#[0-9a-f]{6}$/i.test(cs.bg || "") ? cs : A.lookTone?.(e) /* the event's look colours the share card too, like the invite and the feed */;
+    const svg = A.drawing(k, LT?.spot || A.SPOT[tone]), img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg)); return img ? { img, bg: LT?.bg || A.PASTELS[tone] } : null; } catch { return null; } }
   const rr = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
   function coverDraw(g, x, y, w, h, r, pic, art, t) { g.save(); rr(g, x, y, w, h, r); g.clip();
     if (pic) { const s = Math.max(w / pic.width, h / pic.height), iw = pic.width * s, ih = pic.height * s; g.drawImage(pic, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih); }

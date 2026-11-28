@@ -96,7 +96,7 @@ html body #m#m:not([data-calm="host"]){max-width:600px;padding:max(8px,env(safe-
 @media (max-width:699px){html body:has(.prb) #m#m{padding-bottom:calc(var(--inv-bar-h) + var(--inv-safe-b) + 32px)}} /* the reply bar's room only while it's on the page: once you've replied it goes */
 html body #m#m>.top{margin:0 0 16px;min-height:40px}
 html body #m#m>.cov{border-radius:var(--pl-r-md)!important;border:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;background:var(--lk-cover,var(--pl-surface))!important;margin:0 0 24px}
-html body #m#m .cov .ea-cover{background:var(--lk-cover,var(--pl-surface))!important}
+html body #m#m .cov .ea-cover{background:var(--lk-cover,var(--ea-bg,var(--pl-surface)))!important}
 /* the kicker, the title, the when line, the place */
 :is(html body #m#m>.kicker,html body #view-guest#view-guest.ev2 .in>#hostHello){display:block!important;margin:0 0 8px!important;padding:0!important;font:var(--inv-kicker)!important;letter-spacing:var(--inv-kicker-track)!important;text-transform:uppercase;color:var(--lk-link,var(--kit-accent-text,var(--pl-accent-text)))!important;background:none!important;border:0!important;min-height:0!important}
 :is(html body #m#m>.kicker,html body #view-guest#view-guest.ev2 .in>#hostHello) :is(a,span,b){font:inherit!important;letter-spacing:inherit!important;color:inherit!important;text-decoration:none}

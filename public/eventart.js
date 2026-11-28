@@ -115,13 +115,17 @@
   // kinds); the server works it out with this same file (server/eventcover.js) and sends it as e.coverSpec, so a card that only
   // has the title and the activity still draws the same picture as the invite.
   const SPEC_OK = (a) => a && typeof a === "object" && valid(a.kind) && PASTELS[a.tone] && (!a.scene || (Array.isArray(a.scene) && a.scene.every((k) => ART[k])));
+  // The look's colours for the drawing: the cover tone and the one spot of colour. The server sends them in coverSpec.art
+  // (server/eventcover.js); in the editor, where the event isn't saved yet, the look's own code works them out.
+  const HEX = (v) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v : "");
+  function lookTone(e) { try { const LK = typeof window !== "undefined" && window.EncoreLooks, L = e && e.look; if (!LK || !L || !LK.has?.(L)) return null; const T0 = LK.colors(L), T = T0 && LK.fieldNotes(T0); return T && HEX(T.cover) ? { bg: T.cover, spot: HEX(T.spot) } : null; } catch { return null; } }
   function spec(e = {}) { if (SPEC_OK(e.coverSpec?.art)) return e.coverSpec.art; const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = valid(pick.kind) ? pick.kind : kindOf(e), tone = PASTELS[pick.tone] ? pick.tone : toneOf(e, kind);
     if (typeof pick.svg === "string" && /^<svg /.test(pick.svg)) return { kind, tone, custom: true };
     const parts = String(kind).split("+"), extra = kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = (K0.length < 3 ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, Math.max(3, Math.min(4, K0.length)));
     return { kind, tone, scene: K }; }
   function cover(e = {}, opts = {}) {
     const S0 = !opts.kind && !opts.tone && SPEC_OK(e.coverSpec?.art) ? e.coverSpec.art : null;
-    const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (S0 ? S0.kind : valid(pick.kind) ? pick.kind : kindOf(e)), tone = opts.tone || (S0 ? S0.tone : PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), bg = PASTELS[tone], spot = SPOT[tone];
+    const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (S0 ? S0.kind : valid(pick.kind) ? pick.kind : kindOf(e)), tone = opts.tone || (S0 ? S0.tone : PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), LT = opts.kind || opts.tone ? null : (S0 && HEX(S0.bg) ? { bg: S0.bg, spot: HEX(S0.spot) } : lookTone(e)), bg = LT?.bg || PASTELS[tone], spot = LT?.spot || SPOT[tone];
     const title = opts.title ?? (e.pubTitle || e.title || e.name || ""), label = opts.label ?? labelOf(kind, e);
         // a drawing the host made with a prompt: always shown as an image (it can't run anything), never as HTML
     const custom = opts.svg || (!opts.kind && typeof pick.svg === "string" && /^<svg /.test(pick.svg) ? pick.svg : "");
@@ -143,5 +147,5 @@
     if (/^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(u) || /^https:\/\/[^\s"'<>()]+$/.test(u)) { const f = c?.focus || e.coverFocus, pos = f && isFinite(f.x) && isFinite(f.y) ? ` style="object-position:${Math.round(f.x)}% ${Math.round(f.y)}%"` : "";
       return `<img class="ea-thumb" src="${esc(u)}" alt="${esc(alt)}"${pos} loading="lazy" decoding="async">`; }
     if (typeof document !== "undefined") ensureCss(); return cover(e, { title: "", label: "" }); }
-  window.EventArt = { spec, thumb, kindsOf, suggest, labelOf, valid, PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
+  window.EventArt = { lookTone, spec, thumb, kindsOf, suggest, labelOf, valid, PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
 })();

@@ -13,6 +13,11 @@ import { fileURLToPath } from "node:url";
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 let EA = null;
 const art = () => { if (EA) return EA; try { const box = { window: {}, document: undefined }; vm.runInNewContext(fs.readFileSync(path.join(PUBLIC, "eventart.js"), "utf8"), box, { timeout: 1000 }); EA = box.window.EventArt; } catch { EA = null; } return EA; };
+// the event's look decides the drawing's colours (public/looks.js colors + fieldNotes, the same code the invite runs)
+let LK = null;
+const looks = () => { if (LK !== null) return LK || null; try { const box = { window: {}, document: undefined, navigator: {} }; box.window.window = box.window; vm.createContext(box); for (const f of ["color.js", "looks.js"]) vm.runInContext(fs.readFileSync(path.join(PUBLIC, f), "utf8"), box, { timeout: 2000 }); LK = box.window.EncoreLooks || false; } catch { LK = false; } return LK || null; };
+const HEX = (v) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v.toUpperCase() : "");
+export function lookTone(ev = {}) { try { const K = looks(), L = ev?.look; if (!K || !L || typeof L !== "object" || !K.has(L)) return null; const T0 = K.colors(L), T = T0 && K.fieldNotes(T0); return T && HEX(T.cover) ? { bg: HEX(T.cover), ...(HEX(T.spot) ? { spot: HEX(T.spot) } : {}) } : null; } catch { return null; } }
 const PHOTO = (u) => (/^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(u || "") || /^https:\/\/[^\s"'<>()]+$/.test(u || "") ? u : "");
 const focusOf = (f) => (f && Number.isFinite(+f.x) && Number.isFinite(+f.y) ? { x: Math.max(0, Math.min(100, Math.round(+f.x))), y: Math.max(0, Math.min(100, Math.round(+f.y))) } /* percent, as server/photos.js cleanFocus keeps it */ : null);
 
@@ -22,7 +27,7 @@ export function coverOf(ev = {}, id = "") {
   if (photo) return { photo, focus: focusOf(e.coverFocus) };
   if (e.drop) { const it = (e.orderItems || e.items || []).map((x) => PHOTO((x?.photos || [])[0] || x?.photo)).find(Boolean); if (it) return { photo: it, focus: null }; }
   const A = art(); if (!A?.spec) return { art: null };
-  try { const s = A.spec({ ...e, id: e.id || id, title: e.pubTitle || e.title || e.name || "" }); return { art: { kind: String(s.kind), tone: String(s.tone), ...(s.scene ? { scene: Array.from(s.scene, String) } : {}), ...(s.custom ? { custom: true } : {}) } }; } catch { return { art: null }; }
+  try { const s = A.spec({ ...e, id: e.id || id, title: e.pubTitle || e.title || e.name || "" }); return { art: { kind: String(s.kind), tone: String(s.tone), ...(s.scene ? { scene: Array.from(s.scene, String) } : {}), ...(s.custom ? { custom: true } : {}), ...(lookTone(e) || {}) } }; } catch { return { art: null }; }
 }
 /** Two covers are the same picture: the same photo, or the same drawing. */
 export const sameCover = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);

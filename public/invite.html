@@ -99,7 +99,7 @@
     // ---- end per-event looks ----
     const where = [...new Set([e.meetPoint || e.venueName, e.hood || e.city])].filter(Boolean).join(" · "), route = httpsUrl(e.routeUrl), bring = bringOf(e);
     // the kicker over the title: "MADISON IS HOSTING · HACK NIGHT"
-    const kw = (() => { try { const w = LK?.cornerWord?.(e) || ""; return /^event$/i.test(w) ? "" : w; } catch { return ""; } })(), hn = esc(first), who = h.name || e.hostName ? `${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${hn}</a>` : hn} is hosting` : "";
+    const kw = (() => { try { const w = LK?.cornerWord?.(e) || ""; return /^event$/i.test(w) || w == window.EventTypes?.labelOf(e) ? "" : w; } catch { return ""; } })(), hn = esc(first), T = e.teamUp?.hosts || [], who = T[1] ? esc(T.map((x) => x.first || x.name).join(" and ")) + " are hosting" : h.name || e.hostName ? `${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${hn}</a>` : hn} is hosting` : "";
     const kicker = (window.EventTypes ? EventTypes.tag(e, { cls: "pl-type--b" }) : "") + (who || kw ? `<p class="kicker">${[who, esc(kw)].filter(Boolean).join(" · ")}</p>` : "");
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
@@ -132,7 +132,7 @@
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
     // coming back to the link: their reply, not a blank form
     if (back) { $("#f").hidden = true; return done(e, h, { response: back.response, name: back.name || "", email: "" }, back.rid, back.code, { ...ctx, back: true, place: back.place, paidOk: !!back.paid, claimed: !!back.paidClaim, order: back.order || "", tiers: back.tiers }); }
-    const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<a href="#f">${ask ? esc(LK ? LK.buttonText(e) : "Ask to join") : full ? "Join waitlist" : esc(LK ? LK.buttonText(e, e.rsvpWords?.yes || "I'm in") : e.rsvpWords?.yes || "I'm in")}</a>`; // per-event looks: the host's emoji and words document.body.appendChild(stick); stick.hidden = true;
+    const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<a href="#f">${ask ? esc(LK ? LK.buttonText(e) : "Ask to join") : full ? "Join waitlist" : esc(LK ? LK.buttonText(e, e.rsvpWords?.yes || "I'm in") : e.rsvpWords?.yes || "I'm in")}</a>`;
     { const target = $("#f .resp") || $("#f"); if (target && "IntersectionObserver" in window) { let seen = false; new IntersectionObserver(([en]) => { if (en.isIntersecting) seen = true; const below = en.boundingClientRect.top > innerHeight; stick.hidden = en.isIntersecting || (!below && seen) || !!document.getElementById("tk"); }).observe(target); } }
     // the host's own questions, one at a time (questions.js arrives a moment later)
     const answers = {}; let Qf = null; const Q = (e.questions || []).filter((q) => q && q.q);

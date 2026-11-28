@@ -35,7 +35,7 @@
 @media (hover:hover){.dz-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px -12px rgba(31,26,23,.35)}.dz-card:hover .dz-sw{border-radius:18px 24px 14px 26px/12px 18px 22px 14px!important}}
 </style>
 <script>if(location.pathname==="/g"&&(!location.hash||location.hash==="#"))location.replace("/discover");</script>
-<script>if(location.pathname==="/g")document.documentElement.classList.add("g-loading")</script><style>html.g-loading #view-guest{opacity:0!important;transition:none!important}
+<script>if(location.pathname==="/g")document.documentElement.classList.add("g-loading")</script><style>html.g-loading #view-guest,html.g-loading .ev2-chat{opacity:0!important;transition:none!important}
 /* on a slow connection the first second or two was a blank page: a quiet line holds the place until the preview or the invite draws */
 html.g-loading body::after{content:"Opening the invite\2026";position:fixed;inset:0;display:grid;place-items:center;font:400 17px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#444845;pointer-events:none;z-index:1}</style>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -7441,10 +7441,10 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
 { const _rg15=renderGuest; renderGuest=async function(){ const r=await _rg15.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const M=myRsvp(e.id), today=localISO(), past=e.date&&e.date<today&&e.stage!=="interest";
     // a greeting from the host, at the very top
     if(!$("#hostHello")&&!past){ const H=window.__gHostInfo||{}, name=hostFirst(e), paid=e.price&&e.price!=="chip"; const g=document.createElement("div"); g.id="hostHello"; g.className="host-hello";
-      const line=e.stage==="interest"?`${esc(name)} wants to know who's in`:`${esc(name)} is hosting`;
+      const TU=e.teamUp?.hosts||[], line=e.stage==="interest"?`${esc(name)} wants to know who's in`:TU[1]?`${esc(TU.map(x=>x.first||x.name).join(" and "))} are hosting`:`${esc(name)} is hosting`; /* a team-up: both hosts, as the Hosted by line says */
       const kw=(()=>{ try{ const w=window.EncoreLooks?.cornerWord?.(e)||""; return w&&!/^event$/i.test(w)?w:"" }catch{ return "" } })(); /* the kind of event, after the host: "Madison is hosting · Hack night" */
       const hd=H.handle||e.hostHandle||""; /* the host is front and center: the face and name open their page */
-      g.innerHTML=`${hd?`<a class="hh-link" href="/@${encodeURIComponent(hd)}" aria-label="See ${esc(name)}'s page">`:""}<span class="hh-av">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#29489A",40):pipSVG("happy",34)}</span><span>${line}${kw?` · ${esc(kw)}`:""}</span>${hd?"</a>":""}`; const t3=host.querySelector(".invite .in > h3"), inv=host.querySelector(".invite")||host.firstElementChild; if(t3) t3.before(g); else inv?.before(g); if(window.EventTypes) g.insertAdjacentHTML("afterend", window.EventTypes.tag(e, { cls: "pl-type--b gk-type" })) /* what kind of thing it is (public/eventtypes.js) */ }
+      g.innerHTML=`${hd?`<a class="hh-link" href="/@${encodeURIComponent(hd)}" aria-label="See ${esc(name)}'s page">`:""}<span class="hh-av">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#29489A",40):pipSVG("happy",34)}</span><span>${line}${kw&&String(window.EventTypes?.labelOf?.(e)||"").toLowerCase()!==kw.toLowerCase()?` · ${esc(kw)}`:""}</span>${hd?"</a>":""}`; const t3=host.querySelector(".invite .in > h3"), inv=host.querySelector(".invite")||host.firstElementChild; if(t3) t3.before(g); else inv?.before(g); if(window.EventTypes) g.insertAdjacentHTML("afterend", window.EventTypes.tag(e, { cls: "pl-type--b gk-type" })) /* what kind of thing it is (public/eventtypes.js) */ }
     // a booking bar that stays on screen on phones until they've replied
     const form=$("#g-send",host)?.closest(".stack")||$("#gResp",host)?.closest(".stack")||$("#ic-pick",host)?.closest(".stack"); $("#gBar")?.remove();
     if(form&&!form.hidden&&!M&&!past&&!e.example&&!e.sample&&window.innerWidth<760){ const R=(e.headcount&&e.guests)?Math.max(0,(+e.headcount||0)-(e.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length):null, paid=e.price&&e.price!=="chip";
@@ -9773,7 +9773,7 @@ function pastTidy(){ try{ const d=draft, host=document.getElementById("stepHost"
 { const s=document.createElement("style"); s.textContent=`
 #view-guest.ev2{--ink:var(--pl-ink);--muted:var(--pl-soft);--accent:var(--pl-accent)}
 #view-guest.ev2 .invite.gx{--thfg:var(--pl-ink)!important;color:var(--pl-ink)!important;background:transparent!important}
-#view-guest.ev2 .invite.gx>.in,#view-guest.ev2 .invite.gx>.in *:not(a):not(.btn):not(button):not(.ev2-pill){color:var(--pl-ink);-webkit-text-fill-color:currentColor;text-shadow:none}
+#view-guest.ev2 .invite.gx>.in,#view-guest.ev2 .invite.gx>.in *:not(a):not(.btn):not(button):not(.ev2-pill){color:var(--pl-ink);-webkit-text-fill-color:currentColor;text-shadow:none}#view-guest.ev2 .invite.gx>.in :is(a,.btn,button) *:not(a):not(.btn):not(button):not(.ev2-pill){color:inherit}
 #view-guest.ev2 .invite.gx>.in small,#view-guest.ev2 .invite.gx>.in .note,#view-guest.ev2 .invite.gx>.in .lede{color:var(--pl-soft)}
 #view-guest.ev2 .invite.gx>.in a:not(.btn){color:var(--pl-accent-text)}
 #view-guest.ev2 .invite.gx{background:transparent}
@@ -10442,7 +10442,7 @@ function gxSettle(){ [()=>ev2Layout(),()=>inviteOrder(),()=>rsvpFold(),()=>kudos
 { const st=document.createElement("style"); st.textContent=`#view-guest.gx-busy{opacity:0}`; document.head.appendChild(st) }
 { const _rgSet=renderGuest; renderGuest=async function(){ const host=document.getElementById("view-guest"), redraw=!!host?.querySelector(".invite.gx"); if(redraw){ host.style.minHeight=host.offsetHeight+"px"; host.classList.add("gx-busy") }
     try{ const r=await _rgSet.apply(this,arguments); if(host?.querySelector(".invite.gx")) gxSettle(); return r }
-    finally{ if(redraw){ host.classList.remove("gx-busy"); setTimeout(()=>{ host.style.minHeight="" },1600) } } } }
+    finally{ if(redraw){ host.classList.remove("gx-busy"); if(document.documentElement.classList.contains("g-loading")) host.style.minHeight=""; /* still behind the opening cover: let go now, not after it lifts (the page below jumped up) */ else setTimeout(()=>{ host.style.minHeight="" },1600) } } } }
 // the Home bell opens a sheet on Home, not the Feed page
 document.addEventListener("click",async ev=>{ const b=ev.target.closest?.("#homeBell"); if(!b) return; ev.preventDefault(); try{ document.getElementById("bellSheet")?.remove(); const j=await (await fetch("/api/me/inbox")).json().catch(()=>({items:[]})); const I=j.items||[];
   const ago=t=>{ const m=Math.max(1,Math.round((Date.now()-(t||Date.now()))/60000)); return m<60?`${m}m`:m<1440?`${Math.round(m/60)}h`:`${Math.round(m/1440)}d` };
@@ -13449,10 +13449,13 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
       n.innerHTML=CL.paid?`<h3>Members get in first</h3><p class="note">${esc(P.line)}</p>${CL.handle?`<a class="btn" href="/@${esc(CL.handle)}">See the host's page</a>`:""}`
         :`<h3>Members first until ${esc(t)}</h3><p class="note">${esc(CL.name||"The host's members")} can reply first. Join the club to reply now, or come back then.</p>${CL.handle?`<a class="btn" href="/@${esc(CL.handle)}">See the club</a>`:""}`;
       const f=host.querySelector("#gForm"); if(f) f.before(n); else inv.after(n) }
-    const X=H[e.id], h=X?.host;
-    if(h?.handle&&!host.querySelector(".hrow")){ const name=h.name||X.person||hostFirst(e), d=document.createElement("div"); d.className="hrow";
+    const X=H[e.id], h=X?.host, at0=()=>inv.querySelector(":scope > .gxfacts")||inv.querySelector(":scope > h3"); let ph=host.querySelector(".hrow.hrow-wait");
+    /* the host row's room is held while its host loads, so nothing under it moves when it arrives */
+    if(!X&&!ph&&!host.querySelector(".hrow")){ ph=document.createElement("div"); ph.className="hrow hrow-wait"; ph.style.minHeight="44px"; ph.setAttribute("aria-hidden","true"); const a=at0(); if(a) a.after(ph); else inv.prepend(ph) }
+    if(X&&ph&&!h?.handle){ ph.remove(); ph=null }
+    if(h?.handle&&!host.querySelector(".hrow:not(.hrow-wait)")){ const name=h.name||X.person||hostFirst(e), d=ph||document.createElement("div"); d.className="hrow"; d.style.minHeight=""; d.removeAttribute("aria-hidden");
       d.innerHTML=`<a href="/@${esc(h.handle)}"><span class="hav">${h.avatarUrl?`<img src="${esc(h.avatarUrl)}" alt="">`:esc((name||"?")[0])}</span><b>${esc(name)}</b></a>${own?"":`<button type="button" class="plf-btn" data-pl-follow="${esc(h.handle)}" data-name="${esc(name)}" aria-pressed="false">Follow</button>`}`;
-      const at=inv.querySelector(":scope > .gxfacts")||inv.querySelector(":scope > h3"); if(at) at.after(d); else inv.prepend(d) }
+      if(!ph){ const at=at0(); if(at) at.after(d); else inv.prepend(d) } }
     if(!document.querySelector(".gx-lz")){ const p=document.createElement("p"); p.className="note gx-lz"; p.innerHTML=`<a href="#" data-lz="report">Report</a>`; (host.firstElementChild||host).appendChild(p) }
     if(e.cancelled&&!host.querySelector(".gx-cancel")){ const who=hostFirst(e), n=document.createElement("div"); n.className="panel gx-cancel"; n.setAttribute("role","status");
       n.innerHTML=`<h3>${esc(who==="your host"?"This was cancelled":who+" cancelled this one")}</h3><p class="note" style="margin:0">${M?.response==="going"?"You were in, so there's nothing to do. ":""}Replies are closed.${own?"":` Follow ${esc(who==="your host"?"the host":who)} to hear about the next one.`}</p>`;

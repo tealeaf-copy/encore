@@ -54,7 +54,7 @@
 .kd-av{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--pl-accent-text) 12%,var(--pl-surface));color:var(--pl-accent-text);font:600 15px/1 var(--sys-sans)}
 .kd-who{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .kd-who b{font:600 15px/1.2 var(--sys-sans);color:var(--pl-ink)}
-.kd-who small{font:500 12px/1.3 var(--sys-mono);letter-spacing:var(--pl-kicker-track,.04em);text-transform:uppercase;color:var(--pl-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kd-who small{font:500 12px/1.3 var(--sys-mono);letter-spacing:var(--pl-kicker-track,.04em);text-transform:uppercase;color:var(--pl-soft);overflow-wrap:anywhere;text-wrap:balance}
 .kd-more{flex:none;min-height:44px;min-width:44px;padding:0 2px;border:0;background:none;color:var(--pl-accent-text);font:600 15px/1 var(--sys-sans);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .kd-more[data-off]{visibility:hidden}
 .kd .kq.kd-card>.sf-more{top:8px;right:8px}

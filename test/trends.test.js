@@ -206,6 +206,7 @@ test("browser at 390: the canvas shows labelled ideas, Use this fills the title,
     await page.$eval("#ptiHome", (el) => el.scrollIntoView({ block: "center" })); await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(SHOTS, "home-card-390.png") });
     await page.evaluate(() => window.EventCanvas.open({ mode: "new" }));
+    await page.waitForSelector("#cvIdeasD:not([hidden])", { timeout: 20000 }); assert.equal(await page.$eval("#cvIdeasD", (d) => d.open), false, "ideas start closed, so the invite is first"); await page.click("#cvIdeasD > summary");
     await page.waitForSelector("#cvIdeas .pti-use", { timeout: 20000 });
     await page.waitForFunction(() => (window.PLTrendIdeas?.bank?.() || []).length > 0, null, { timeout: 10000 }); // the autocomplete bank has them too
     assert.ok(await page.evaluate(() => window.PLTrendIdeas.bank().every((x) => x.t && x.hint)), "each bank idea carries its source as the hint");

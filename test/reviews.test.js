@@ -306,6 +306,7 @@ test("rate limit: a burst of writes from one place is stopped", async () => {
 test("the pages carry their hooks, small and marked, and the budgets hold", () => {
   const rd = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
   assert.match(rd("public/host.html"), /<script src="\/kudoswall\.js"><\/script><script src="\/reviews\.js"><\/script>/);
+  assert.match(rd("public/kudos.html"), /\.thanks \.pot\{width:56px;height:56px\}[\s\S]*const pot = `<svg class="pot" /, "the mark on the thanks card takes the size its rule gives it, not the card's width");
   assert.match(rd("public/kudos.html"), /<script src="\/reviews\.js" defer><\/script>/); assert.match(rd("public/booking.html"), /EncoreReviews\.block\(b, \{ booking: id, t \}/); assert.match(rd("public/droppage.js"), /EncoreReviews\?\.block\(b, \{ event: id \}/);
   const idx = rd("index.html"); assert.match(idx, /add\("\/reviews\.js"\)/); assert.ok(idx.lastIndexOf("<script>") === idx.lastIndexOf("<script>\n// ---- \"Come with me?\""), "the Come with me loader is still the last script");
   assert.ok(!/reviews\.js/.test(rd("public/invite.html")), "the light invite doesn't load it"); assert.ok(rd("public/invite.html").length < 40000);

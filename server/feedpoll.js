@@ -4,7 +4,7 @@
 // The host sees the counts and who picked what, and turns the winner into an event in one tap: the card's "Pick this
 // date" opens the new-event editor filled in (public/canvas.js reads ?poll=...), and the event it saves carries
 // fromPoll: "<poll id>.<option id>". The first time such an event is saved with a date and shared (server/app.js calls
-// onEvent), the card turns into "It's on: <date>" with a link to the event, and everyone who picked that option gets
+// onEvent), the card turns into "It's on: <date>" with a link to the event, and everyone who answered the poll gets
 // one note in their Inbox with the link. Nobody is replied for: they tap I'm in themselves.
 //
 // It sits next to the interest check (an event at stage "interest" with dateOptions, index.html): that one needs an
@@ -13,9 +13,10 @@
 //
 // Rules, in one place:
 // - Who sees a card in their feed: the host, people who follow the host (the host is in their friends) and followers
-//   of the host's page: the same people who see their posts and events. Anyone the host sends the link to
-//   (/feed?poll=<id>, the card's Share) can open it too, signed out as well; the id is 24 random hex characters.
-// - Who answers: anyone signed in who can open it. Signed out, a tap asks you to sign in.
+//   of the host's page: the same people who see their posts and events. Followers only: the link
+//   (/feed?poll=<id>, the card's Share) opens it for those same people and nobody else, and never signed out.
+// - Who asks: anyone signed in. Up to 3 open polls each at a time (POLL_OPEN_MAX).
+// - Who answers: anyone signed in who can open it.
 // - Blocks work both ways (server/safety.js): if either blocked the other, there is no card and no vote, and a
 //   blocked person's picks are left out of the counts and faces for the person who blocked them.
 // - Names: the host sees first names on each option. Everyone else sees small faces, by each person's "Show my name
@@ -45,7 +46,7 @@ const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, " ")
 const hash24 = (s) => crypto.createHash("sha256").update(lc(s)).digest("hex").slice(0, 24); // the inbox's own key (server/inbox.js)
 const iso = (t) => new Date(t).toISOString().slice(0, 10);
 const DATE = /^\d{4}-\d{2}-\d{2}$/, TIME = /^([01]\d|2[0-3]):[0-5]\d$/, PID = /^[a-f0-9]{24}$/;
-export const POLL_MIN = 2, POLL_MAX = 5, POLL_Q = "When works for you?", POLL_Q_MAX = 80, POLL_TITLE_MAX = 60, POLL_FEED_MAX = 3, POLL_KEEP_DAYS = 7, POLL_NOTE_FOLD = 5;
+export const POLL_MIN = 2, POLL_MAX = 5, POLL_Q = "When works for you?", POLL_Q_MAX = 80, POLL_TITLE_MAX = 60, POLL_FEED_MAX = 3, POLL_OPEN_MAX = 3, POLL_KEEP_DAYS = 7, POLL_NOTE_FOLD = 5;
 const realDate = (d) => DATE.test(d) && !Number.isNaN(Date.parse(d + "T12:00:00Z")) && iso(Date.parse(d + "T12:00:00Z")) === d;
 
 /** "Sat, Dec 5" */
@@ -101,9 +102,10 @@ export function makeFeedPoll(store, { C, X, app = null }) {
   /** May this viewer open this poll? Not when either side blocked the other, or the viewer blocked the host's page. */
   function canSee(P, v) { if (!P) return false; if (v.email && v.email === P.owner) return true;
     const h = handleOf(P.ws); if (v.blocks?.has("person:" + keyOf(P.owner)) || (h && v.blocks?.has("host:" + h))) return false;
-    return !(v.email && blocked(P.owner, v.email)); }
+    if (v.email && blocked(P.owner, v.email)) return false;
+    return inFeed(P, v); } // followers only: the link opens it for the people who would see it in their feed, nobody else
   /** Is this poll in this viewer's feed? Their own, a friend's, or a host page they follow. */
-  const inFeed = (P, v) => !!v.email && (v.email === P.owner || v.friends?.has(P.owner) || v.followed?.has(P.ws));
+  function inFeed(P, v) { return !!v.email && (v.email === P.owner || !!v.friends?.has(P.owner) || !!v.followed?.has(P.ws)); }
 
   /** The card as this viewer sees it (the shape public/feedpoll.js draws). */
   function item(P, v, now = Date.now()) { const mine = !!v.email && v.email === P.owner, me = v.email ? keyOf(v.email) : "", F = B(), ctx = ctxOf(P), all = new Set();
@@ -156,17 +158,19 @@ export function makeFeedPoll(store, { C, X, app = null }) {
   const close = (P, now = Date.now()) => { const n = save({ ...P, closedAt: P.closedAt || now }); return n; };
   /**
    * An event was saved carrying fromPoll (server/app.js): when it is the host's own, has a date and is shared, the poll
-   * becomes "It's on" and everyone who picked that option hears once, with the link. Nobody is replied for.
+   * becomes "It's on" and everyone who answered hears once, with the link. Nobody is replied for.
    */
   function onEvent(ws, eventId, e, now = Date.now()) { const m = /^([a-f0-9]{24})\.([a-e])$/.exec(String(e?.fromPoll || "")); if (!m || !eventId) return false;
     const P = get(m[1]); if (!P || P.event || !ws || P.ws !== ws || !P.options.some((o) => o.id === m[2])) return false;
     if (!DATE.test(e.date || "") || !e.published || e.cancelled) return false;
     save({ ...P, event: { id: String(eventId), opt: m[2], at: now }, closedAt: P.closedAt || now });
     const title = clean(e.pubTitle || e.name, 80) || P.title || "It", when = whenLabel(e.date, e.startTime); let host = ""; try { host = first(X.person(P.owner)?.name); } catch {}
-    for (const x of Object.values(P.votes?.[m[2]] || {})) { const to = lc(x.e); if (!to || to === P.owner || blocked(P.owner, to) || blocked(to, P.owner)) continue;
-      try { notify(X, to, { kind: "itson", key: "itson-" + eventId, actor: { name: host || "Your host", email: P.owner }, title: `It's on: ${title}, ${when}`, preview: `${host || "Your host"} picked a time you said works. Are you in?`, link: "/e/" + encodeURIComponent(eventId), eventId: String(eventId) }); } catch {} }
+    const yes = new Set(Object.values(P.votes?.[m[2]] || {}).map((x) => lc(x.e))), told = new Set(); // everyone who answered hears, whichever time they picked
+    for (const x of P.options.flatMap((o) => Object.values(P.votes?.[o.id] || {}))) { const to = lc(x.e); if (!to || told.has(to) || to === P.owner || blocked(P.owner, to) || blocked(to, P.owner)) continue; told.add(to);
+      try { notify(X, to, { kind: "itson", key: "itson-" + eventId, actor: { name: host || "Your host", email: P.owner }, title: `It's on: ${title}, ${when}`, preview: yes.has(to) ? `${host || "Your host"} picked a time you said works. Are you in?` : `${host || "Your host"} picked ${when}. Can you make it?`, link: "/e/" + encodeURIComponent(eventId), eventId: String(eventId) }); } catch {} }
     return true; }
-  return { create, remove, get, item, cards, weave, cardOf, canSee, inFeed, vote, close, onEvent, isOpen, votersOf };
+  const openOf = (email, now = Date.now()) => idsOf(email).map(get).filter((P) => P && isOpen(P, now));
+  return { openOf, create, remove, get, item, cards, weave, cardOf, canSee, inFeed, vote, close, onEvent, isOpen, votersOf };
 }
 
 export function mountFeedPoll(app, { store, small, currentUser, C, X }) {
@@ -177,7 +181,9 @@ export function mountFeedPoll(app, { store, small, currentUser, C, X }) {
   const env = (k, d) => Math.max(1, +process.env[k] || d);
   const vOf = (u) => app.locals.feedBlend.viewerOf({ email: u ? u.email : "", ws: u ? u.ws : "" });
   // the poll behind an id, for this viewer (404 when it is gone or they may not see it)
-  const open = (req, res) => { const u = viewer(req), v = vOf(u), P = FP.get(req.params.id); if (!P || !FP.canSee(P, v)) { bad(res, "That poll isn't here any more.", 404, "not_found"); return null; } return { u, v, P }; };
+  const open = (req, res) => { const u = viewer(req), v = vOf(u), P = FP.get(req.params.id);
+    if (P && !u) { bad(res, "Sign in to see this poll.", 401, "unauthenticated"); return null; }
+    if (!P || !FP.canSee(P, v)) { bad(res, "That poll isn't here any more.", 404, "not_found"); return null; } return { u, v, P }; };
 
   // ask: the host posts a poll
   app.post("/api/feed/polls", small, (req, res) => { res.set("Cache-Control", "private, no-store");
@@ -192,6 +198,7 @@ export function mountFeedPoll(app, { store, small, currentUser, C, X }) {
     if (closes) { if (!DATE.test(closes) || Number.isNaN(Date.parse(closes + "T12:00:00Z"))) return bad(res, "That closing day doesn't look right.", 400, "bad_closes");
       if (closes < iso(Date.now() - DAY)) return bad(res, "Pick a closing day from today on.", 400, "bad_closes"); if (closes > last) closes = last; }
     if (over("who|c|" + lc(u.email), env("ENCORE_FEED_POLLS_PER_HOUR", 10))) return bad(res, "That's a lot of polls for one hour. Try again in a bit.", 429, "rate_limited");
+    if (FP.openOf(u.email).length >= POLL_OPEN_MAX) return bad(res, `You have ${POLL_OPEN_MAX} polls open. Close one, or pick a date on it, then ask again.`, 409, "too_many_open");
     try { X.ensureProfile?.(u); } catch {}
     const P = FP.create(u, { q, title, options, closes }); res.json({ ok: true, poll: FP.item(P, vOf(u)) }); });
   // read one (the shared link, and a fresh look after a tap)

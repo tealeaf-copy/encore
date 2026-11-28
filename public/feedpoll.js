@@ -205,8 +205,9 @@ html body .fp-sheet .fp-row input.fp-in{margin:0;padding:0 12px;min-height:48px;
   try { const u = new URL(location.href), id = u.searchParams.get("poll") || ""; if (/^[a-f0-9]{24}$/.test(id)) want = id;
     if (u.searchParams.get("ask") === "when") { asked = true; u.searchParams.delete("ask"); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
   async function land() { if (!want) return; const id = want;
-    if (!got) { got = api(`/api/feed/polls/${encodeURIComponent(id)}`).then(({ r, j }) => (r.ok ? j.poll : null)).catch(() => null); }
-    const it = await got; if (!it) { if (want) { want = ""; window.PLToast?.("That poll isn't here any more."); } return; }
+    if (!got) { got = api(`/api/feed/polls/${encodeURIComponent(id)}`).then(({ r, j }) => (r.ok ? j.poll : r.status === 401 ? "signin" : null)).catch(() => null); }
+    const it = await got; if (it === "signin") { want = ""; return askSignIn(id); } // followers only: signed out, the link asks you to sign in
+    if (!it) { if (want) { want = ""; window.PLToast?.("That poll is for the host's followers, or it has been taken down."); } return; }
     if (show(POLLS.get(id) || it, true)) want = ""; }
   function start() { if (asked) { asked = false; setTimeout(() => compose({}), 300); }
     if (!want) return; land(); const mo = new MutationObserver(() => { if (!want) return mo.disconnect(); if ($(".fb-stream")) land(); }); mo.observe(document.body, { childList: true, subtree: true }); setTimeout(() => mo.disconnect(), 20000); }

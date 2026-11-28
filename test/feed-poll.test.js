@@ -74,17 +74,18 @@ test("asking: signed in only, checked on the server, and the host gets the card 
   assert.equal((await read("hana", early.poll.id)).status, 404);
 });
 
-test("who sees it: the host and the people who follow them in the feed, anyone with the link, never someone blocked", async () => {
+test("who sees it: the host and the people who follow them in the feed, followers only even with the link, never someone blocked", async () => {
   assert.ok(pollIn(await feedOf("hana"), pid), "the host sees their own poll"); const f = pollIn(await feedOf("finn"), pid); assert.ok(f, "a follower sees it");
   assert.equal(f.mine, false); assert.equal(f.options[0].names, undefined, "only the host gets names"); assert.equal((await feedOf("finn")).items[0].id, pid, "an open poll you haven't answered leads the feed");
   assert.equal(pollIn(await feedOf("sol"), pid), undefined, "someone who doesn't follow the host has no card in their feed");
   assert.equal(pollIn(await feedOf("bo"), pid), undefined, "a blocked follower has no card");
   assert.equal((await read("bo", pid)).status, 404, "and can't open the link"); assert.equal((await vote("bo", pid, "a")).status, 404, "or vote");
   assert.equal((await post("/api/feed/kudos", { target: "q:" + pid }, U.bo.cookie)).status, 404); assert.equal((await post("/api/feed/comments", { target: "q:" + pid, text: "hi" }, U.bo.cookie)).status, 404);
-  // the link works signed out (to look) and for someone the host sent it to
-  const out = await read("", pid); assert.equal(out.status, 200); assert.equal(out.signedIn, false); assert.equal(out.poll.title, "Dumpling night"); assert.equal(out.poll.me, undefined);
+  // followers only: the link opens nothing signed out, and nothing for someone who doesn't follow the host
+  const out = await read("", pid); assert.equal(out.status, 401); assert.equal(out.poll, undefined);
   assert.equal((await vote("", pid, "a")).status, 401, "signed out, a tap is asked to sign in");
-  assert.equal((await read("sol", pid)).status, 200); assert.equal((await read("", "0".repeat(24))).status, 404); assert.equal((await read("", "nope")).status, 404);
+  assert.equal((await read("sol", pid)).status, 404); assert.equal((await vote("sol", pid, "b")).status, 404, "the link doesn't let a non-follower answer");
+  assert.equal((await post("/api/feed/kudos", { target: "q:" + pid }, U.sol.cookie)).status, 404); assert.equal((await read("", "0".repeat(24))).status, 404); assert.equal((await read("", "nope")).status, 404);
   const pub = await (await get("/api/public/feed")).json(); assert.equal(pub.blend.items.some((x) => x.kind === "poll"), false, "the signed-out feed carries no polls");
 });
 
@@ -97,7 +98,9 @@ test("answering: one tap each, tap again to undo, counts and faces add up, and t
   assert.equal((await vote("finn", pid, "z")).status, 400); assert.equal((await vote("finn", pid, "")).status, 400);
   j = await vote("pia", pid, "a"); j = await vote("pia", pid, "b"); assert.deepEqual(j.poll.options.map((o) => [o.count, o.mine]), [[2, true], [1, true], [0, false]]); assert.equal(j.poll.voters, 2);
   assert.equal(j.poll.options[0].faces.length, 2); assert.deepEqual(j.poll.options[0].faces[0], { i: "P", c: j.poll.options[0].faces[0].c, me: 1 }, "your own face first");
-  j = await vote("sol", pid, "b"); assert.equal(j.status, 200, "someone with the link can answer too");
+  // Sol, Wes follow Hana now: the poll opens for them
+  for (const w of ["sol", "wes"]) assert.ok((await post("/api/me/friends", { key: key(U.hana.email) }, U[w].cookie)).ok); srv.app.locals.social.bust();
+  j = await vote("sol", pid, "b"); assert.equal(j.status, 200, "a new follower can answer");
   // the host: counts and who picked what
   const H = (await read("hana", pid)).poll; assert.deepEqual(H.options.map((o) => [o.count, o.names]), [[2, ["Finn", "Pia"]], [2, ["Pia", "Sol"]], [0, []]]); assert.equal(H.voters, 3); assert.equal(H.lead, "a", "a tie goes to the earlier time");
   // the feed says the same after a reload, and an answered poll no longer has to lead
@@ -135,7 +138,7 @@ test("only the host closes; a closed poll keeps its answers and takes no more", 
   assert.equal((await del(`/api/feed/polls/${Q.id}`, U.hana.cookie)).status, 200); assert.equal((await del(`/api/feed/polls/${P.id}`, U.hana.cookie)).status, 200);
 });
 
-test("the host makes the event: the card reads It's on, the people who picked that time hear once, nobody is replied for", async () => {
+test("the host makes the event: the card reads It's on, everyone who answered hears once, nobody is replied for", async () => {
   // not the host: an event that names someone else's poll changes nothing
   assert.equal((await put("events/fpSol", { name: "Not mine", kind: "social", casual: true, date: day(5), published: true, fromPoll: pid + ".a" }, U.sol.cookie)).status, 200);
   assert.equal((await read("hana", pid)).poll.event, undefined);
@@ -146,9 +149,10 @@ test("the host makes the event: the card reads It's on, the people who picked th
   srv.app.locals.social.bust();
   const H = (await read("hana", pid)).poll; assert.deepEqual(H.event, { id: "fpEv", url: "/e/fpEv", title: "Dumpling night", date: day(5), time: "19:00" }); assert.equal(H.picked, "a"); assert.equal(H.open, false);
   assert.equal((await vote("finn", pid, "b")).status, 409);
-  // Finn and Pia picked that time: one note each, with the link. Sol picked another time; the host gets none.
+  // Finn and Pia picked that time: one note each, with the link. Sol picked another time and hears too; the host gets none.
   for (const w of ["finn", "pia"]) { const N = inbox(U[w].email).filter((n) => n.kind === "itson"); assert.equal(N.length, 1, w); assert.equal(N[0].link, "/e/fpEv"); assert.equal(N[0].title, `It's on: Dumpling night, ${whenLabel(day(5), "19:00")}`); assert.match(N[0].preview, /Hana picked a time you said works/); }
-  for (const w of ["sol", "hana", "bo"]) assert.equal(inbox(U[w].email).filter((n) => n.kind === "itson").length, 0, w);
+  { const N = inbox(U.sol.email).filter((n) => n.kind === "itson"); assert.equal(N.length, 1, "everyone who answered hears"); assert.equal(N[0].link, "/e/fpEv"); assert.match(N[0].preview, /Hana picked .* Can you make it\?/); }
+  for (const w of ["hana", "bo", "wes"]) assert.equal(inbox(U[w].email).filter((n) => n.kind === "itson").length, 0, w);
   // saving the event again tells nobody twice, and nobody was replied for
   assert.equal((await put("events/fpEv", { name: "Dumpling night", kind: "social", casual: true, city: "Brooklyn", date: day(5), startTime: "19:30", published: true, discoverable: true, fromPoll: pid + ".a" }, U.hana.cookie)).status, 200);
   srv.app.locals.social.bust();
@@ -161,7 +165,10 @@ test("writes are rate limited per person", async () => {
   process.env.ENCORE_FEED_POLLS_PER_HOUR = "2"; const codes = [];
   for (let i = 0; i < 4; i++) codes.push((await ask("wes", { options: OPTS() })).status); assert.deepEqual(codes, [200, 200, 429, 429]);
   process.env.ENCORE_FEED_POLLS_PER_HOUR = "500"; const P = (await ask("hana", { title: "Limits", options: OPTS() })).poll;
-  await join("zed", "Zed Okoro"); process.env.ENCORE_FEED_POLL_VOTES_PER_HOUR = "3"; const v = [];
+  // three open polls each, no more: close one (or pick a date) to ask again
+  const w3 = await ask("wes", { options: OPTS() }); assert.equal(w3.status, 200); const w4 = await ask("wes", { options: OPTS() }); assert.equal(w4.status, 409); assert.equal(w4.code, "too_many_open"); assert.match(w4.message, /3 polls open/);
+  assert.equal((await post(`/api/feed/polls/${w3.poll.id}/close`, {}, U.wes.cookie)).status, 200); assert.equal((await ask("wes", { options: OPTS() })).status, 200);
+  await join("zed", "Zed Okoro"); assert.ok((await post("/api/me/friends", { key: key(U.hana.email) }, U.zed.cookie)).ok); srv.app.locals.social.bust(); process.env.ENCORE_FEED_POLL_VOTES_PER_HOUR = "3"; const v = [];
   for (let i = 0; i < 5; i++) v.push((await vote("bo", P.id, "a")).status); assert.deepEqual(v, [404, 404, 404, 404, 404], "blocked comes first");
   for (let i = 0; i < 5; i++) v.push((await vote("zed", P.id, "a", i % 2 === 0)).status); assert.deepEqual(v.slice(5), [200, 200, 200, 429, 429]);
   process.env.ENCORE_FEED_POLL_VOTES_PER_HOUR = "500"; process.env.ENCORE_FEED_POLL_VOTES_PER_IP_HOUR = "1"; assert.equal((await vote("pia", P.id, "a")).status, 429);
@@ -246,11 +253,9 @@ test("on a phone: ask from the +, answer as a second person, make the event as t
     await G.ctx.close();
     assert.equal((await vote("kai", id, "a")).status, 200); assert.equal((await vote("kai", id, "c")).status, 200);
 
-    // ---- signed out: the link shows the poll, a tap asks you to sign in ----
-    const O = await open(""); await O.page.goto(srv.base + "/feed?poll=" + id, { waitUntil: "networkidle" }); await O.page.waitForSelector(`[data-fp="${id}"]`); await O.page.waitForTimeout(600);
-    const oc = O.page.locator(`[data-fp="${id}"]`); assert.match(await oc.innerText(), /Dumpling night/); await oc.locator("button.fp-opt").first().tap(); await O.page.waitForSelector(".fp-sheet");
-    assert.match(await O.page.locator(".fp-sheet").innerText(), /Sign in to say when you're free/); assert.match(await O.page.locator(".fp-sheet a").first().getAttribute("href"), /^\/login\?next=%2Ffeed%3Fpoll%3D/);
-    assert.equal(await oc.locator("button.fp-opt").first().getAttribute("aria-pressed"), "false"); await O.ctx.close();
+    // ---- signed out: followers only, so the link asks you to sign in and shows no poll ----
+    const O = await open(""); await O.page.goto(srv.base + "/feed?poll=" + id, { waitUntil: "networkidle" }); await O.page.waitForSelector(".fp-sheet");
+    assert.match(await O.page.locator(".fp-sheet a").first().getAttribute("href"), /^\/login\?next=%2Ffeed%3Fpoll%3D/); assert.equal(await O.page.locator(`[data-fp="${id}"]`).count(), 0); await O.ctx.close();
 
     // ---- the host sees who picked what, then picks the date ----
     await H.page.goto(srv.base + "/feed", { waitUntil: "networkidle" }); await H.page.waitForSelector(`[data-fp="${id}"]`); await H.page.waitForTimeout(700);

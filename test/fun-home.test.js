@@ -28,7 +28,7 @@ test("the home page's first screen: Potto's box, the tagline and supporting line
   assert.doesNotMatch(home, /<video|<audio|\.mp4|\.webm/, "drawn in code, no media files");
   assert.match(home, /<body class="home about pl-fun"/); assert.match(home, /href="\/fun\.css"/); assert.match(home, /href="\/system\.css"/);
   // the sections under it keep their words
-  for (const t of ["A personal assistant for events.", "One good night takes a week.", "What it does for hosts.", "Good for everyone at the table.", "What we promise each other."]) assert.ok(home.includes(t), t);
+  for (const t of ["A personal assistant for events.", "One good night takes a week.", "What it does for hosts.", "Good for everyone at the table.", "How we do things here."]) assert.ok(home.includes(t), t);
   assert.doesNotMatch(hero.replace(/<svg[\s\S]*?<\/svg>/g, ""), /—|elevate|curated|seamless|unlock|marketplace|magical/i);
 });
 

@@ -129,7 +129,7 @@
   function lookTone(e) { try { const LK = typeof window !== "undefined" && window.EncoreLooks, L = e && e.look; if (!LK || !L || !LK.has?.(L)) return null; const T0 = LK.colors(L), T = T0 && LK.fieldNotes(T0); return T && HEX(T.cover) ? { bg: T.cover, spot: HEX(T.spot) } : null; } catch { return null; } }
   function spec(e = {}) { if (SPEC_OK(e.coverSpec?.art)) return e.coverSpec.art; const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = valid(pick.kind) ? pick.kind : kindOf(e), tone = PASTELS[pick.tone] ? pick.tone : toneOf(e, kind);
     if (typeof pick.svg === "string" && /^<svg /.test(pick.svg)) return { kind, tone, custom: true };
-    const parts = String(kind).split("+"), extra = kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = (K0.length < 3 ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, Math.max(3, Math.min(4, K0.length)));
+    const parts = String(kind).split("+"), extra = kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = K0.slice(0, 4); // only what the event is about: no look-alike drawings added to fill the row
     return { kind, tone, scene: K }; }
   function cover(e = {}, opts = {}) {
     const S0 = !opts.kind && !opts.tone && SPEC_OK(e.coverSpec?.art) ? e.coverSpec.art : null;
@@ -139,7 +139,7 @@
     const custom = opts.svg || (!opts.kind && typeof pick.svg === "string" && /^<svg /.test(pick.svg) ? pick.svg : "");
     if (custom) return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""} ea-custom" style="--ea-bg:${bg}"><div class="ea-txt">${(opts.label ?? pick.label ?? "") ? `<small class="ea-label">${esc(opts.label ?? pick.label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art"><img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(custom)}"></div>${opts.mark || ""}</div>`;
     // full covers fill out with the event's other themes and its place; picker tiles show exactly the option
-    const parts = String(kind).split("+"), extra = opts.exact ? [] : kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = S0?.scene && !opts.exact ? S0.scene : (K0.length < 3 && !opts.exact ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, opts.exact ? 4 : Math.max(3, Math.min(4, K0.length))), full = K.length >= 3;
+    const parts = String(kind).split("+"), extra = opts.exact ? [] : kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = S0?.scene && !opts.exact ? S0.scene : K0.slice(0, 4), full = K.length >= 3;
     return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""}${full ? " ea-full" : ""}${!title && !label ? " ea-bare" : ""}" style="--ea-bg:${bg}"><div class="ea-txt">${label ? `<small class="ea-label">${esc(label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art">${full ? scene(K, spot) : drawing(kind, spot)}</div>${opts.mark || ""}</div>`;
   }
   const CSS = `.ea-cover{position:absolute;inset:0;background:var(--ea-bg);color:${INK};font-family:"IBM Plex Sans","Inter",system-ui,sans-serif;text-align:left;overflow:hidden;container-type:size}

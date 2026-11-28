@@ -134,7 +134,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   const hostOK = (I, ws) => { const h = V.hostOf(ws, I); return h && !V.sample(ws, I) ? h : null; };
   const placeOf = (e) => clean(e.hood || e.city || "", 60);
   const descOf = (e, ws) => { for (const k of ["blurb", "pubDesc", "desc", "description", "about", "dinnerTheme", "audienceWho"]) if (typeof e[k] === "string" && clean(e[k]).length > 3) return clean(scrub(e[k]), 140);
-    const t = clean(C.profileOf(ws)?.tagline || "", 140); return t || [e.activity, placeOf(e)].filter(Boolean).join(" in "); };
+    const t = clean(C.profileOf(ws)?.tagline || "", 140); return t; }; // no made-up "pop-up in New York": the tag and the facts line already say the kind and the place
   const rsvpsOf = (ws, id) => { try { return scopeStore(store, ws).listShared("rsvps").filter((d) => d.data?.eventId === id).map((d) => ({ id: d.id, ...(d.data || {}) })); } catch { return []; } }; // listShared: read only, parsed once per change (server/db.js)
   const face = (p, name) => ({ name, emoji: p?.emoji || "", color: p?.color || "", handle: p?.handle || "" });
   // the host on top of every card, with a small Follow when the viewer doesn't follow them yet

@@ -51,6 +51,7 @@ import { mountHostLoop } from "./hostloop.js"; // streaks with rest passes, smal
 import { mountExperiments, addSink } from "./experiments.js"; // deterministic A/B tests and /admin/experiments (server/experiments.js)
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountFeedComments } from "./feedcomments.js"; // comments under feed cards: list, add, delete, fresh counts
+import { mountFeedPoll } from "./feedpoll.js"; // availability polls in the feed: "When works for you?"
 import { mountKudosAsk } from "./kudosask.js";
 import { mountStoryApprove } from "./storyapprove.js"; // your stories: approve, captions, order, covers, highlights (server/storyapprove.js)
 import { mountStoryMake } from "./storymake.js"; // making a story: slides, stickers, audience, votes, replies, seen by (server/storymake.js)
@@ -843,6 +844,7 @@ export function createApp({ store, dataDir }) {
       remove: async (ids) => { for (const id of ids || []) if (/^[A-Za-z0-9]{20}$/.test(id)) { await fsp.rm(path.join(assetsDir, id), { force: true }); await fsp.rm(path.join(assetsDir, id + ".json"), { force: true }); } } } });
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
   mountFeedComments(app, { small, currentUser, X, sendHtml: (req, res, html) => sendText(req, res, html) }); // ---- comments on feed cards and the post page (server/feedcomments.js), next to the feed blend it reads ----
+  mountFeedPoll(app, { store, small, currentUser, C, X }); // ---- availability polls in the feed (server/feedpoll.js) ----
   mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X });
   app.locals.promoteWaitlist = (...a) => promoteWaitlist(...a); // memberships: the waitlist moves up when a members window ends
   mountMemberships(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // paid memberships (server/memberships.js): after fan clubs and seats, which it hooks into; its Stripe webhook takes the raw body
@@ -1786,6 +1788,7 @@ export function createApp({ store, dataDir }) {
     if (isEv && !req.guest && !before && !after?.sample && !after?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: p.split("/")[1] });
     if (isEv && !req.guest && after?.published && !before?.published && !after?.sample && !after?.example) capture("event_published", { ws: req.ws, kind: after.kind, region: after.city, private: !after.discoverable });
     if (isEv && !req.guest && !before && after?.inspiredBy) app.locals.inspiration?.planned(after, req.ws); // ---- an event started from an inspiration card (server/inspiration.js) ----
+    if (isEv && !req.guest && after?.fromPoll) { try { app.locals.feedPoll?.onEvent(req.ws, p.split("/")[1], after); } catch {} } // ---- an event made from an availability poll (server/feedpoll.js): "It's on" ----
     const extra = {};
     if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });
       if (before && (before.headcount !== after.headcount || before.autoWait !== after.autoWait || before.plusOnes !== after.plusOnes || !same(before.guests || [], after.guests || []))) { try { const pr = await promoteWaitlist(req, req.ws, p.split("/")[1]); if (pr.length) extra.promoted = pr; } catch {} } }
@@ -2116,6 +2119,7 @@ export function createApp({ store, dataDir }) {
       const r0 = S(req).add(p, body), a = await afterRsvp(req, req.ws, r0.id, null, body).catch(() => ({})); return res.json({ ...r0, ...a, response: a.response || body.response }); }
     const r = S(req).add(p, body);
     if (p === "events" && !req.guest && body?.inspiredBy) app.locals.inspiration?.planned(body, req.ws); // ---- an event started from an inspiration card (server/inspiration.js) ----
+    if (p === "events" && !req.guest && body?.fromPoll) { try { app.locals.feedPoll?.onEvent(req.ws, r.id, body); } catch {} } // ---- an event made from an availability poll (server/feedpoll.js) ----
     if (p === "events" && !req.guest) { claimEvent(r.id, req.ws); if (!body?.sample && !body?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: r.id }); if (body?.published && !body?.sample && !body?.example) capture("event_published", { ws: req.ws, kind: body.kind, region: body.city, private: !body.discoverable }); }
     // a guest's reply says where it landed (a full event puts "going" on the waitlist)
     res.json(p === "rsvps" && body?.response ? { ...r, response: body.response } : r);

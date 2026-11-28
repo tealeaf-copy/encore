@@ -73,7 +73,7 @@ test("on a phone: every kind is one card, compact, with one row of equal actions
       return out; });
     // every kind of post: one container, the same surface, edge, corners and padding
     const kinds = new Set(R.cards.map((c) => c.kind));
-    for (const k of ["event", "recap", "milestone", "club", "post", "follow", "ideas", "inspire", "list", "row"]) assert.ok(kinds.has(k), "the feed drew a " + k + " card");
+    for (const k of ["event", "recap", "milestone", "club", "post", "poll", "follow", "ideas", "inspire", "list", "row"]) assert.ok(kinds.has(k), "the feed drew a " + k + " card");
     for (const c of R.cards) { assert.ok(c.ok, c.kind + " is a card"); assert.equal(c.w, 358, c.kind + " fills the column"); }
     for (const p of ["bg", "bw", "bs", "bc", "rad", "pad"]) assert.equal(new Set(R.cards.map((c) => c[p])).size, 1, "every card has the same " + p + ": " + [...new Set(R.cards.map((c) => c.kind + "=" + c[p]))].join(", "));
     assert.notEqual(R.cards[0].bg, "rgba(0, 0, 0, 0)"); assert.equal(R.cards[0].bw, "1px1px1px1px"); assert.ok(parseFloat(R.cards[0].rad) >= 4);

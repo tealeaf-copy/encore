@@ -11,6 +11,7 @@
 //   post       a friend's post (signed in)
 //   club       a host's post to their fan club (server/fanclub.js postsOf), to members only; its kudos is the club heart
 //   row        whatever events are left over, as one quiet sideways row at the end
+//   poll       "When works for you?": a host's availability poll (server/feedpoll.js), drawn by public/feedpoll.js
 //   list       "Maya made a list" or "Maya added ... to ...": a friend's or a followed curator's list (server/listfeed.js)
 // Rhythm (arrange): no kind sits next to itself more than twice, the follow row comes early and the ideas deck later.
 // Hosts lead every card, and hosts you follow rank first.
@@ -312,6 +313,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     let items = arrange(pools, pools.list?.length ? { pattern: LIST_PATTERN } : undefined); // ---- end lists in the feed ----
     // ---- inspiration cards (server/inspiration.js): holidays and new places, at most one per 8 cards and 2 a day ----
     const IN = app?.locals?.inspiration; if (IN) { try { items = IN.weave(items, { email, ws, device, city, I, publicOK: (x) => V.cardPublic(x.e) && !!hostOK(I, x.ws) }, IN.today()); } catch {} } // ---- end inspiration ----
+    const FP = app?.locals?.feedPoll; if (FP && v.email) { try { items = FP.weave(items, v, now); } catch {} } // ---- availability polls (server/feedpoll.js): "When works for you?" from people and hosts you follow, near the top ----
     return { items, cold: !email || (!v.followed.size && !v.friends.size), following: v.followed.size, city: v.city ? clean(city, 60) : "", ...(email ? { me: myFace(v) } : {}) };
   }
   /** What one device or person did to a shared (cached) stream: their kudos, and the suggestions they dismissed. */
@@ -327,6 +329,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
    */
   function cardOf(target, v, memo = {}) { const tg = String(target || ""), I = v.I, t = today(), fc = app?.locals?.fanclub;
     if (tg.startsWith("l:")) { try { return app?.locals?.listFeed?.cardOf(tg, v) || null; } catch { return null; } } // lists in the feed (server/listfeed.js)
+    if (tg.startsWith("q:")) { try { return app?.locals?.feedPoll?.cardOf(tg, v) || null; } catch { return null; } } // availability polls (server/feedpoll.js)
     const cm = /^club\.([a-z0-9][a-z0-9-]{1,29})\|([A-Za-z0-9_-]{1,40})$/.exec(tg);
     if (cm) { try { const ws = C.wsOfHandle(cm[1]); if (!fc || !ws || !v.email || !hostOK(I, ws) || v.blocks.has("host:" + cm[1])) return null; const owner = lc(getWorkspace(ws)?.ownerEmail), member = fc.isMember(ws, v.email);
         if (!member && owner !== v.email && v.ws !== ws) return null; const p = fc.postsOf(ws, { viewer: v.email }).find((p) => p.id === cm[2]); if (!p) return null;

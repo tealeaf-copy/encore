@@ -1,6 +1,6 @@
 // The "+" on the feed and the sheet it opens. One calm place to start something: a post for your friends (the feed's own
 // posts, POST /api/me/posts), a photo or a link, a "Who's in?" ask, and the bigger things as tiles: a new event (the
-// app's own New flow), a drop (public/drop.js), photos from an event you were at (public/momentupload.js) and, for hosts
+// app's own New flow), "Ask when people are free" (an availability poll, public/feedpoll.js), a drop (public/drop.js), photos from an event you were at (public/momentupload.js) and, for hosts
 // with a fan club on, an update for members (POST /api/host/club/posts, server/fanclub.js). Tiles come from
 // GET /api/me/compose, so each person sees only what fits them. Signed out, the sheet asks you to sign in.
 // Drafts stay on this device (localStorage "pl.drafts"): there's no drafts store on the server.
@@ -21,6 +21,7 @@
     drop: `<svg ${G} width="22" height="22"><path d="M5 8.5h14l-1.2 11H6.2zM9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg>`,
     photos: `<svg ${G} width="22" height="22"><rect x="6.5" y="3.5" width="14" height="13" rx="2"/><path d="M3.5 7.5v11a2 2 0 0 0 2 2h11"/><path d="m20.5 13.5-4-4-6 6"/></svg>`,
     club: `<svg ${G} width="22" height="22"><path d="M4 10.5 12 5l8 5.5"/><path d="M6 9.5V19h12V9.5"/><path d="M10 19v-5h4v5"/></svg>`,
+    when: `<svg ${G} width="22" height="22"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="m8.5 14.5 2.2 2.2 4.6-4.7"/></svg>`,
     x: `<svg ${G} width="16" height="16"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
   };
   const CSS = `
@@ -98,8 +99,9 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
     if (!O.signedIn) { const sc = sheet(`<div class="pc-top"><button type="button" data-x>Cancel</button></div><div class="pc-body"><h2 class="pc-h">Sign in to post or host</h2><p class="pc-p">Share what you're up to with friends, start an event or a drop. It takes a minute.</p><p><a class="pc-btn go" href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a> <a class="pc-btn" href="/signup">Make an account</a></p></div>`);
       sc.querySelector("[data-x]").onclick = sc.close; sc.querySelector("a").focus(); return sc; }
     const st = { text: draft?.text || "", link: draft?.link || "", photo: draft?.photo || "", ask: !!draft?.ask, club: !!draft?.club && !!O.club, id: draft?.id || "" };
-    const T = O.tiles || [];
+    const T = (O.tiles || []).slice(); if (!T.includes("poll")) T.splice(T.includes("event") ? T.indexOf("event") + 1 : T.length, 0, "poll"); // an availability poll (public/feedpoll.js): anyone signed in can ask
     const tile = (k) => k === "event" ? `<a class="pc-tile" href="/?app=1&new=1#studio" data-tile="event">${I.event}<span>New event</span></a>`
+      : k === "poll" ? `<button type="button" class="pc-tile" data-tile="poll">${I.when}<span>Ask when people are free</span></button>`
       : k === "story" ? `<button type="button" class="pc-tile" data-tile="story">${I.camera}<span>Story</span></button>`
       : k === "drop" ? `<button type="button" class="pc-tile" data-tile="drop">${I.drop}<span>Drop</span></button>`
       : k === "photos" ? `<button type="button" class="pc-tile" data-tile="photos">${I.photos}<span>Event photos</span></button>`
@@ -158,6 +160,7 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
     sc.querySelectorAll("[data-tile]").forEach((t) => (t.onclick = (e) => { const k = t.dataset.tile;
       if (k === "event") { if (has()) keepDraft(); return; } // a link to the app's own New flow
       e.preventDefault();
+      if (k === "poll") { if (has()) keepDraft(); sc.close(); const go = () => window.PLWhenPoll.compose({ onPosted: () => onPosted?.(null) }); setTimeout(() => { if (window.PLWhenPoll?.compose) go(); else { const s = document.createElement("script"); s.src = "/feedpoll.js"; s.onload = go; document.head.appendChild(s); } }, RM() ? 0 : 210); return; } // "Ask when people are free" (public/feedpoll.js)
       if (k === "story") { sc.close(); const go = () => window.StoryPrompt.compose({ onDone: () => onPosted?.(null) }); if (window.StoryPrompt?.compose) go(); else { const s = document.createElement("script"); s.src = "/storyprompt.js"; s.onload = go; document.head.appendChild(s); } return; }
       if (k === "club") { st.club = !st.club; if (st.club) st.ask = false; paint(); ta.placeholder = st.club ? "A note for your members" : "What are you up to?"; ta.focus(); return; }
       if (k === "drop") { sc.close(); const go = () => (window.EncoreDrop?.setup ? window.EncoreDrop.setup({}) : (location.href = "/?app=1&new=1#studio")); if (window.EncoreDrop) go(); else { const s = document.createElement("script"); s.src = "/drop.js"; s.onload = go; s.onerror = () => (location.href = "/?app=1&new=1#studio"); document.head.appendChild(s); } return; }

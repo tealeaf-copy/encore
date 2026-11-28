@@ -65,6 +65,7 @@ export const emojiOnly = (t) => { const s = String(t || "").replace(/\s+/g, "");
   return G.length >= 1 && G.length <= 3 && G.every((g) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g) && !/[\p{L}\p{N}]/u.test(g.replace(/[\u{1F3FB}-\u{1F3FF}⃣️]/gu, ""))); };
 /** The post page for a card: /post/e/<id>, /post/r/<id>, /post/m/<id>, /post/c/<handle>/<post id> ("" when it isn't a card). */
 export const postPath = (target) => { const s = String(target || ""); let m = /^([erm]):([A-Za-z0-9_-]{1,80})$/.exec(s); if (m) return `/post/${m[1]}/${m[2]}`;
+  m = /^q:([a-f0-9]{24})$/.exec(s); if (m) return `/feed?poll=${m[1]}`; // an availability poll has no post page: its link opens it on the feed (server/feedpoll.js)
   m = /^club\.([a-z0-9][a-z0-9-]{1,29})\|([A-Za-z0-9_-]{1,40})$/.exec(s); return m ? `/post/c/${m[1]}/${m[2]}` : ""; };
 /** The target a post page names. */
 export const targetOfPost = (kind, a, b = "") => (kind === "c" ? `club.${lc(a)}|${b}` : /^[erm]$/.test(kind) ? `${kind}:${a}` : "");

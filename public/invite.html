@@ -48,7 +48,7 @@
     return u; };
   const payless = (e) => paidOf(e) && !e.ticketNote && !httpsUrl(e.ticketUrl); // not "at the door" either
   const bringOf = (e) => (Array.isArray(e.bring) ? e.bring : e.bring ? [e.bring] : []).map((x) => String(x || "").trim()).filter((x) => x && !/^yourself$/i.test(x)).slice(0, 12);
-  // series (index.html seriesEvery/Span/Price/RRule)
+  // ---------- series: a class that repeats (index.html seriesEvery/Span/Price/RRule)
   const SR_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], SR_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const srDate = (s) => { const x = new Date(String(s || "") + "T12:00:00"); return isNaN(x) ? null : x; }, srMD = (x) => `${SR_MON[x.getMonth()]} ${x.getDate()}`;
   const srNth = (x) => { const n = Math.ceil(x.getDate() / 7), last = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 7, 12).getMonth() !== x.getMonth() && n >= 4; return last ? -1 : n; };

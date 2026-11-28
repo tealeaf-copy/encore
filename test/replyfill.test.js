@@ -58,7 +58,8 @@ test("signed out: the browser's own reply proofs work; a wrong code or no proof 
 });
 
 test("the host's own event stays empty, the preview stays empty, and the switch off returns nothing", async () => {
-  await reply("rfRun", "khostrunrun", host, { answers: { x9: "Host song" } });
+  // a host can't reply to their own event as a guest (server/pageitems.js hostRole): the reply is refused with own_event
+  await assert.rejects(reply("rfRun", "khostrunrun", host, { answers: { x9: "Host song" } }), /own_event/);
   assert.deepEqual((await defaults("rfDinner", { cookie: host.cookie })).fields, [], "the host looking at their own invite");
   assert.deepEqual((await defaults("_preview", { cookie: sam.cookie })).fields, []);
   const off = await fetch(srv.base + "/api/me/reply-details", { method: "POST", headers: { ...J, cookie: sam.cookie }, body: JSON.stringify({ on: false }) }); assert.equal((await off.json()).on, false);

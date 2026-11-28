@@ -195,10 +195,13 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X,
     return o; };
   const mine = (u) => { const S = scopeStore(store, u.ws), h = C.profileOf(u.ws) || {}; return { S, h }; };
 
+  // the first-time tutorial ("How drops work", public/dropsetup.js): shown once a person, before their first drop
+  const tourKey = (email) => "system/droptour-" + crypto.createHash("sha256").update(String(email || "").toLowerCase()).digest("hex").slice(0, 24);
+  app.post("/api/host/drop-tour", small, (req, res) => { const u = me(req, res); if (!u) return; store.set(tourKey(u.email), { kind: "droptour", at: Date.now() }); res.json({ ok: true }); });
   app.get("/api/host/drops", (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u);
     // a shop set up before drops existed becomes one now (the first time its owner looks)
     try { shopToDrop(store, C, u.ws); } catch {}
-    res.json({ handle: h.handle || "", getPaid: hasPay(payOfWs(u.ws)), legacy: h.shop && !h.shop.eventId ? { area: h.shop.where || "", address: h.shop.address || "", slots: h.shop.slots || [], payUrl: h.shop.payUrl || "", title: h.shop.title || "", note: h.shop.note || "", items: (h.shop.items || []).filter((x) => x.name).map((x) => ({ name: x.name, price: +x.cents ? x.cents / 100 : "", stock: x.stock || "", photo: x.photo || "" })) } : null,
+    res.json({ handle: h.handle || "", tour: !dropsOf(store, u.ws).length && !store.get(tourKey(u.email)), getPaid: hasPay(payOfWs(u.ws)), legacy: h.shop && !h.shop.eventId ? { area: h.shop.where || "", address: h.shop.address || "", slots: h.shop.slots || [], payUrl: h.shop.payUrl || "", title: h.shop.title || "", note: h.shop.note || "", items: (h.shop.items || []).filter((x) => x.name).map((x) => ({ name: x.name, price: +x.cents ? x.cents / 100 : "", stock: x.stock || "", photo: x.photo || "" })) } : null,
       drops: dropsOf(store, u.ws).sort((a, b) => (b.e.createdAt || 0) - (a.e.createdAt || 0)).map(({ id, e }) => ({ ...dropOf(id, e), url: `${publicOrigin(req)}/e/${encodeURIComponent(id)}`, path: `/e/${encodeURIComponent(id)}`, batch: counts(S, id, e) })) }); });
 
   app.post("/api/host/drops", small, (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u); if (!h.handle) return bad(res, "Set up your page first.");

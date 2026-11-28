@@ -257,10 +257,17 @@
   const mediaHtml = (c) => (gifOk(c.gif) ? `<span class="fx-gif" style="aspect-ratio:${+c.gif.w}/${+c.gif.h}"><img src="${esc(c.gif.url)}" alt="GIF" loading="lazy" decoding="async" width="${+c.gif.w}" height="${+c.gif.h}"></span><small class="fx-via">via ${c.gif.src === "giphy" ? "GIPHY" : "Tenor"}</small>`
     : c.sticker && STK[c.sticker] ? `<span class="fx-stk" data-stk="${esc(c.sticker)}" role="img" aria-label="Sticker: ${esc(STK[c.sticker])}"></span>` : "");
   const words = (c) => (c.text ? ` <span class="fb-tx${c.big || emojiOnly(c.text) ? " big" : ""}">${esc(c.text)}</span>` : "");
-  // the latest three comments, then "View all 12 comments" (to the post page); a long press or React opens quick reactions
-  const cmRow = (c) => `<li class="fb-c${c.pending ? " wait" : ""}${c.fresh ? " fx-new" : ""}"${c.pending ? "" : ` data-cid="${esc(c.id)}"`}><p><b>${esc(c.mine ? "You" : c.name || "Someone")}</b>${words(c)}<time class="fb-at" datetime="${esc(stamp(c.at))}">${esc(c.pending ? "sending" : ago(c.at))}</time>${c.pending ? "" : `<button type="button" class="fx-rt" data-rx-open aria-label="React to ${esc(c.mine ? "your comment" : (c.name || "this person") + "'s comment")}">React</button>`}</p>${mediaHtml(c)}${rxHtml(c)}</li>`;
+  /** "@Maya" in front of a reply to a reply: a link to her page when she has one. */
+  const mention = (c) => { const m = c.to; if (!m || !m.name) return ""; const t = esc(m.guest ? "a guest" : "@" + m.name); return (m.href && /^\/@[a-z0-9-]+$/.test(m.href) ? `<a class="fb-mn" href="${esc(m.href)}">${t}</a>` : `<span class="fb-mn">${t}</span>`) + " "; };
+  const whoOf = (c) => (c.mine ? "your comment" : c.guest ? "a guest" : c.name || "this comment");
+  // the latest three first comments, each with Reply and "3 replies" (to that comment on the post page), then "View all
+  // 12 comments"; a reply you send from the card shows under its comment at once. A long press or React opens reactions.
+  const SENT = new Map(), sentOf = (t, id) => SENT.get(t + "|" + id) || [];
+  const rpRow = (c) => `<li class="fb-c re${c.pending ? " wait" : ""}${c.fresh ? " fx-new" : ""}"${c.pending || c.failed ? "" : ` data-cid="${esc(c.id)}"`}><p><b>${esc(c.mine ? "You" : c.name || "Someone")}</b> ${mention(c)}${words(c).trim()}<time class="fb-at" datetime="${esc(stamp(c.at))}">${esc(c.failed ? "not sent" : c.pending ? "sending" : ago(c.at))}</time></p>${mediaHtml(c)}${rxHtml(c)}${c.failed ? `<div class="fb-cdo" role="alert"><span class="fb-fail">${esc(c.failed)}</span><button type="button" class="fb-rb" data-fb-retry="${esc(c.id)}">Try again</button><button type="button" class="fb-rb" data-fb-drop="${esc(c.id)}">Discard</button></div>` : ""}</li>`;
+  const cmRow = (c, t = "") => { const mine = sentOf(t, c.id), n = (c.replies || 0) + mine.filter((x) => x.pending || x.failed).length, p = postOf(t), who = whoOf(c);
+    return `<li class="fb-c${c.pending ? " wait" : ""}${c.fresh ? " fx-new" : ""}"${c.pending ? "" : ` data-cid="${esc(c.id)}"`}><p><b>${esc(c.mine ? "You" : c.name || "Someone")}</b>${words(c)}<time class="fb-at" datetime="${esc(stamp(c.at))}">${esc(c.pending ? "sending" : ago(c.at))}</time>${c.pending ? "" : `<button type="button" class="fx-rt" data-rx-open aria-label="React to ${esc(c.mine ? "your comment" : (c.name || "this person") + "'s comment")}">React</button>`}</p>${mediaHtml(c)}${rxHtml(c)}${c.pending || !t || !(SI || n) ? "" : `<div class="fb-cdo">${SI ? `<button type="button" class="fb-rb" data-fb-reply="${esc(c.id)}" aria-label="Reply to ${esc(who)}">Reply</button>` : ""}${n && p ? `<a class="fb-rb fb-rn" href="${esc(p)}#c-${esc(c.id)}" aria-label="${n} ${n === 1 ? "reply" : "replies"} to ${esc(who)}: open the thread">${n} ${n === 1 ? "reply" : "replies"}</a>` : ""}</div>`}${mine.length ? `<ol class="fb-rs" aria-label="Your replies to ${esc(who)}">${mine.map(rpRow).join("")}</ol>` : ""}</li>`; };
   const cmIn = (t, c = {}) => { const L = (c.last || []).slice(-3), n = c.count || 0, p = postOf(t);
-    return `<ol class="fb-cms" aria-label="Latest comments">${L.map(cmRow).join("")}</ol>` + (n > L.length && p ? `<a class="fb-cm-all" href="${esc(p)}">View all ${n} comments</a>` : ""); };
+    return `<ol class="fb-cms" aria-label="Latest comments">${L.map((x) => cmRow(x, t)).join("")}</ol>` + (n > L.length && p ? `<a class="fb-cm-all" href="${esc(p)}">View all ${n} comments</a>` : ""); };
   const cmPreview = (it) => { const t = it.kudos?.target; return t ? `<div class="fb-cm" data-fb-cm="${esc(t)}" data-fx-target="${esc(t)}" data-fx-in="${SI ? 1 : 0}"${it.comments?.count ? "" : " hidden"}>${cmIn(t, it.comments)}</div>` : ""; };
   /** The emoji and GIF buttons next to a comment box (public/feedfun.js opens their pickers). */
   const funBtns = () => `<button type="button" class="fx-b" data-fx="emoji" aria-label="Add an emoji" aria-haspopup="dialog" aria-expanded="false">${ICON.smile}</button><button type="button" class="fx-b fx-gifb" data-fx="gif" aria-label="Add a GIF or a sticker" aria-haspopup="dialog" aria-expanded="false"><span>GIF</span></button>`;
@@ -334,14 +341,50 @@
     $$(`[data-fb-count="${CSS.escape(t)}"]`).forEach((line) => { line.hidden = !K.count || !postOf(t); line.innerHTML = kudosIn(K); }); fire("pl:kudos", { target: t, kudos: K }); }
   /** Put a card's comments on screen (and on its item): the number on the button and the latest three under the card. */
   function setComments(t, c) { const it = SOC.get(t); if (it) it.comments = c;
-    $$(`[data-fb-cn="${CSS.escape(t)}"]`).forEach((n) => (n.textContent = nNum(c.count))); $$(`[data-fb-cm="${CSS.escape(t)}"]`).forEach((el) => { el.hidden = !c.count; el.innerHTML = cmIn(t, c); window.PLFun?.paint(el); }); fire("pl:comments", { target: t, comments: c }); }
+    $$(`[data-fb-cn="${CSS.escape(t)}"]`).forEach((n) => (n.textContent = nNum(c.count))); $$(`[data-fb-cm="${CSS.escape(t)}"]`).forEach((el) => { const back = holdReply(el); el.hidden = !c.count; el.innerHTML = cmIn(t, c); window.PLFun?.paint(el); back(); }); fire("pl:comments", { target: t, comments: c }); }
+  // ---------- the reply box: one at a time, right under the comment it answers (cards here, the thread on the post page) ----------
+  let RF = null, nRf = 0;
+  const replyBox = (who) => { const id = "rb" + nRf++; return `<form class="rb" data-rb novalidate aria-label="Reply to ${esc(who)}"><div class="rb-to"><span>Replying to <b>${esc(who)}</b></span><button type="button" class="rb-x" data-rb-x>Cancel</button></div><div class="rb-row"><label class="fb-sr" for="${id}">Your reply to ${esc(who)}</label><textarea id="${id}" rows="1" maxlength="500" placeholder="Write a reply" enterkeyhint="send" autocomplete="off"></textarea><button type="submit" class="rb-send" disabled>Send</button></div><div class="rb-err" role="alert"></div></form>`; };
+  /** Keep the box on screen: above the keyboard (the visual viewport) and above anything pinned to the bottom (the tab bar, a dock, a sticky comment box). */
+  function keepInView(el) { try { const vv = window.visualViewport, top = vv ? vv.offsetTop : 0, h = vv ? vv.height : innerHeight; let r = el.getBoundingClientRect(), lim = top + h - 8;
+    for (let i = 0; i < 2; i++) for (const fx of [0.1, 0.5, 0.9]) for (let x of document.elementsFromPoint(r.left + r.width * fx, Math.min(innerHeight - 1, lim - 2))) { if (el.contains(x)) break; for (; x && x !== document.body && x !== document.documentElement; x = x.parentElement) { if (x.contains(el)) break; const pos = getComputedStyle(x).position; if (pos === "fixed" || pos === "sticky") { lim = Math.min(lim, x.getBoundingClientRect().top - 8); break; } } }
+    if (r.bottom > lim) scrollBy(0, r.bottom - lim); else if (r.top < top + 8) scrollBy(0, r.top - top - 8); } catch {} }
+  const rfView = () => { if (RF?.el.isConnected) keepInView(RF.el); };
+  function closeReply(back = false) { const r = RF; if (!r) return; RF = null; try { window.visualViewport?.removeEventListener("resize", rfView); } catch {} r.el.remove(); document.documentElement.classList.remove("rb-on"); r.onClose?.(); if (back) try { (r.opener?.isConnected ? r.opener : r.find?.()?.querySelector("[data-fb-reply],[data-reply]"))?.focus({ preventScroll: true }); } catch {} }
+  /** Open the box in host (it is found again with find() after a redraw). onSend(text) posts; the box closes first. */
+  function openReply(host, { who = "this comment", opener = null, find = null, onSend = null, onClose = null } = {}) { if (RF && RF.el.parentElement === host) { RF.el.querySelector("textarea").focus({ preventScroll: true }); keepInView(RF.el); return RF; } closeReply();
+    const d = document.createElement("div"); d.innerHTML = replyBox(who); const el = d.firstChild, ta = el.querySelector("textarea"), send = el.querySelector(".rb-send"); host.appendChild(el); RF = { el, opener, find, onSend, onClose }; document.documentElement.classList.add("rb-on");
+    const size = () => { ta.style.height = "auto"; ta.style.height = Math.min(132, ta.scrollHeight + 2) + "px"; send.disabled = !ta.value.trim(); };
+    ta.addEventListener("input", () => { el.querySelector(".rb-err").textContent = ""; size(); rfView(); });
+    ta.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeReply(true); } else if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); el.requestSubmit(); } });
+    el.addEventListener("submit", (e) => { e.preventDefault(); const text = ta.value.trim(); if (!text) return; const f = RF?.onSend; closeReply(); f?.(text); });
+    el.querySelector("[data-rb-x]").addEventListener("click", () => closeReply(true));
+    try { ta.focus({ preventScroll: true }); } catch { ta.focus(); } keepInView(el); try { window.visualViewport?.addEventListener("resize", rfView); } catch {} setTimeout(rfView, 350); return RF; }
+  /** Around a redraw of root: take the open box out, and put it back under the same comment (with the cursor) once the new rows are in. */
+  function holdReply(root) { const r = RF; if (!r || !root.contains(r.el)) return () => {}; const had = r.el.contains(document.activeElement); r.el.remove();
+    return () => { if (RF !== r) return; const h = r.find?.(); if (!h) { closeReply(); return; } h.appendChild(r.el); if (had) try { r.el.querySelector("textarea").focus({ preventScroll: true }); } catch {} }; }
+  // Reply under a comment on a card: the box opens there; the reply shows under the comment at once and the box closes
+  const redraw = (t) => setComments(t, SOC.get(t)?.comments || { count: 0, last: [] });
+  const liOf = (t, id) => $(`[data-fb-cm="${CSS.escape(t)}"] li[data-cid="${CSS.escape(id)}"]`);
+  document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-fb-reply]"); if (b) { e.preventDefault(); const t = b.closest("[data-fb-cm]")?.dataset.fbCm, id = b.dataset.fbReply, c = SOC.get(t)?.comments?.last?.find((x) => x.id === id); if (!t || !c) return;
+      openReply(b.closest("li"), { who: whoOf(c), opener: b, find: () => liOf(t, id), onSend: (text) => postReply(t, id, text) }); return; }
+    const r = e.target.closest?.("[data-fb-retry],[data-fb-drop]"); if (!r) return; e.preventDefault(); const t = r.closest("[data-fb-cm]")?.dataset.fbCm, pid = r.closest("ol.fb-rs")?.closest("li[data-cid]")?.dataset.cid, id = r.dataset.fbRetry || r.dataset.fbDrop, k = t + "|" + pid, x = sentOf(t, pid).find((y) => y.id === id); if (!x) return;
+    SENT.set(k, sentOf(t, pid).filter((y) => y.id !== id)); if (r.dataset.fbRetry) postReply(t, pid, x.text); else { redraw(t); liOf(t, pid)?.querySelector("[data-fb-reply]")?.focus({ preventScroll: true }); } });
+  async function postReply(t, pid, text) { if (!SI) { location.href = "/login?next=" + encodeURIComponent(postOf(t) || location.pathname); return; }
+    const k = t + "|" + pid, tmp = { id: "tmp" + Date.now(), name: "You", mine: true, pending: true, fresh: !RM(), text, at: Date.now() }, put = (x) => SENT.set(k, sentOf(t, pid).map((y) => (y.id === tmp.id ? x : y)));
+    SENT.set(k, [...sentOf(t, pid).map((y) => ({ ...y, fresh: false })), tmp]); tapped.set("c|" + t, Date.now()); redraw(t);
+    try { const r = await fetch("/api/feed/comments", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: t, text, parent: pid }) }), j = await r.json().catch(() => ({}));
+      if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent(postOf(t) || location.pathname); return; }
+      if (!r.ok || !j.comment) throw new Error(j.message || "That didn't send.");
+      const kb = !document.activeElement || document.activeElement === document.body; put({ ...j.comment, fresh: false }); tapped.set("c|" + t, Date.now()); if (j.summary) setComments(t, j.summary); else redraw(t); if (kb) try { liOf(t, pid)?.querySelector("[data-fb-reply]")?.focus({ preventScroll: true }); } catch {} live("Your reply is posted."); }
+    catch (err) { put({ ...tmp, pending: false, fresh: false, failed: err?.message || "That didn't send." }); redraw(t); live("Your reply didn't send."); } }
   // fresh counts for the cards on screen: the feed answer can be a minute old signed out, or a saved copy on a slow connection
   let socT = 0; const tapped = new Map();
   function socialSoon(ms = 500) { clearTimeout(socT); socT = setTimeout(async () => { const T = [...new Set($$("[data-fb-kudos]").map((b) => b.dataset.fbKudos))].slice(0, 40), t0 = Date.now(); if (!T.length) return;
     try { const r = await fetch("/api/feed/social?targets=" + encodeURIComponent(T.join(",")), { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json();
       for (const [t, x] of Object.entries(j.items || {})) { /* a tap or a comment since we asked wins */
         if (x.kudos && !$(`[data-fb-kudos="${CSS.escape(t)}"][data-busy]`) && (tapped.get(t) || 0) < t0) { const K = SOC.get(t)?.kudos; if (!K || K.count !== x.kudos.count || K.mine !== x.kudos.mine || K.line !== x.kudos.line) setKudos(t, x.kudos); }
-        if (x.comments && !$(`form[data-fb-add="${CSS.escape(t)}"][data-busy]`) && (tapped.get("c|" + t) || 0) < t0) { const C0 = SOC.get(t)?.comments; if (!C0 || JSON.stringify(C0) !== JSON.stringify(x.comments)) setComments(t, x.comments); } } } catch {} }, ms); }
+        if (x.comments && !$(`form[data-fb-add="${CSS.escape(t)}"][data-busy]`) && ![...SENT].some(([k, L]) => k.startsWith(t + "|") && L.some((y) => y.pending)) && (tapped.get("c|" + t) || 0) < t0) { const C0 = SOC.get(t)?.comments; if (!C0 || JSON.stringify(C0) !== JSON.stringify(x.comments)) setComments(t, x.comments); } } } catch {} }, ms); }
   /** Comment: the cursor goes in the card's own box (or the post page's), the box comes up to the middle of the screen. */
   function focusBox(t) { const ta = document.querySelector(`form[data-fb-add="${CSS.escape(t)}"] textarea`) || document.querySelector("[data-pp-box] textarea");
     if (!ta) { const p = postOf(t); if (p) location.href = p; return; } try { ta.focus({ preventScroll: true }); ta.scrollIntoView({ block: "center", behavior: RM() ? "auto" : "smooth" }); } catch { ta.focus(); } }
@@ -354,7 +397,8 @@
   // a GIF or a sticker picked for a card's box (public/feedfun.js) goes out at once, with any words already in the box
   document.addEventListener("pl:attach", (e) => { const f = e.target.closest?.("form.fb-add[data-fb-add]"); if (f) postComment(f, e.detail || {}); });
   // a reaction went through (public/feedfun.js): the chips under that comment, the new one popping once
-  document.addEventListener("pl:rx", (e) => { const { target, id, reactions, pop } = e.detail || {}, it = SOC.get(target); if (!it?.comments?.last?.some((c) => c.id === id)) return;
+  document.addEventListener("pl:rx", (e) => { const { target, id, reactions, pop } = e.detail || {}, it = SOC.get(target); for (const [k, L] of SENT) if (k.startsWith(target + "|") && L.some((c) => c.id === id)) { SENT.set(k, L.map((c) => (c.id === id ? { ...c, rx: reactions, pop: RM() ? "" : pop } : c))); redraw(target); return; }
+    if (!it?.comments?.last?.some((c) => c.id === id)) return;
     setComments(target, { ...it.comments, last: it.comments.last.map((c) => (c.id === id ? { ...c, rx: reactions, pop: RM() ? "" : pop } : { ...c, pop: "", fresh: false })) }); });
   /** Post a comment from a card: it shows at once (marked "sending"), then the server's copy takes its place. */
   async function postComment(f, extra = {}) { const t = f.dataset.fbAdd, ta = f.querySelector("textarea"), er = f.querySelector(".fb-add-err"), text = ta.value.trim(), att = extra.gif ? { gif: extra.gif } : extra.sticker ? { sticker: extra.sticker } : {}; if ((!text && !att.gif && !att.sticker) || f.dataset.busy) return;
@@ -721,6 +765,24 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fb-c p{margin:0;padding:3px 0;font-size:15px;line-height:1.45;color:var(--fb-ink);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.fb-c b{font-weight:600}.fb-c.wait p{color:var(--fb-soft)}
 .fb-at{margin-left:8px;font:400 12px/1 var(--sys-mono,ui-monospace,monospace);letter-spacing:-.01em;color:var(--fb-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
 .fb-cm-all{display:inline-flex;align-items:center;min-height:44px;color:var(--fb-soft);font:500 14px var(--pl-font-text,"IBM Plex Sans",system-ui);text-decoration:none}.fb-cm-all:hover{color:var(--fb-ink);text-decoration:underline;text-underline-offset:3px}
+/* ==== replies to a comment: start (Reply, "3 replies", the replies you sent, the reply box; hooks: .fb-cdo .fb-rb .fb-rn .fb-rs .fb-mn form.rb) ==== */
+.fb-mn{font-weight:600;color:var(--fb-acc-text,#29489A);text-decoration:none}@media (hover:hover){a.fb-mn:hover{text-decoration:underline;text-underline-offset:3px}}
+/* under a comment: Reply and "3 replies" (44px to the finger, a quiet line to the eye), the replies you sent from here, the reply box */
+.fb-cdo{display:flex;align-items:center;flex-wrap:wrap;gap:0 4px;margin:-6px 0 -6px -8px}.fx-rxs+.fb-cdo{margin-top:2px}
+.fb-rb{display:inline-flex;align-items:center;min-height:44px;padding:0 8px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--fb-soft,#444845);font:500 13px/1 var(--pl-font-text,"IBM Plex Sans",system-ui);text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fb-rn{font-variant-numeric:tabular-nums}@media (hover:hover){.fb-rb:hover{color:var(--fb-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}}.fb-rb:active{color:var(--fb-ink,#1B1D1C)}
+.fb-fail{padding:0 8px;font-size:13px;font-weight:600;color:var(--fb-acc-text,#29489A)}
+.fb-rs{list-style:none;margin:4px 0 6px;padding:0 0 0 12px;border-left:2px solid var(--fb-line,#CFC8B9)}.fb-rs .fb-cdo{margin-left:-8px}
+.rb{margin:4px 0 10px;padding:0 0 2px 12px;border-left:2px solid var(--fb-line,#CFC8B9)}
+.rb-to{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:13px;line-height:1.3;color:var(--fb-soft,#444845)}.rb-to span{min-width:0;overflow-wrap:anywhere}.rb-to b{font-weight:600;color:var(--fb-ink,#1B1D1C)}
+.rb-x{flex:none;min-height:44px;padding:0 10px;margin-right:-10px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--fb-soft,#444845);font:500 13px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}@media (hover:hover){.rb-x:hover{color:var(--fb-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}}
+.rb-row{display:flex;align-items:flex-end;gap:8px}
+.rb .rb-row textarea{flex:1;min-width:0;width:auto;height:44px;min-height:44px;max-height:132px;box-sizing:border-box;resize:none;margin:0;padding:11px 12px;border:1px solid var(--fb-line2,#1B1D1C);border-radius:var(--pl-r-md,6px);background:#fff;color:var(--fb-ink,#1B1D1C);font:16px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui)}
+.rb textarea::placeholder{color:var(--fb-soft,#444845);opacity:1}.rb .rb-row textarea:focus-visible{outline:2px solid var(--fb-acc,#29489A);outline-offset:0;border-color:var(--fb-acc,#29489A)}
+.rb-send{flex:none;min-height:44px;padding:0 18px;border:0;border-radius:var(--pl-r-btn,6px);background:var(--fb-acc,#29489A);color:var(--fb-on-acc,#fff);font:600 15px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.rb-send[disabled]{opacity:.5;cursor:default}@media (hover:hover){.rb-send:not([disabled]):hover{background:var(--fb-acc-press,#1F3878)}}
+.rb-err{margin:6px 0 0;font-size:13px;line-height:1.4;font-weight:600;color:var(--fb-acc-text,#29489A)}.rb-err:empty{display:none}
+.rb :focus-visible,.fb-rb:focus-visible{outline:3px solid var(--fb-ink,#1B1D1C);outline-offset:1px}
+/* ==== replies to a comment: end ==== */
 .fb-add{display:flex;align-items:flex-start;flex-wrap:wrap;gap:8px 10px;margin:6px 0 0}.fb-add>.fb-f{margin-top:10px}
 .fb-stream .fb-add textarea{flex:1;min-width:0;height:44px;min-height:44px;max-height:132px;box-sizing:border-box;resize:none;margin:0;padding:11px 12px;border:1px solid var(--fb-line);border-radius:var(--pl-r-md,6px);background:#fff;color:var(--fb-ink);font:16px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui)}
 .fb-add textarea::placeholder{color:var(--fb-soft);opacity:1}.fb-stream .fb-add textarea:hover{border-color:var(--fb-line2)}.fb-stream .fb-add textarea:focus-visible{outline:2px solid var(--fb-acc);outline-offset:0;border-color:var(--fb-acc)}
@@ -782,7 +844,7 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = c0.slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
-  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
+  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, mention, whoOf, openReply, closeReply, holdReply, keepInView, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
   window.FeedVisual = { rail, openStories, openOne, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
   window.FeedVisual.actRow = actRow; // list cards (public/listcards.js) reuse the kudos, comment and share row
   // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:

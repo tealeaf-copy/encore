@@ -9897,6 +9897,14 @@ if(typeof inviteText==="function"){ const _it=inviteText; inviteText=function(d)
   }catch(err){ console.warn(err) } return r } }
 
 // ==================================================================
+// A guest's card offers "Message" to someone signed in who is in for the same event (server/dm.js, public/dmstart.js).
+// ==================================================================
+{ const _opM=openPerson; openPerson=async function(eventId,key){ const r=await _opM.apply(this,arguments); try{ const sheet=document.querySelector("#ppBg .pp"); if(!sheet||sheet.querySelector(".pp-dm")||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return r;
+      const nm=(sheet.querySelector("h3")?.textContent||"them").trim().split(/\s+/)[0];
+      const w=document.createElement("div"); w.className="pp-sec"; w.innerHTML=`<button class="btn pp-dm" type="button" style="width:100%;min-height:44px" data-dm-event="${esc(eventId)}" data-dm-pkey="${esc(key)}">Message ${esc(nm)}</button>`; sheet.appendChild(w);
+      w.querySelector(".pp-dm").onclick=function(){ const b=this, go=()=>window.PLDMStart.go(b); if(window.PLDMStart) return go(); const t=document.createElement("script"); t.src="/dmstart.js"; t.onload=go; document.head.appendChild(t) } }catch(err){ console.warn(err) } return r } }
+
+// ==================================================================
 // After the night: a guest's card offers "Keep in touch" (adds them to your friends on Pottery Lab).
 // ==================================================================
 { const _opK=openPerson; openPerson=async function(eventId,key){ const r=await _opK.apply(this,arguments); try{ const e=window.__gEv; const past=e?.date&&e.date<localISO(); const sheet=document.querySelector("#ppBg .pp"); if(!past||!sheet||sheet.querySelector(".kit-btn")) return r;

@@ -245,7 +245,7 @@ export function mountDM(app, { store, small, raw = null, currentUser, C, X, blob
     const mid = mac(`note|${st.id}|${a}|${note.t}|${note.sticker || ""}`, 16), p = mPath(T.id, mid), had = store.get(p)?.data;
     if (note.off) { if (had) store.delete(p); return true; }
     const now = Math.max(Date.now(), (T.lastAt || 0) + 1), m = { kind: "dmm", tid: T.id, id: mid, from: a, mkind: "note", note: { t: note.t, ...(note.emoji ? { emoji: note.emoji } : {}), ...(note.prompt ? { prompt: clean(note.prompt, 80) } : {}), ...(note.text ? { text: clean(note.text, 300) } : {}) }, card: { type: "story", id: st.id }, reactions: {}, at: had?.at || now, text: "" };
-    store.set(p, m); if (!had) { T.lastAt = now; T.n = (T.n || 0) + 1; T.last = { k: hash(a), text: lineOf(m), at: now }; } putT(T); index(a, T.id); index(b, T.id); return true; } catch (e) { console.warn("[dm] story note", e?.message); return false; } }
+    store.set(p, m); if (!had) { T.lastAt = now; T.n = (T.n || 0) + 1; T.last = { k: hash(a), text: lineOf(m), own: noteText(m, true), at: now }; } putT(T); index(a, T.id); index(b, T.id); return true; } catch (e) { console.warn("[dm] story note", e?.message); return false; } }
 
   // ---------- the list, the counts ----------
   function rows(email) { const em = lc(email), out = [], requests = [];
@@ -253,7 +253,7 @@ export function mountDM(app, { store, small, raw = null, currentUser, C, X, blob
       if ((T.lastAt || 0) <= (st.clearedAt || 0)) continue; if (vs.why === "you_blocked" || vs.state === "new") continue;
       const P = face(peer), mineLast = T.last.k === hash(em), unread = vs.state === "open" || vs.state === "request_in" ? st.unread || 0 : 0;
       const row = { id: "dm/" + T.id, dm: true, title: P.name, ...(P.handle ? { handle: P.handle } : {}), face: { name: P.name, tint: P.tint, ...(P.avatar ? { avatar: P.avatar } : {}) },
-        last: { by: mineLast ? "You" : "", text: vs.state === "request_in" ? String(T.last.text || "").replace(/https?:\/\/\S+/g, "(link)") : T.last.text, at: T.last.at }, at: T.lastAt || 0, unread: st.muted ? 0 : unread, unreadMuted: st.muted ? unread : 0, muted: !!st.muted, state: vs.state, ...(vs.state === "closed" ? { readOnly: true } : {}) };
+        last: { by: mineLast && !T.last.own ? "You" : "", text: vs.state === "request_in" ? String(T.last.text || "").replace(/https?:\/\/\S+/g, "(link)") : mineLast && T.last.own ? T.last.own : T.last.text, at: T.last.at }, at: T.lastAt || 0, unread: st.muted ? 0 : unread, unreadMuted: st.muted ? unread : 0, muted: !!st.muted, state: vs.state, ...(vs.state === "closed" ? { readOnly: true } : {}) };
       (vs.state === "request_in" ? requests : out).push(row); }
     out.sort((x, y) => y.at - x.at); requests.sort((x, y) => y.at - x.at); return { dms: out, requests }; }
   /** Places that keep their own thread, so Chats can point at them: booking requests and team-ups. */

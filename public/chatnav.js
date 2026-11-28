@@ -18,7 +18,7 @@
   const LS = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
   function proofs() { const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i), m = /^encore-rsvp-([A-Za-z0-9_-]+)$/.exec(k || ""); if (!m) continue; try { const v = JSON.parse(localStorage.getItem(k)); if (v?.rid && v.code) out.push({ eventId: m[1], rid: v.rid, code: v.code }); } catch {} } } catch {} return out.slice(0, 60); }
   const has = () => signed() || proofs().length > 0;
-  const onChats = () => location.pathname.split("/")[1] === "chats", openId = () => (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(location.pathname) || [])[1] || "";
+  const onChats = () => location.pathname.split("/")[1] === "chats", openId = () => { const d = /^\/chats\/dm\/([a-z0-9]{1,40})/.exec(location.pathname); return d ? "dm/" + d[1] : (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(location.pathname) || [])[1] || ""; }; // a direct message reads "dm/<thread>" (server/dm.js)
   // last time's counts, so a new page draws its badges straight away (they sit on the icon, so nothing moves when they land)
   let last = null; try { last = JSON.parse(sessionStorage.getItem("pl.unread") || "null"); } catch {}
   let n = window.__plChatsUnread ?? last?.chats ?? 0, inbox = last?.inbox ?? null;
@@ -53,7 +53,7 @@
     if (now - (seen[L.chat] || 0) < 60e3) return; seen[L.chat] = now; for (const k of Object.keys(seen)) if (now - seen[k] > 60e3 && k !== L.chat) delete seen[k]; LS.set("pl.msgPopped", JSON.stringify(seen));
     toast(L); }
   function toast(L) { document.getElementById("plMsgToast")?.remove(); const d = document.createElement("div"); d.id = "plMsgToast"; d.className = "pl-mt"; d.setAttribute("role", "status"); d.setAttribute("aria-live", "polite");
-    const who = `${L.by} in ${L.title}`, href = "/chats/" + encodeURIComponent(L.chat);
+    const who = L.dm ? L.by : `${L.by} in ${L.title}`, href = "/chats/" + (L.dm ? L.chat : encodeURIComponent(L.chat));
     d.innerHTML = `<a class="pl-mt-a" href="${href}"><span class="pl-mt-ic">${CHAT.replace('width="24" height="24"', 'width="18" height="18"')}</span><span class="pl-mt-t">${L.photo ? `<b>${esc(who)}</b> sent a photo` : `<b>${esc(who)}:</b> ${esc(L.text)}`}</span></a><button type="button" class="pl-mt-x" aria-label="Dismiss">${ICON('<path d="M6 6l12 12M18 6 6 18"/>').replace('width="24" height="24"', 'width="18" height="18"')}</button>`;
     document.body.appendChild(d); let t = 0; const go = () => { clearTimeout(t); d.classList.add("out"); setTimeout(() => d.remove(), matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 160); };
     const wait = () => { clearTimeout(t); t = setTimeout(go, 6000); }; wait();
@@ -114,7 +114,10 @@ body.es-has-tabs .pl-mt{bottom:calc(100px + env(safe-area-inset-bottom))}
         a.onclick = async (e) => { e.preventDefault(); const h = h0 ?? (await hp); me({ host: !window.__wsRegularOnly, handle: h }); }; nav.appendChild(a); }
       if (!document.getElementById("navChatsCss")) { const s = document.createElement("style"); s.id = "navChatsCss"; s.textContent = `#navMeTab{display:none!important}@media (max-width:760px){body.friends-ws nav.tabs>a{display:none!important}body.friends-ws nav.tabs>#navFeed,body.friends-ws nav.tabs>#navDisc,body.friends-ws nav.tabs>a[data-view=studio],body.friends-ws nav.tabs>#navChats,body.friends-ws nav.tabs>#navMeTab{display:flex!important}body.friends-ws nav.tabs>#navFeed{order:1!important}body.friends-ws nav.tabs>#navDisc{order:2!important}body.friends-ws nav.tabs>a[data-view=studio]{order:3!important}body.friends-ws nav.tabs>#navChats{order:4!important}body.friends-ws nav.tabs>#navMeTab{order:5!important}}`; document.head.appendChild(s); }
       poll(); }; go(); }
-  window.PLChatNav = { set, poll, me, has, CHAT, proofs, kick: () => { if (task) task.kick(); else poll(); }, toast, get n() { return n; }, get inbox() { return inbox; } };
+  // "Message" anywhere (a host page, a guest card, a friend row): public/dmstart.js opens the conversation, loaded on the first tap
+  const dmStart = () => (window.PLDMStart ? Promise.resolve() : new Promise((ok, no) => { const t = document.createElement("script"); t.src = "/dmstart.js"; t.onload = ok; t.onerror = no; document.head.appendChild(t); }));
+  document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-dm]"); if (!b) return; e.preventDefault(); dmStart().then(() => window.PLDMStart.go(b)).catch(() => {}); });
+  window.PLChatNav = { dmStart, set, poll, me, has, CHAT, proofs, kick: () => { if (task) task.kick(); else poll(); }, toast, get n() { return n; }, get inbox() { return inbox; } };
   // a new account that hasn't confirmed its email sees one line about it (public/verifybanner.js)
   const verify = () => { if (signed() && !window.__plVerify) { const t = document.createElement("script"); t.src = "/verifybanner.js"; t.defer = true; document.head.appendChild(t); } };
   const start = () => { app(); (window.PLPoll ? Promise.resolve() : need("/poller.js")).catch(() => {}).then(() => { ready = true; poll(); }); verify(); };

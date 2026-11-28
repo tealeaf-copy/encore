@@ -379,7 +379,7 @@
   function moveSlide(from, to) { if (to < 0 || to >= S.slides.length || to === from) return; const [sl] = S.slides.splice(from, 1); S.slides.splice(to, 0, sl); S.cur = to; S.thumbs.clear(); panel(); commit(`Slide moved to ${to + 1} of ${S.slides.length}`); }
 
   // ---------- sheets ----------
-  function sheet(title, body, { foot = "", full = false, label = "" } = {}) { $$(".stc-scrim", S.el).forEach((n) => n._close?.()); const sc = document.createElement("div"), back = document.activeElement; sc.className = "stc-scrim";
+  function sheet(title, body, { foot = "", full = false, label = "" } = {}) { $$(".stc-scrim", S.el).forEach((n) => n._close?.()); $$(".stc-toast", S.el).forEach((n) => n.remove()); const sc = document.createElement("div"), back = document.activeElement; sc.className = "stc-scrim";
     sc.innerHTML = `<div class="stc-sheet${full ? " full" : ""}" role="dialog" aria-modal="true" aria-label="${esc(label || title)}"><div class="stc-sh-top"><h3>${esc(title)}</h3><button type="button" class="stc-ib" data-x aria-label="Close">${I.x}</button></div><div class="stc-sh-body">${body}</div>${foot ? `<div class="stc-sh-foot">${foot}</div>` : ""}</div>`;
     S.el.appendChild(sc); sc._close = () => { sc.remove(); try { (back && document.contains(back) ? back : S?.stage)?.focus({ preventScroll: true }); } catch {} }; $("[data-x]", sc).onclick = sc._close; sc.onpointerdown = (e) => { if (e.target === sc) sc._close(); };
     setTimeout(() => ($("input:not([type=hidden]),select,textarea", sc) || $(".stc-sh-body button", sc) || $("[data-x]", sc))?.focus({ preventScroll: true }), 0); return sc; }

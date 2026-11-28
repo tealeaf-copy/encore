@@ -23,17 +23,17 @@
 .sk-cd{text-align:center}.sk-cd .sk-n{display:block;margin-top:4px;font:500 26px/1.1 "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .sk-at{display:block;width:max-content;max-width:260px;padding:7px 13px 8px;border-radius:6px;background:#FAF8F3;border:1.5px solid #1B1D1C;color:#29489A;font:600 17px/1.2 "IBM Plex Sans",system-ui,sans-serif;box-shadow:0 6px 18px -8px rgba(0,0,0,.55)}
 .sk-q .sk-b{padding:12px}.sk-q .sk-t{text-align:center;margin:0}
-.sk-fake,.sk-q input{display:block;width:100%;min-height:36px;margin-top:9px;padding:8px 10px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff;color:#444845;font:400 14px/1.2 "IBM Plex Sans",system-ui,sans-serif;text-align:center}
+.sk-fake,.sk-q input{display:block;width:100%;min-height:48px;margin-top:9px;padding:8px 10px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff;color:#444845;font:400 14px/1.2 "IBM Plex Sans",system-ui,sans-serif;text-align:center}
 .sk-q input{color:#1B1D1C;text-align:left;font-size:16px}.sk-q input:focus-visible,.sk button:focus-visible,a.sk:focus-visible,.sk a:focus-visible,.sk-sl input:focus-visible{outline:3px solid #F2DD6B;outline-offset:2px}
 .sk-row{display:flex;gap:6px;margin-top:8px}.sk-row>*{flex:1 1 0;min-width:0}.sk-row.done{flex-direction:column}.sk-row.done>*{flex:none}
-.sk-btn{display:flex;align-items:center;justify-content:center;min-height:38px;padding:6px 8px;border:1.5px solid #1B1D1C;border-radius:6px;background:#fff;color:#1B1D1C;font:600 14px/1.15 "IBM Plex Sans",system-ui,sans-serif;text-align:center;overflow-wrap:anywhere;cursor:pointer}
+.sk-btn{display:flex;align-items:center;justify-content:center;min-height:48px;padding:6px 8px;border:1.5px solid #1B1D1C;border-radius:6px;background:#fff;color:#1B1D1C;font:600 14px/1.15 "IBM Plex Sans",system-ui,sans-serif;text-align:center;overflow-wrap:anywhere;cursor:pointer}
 .sk-btn.pri{background:#29489A;color:#fff}.sk-btn[disabled]{opacity:.6;cursor:default}
 .sk-res{position:relative;display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:38px;padding:6px 9px;border:1.5px solid #1B1D1C;border-radius:6px;background:#fff;font:600 13.5px/1.15 "IBM Plex Sans",system-ui,sans-serif;overflow:hidden}
 .sk-res i{position:absolute;left:0;top:0;bottom:0;background:#E3E8F4;z-index:0}.sk-res.me i{background:#F2DD6B}.sk-res span,.sk-res b{position:relative;z-index:1;overflow-wrap:anywhere}.sk-res b{font:500 13px "IBM Plex Mono",ui-monospace,monospace}
-.sk-sl{position:relative;margin-top:10px;height:38px}.sk-sl input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.sk-track{position:absolute;left:0;right:0;top:16px;height:6px;border-radius:3px;background:#CFC8B9}.sk-fill{position:absolute;left:0;top:16px;height:6px;border-radius:3px;background:#29489A}
-.sk-thumb{position:absolute;top:1px;width:36px;height:36px;margin-left:-18px;display:grid;place-items:center;font-size:26px;line-height:1;pointer-events:none}
-.sk-avg{position:absolute;top:8px;width:3px;height:22px;margin-left:-1.5px;border-radius:2px;background:#1B1D1C}
+.sk-sl{position:relative;margin-top:10px;height:48px}.sk-sl input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.sk-track{position:absolute;left:0;right:0;top:21px;height:6px;border-radius:3px;background:#CFC8B9}.sk-fill{position:absolute;left:0;top:21px;height:6px;border-radius:3px;background:#29489A}
+.sk-thumb{position:absolute;top:6px;width:36px;height:36px;margin-left:-18px;display:grid;place-items:center;font-size:26px;line-height:1;pointer-events:none}
+.sk-avg{position:absolute;top:13px;width:3px;height:22px;margin-left:-1.5px;border-radius:2px;background:#1B1D1C}
 .sk-s{display:block;margin-top:6px;font:400 12px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#444845;text-align:center}`;
   let on = false; function css() { if (on) return; on = true; const s = document.createElement("style"); s.id = "sk-css"; s.textContent = CSS; document.head.appendChild(s); }
   /** "6d 04h 12m" until a time; "It's on" once it has come. */

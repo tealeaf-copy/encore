@@ -176,9 +176,13 @@ for (const W of [390, 1280]) test(`browser at ${W}: the card after an event, Add
     const ring = await page.$eval("#fvAdd", (b) => ({ label: b.querySelector("small").textContent, dot: !!b.querySelector(".sp-dot"), h: b.getBoundingClientRect().height })); assert.deepEqual({ label: ring.label, dot: ring.dot }, { label: "Add photos", dot: true }); assert.ok(ring.h >= 44);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth <= 1), "no sideways scroll"); assert.ok((await page.evaluate(() => window.__cls)) < 0.05, "no layout jump: " + (await page.evaluate(() => window.__cls)));
     await shot(page, "feed-card");
-    const up = page.waitForResponse((r) => /\/api\/moments\?/.test(r.url()) && r.request().method() === "POST"), [fc] = await Promise.all([page.waitForEvent("filechooser"), page.click("#spCard [data-sp-add]")]);
-    await fc.setFiles({ name: "night.png", mimeType: "image/png", buffer: PNG }); const res = await up; assert.equal(res.status(), 200, await res.text()); assert.equal(new URL(res.url()).searchParams.get("eventId"), A, "the picker was set to that event");
-    await page.waitForFunction(() => /Added\. Friends see it in their feed\./.test(document.querySelector("#toast")?.textContent || ""), null, { timeout: 10000 }); await page.waitForFunction(() => !document.querySelector("#spCard"), null, { timeout: 10000 });
+    // Add photos opens the story composer (public/storycomposer.js), already set to that event; nothing is sent until Share
+    await page.click("#spCard [data-sp-add]"); await page.waitForSelector(".stc .stc-start", { timeout: 15000 }); await page.waitForFunction((id) => window.PLStoryComposer.state.share.eventId === id && !!window.PLStoryComposer.state.D, A);
+    assert.equal(await page.evaluate(() => document.querySelectorAll(".stc").length), 1, "one tap, one screen");
+    const [fc] = await Promise.all([page.waitForEvent("filechooser"), page.click('.stc [data-s="lib"]')]); await fc.setFiles({ name: "night.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64") /* a real picture: the composer opens it */ }); await page.waitForSelector(".stc .stc-stage", { timeout: 15000 });
+    await page.click('.stc [data-a="next"]'); await page.waitForSelector(".stc-sheet [data-share]"); assert.equal(await page.$eval("#scEv", (s) => s.value), A, "the share step has that event picked"); assert.equal(await page.$eval("#scPh", (c) => c.checked), true);
+    const up = page.waitForResponse((r) => /\/api\/story$/.test(r.url()) && r.request().method() === "POST"); await page.click(".stc-sheet [data-share]"); const res = await up; assert.equal(res.status(), 200, await res.text()); const made = await res.json(); assert.equal(made.photos, 1, "its picture joined the event's photos"); assert.equal(made.waiting, true, "and waits for the host, as a guest's photo does");
+    await page.waitForFunction(() => /Your story is up for 24 hours\./.test(document.querySelector("#toast")?.textContent || ""), null, { timeout: 10000 }); await page.waitForFunction(() => !document.querySelector("#spCard") && !document.querySelector(".stc"), null, { timeout: 10000 });
     await shot(page, "feed-added"); assert.equal((await prompt(ana)).events.find((e) => e.id === A).mine, 1);
     await page.waitForFunction(() => document.querySelector("#fvAdd small")?.textContent === "Your story", null, { timeout: 10000 }); // B is past its 3 days, so no prompt is left
     await ctx.close();
@@ -187,30 +191,21 @@ for (const W of [390, 1280]) test(`browser at ${W}: the card after an event, Add
     ctx = await ctxFor(ben); page = await ctx.newPage(); watch(page); await feed(page); assert.equal(await page.$eval("#spCard", (el) => el.dataset.ev), A);
     await page.click("#spCard [data-sp-not]"); await page.waitForFunction(() => !document.querySelector("#spCard") && document.querySelector("#fvAdd small")?.textContent === "Your story", null, { timeout: 10000 });
     await feed(page); assert.equal(await page.$("#spCard"), null, "Not now sticks after a reload"); assert.equal((await prompt(ben)).card, null);
-    await page.click("#fvAdd"); await page.waitForSelector("#spSheet [data-sp-ev]", { timeout: 10000 });
-    const sh = await page.evaluate(() => { const s = document.querySelector("#spSheet .sp-sheet"), rows = [...s.querySelectorAll("[data-sp-ev]")]; return { role: s.getAttribute("role"), modal: s.getAttribute("aria-modal"), title: s.querySelector("h2").textContent, rows: rows.map((b) => ({ t: b.querySelector(".sp-rt b").textContent, d: b.querySelector(".sp-rt small").textContent, h: b.getBoundingClientRect().height, cover: !!b.querySelector(".sp-cov .ea-cover, .sp-cov img"), clip: b.querySelector(".sp-rt b").scrollWidth > b.querySelector(".sp-rt b").clientWidth + 1 })),
-      close: (() => { const c = s.querySelector("[data-sp-close]"), r = c.getBoundingClientRect(); return { t: c.textContent, h: r.height, w: r.width }; })(), focusIn: s.contains(document.activeElement), fits: s.getBoundingClientRect().right <= innerWidth + 1 && s.getBoundingClientRect().bottom <= innerHeight + 1, dialogs: window.__dialogs }; });
-    assert.equal(sh.role, "dialog"); assert.equal(sh.modal, "true"); assert.equal(sh.title, "Add photos to your story"); assert.equal(sh.dialogs, 0, "no prompt()");
-    assert.deepEqual(sh.rows.map((r) => r.t), ["Hand-pulled noodle night with the Saturday supper crew", "Morning ridge walk"], "most recent first"); assert.ok(sh.rows.every((r) => r.h >= 44 && r.cover && !r.clip && /\w{3}, \w{3} \d+/.test(r.d)), JSON.stringify(sh.rows));
-    assert.equal(sh.close.t, "Close"); assert.ok(sh.close.h >= 44 && sh.close.w >= 44); assert.ok(sh.focusIn, "focus moves into the sheet"); assert.ok(sh.fits);
-    await shot(page, "sheet-events");
-    await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#spSheet")); assert.equal(await page.evaluate(() => document.activeElement?.id), "fvAdd", "Esc closes and focus goes back to the button");
-    await page.click("#fvAdd"); await page.waitForSelector("#spSheet"); await page.click("#spSheet [data-sp-close]"); await page.waitForFunction(() => !document.querySelector("#spSheet")); assert.equal(await page.evaluate(() => document.activeElement?.id), "fvAdd");
-    await page.click("#fvAdd"); await page.waitForSelector("#spSheet [data-sp-ev]");
-    const up2 = page.waitForResponse((r) => /\/api\/moments\?/.test(r.url()) && r.request().method() === "POST"), [fc2] = await Promise.all([page.waitForEvent("filechooser"), page.click('#spSheet [data-sp-ev="1"]')]);
-    assert.equal(await page.$("#spSheet"), null, "one tap, one screen: the sheet closes as the file picker opens");
-    await fc2.setFiles({ name: "walk.png", mimeType: "image/png", buffer: PNG }); assert.equal(new URL((await up2).url()).searchParams.get("eventId"), B);
-    await page.waitForFunction(() => /Added\./.test(document.querySelector("#toast")?.textContent || ""), null, { timeout: 10000 });
+    await page.click("#fvAdd"); await page.waitForSelector(".stc .stc-start", { timeout: 15000 });
+    const sh = await page.evaluate(() => { const s = document.querySelector(".stc"), B = [...s.querySelectorAll(".stc-opt")]; return { role: s.getAttribute("role"), modal: s.getAttribute("aria-modal"), opts: B.map((b) => b.querySelector("b").textContent), h: B.map((b) => b.getBoundingClientRect().height), focusIn: s.contains(document.activeElement), dialogs: window.__dialogs, sheet: !!document.querySelector("#spSheet") }; });
+    assert.equal(sh.role, "dialog"); assert.equal(sh.modal, "true"); assert.equal(sh.dialogs, 0, "no prompt()"); assert.equal(sh.sheet, false, "the composer, not a second sheet"); assert.deepEqual(sh.opts, ["Photos and videos", "Camera", "Blank page"]); assert.ok(sh.h.every((h) => h >= 44)); assert.ok(sh.focusIn, "focus moves into the composer");
+    await shot(page, "composer-start");
+    await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector(".stc")); assert.equal(await page.evaluate(() => document.activeElement?.id), "fvAdd", "Esc closes and focus goes back to the button");
+    await page.click("#fvAdd"); await page.waitForSelector(".stc .stc-start"); await page.click('.stc [data-a="close"]'); await page.waitForFunction(() => !document.querySelector(".stc")); assert.equal(await page.evaluate(() => document.activeElement?.id), "fvAdd");
     // the bell note's link: the card for that event, inline, even after Not now
-    await feed(page, "?story=" + A); assert.equal(await page.$eval("#spCard", (el) => el.dataset.ev), A); assert.equal(await page.$("#spSheet"), null, "the deep link never opens a sheet by itself");
+    await feed(page, "?story=" + A); assert.equal(await page.$eval("#spCard", (el) => el.dataset.ev), A); assert.equal(await page.$("#spSheet"), null, "the deep link never opens a sheet by itself"); assert.equal(await page.$(".stc"), null, "nor the composer");
     await ctx.close();
 
     // ---- Cy: no events yet. One line of why and one next step, not a dead end
     ctx = await ctxFor(cy); page = await ctx.newPage(); watch(page); await feed(page); assert.equal(await page.$("#spCard"), null); assert.equal(await page.$eval("#fvAdd small", (s) => s.textContent), "Your story");
-    await page.click("#fvAdd"); await page.waitForSelector("#spSheet .sp-b.go", { timeout: 10000 });
-    const nu = await page.$eval("#spSheet .sp-sheet", (s) => ({ text: s.innerText, links: [...s.querySelectorAll("a.sp-b")].map((a) => [a.textContent, a.getAttribute("href"), a.getBoundingClientRect().height]), rows: s.querySelectorAll("[data-sp-ev]").length }));
-    assert.match(nu.text, /Photos go with an event you went to or hosted\./); assert.deepEqual(nu.links.map((l) => l.slice(0, 2)), [["Find something to go to", "/discover"]], "one next step"); assert.ok(nu.links[0][2] >= 44); assert.equal(nu.rows, 0);
-    await shot(page, "sheet-new"); await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#spSheet")); assert.equal(await page.evaluate(() => document.activeElement?.id), "fvAdd");
+    await page.click("#fvAdd"); await page.waitForSelector(".stc .stc-start", { timeout: 15000 }); await page.waitForFunction(() => !!window.PLStoryComposer.state.D);
+    assert.equal(await page.evaluate(() => window.PLStoryComposer.state.D.events.length), 0); assert.match(await page.$eval(".stc-start", (s) => s.innerText), /Make a story/, "a story doesn't need an event");
+    await shot(page, "composer-new"); await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector(".stc")); assert.equal(await page.evaluate(() => document.activeElement?.id), "fvAdd");
     await ctx.close();
 
     // ---- signed out: no card, no ring to add, no request for prompts

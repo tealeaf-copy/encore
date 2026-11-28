@@ -68,7 +68,7 @@ test("a story needs no event: it goes on its author's ring for a day, and a file
   // files: the type is read from the bytes
   assert.equal((await fetch(srv.base + "/api/story/media?as=image", { method: "POST", headers: { "content-type": "image/jpeg", cookie: U.mai.cookie }, body: Buffer.from("not a photo at all") })).status, 415);
   assert.equal((await fetch(srv.base + "/api/story/media?as=overlay", { method: "POST", headers: { "content-type": "image/jpeg", cookie: U.mai.cookie }, body: JPG })).status, 415, "an overlay is a PNG");
-  assert.equal((await fetch(srv.base + "/api/story/media?as=video&duration=45", { method: "POST", headers: { "content-type": "video/mp4", cookie: U.mai.cookie }, body: MP4 })).status, 400, "30 seconds at most");
+  assert.equal((await fetch(srv.base + "/api/story/media?as=video&duration=75", { method: "POST", headers: { "content-type": "video/mp4", cookie: U.mai.cookie }, body: MP4 })).status, 400, "a file twice the play window at most");
   assert.equal((await fetch(srv.base + "/api/story/media?as=image", { method: "POST", headers: { "content-type": "image/jpeg" }, body: JPG })).status, 401);
   const R = await make(U.mai, {}, 2); assert.equal(R.status, 200, JSON.stringify(R)); assert.equal(R.ids.length, 2); assert.equal(R.audience, "everyone"); P.open = R.ids;
   const d = srv.store.get("system/pstory-" + R.ids[0]).data; assert.equal(d.eventId, undefined); assert.equal(d.dur, 5000); assert.ok(d.until - d.at > 23.9 * 3600e3 && d.until - d.at <= 24 * 3600e3);
@@ -166,10 +166,10 @@ test("a poll counts one vote each and shows results after; a slider the same; re
 
 test("seen by: counted once per person, for the author only", async () => {
   assert.equal((await post("/api/story/seen", { ids: [P.st] })).status, 401);
-  assert.equal((await (await post("/api/story/seen", { ids: [P.st, P.st, "nope"] }, U.zed.cookie)).json()).seen, 1); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.zed.cookie)).json()).seen, 0);
+  assert.equal((await (await post("/api/story/seen", { ids: [P.st, P.st, "nope"] }, U.zed.cookie)).json()).seen, 0, "Zed voted and replied: already counted"); assert.equal((await (await post("/api/story/seen", { ids: [P.st, P.st, "nope"] }, U.gus.cookie)).json()).seen, 1); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.gus.cookie)).json()).seen, 0, "once"); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.zed.cookie)).json()).seen, 0);
   await post("/api/story/seen", { ids: [P.st] }, U.linh.cookie); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.mai.cookie)).json()).seen, 0, "your own look doesn't count");
-  const I = await getJ(`/api/story/${P.st}/insights`, U.mai.cookie); assert.equal(I.count, 2); assert.deepEqual(I.seen.map((s) => s.name).sort(), ["Linh", "Zed"]); assert.equal(I.seen.find((s) => s.name === "Zed").react, "😍");
-  const own = (await ring("mai-sc", U.mai.cookie)).items.find((i) => i.st?.sid === P.st).st; assert.equal(own.seen, 2); assert.equal(own.replies, 3);
+  const I = await getJ(`/api/story/${P.st}/insights`, U.mai.cookie); assert.equal(I.count, 4); assert.deepEqual(I.seen.map((s) => s.name).sort(), ["Gus", "Jun", "Linh", "Zed"], "Jun voted, so Jun saw it"); assert.equal(I.seen.find((s) => s.name === "Zed").react, "😍");
+  const own = (await ring("mai-sc", U.mai.cookie)).items.find((i) => i.st?.sid === P.st).st; assert.equal(own.seen, 4); assert.equal(own.replies, 3);
   const theirs = (await ring("mai-sc", U.zed.cookie)).items.find((i) => i.st?.sid === P.st).st; assert.equal(theirs.seen, undefined); assert.equal(theirs.replies, undefined); assert.equal(theirs.myReact, "😍");
 });
 
@@ -218,4 +218,100 @@ test("the rate limit: so many stories an hour per person, and someone else's cou
   assert.equal((await make(U.jun)).status, 200); assert.equal((await make(U.jun)).status, 200); const r = await make(U.jun); assert.equal(r.status, 429); assert.equal(r.code, "rate_limited");
   assert.equal((await make(U.zed)).status, 200); delete process.env.STORY_PER_HOUR;
   const many = Array(STORY_LIMITS.slides + 1).fill({ url: "/_blob/AAAAAAAAAAAAAAAAAAAA" }); M.resetLimits(); assert.equal((await post("/api/story", { slides: many }, U.jun.cookie)).status, 400, "ten slides at most");
+});
+
+// ---------- the browser walk: from the ring to a reply, at 390 (touch) and 1280 ----------
+const PHOTO = png(360, 480, [60, 120, 170]), PHOTO2 = png(480, 300, [200, 150, 60]);
+for (const W of [390, 1280]) test(`browser at ${W}: make a story from the ring, share it, and someone else votes, follows the event sticker and replies`, { timeout: 200_000 }, async (t) => {
+  let pw; try { pw = createRequire(import.meta.url)("playwright"); } catch { return t.skip("playwright is not installed"); }
+  let browser; try { browser = await pw.chromium.launch(); } catch { return t.skip("no Chromium here"); }
+  if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true }); const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${name}-${W}.png`) }); };
+  const touch = W === 390, ana = await join("Ana Ruiz", `ana${W}.sc@example.com`), ben = await join("Ben Okafor", `ben${W}.sc@example.com`), EV = `scW${W}`, handle = `ana-sc-${W}`;
+  assert.ok((await post("/api/host/profile", { handle, name: "Ana's table" }, ana.cookie)).ok); assert.ok((await post("/api/host/profile", { handle: `ben-sc-${W}`, name: "Ben" }, ben.cookie)).ok);
+  await ev(EV, { name: "Noodle night", date: day(5), startTime: "19:00" }, ana); X.bust(); M.resetLimits();
+  const ctxFor = async (who) => { const ctx = await browser.newContext(touch ? { ...pw.devices["iPhone 13"], viewport: { width: 390, height: 844 }, reducedMotion: "reduce", serviceWorkers: "block" } : { viewport: { width: 1280, height: 800 }, reducedMotion: "reduce", serviceWorkers: "block" });
+    await ctx.addCookies(who.cookie.split("; ").map((kv) => { const i = kv.indexOf("="); return { name: kv.slice(0, i), value: kv.slice(i + 1), url: srv.base }; }).concat([{ name: "encore_in", value: "1", url: srv.base }]));
+    await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" })); return ctx; };
+  const errs = [], asked = []; const watch = (page) => { page.on("pageerror", (e) => errs.push("pageerror " + e.message)); page.on("console", (m) => { if (m.type() === "error") errs.push("console " + m.text()); }); page.on("requestfailed", (r) => { if (r.url().startsWith(srv.base) && !/ERR_ABORTED/.test(r.failure()?.errorText || "")) errs.push("failed " + r.url()); });
+    page.on("request", (r) => asked.push(new URL(r.url()).pathname)); page.on("response", (r) => { if (r.status() >= 400 && r.url().startsWith(srv.base)) errs.push(r.status() + " " + r.url()); }); };
+  const tap = (page, sel) => (touch ? page.tap(sel) : page.click(sel));
+  const state = (page) => page.evaluate(() => { const S = window.PLStoryComposer.state; return { n: S.slides.length, cur: S.cur, sel: S.sel, tool: S.tool, slides: S.slides.map((s) => ({ kind: s.kind, items: s.items.map((i) => ({ ...i })), strokes: s.strokes.length })) }; });
+  // every control on screen: big enough to tap, inside the window, and not under another one
+  const audit = (page, root) => page.evaluate((root) => { const R = document.querySelector(root), out = []; const B = [...R.querySelectorAll("button,a[href],input,select,textarea")].filter((b) => b.offsetParent !== null && !b.closest("[hidden]") && !b.classList.contains("stc-sr") && getComputedStyle(b).visibility !== "hidden" && getComputedStyle(b).opacity !== "0").map((b) => ({ b, r: b.getBoundingClientRect() })).filter((x) => x.r.width > 0 && x.r.bottom > 0 && x.r.top < innerHeight && x.r.right > 0 && x.r.left < innerWidth);
+    const name = (b) => (b.getAttribute("aria-label") || b.textContent || b.id || b.tagName).trim().slice(0, 30);
+    for (const { b, r } of B) { const sc = b.closest(".stc-scroll,.stc-prev,.stc-sh-body,.sv-sh-body"); if (sc) { const s = sc.getBoundingClientRect(); if (r.right > s.right + 1 || r.left < s.left - 1 || r.bottom > s.bottom + 1 || r.top < s.top - 1) continue; } // scrolled out of its own row: not on screen
+      const small = b.matches("input[type=radio],input[type=checkbox]") ? b.closest("label").getBoundingClientRect() : r; if (small.height < 43.5 || (small.width < 43.5 && !b.matches("input[type=range]"))) out.push(`small: ${name(b)} ${Math.round(small.width)}x${Math.round(small.height)}`);
+      if (r.left < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1 || r.top < -1) out.push(`off screen: ${name(b)}`);
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2, top = document.elementFromPoint(cx, cy); if (top && !(b.contains(top) || top.contains(b) || top.closest("label")?.contains(b))) out.push(`covered: ${name(b)} by ${top.className || top.tagName}`);
+      if (b.tagName === "BUTTON" && !name(b)) out.push("no name: " + b.outerHTML.slice(0, 60)); }
+    for (const el of R.querySelectorAll("button span, .stc-tool span, .stc-act span, h2, h3, .stc-chip")) if (el.offsetParent !== null && el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflow !== "visible") out.push("cut off: " + el.textContent.trim().slice(0, 30));
+    if (document.documentElement.scrollWidth - innerWidth > 1) out.push("the page scrolls sideways"); return out; }, root);
+  try {
+    // ---- Ana makes a story from the ring
+    let ctx = await ctxFor(ana), page = await ctx.newPage(); watch(page); await page.goto(srv.base + "/feed", { waitUntil: "domcontentloaded" }); await page.waitForSelector("#fvAdd", { timeout: 20000 }); await page.waitForTimeout(600);
+    assert.ok(!asked.some((p) => /storycomposer|storykit|storyview/.test(p)), "the feed's first load doesn't fetch the composer"); assert.equal(await page.$(".stc"), null, "nothing opens by itself");
+    await tap(page, "#fvAdd"); await page.waitForSelector(".stc .stc-start", { timeout: 15000 }); assert.ok(asked.includes("/storycomposer.js") && asked.includes("/storycomposer.css"), "fetched on the tap");
+    assert.deepEqual(await audit(page, ".stc"), [], "the start screen"); assert.equal(await page.$$eval(".stc .stc-btn.pri:not(:disabled), .stc .stc-opt.pri", (L) => L.length), 1, "one primary"); await shot(page, "sc-start");
+    const [fc] = await Promise.all([page.waitForEvent("filechooser"), tap(page, '.stc [data-s="lib"]')]); assert.equal(fc.isMultiple(), true, "several at once make several slides"); await fc.setFiles([{ name: "a.png", mimeType: "image/png", buffer: PHOTO }]);
+    await page.waitForSelector(".stc .stc-stage", { timeout: 15000 }); await page.waitForTimeout(300);
+    const geo = await page.evaluate(() => { const s = document.querySelector(".stc-stage").getBoundingClientRect(), top = document.querySelector(".stc-top").getBoundingClientRect(), dock = document.querySelector(".stc-dock").getBoundingClientRect(); return { ratio: s.width / s.height, w: s.width, clearTop: s.top >= top.bottom - 0.5, clearDock: innerWidth >= 900 ? s.right <= dock.left + 0.5 : s.bottom <= dock.top + 0.5, in: s.left >= 0 && s.right <= innerWidth && s.bottom <= innerHeight, font: getComputedStyle(document.querySelector(".stc-tool")).fontFamily, radius: getComputedStyle(document.querySelector(".stc-btn.pri")).borderRadius, pri: getComputedStyle(document.querySelector(".stc-btn.pri")).backgroundColor }; });
+    assert.ok(Math.abs(geo.ratio - 9 / 16) < 0.01, "a 9:16 page"); assert.ok(geo.clearTop && geo.clearDock && geo.in, "the tools never cover the slide: " + JSON.stringify(geo)); assert.ok(geo.w >= (touch ? 300 : 380), "the slide is big enough to work on: " + geo.w); assert.match(geo.font, /IBM Plex Sans/); assert.equal(geo.radius, "6px"); assert.equal(geo.pri, "rgb(41, 72, 154)", "ink blue");
+    assert.deepEqual(await audit(page, ".stc"), [], "the editor");
+    // text: add, restyle, move with the keyboard
+    await tap(page, '.stc [data-tool="text"]'); await page.waitForSelector(".stc-edit textarea"); assert.equal(await page.evaluate(() => document.activeElement.id), "scTxt", "the first tap puts the cursor in the words"); await page.keyboard.type("Noodles tonight"); await tap(page, ".stc-edit [data-done]"); await page.waitForSelector(".stc [data-font]");
+    assert.deepEqual(await audit(page, ".stc"), [], "the text panel"); assert.ok((await page.$$eval(".stc [data-font]", (L) => L.length)) >= 6, "six type styles or more");
+    await tap(page, '.stc [data-font="serif"]'); await tap(page, '.stc [data-col="#F2DD6B"]'); await tap(page, ".stc [data-pill]"); await tap(page, ".stc [data-align]");
+    let S = await state(page), tx = S.slides[0].items[0]; assert.deepEqual([tx.txt, tx.font, tx.color, tx.pill, tx.align], ["Noodles tonight", "serif", "#F2DD6B", "solid", "left"]);
+    await page.focus(".stc-it"); const was = { x: tx.x, y: tx.y, s: tx.s, r: tx.r }; for (const k of ["ArrowRight", "ArrowDown", "ArrowDown", "+", "]"]) await page.keyboard.press(k); await page.waitForTimeout(450);
+    tx = (await state(page)).slides[0].items[0]; assert.ok(tx.x > was.x && tx.y > was.y && tx.s > was.s && tx.r === was.r + 5, "arrow keys move it, + resizes, ] turns: " + JSON.stringify(tx)); assert.match(await page.$eval(".stc-it", (e) => e.getAttribute("aria-label")), /^Text: Noodles tonight, selected/);
+    assert.ok(await page.$eval(".stc-it", (c) => c.tagName === "CANVAS" && c.width > 100), "the words are painted, the same on screen as in the shared picture"); await shot(page, "sc-text");
+    // draw, then undo and redo
+    await tap(page, '.stc [data-tool="draw"]'); await page.waitForSelector(".stc [data-pen]"); assert.deepEqual(await page.$$eval(".stc [data-pen]", (L) => L.map((b) => b.dataset.pen)), ["pen", "marker", "hi", "erase"]); assert.equal(await page.$$eval(".stc [data-w]", (L) => L.length), 3); assert.deepEqual(await audit(page, ".stc"), [], "the draw panel");
+    const st = await page.$eval(".stc-stage", (e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+    await page.evaluate(({ st, touch }) => { const el = document.querySelector(".stc-stage"), ev = (t, x, y) => el.dispatchEvent(new PointerEvent(t, { pointerId: 5, pointerType: touch ? "touch" : "mouse", isPrimary: true, clientX: x, clientY: y, bubbles: true, button: 0 })); el.setPointerCapture = () => {}; ev("pointerdown", st.x + st.w * 0.2, st.y + st.h * 0.7); for (let i = 1; i <= 8; i++) ev("pointermove", st.x + st.w * (0.2 + i * 0.07), st.y + st.h * (0.7 + (i % 2) * 0.04)); ev("pointerup", st.x + st.w * 0.76, st.y + st.h * 0.7); }, { st, touch });
+    assert.equal((await state(page)).slides[0].strokes, 1, "a line was drawn"); await tap(page, '.stc [data-a="undo"]'); assert.equal((await state(page)).slides[0].strokes, 0, "Undo takes the line away"); assert.equal((await state(page)).slides[0].items.length, 1, "and only the line");
+    await tap(page, '.stc [data-a="redo"]'); assert.equal((await state(page)).slides[0].strokes, 1, "Redo brings it back");
+    // stickers: an event and a poll
+    await tap(page, '.stc [data-tool="sticker"]'); await page.waitForSelector(".stc-sheet [data-st]"); assert.deepEqual(await page.$$eval(".stc-sheet [data-st]", (L) => L.map((b) => b.dataset.st)), ["event", "imin", "count", "mention", "question", "poll", "slider", "place", "when"]); assert.ok((await page.$$eval(".stc-sheet [data-art]", (L) => L.length)) >= 12, "drawings from the app's own art");
+    assert.deepEqual(await audit(page, ".stc-sheet"), [], "the sticker sheet"); await shot(page, "sc-stickers");
+    await tap(page, '.stc-sheet [data-st="event"]'); await page.waitForSelector(`.stc-sheet [data-ev="${EV}"]`); await tap(page, `.stc-sheet [data-ev="${EV}"]`); await page.waitForSelector(".stc-it.sk .sk-card");
+    for (let i = 0; i < 16; i++) await page.keyboard.press("ArrowUp"); // out of the poll's way, with the keyboard
+    await tap(page, '.stc [data-tool="sticker"]'); await tap(page, '.stc-sheet [data-st="poll"]'); await page.waitForSelector("#scA"); await page.fill("#scA", "Broth or dry?"); await page.fill("#scB", "Broth"); await page.fill("#scC", "Dry"); assert.deepEqual(await audit(page, ".stc-sheet"), [], "the poll form"); await tap(page, ".stc-sheet [data-ok]"); await page.waitForSelector(".stc-it.sk .sk-btn");
+    for (let i = 0; i < 20; i++) await page.keyboard.press("ArrowDown"); await page.waitForTimeout(450);
+    S = await state(page); assert.deepEqual(S.slides[0].items.map((i) => i.t), ["text", "event", "poll"]); assert.deepEqual(await audit(page, ".stc"), [], "a sticker's own panel"); await shot(page, "sc-slide");
+    // a second slide, then reorder with Move left
+    await page.keyboard.press("Escape"); await page.waitForSelector(".stc [data-addslide]"); await tap(page, ".stc [data-addslide]"); const [fc2] = await Promise.all([page.waitForEvent("filechooser"), tap(page, '.stc-sheet [data-s="lib"]')]); await fc2.setFiles([{ name: "b.png", mimeType: "image/png", buffer: PHOTO2 }]);
+    await page.waitForFunction(() => window.PLStoryComposer.state.slides.length === 2, null, { timeout: 15000 }); await page.waitForSelector('.stc [data-mv="-1"]:not(:disabled)'); assert.equal((await state(page)).cur, 1); assert.deepEqual(await audit(page, ".stc"), [], "the slides strip");
+    assert.deepEqual(await page.$$eval(".stc-acts .stc-act", (L) => [...new Set(L.map((b) => Math.round(b.getBoundingClientRect().height)))].length), 1, "the strip's buttons share one height"); assert.deepEqual(await page.$$eval(".stc-acts .stc-act", (L) => L.map((b) => b.textContent.trim())), ["Move left", "Move right", "Copy", "Delete"]);
+    await tap(page, '.stc [data-mv="-1"]'); S = await state(page); assert.deepEqual([S.cur, S.slides[0].items.length, S.slides[1].items.length], [0, 0, 3], "the new slide is first now"); await tap(page, '.stc [data-mv="1"]'); assert.equal((await state(page)).slides[0].items.length, 3, "and back");
+    await shot(page, "sc-strip");
+    // share
+    await tap(page, '.stc [data-a="next"]'); await page.waitForSelector(".stc-sheet [data-share]"); assert.deepEqual(await page.$$eval('.stc-sheet [name="scAud"]', (L) => L.map((r) => r.value)), ["everyone", "followers", "friends"]); assert.equal(await page.$$eval(".stc-sheet .stc-btn.pri", (L) => L.length), 1, "one primary: Share");
+    assert.deepEqual(await audit(page, ".stc-sheet"), [], "the share step"); await shot(page, "sc-share");
+    const made = page.waitForResponse((r) => /\/api\/story$/.test(r.url()) && r.request().method() === "POST"); await tap(page, ".stc-sheet [data-share]"); const res = await made; assert.equal(res.status(), 200, await res.text()); const R = await res.json(); assert.equal(R.ids.length, 2);
+    await page.waitForFunction(() => !document.querySelector(".stc"), null, { timeout: 15000 }); X.bust();
+    const d = srv.store.get("system/pstory-" + R.ids[0]).data; assert.deepEqual(d.stickers.map((s) => s.t), ["event", "poll"]); assert.ok(d.stickers.every((s) => s.x > 0 && s.x < 1 && s.y > 0 && s.y < 1), "each with its place on the slide"); assert.ok(d.stickers[0].y < 0.4 && d.stickers[1].y > 0.5, "where the keyboard put them");
+    const pic = Buffer.from(await (await fetch(srv.base + d.url)).arrayBuffer()); assert.equal(pic[0], 0xff); assert.equal(pic[1], 0xd8, "a JPEG"); assert.ok(pic.length < 600 * 1024, "under 600 KB: " + pic.length); assert.equal(d.w, 1080); assert.equal(d.h, 1920);
+    // it is on the ring
+    await page.waitForFunction((h) => [...document.querySelectorAll("[data-fv-story]")].some((b) => b.getAttribute("aria-label").startsWith("Ana")), handle, { timeout: 15000 }); await shot(page, "sc-ring"); await ctx.close();
+
+    // ---- Ben, someone else: the viewer draws the stickers live
+    ctx = await ctxFor(ben); page = await ctx.newPage(); watch(page); await page.goto(srv.base + "/feed", { waitUntil: "domcontentloaded" }); await page.waitForSelector('[data-fv-story][aria-label^="Ana"]', { timeout: 20000 }); await page.waitForTimeout(400);
+    await tap(page, '[data-fv-story][aria-label^="Ana"]'); await page.waitForSelector(".fv-sv [data-sk-vote]", { timeout: 15000 }); await page.click(".fv-sv-pause");
+    const vw = await page.evaluate(() => { const box = document.querySelector(".fv-sv-box").getBoundingClientRect(), P = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: (r.left + r.width / 2 - box.left) / box.width, y: (r.top + r.height / 2 - box.top) / box.height }; }; return { ratio: box.width / box.height, ev: P('.fv-sv [data-sk] a.sk-card'), poll: P(".fv-sv [data-sk-vote]"), href: document.querySelector(".fv-sv [data-sk] a.sk-card").getAttribute("href"), foot: document.querySelector(".fv-sv .sv-foot").getBoundingClientRect().height, ph: document.querySelector("#svRe").placeholder }; });
+    assert.ok(Math.abs(vw.ratio - 9 / 16) < 0.01); assert.ok(Math.abs(vw.ev.x - d.stickers[0].x) < 0.02 && Math.abs(vw.ev.y - d.stickers[0].y) < 0.02, "the event sticker sits where it was put: " + JSON.stringify(vw.ev)); assert.equal(vw.href, "/e/" + EV); assert.equal(vw.ph, "Reply to Ana");
+    assert.deepEqual(await audit(page, ".fv-sv"), [], "the viewer"); await shot(page, "sv-viewer");
+    await tap(page, '.fv-sv [data-sk-vote="0"]'); await page.waitForSelector(".fv-sv .sk-res.me"); assert.match(await page.$eval(".fv-sv .sk-res.me", (e) => e.textContent), /Broth\s*100%/, "results after voting"); assert.equal(await page.$(".fv-sv [data-sk-vote]"), null, "one vote");
+    await tap(page, ".fv-sv [data-react]"); await page.waitForSelector(".fv-sv [data-rx]:not([hidden])"); await tap(page, '.fv-sv [data-r="🔥"]'); await page.waitForFunction(() => /will see your/.test(document.querySelector("[data-sv-msg]").textContent));
+    await page.fill("#svRe", "Save me a bowl"); await page.keyboard.press("Enter"); await page.waitForFunction(() => /Sent to Ana/.test(document.querySelector("[data-sv-msg]").textContent)); await shot(page, "sv-replied");
+    assert.ok(await page.$(".fv-sv #svRe"), "typing a reply never moved the story on");
+    await Promise.all([page.waitForURL((u) => new URL(u).pathname === "/e/" + EV, { timeout: 15000 }), tap(page, ".fv-sv [data-sk] a.sk-card")]); await ctx.close();
+
+    // ---- Ana again: who saw it, and the reply
+    assert.equal(X.inbox(ana.email).filter((n) => n.kind === "story").length, 2, "one note for the reaction, one for the reply");
+    ctx = await ctxFor(ana); page = await ctx.newPage(); watch(page); await page.goto(srv.base + "/feed?st=" + R.ids[0], { waitUntil: "domcontentloaded" }); await page.waitForSelector(".fv-sv .sv-sheet .sv-list", { timeout: 20000 }); // the bell note's link opens the story with what came back
+    const ins = await page.$eval(".fv-sv .sv-sheet", (s) => s.innerText); assert.match(ins, /Seen by 1/i); assert.match(ins, /Ben\s*🔥/); assert.match(ins, /Ben\s+Save me a bowl/); assert.match(ins, /Broth\s+1 \(100%\)/); assert.deepEqual(await audit(page, ".fv-sv .sv-sheet"), [], "seen by"); await shot(page, "sv-seen-by");
+    await tap(page, ".fv-sv .sv-sheet [data-x]"); assert.match(await page.$eval(".fv-sv [data-seen]", (b) => b.textContent), /Seen by 1 · 1 reply/); assert.ok(await page.$(".fv-sv [data-del]"), "Delete on your own"); assert.equal(await page.$(".fv-sv #svRe"), null, "no reply box on your own story"); await ctx.close();
+    assert.deepEqual(errs, [], "console clean, nothing failed");
+  } finally { await browser.close(); }
 });

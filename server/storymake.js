@@ -282,7 +282,7 @@ export function mountStoryMake(app, { store, small, raw, currentUser, C, X }) {
   app.post("/api/story/seen", small, (req, res) => { const u = me(req, res); if (!u) return; if (limited(u, "seen", 3000)) return slow(res); let n = 0;
     for (const id of (Array.isArray(req.body?.ids) ? req.body.ids : []).slice(0, 40)) { const st = M.get(id); if (st && M.canSee(st, u.email) && M.seen(st, u)) n++; } res.json({ ok: true, seen: n }); });
   const tap = (f) => (req, res) => { const u = me(req, res); if (!u) return; if (limited(u, "tap", 240)) return slow(res); const st = seenBy(req, res, u); if (!st) return;
-    if (lc(st.author) === lc(u.email)) return bad(res, "This one is yours.", 400, "own"); const R = f(st, u, req.body || {}); if (R.error) return bad(res, R.error, R.status || 400, R.code || "invalid");
+    if (lc(st.author) === lc(u.email)) return bad(res, "This one is yours.", 400, "own"); const R = f(st, u, req.body || {}); if (!R.error) M.seen(st, u); /* whoever voted or wrote back has seen it */ if (R.error) return bad(res, R.error, R.status || 400, R.code || "invalid");
     res.json({ ...R, st: M.stOf(st, u.email, X.index()) }); };
   app.post("/api/story/:id/vote", small, tap((st, u, b) => M.vote(st, u, String(b.sticker || ""), b.option)));
   app.post("/api/story/:id/slide", small, tap((st, u, b) => M.slide(st, u, String(b.sticker || ""), b.value)));

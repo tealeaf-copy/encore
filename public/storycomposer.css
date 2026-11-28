@@ -127,7 +127,7 @@ html body .stc .stc-radio input{appearance:auto;-webkit-appearance:auto;width:20
   .stc-tools{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 0 10px}
   .stc-tool{min-height:60px;border-color:var(--pl-line,#CFC8B9);background:#fff;font-size:13.5px}
   .stc-panel{height:auto;min-height:180px;justify-content:flex-start;padding:12px 0;gap:12px}
-  .stc-scroll{flex-wrap:wrap;overflow:visible}
+  .stc-scroll{flex-wrap:wrap;overflow:visible}.stc-panel>.stc-row:has(>.stc-lab){flex-direction:column;align-items:stretch;gap:6px}
   .stc-keys{display:block!important}
   .stc-scrim{align-items:center}.stc-sheet{border-bottom:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;max-height:min(88%,720px)}.stc-sheet.full{height:auto;max-height:92%}
 }

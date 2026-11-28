@@ -150,6 +150,7 @@ One accent per screen. No gradients or glows. **One light look everywhere:** no 
 - **Shadow:** none. Edges are drawn, not lifted: a sheet or menu that floats gets an ink outline (`--pl-shadow-float`).
 - **Covers** sit in a 1.5px ink frame (`.pl-frame`) with an optional mono label in the corner (`.pl-frame__label`: "No. 48 · Supper club").
 - **Icons:** drawn line glyphs in the text colour. No emoji as UI.
+- **The soft surfaces (`.pl-fun`, `public/fun.css`):** the home page, the top of the app's Home, the "What are you making?" chooser, the type card on the create canvas and /start use pill buttons and 16 to 28px corners (`--pl-fun-pill`, `--pl-fun-r`, `--pl-fun-r-sm`), no ink outlines on cards, and a pastel that follows Potto's colour or the event type (`--pl-fun-tint`). Nothing outside a `.pl-fun` element changes. Colour, type, focus rings and the one ink-blue primary stay as above.
 
 ### Magazine patterns (shared classes in `public/system.css`)
 
@@ -168,6 +169,8 @@ One accent per screen. No gradients or glows. **One light look everywhere:** no 
 ### Potto
 
 Potto is a signature, not a fixture. The straight-line Potto in the mark speaks for the brand in headers; the full character is for moments (empty states, milestones, the offline and 404 pages). He speaks at most once per screen, in first person, and never invents facts.
+
+Plush Potto (`public/pottoplush.js`) is the same pot as a felt toy, for the soft surfaces only: eight colourways (clay, butter, plum, sky, moss, coral, cream, ink), four shapes and a small wardrobe tied to what people host (chef hat for dinner, headband for a run, glasses and a book for a book club, bow tie for drinks, party hat, apron and flower for a workshop, a coffee cup). Each visit gets one combination; where an event type is known he dresses for it. He bobs, blinks and hops a little, and is still under reduced motion.
 
 ### Illustrations and event looks
 

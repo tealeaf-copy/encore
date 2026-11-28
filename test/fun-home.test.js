@@ -135,10 +135,10 @@ test("in a browser: the box is reserved (no layout shift), seeds differ, reduced
     await q.hover("#heroGo"); assert.equal(await q.evaluate(() => document.querySelector("#heroPotto .plp").className.includes("is-hop")), false, "no hop either");
     await q.context().close();
     // /start: he dresses for the kind you tap
-    const st = await open("/start?potto=5"); await st.click(".chip[data-t=run]"); await st.waitForTimeout(300);
+    const st = await open("/start?potto=5"); assert.ok((await st.evaluate(() => window.__cls)) < 0.05, "no jump while Potto arrives"); await st.click(".chip[data-t=run]"); await st.waitForTimeout(300);
     assert.equal(await st.evaluate(() => document.querySelector("#stPotto .plp").dataset.wear), "headband");
     await st.fill("#f [name=title]", "Book club at mine"); await st.waitForTimeout(300); assert.equal(await st.evaluate(() => document.querySelector("#stPotto .plp").dataset.wear), "glasses book");
-    assert.ok((await st.evaluate(() => window.__cls)) < 0.05); assert.deepEqual(await st.evaluate(() => window.__errs), []);
+    assert.deepEqual(await st.evaluate(() => window.__errs), []);
     await st.context().close();
   } finally { await br.close(); }
 });

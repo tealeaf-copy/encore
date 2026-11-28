@@ -195,10 +195,10 @@ test("The + sheet: a Create button on the feed, tiles that fit each person, post
   assert.ok(js.includes('"/api/me/posts"') && js.includes('"/api/host/club/posts"') && !/\u2014/.test(js), "the feed's own posts and the club's, no em dashes");
   assert.deepEqual(await (await get("/api/me/compose")).json(), { signedIn: false, tiles: [] });
   const tiles = async (w) => (await (await get("/api/me/compose", U[w].cookie)).json()).tiles;
-  assert.deepEqual(await tiles("noor"), ["event", "drop"], "a new member with a page: a new event or a drop (a maker's first thing is often a drop)");
-  assert.deepEqual(await tiles("ana"), ["event", "drop", "photos"], "went to something: photos from it");
-  assert.deepEqual(await tiles("kit"), ["event", "drop"], "a host: a drop too");
-  assert.deepEqual(await tiles("theo"), ["event", "drop", "photos", "club"], "a host with a fan club on: an update for members");
+  assert.deepEqual(await tiles("noor"), ["event", "story", "drop"], "a new member with a page: a new event or a drop (a maker's first thing is often a drop)");
+  assert.deepEqual(await tiles("ana"), ["event", "story", "drop", "photos"], "went to something: photos from it");
+  assert.deepEqual(await tiles("kit"), ["event", "story", "drop"], "a host: a drop too");
+  assert.deepEqual(await tiles("theo"), ["event", "story", "drop", "photos", "club"], "a host with a fan club on: an update for members");
   // a "Who's in?" post through the existing endpoint shows in a friend's stream
   const r = await post("/api/me/posts", { text: "Dumplings at mine Friday?", ask: true }, U.maya.cookie); assert.equal(r.status, 200);
   const p = (await feedOf("ana")).items.find((x) => x.kind === "post" && x.text === "Dumplings at mine Friday?"); assert.ok(p); assert.equal(p.ask, true);

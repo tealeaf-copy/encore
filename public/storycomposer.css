@@ -134,3 +134,5 @@ html body .stc .stc-radio input{appearance:auto;-webkit-appearance:auto;width:20
 .stc-keys{display:none;margin:auto 0 0;padding-top:10px;border-top:1px solid var(--pl-line,#CFC8B9);font:400 13.5px/1.5 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);color:var(--pl-soft,#444845)}
 .stc-keys kbd{display:inline-block;min-width:22px;padding:1px 5px;border:1px solid var(--pl-line,#CFC8B9);border-radius:4px;background:#fff;font:500 12px/1.4 var(--pl-font-mono,"IBM Plex Mono",monospace);text-align:center;color:var(--pl-ink,#1B1D1C)}
 @media (prefers-reduced-motion:reduce){.stc-bin,.stc-safe{transition:none}}
+/* short phones (a browser with its bars showing): the same controls, packed tighter, so the slide keeps its room */
+@media (max-height:760px) and (max-width:899px){.stc-top{min-height:50px;padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:3px}.stc-room{padding:6px}.stc-tools{padding:2px 0}.stc-tool{min-height:44px;gap:1px;padding:2px;font-size:12px}.stc-panel{height:148px;padding:4px 0;gap:4px}.stc-thumb,.stc-add{width:46px;height:82px}}

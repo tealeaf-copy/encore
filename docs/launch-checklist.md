@@ -241,6 +241,7 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `ENCORE_ALLOW_DEMO_WRITES` | No | Lets the sample hosts take requests (demos only). |
 | `ENCORE_MCP_TOKEN`, `ENCORE_MCP_TOKENS` | No | Tokens for the MCP API. |
 | `ASSET_MAX_MB`, `MOMENT_VIDEO_MAX_MB`, `MOMENT_UNREAD_VIDEO_MB` | No | Upload size limits. |
+| `STORY_HOURS`, `STORY_VIDEO_MAX_SECONDS`, `STORY_PER_HOUR` | No | Stories made in the composer: hours on the ring (default 24), the longest a story video plays (default 30 seconds; the file may be twice that, the composer's trim picks which seconds), and stories one person can make in an hour (default 30). |
 | `ENCORE_COMMIT`, `RENDER_GIT_COMMIT`, `SOURCE_VERSION`, `VERCEL_GIT_COMMIT_SHA` | No | The app version on tickets and error reports. Render sets `RENDER_GIT_COMMIT` on its own. |
 | `ENCORE_SSO_ALLOW_LOCAL` | No | Tests only: lets SSO settings point at private addresses. |
 | `ENCORE_BRAND_FIXTURES` | No | Tests only: sample brand research files. |

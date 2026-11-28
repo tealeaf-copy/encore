@@ -812,6 +812,8 @@ body.cv-open{overflow:hidden}body.cv-open #encoreHelp,body.cv-open .es-tabs,body
 #cv .cv-styles button[aria-checked=true]{border-color:var(--cv-ink)!important;box-shadow:inset 0 0 0 1px var(--cv-ink)}
 #cv .cv-cover{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:var(--cv-card);border:1px solid var(--cv-line);margin-top:2px}
 #cv .cv-cover>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* the cover as guests get it: the invite paints the drawing on the look's cover tone (public/slots.css), so the editor does too */
+#cv .cv-cover:not(:has(>img)){background:var(--lk-cover,var(--pl-surface))}#cv .cv-cover .ea-cover:not(.ea-custom):not(.lk-deck){background:var(--lk-cover,var(--pl-surface))!important}
 #cv .cv-pen{position:absolute;right:12px;top:12px;z-index:2;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px 0 14px;border-radius:6px!important;border:0!important;background:rgba(255,255,255,.96)!important;color:#1D1B18!important;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 #cv .cv-when{display:grid;gap:2px;text-align:left;width:100%;padding:14px 16px!important;border-radius:6px!important;border:1px solid var(--cv-line)!important;background:var(--cv-card)!important;margin:0}
 #cv .cv-when b{font-size:21px;font-weight:600;letter-spacing:-.01em;line-height:1.25}#cv .cv-when span{color:var(--cv-soft);font-size:16px}#cv .cv-when small{font-size:14px;font-weight:600;color:var(--pl-accent-text,#8E3B24)}#cv .cv-when.empty b{color:var(--cv-ink)}

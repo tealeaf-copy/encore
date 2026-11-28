@@ -214,11 +214,11 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
 /* a dark look: one palette from the look's own tokens. The cover sits in the page's deep tone with the drawing in light
    lines, cards are the raised surface, fields the field tone, secondary buttons outlined. Nothing white, no offset shadows */
 /* the drawing's one spot of colour is the look's accent (docs/brand-kit.md: a drawing never brings a hue of its own) */
-.lk-on :is(.cov,.gxcover,.mk-cov,.em-drawn) .ea-art svg :is([fill="#29489A"],[fill="#C2431F"],[fill="#56683F"]){fill:var(--lk-spot)}
-.lk-dark :is(.cov,.gxcover):not(.poster):not(.lk-pcov){background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
-.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck):not(.ea-custom){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
-.lk-dark :is(.cov,.gxcover,.em-drawn) .ea-art svg [stroke="#2A2622"],.lk-dark .em-drawn svg [stroke="#2A2622"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover) .ea-art svg [fill="#2A2622"],.lk-dark .em-drawn svg [fill="#2A2622"]{fill:var(--lk-ink)}
-.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck) .ea-art svg [fill="#fff"],.lk-dark .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck) .ea-art svg{filter:none!important}
+.lk-on :is(.cov,.gxcover,.mk-cov,.em-drawn,.cv-cover) .ea-art svg :is([fill="#29489A"],[fill="#C2431F"],[fill="#56683F"]){fill:var(--lk-spot)}
+.lk-dark :is(.cov,.gxcover,.cv-cover):not(.poster):not(.lk-pcov){background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+.lk-dark :is(.cov,.gxcover,.cv-cover) .ea-cover:not(.lk-deck):not(.ea-custom){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
+.lk-dark :is(.cov,.gxcover,.em-drawn,.cv-cover) .ea-art svg [stroke="#2A2622"],.lk-dark .em-drawn svg [stroke="#2A2622"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover,.cv-cover) .ea-art svg [fill="#2A2622"],.lk-dark .em-drawn svg [fill="#2A2622"]{fill:var(--lk-ink)}
+.lk-dark :is(.cov,.gxcover,.cv-cover) .ea-cover:not(.lk-deck) .ea-art svg [fill="#fff"],.lk-dark .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}.lk-dark :is(.cov,.gxcover,.cv-cover) .ea-cover:not(.lk-deck) .ea-art svg{filter:none!important}
 body.lk-invite.lk-dark :is(.pls-btn,.sl-btn,.btn:not(.main):not(.pay)){background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
 body.lk-invite.lk-dark :is(.pls-btn,.sl-btn) svg{color:var(--lk-ink)}.lk-dark .pls-btn{--pls-fill:transparent}.lk-dark .pls-btn svg path{stroke:var(--lk-ink)}.lk-dark .pls-btn[aria-pressed=true]{--pls-fill:var(--lk-btn)}
 body.lk-invite.lk-dark form,body.lk-invite.lk-dark .tb-card{background:var(--lk-raised)!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important}

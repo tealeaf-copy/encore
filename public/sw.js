@@ -72,7 +72,7 @@ self.addEventListener("fetch", (e) => {
     // signing out (or in as someone else) drops the cached pages and data
     if (req.method === "POST" && /^\/api\/(logout|login|signup|auth\/(code|email)\/verify|me\/delete)$/.test(new URL(req.url).pathname)) e.waitUntil(forget());
     // a kudos or a comment that went through: the saved feed copies have old counts, so they go (the next read is fresh)
-    else if (/^\/api\/feed\/(kudos|comments)(\/|$)/.test(new URL(req.url).pathname) && new URL(req.url).origin === self.location.origin)
+    else if ((/^\/api\/feed\/(kudos|comments)(\/|$)/.test(new URL(req.url).pathname) || /^\/api\/story(\/(?!media$|seen$)[A-Za-z0-9_-]+)?$/.test(new URL(req.url).pathname) /* a story made or deleted: a saved feed without it must not answer on a slow connection */) && new URL(req.url).origin === self.location.origin)
       e.respondWith(fetch(req).then((res) => { if (res.ok) e.waitUntil(dropFeed()); return res; }));
     return;
   }

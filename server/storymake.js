@@ -53,6 +53,7 @@ export function cleanSticker(s, i = 0) {
   if (s.t === "mention") { const h = lc(s.handle).replace(/^@/, ""); if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(h)) return null; o.handle = h; }
   if (s.t === "question") o.prompt = cleanText(s.prompt, 80) || "Ask me something";
   if (s.t === "poll") { o.q = cleanText(s.q, 80); o.a = cleanText(s.a, 30) || "Yes"; o.b = cleanText(s.b, 30) || "No"; }
+  if ([1, 2].includes(Number(s.v))) o.v = Number(s.v); // one of three looks (public/storykit.js)
   if (s.t === "slider") { o.q = cleanText(s.q, 60); o.emoji = [...cleanText(s.emoji, 16)].slice(0, 2).join("") || "❤️"; }
   return o;
 }
@@ -109,7 +110,7 @@ export function makeStoryMake(store, { C, X, V, blocksOf = () => [] }) {
     return { stickers: out, dropped }; }
   /** A story's stickers as this viewer gets them: links only to what they may see, their own vote, results once they voted. */
   function stickersFor(st, viewer, I, xd) { viewer = lc(viewer); const own = !!viewer && viewer === lc(st.author), vk = viewer ? hash(viewer) : "", out = [];
-    for (const s of st.stickers || []) { const o = { id: s.id, t: s.t, x: s.x, y: s.y, s: s.s, r: s.r };
+    for (const s of st.stickers || []) { const o = { id: s.id, t: s.t, x: s.x, y: s.y, s: s.s, r: s.r, ...(s.v ? { v: s.v } : {}) };
       if (s.ev) { const x = I.events.get(s.ev); if (!x || x.e.cancelled || !(V.cardPublic(x.e) || V.wasThere(I, x.id, viewer))) continue; // a private event's name never reaches someone who wasn't there
         Object.assign(o, evOut(x), { url: `/e/${encodeURIComponent(x.id)}` });
         if (s.t === "imin") o.label = (x.e.date || "") >= today() ? V.eventCta(x.e, x.id).label : "See the invite";
@@ -122,10 +123,12 @@ export function makeStoryMake(store, { C, X, V, blocksOf = () => [] }) {
         if (mine != null || own) { const L = Object.values(R); o.n = L.length; o.avg = L.length ? Math.round(L.reduce((a, b) => a + b, 0) / L.length) : 0; } }
       out.push(o); }
     return out; }
+  /** The host a story's event photo is waiting for ("" when it isn't waiting): a guest's photo on a host's event (server/storyapprove.js). */
+  function waitingFor(st, I) { if (!st.momentId || !st.eventId) return ""; try { const x = I.events.get(st.eventId), m = x && scopeStore(store, x.ws).get("moments/" + st.momentId)?.data; if (!m || m.hidden || !V.approve.waiting({ ...m, id: st.momentId }, x)) return ""; return cleanText(C.profileOf(x.ws)?.name, 60) || "the host"; } catch { return ""; } }
   /** What the viewer draws over a story, for this viewer. */
   function stOf(st, viewer, I) { viewer = lc(viewer); const xd = xOf(st.id), own = !!viewer && viewer === lc(st.author), vk = viewer ? hash(viewer) : "";
     return { sid: st.id, dur: st.dur || 5000, ...(st.trim ? { trim: st.trim } : {}), ...(BLOB.test(st.overlay || "") ? { overlay: st.overlay } : {}), stickers: stickersFor(st, viewer, I, xd), by: first(st.authorName) || "Someone",
-      ...(own ? { own: true, seen: Object.keys(xd.views || {}).length, replies: (xd.replies || []).length + (xd.answers || []).length, audience: st.audience, until: st.until } : { reply: !!viewer, ...(vk && xd.reacts?.[vk] ? { myReact: xd.reacts[vk].emoji } : {}) }) }; }
+      ...(own ? { own: true, ...(waitingFor(st, I) ? { waitingFor: waitingFor(st, I) } : {}), seen: Object.keys(xd.views || {}).length, replies: (xd.replies || []).length + (xd.answers || []).length, audience: st.audience, until: st.until } : { reply: !!viewer, ...(vk && xd.reacts?.[vk] ? { myReact: xd.reacts[vk].emoji } : {}) }) }; }
   /** One story as a ring item. */
   function item(st, viewer, I, { prefix = "p:" } = {}) { const x = st.eventId ? I.events.get(st.eventId) : null, evSeen = !!x && (V.cardPublic(x.e) || V.wasThere(I, x.id, viewer));
     const thumb = st.type === "video" ? (BLOB.test(st.poster || "") ? st.poster : "") : st.url;
@@ -144,6 +147,10 @@ export function makeStoryMake(store, { C, X, V, blocksOf = () => [] }) {
     // an event photo that came from a story keeps its stickers (and a video its overlay) wherever the photo shows
     for (const [mid, st] of mom) if (!skip.has(mid) && canSee(st, email, I)) deco.set(mid, { st: stOf(st, email, I), story: true });
     return { byWs, people: people.map(({ email: _e, ...p }) => ({ ...p, latestAt: Math.max(0, ...p.items.map((i) => i.at)), thumb: (p.items.slice().reverse().find((i) => i.thumb) || {}).thumb || "" })), skip, deco, own }; }
+  /** One author's ring for a viewer: their live stories the viewer may see (and `also`, a story asked for by id, when it is the viewer's own). */
+  function ringOf(author, viewer, I = X.index(), { also = "", now = Date.now() } = {}) { author = lc(author); viewer = lc(viewer); const L = all().filter((s) => lc(s.author) === author && (live(s, now) || (s.id === also && viewer === author)) && canSee(s, viewer, I)).sort((a, b) => a.at - b.at); if (!L.length) return null;
+    const ws = L[L.length - 1].ws, P = X.person(author), h = (C.profileOf(ws)?.handle && ownerOf(ws) === author && V.hostOf(ws, I)) || { handle: "", name: first(L[0].authorName || P.name) || "Someone", emoji: "", color: "#29489A" }, items = L.slice(-30).map((s) => item(s, viewer, I));
+    return { key: h.handle ? "h:" + h.handle : "p:" + hash(author).slice(0, 12), host: h, items, showcase: false, fresh: true, ...(viewer === author ? { own: true } : {}), latestAt: Math.max(0, ...items.map((i) => i.at)), thumb: (items.slice().reverse().find((i) => i.thumb) || {}).thumb || "" }; }
   /** A highlight's story ("s:<id>"): kept past its day, still only for people who may see it. */
   function kept(id, ws, viewer, I, prefix) { const st = get(id); if (!st || st.ws !== ws || !canSee(st, viewer, I)) return null; return item(st, viewer, I, { prefix }); }
   const mine = (id, email) => { const st = get(id); return !!st && lc(st.author) === lc(email); };
@@ -220,7 +227,7 @@ export function makeStoryMake(store, { C, X, V, blocksOf = () => [] }) {
       stickers: (st.stickers || []).filter((s) => ["poll", "question", "slider"].includes(s.t)).map((s) => s.t === "poll" ? { id: s.id, t: "poll", q: s.q, a: s.a, b: s.b, res: [0, 1].map((o) => Object.values(d.votes?.[s.id] || {}).filter((v) => v === o).length) }
         : s.t === "slider" ? { id: s.id, t: "slider", q: s.q, emoji: s.emoji, n: Object.keys(d.slides?.[s.id] || {}).length, avg: avgOf(Object.values(d.slides?.[s.id] || {})) }
         : { id: s.id, t: "question", prompt: s.prompt, answers: (d.answers || []).filter((a) => a.sticker === s.id).map((a) => ({ name: a.name, text: a.text, at: a.at })).sort(byT) }) }; }
-  return { all, get, live, canSee, reachOf, myEvents, mayLink, evOut, checkStickers, stickersFor, stOf, item, rings, kept, mine, uploadsOf, noteUpload, create, remove, forget, seen, vote, slide, answer, reply, react, insights, blocked, xOf, ownerOf };
+  return { ringOf, waitingFor, all, get, live, canSee, reachOf, myEvents, mayLink, evOut, checkStickers, stickersFor, stOf, item, rings, kept, mine, uploadsOf, noteUpload, create, remove, forget, seen, vote, slide, answer, reply, react, insights, blocked, xOf, ownerOf };
 }
 
 export function mountStoryMake(app, { store, small, raw, currentUser, C, X }) {
@@ -274,7 +281,13 @@ export function mountStoryMake(app, { store, small, raw, currentUser, C, X }) {
       if (h) { h.items = [...new Set([...(h.items || []), ...items])].slice(0, 30); A.save(u.ws, { highlights: L }); R.highlight = { id: h.id, name: h.name }; } } catch {} }
     if (b.scrapbook === true) { try { const L = M.all().filter((s) => R.ids.includes(s.id)), pics = L.filter((s) => s.type === "image").map((s) => s.url).slice(0, 12), x = L[0]?.eventId ? X.index().events.get(L[0].eventId) : null;
       if (pics.length) { const day = new Date().toISOString().slice(0, 10), id = crypto.randomBytes(6).toString("hex"); scopeStore(store, u.ws).set("scrapbook/" + id, { title: x ? cleanText(x.e.pubTitle || x.e.name, 140) : "From my story", date: x?.e.date || day, time: "", place: "", guests: 0, note: "", about: "", source: "", site: "", link: "", photos: pics, cover: pics[0], at: Date.now(), featured: false, featuredOrder: 0, section: "", story: R.ids[0] }); R.scrapbook = id; } } catch {} }
+    // the author's ring as it is now, so the page can show the story at once (no second request, no cached feed in the way)
+    try { const I = X.index(), ring = M.ringOf(u.email, u.email, I); if (ring) { R.ring = ring; R.first = Math.max(0, ring.items.findIndex((i) => i.st.sid === R.ids[0])); R.waitingFor = ring.items[R.first]?.st.waitingFor || ""; } } catch {}
     res.json(R); });
+  // a link to one story (/feed?st=<id>): its author's ring for whoever opens it, or a plain 404 (a private story never says it exists)
+  app.get("/api/public/story/:id", (req, res) => { res.set("Cache-Control", "private, no-store"); const u = currentUser(req), em = u && u.ws !== DEFAULT_WS ? lc(u.email) : "", st = M.get(req.params.id), I = X.index();
+    if (!st || !M.canSee(st, em, I)) return bad(res, "This story isn't here any more.", 404, "not_found"); const ring = M.ringOf(st.author, em, I, { also: st.id }), k = ring ? ring.items.findIndex((i) => i.st.sid === st.id) : -1;
+    if (k < 0) return bad(res, "This story isn't here any more.", 404, "not_found"); res.json({ ring, k }); });
   // my stories, newest first (Your stories, and the bell's link to one of them)
   app.get("/api/story/mine", (req, res) => { const u = me(req, res); if (!u) return; const I = X.index(), em = lc(u.email), now = Date.now(), h = C.profileOf(u.ws);
     const waits = (s) => { if (!s.momentId || !s.eventId) return false; const x = I.events.get(s.eventId), m = x && scopeStore(store, x.ws).get("moments/" + s.momentId)?.data; return !!m && !m.hidden && V.approve.waiting({ ...m, id: s.momentId }, x); };

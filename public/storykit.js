@@ -12,7 +12,7 @@
   const G = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
   const ARROW = `<svg ${G} width="14" height="14"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
   const CSS = `.sk{position:absolute;left:0;top:0;transform-origin:center;box-sizing:border-box;font:500 14px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#1B1D1C;letter-spacing:0;text-align:left;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.sk *{box-sizing:border-box}.sk a,a.sk{color:inherit;text-decoration:none}
+.sk *{box-sizing:border-box;text-transform:none;letter-spacing:0;font-style:normal}.sk a,a.sk{color:inherit;text-decoration:none}
 .sk-card{display:block;width:210px;background:#FAF8F3;border:1.5px solid #1B1D1C;border-radius:6px;overflow:hidden;box-shadow:0 6px 18px -8px rgba(0,0,0,.55)}
 .sk-cov{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#EFEBE2;border-bottom:1.5px solid #1B1D1C}.sk-cov svg{display:block;width:100%;height:100%}
 .sk-b{display:block;padding:9px 11px 10px}.sk-k{display:block;font:500 10.5px/1.2 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:#444845}
@@ -34,6 +34,11 @@
 .sk-track{position:absolute;left:0;right:0;top:21px;height:6px;border-radius:3px;background:#CFC8B9}.sk-fill{position:absolute;left:0;top:21px;height:6px;border-radius:3px;background:#29489A}
 .sk-thumb{position:absolute;top:6px;width:36px;height:36px;margin-left:-18px;display:grid;place-items:center;font-size:26px;line-height:1;pointer-events:none}
 .sk-avg{position:absolute;top:13px;width:3px;height:22px;margin-left:-1.5px;border-radius:2px;background:#1B1D1C}
+.sk.v1 .sk-card,.sk.v1 .sk-at{background:#1B1D1C;color:#FAF8F3;border-color:#FAF8F3}.sk.v1 .sk-k,.sk.v1 .sk-s{color:#CFC8B9}.sk.v1 .sk-go,.sk.v1 .sk-at{color:#F2DD6B}.sk.v1 .sk-cov{border-color:#FAF8F3}
+.sk.v1 .sk-btn,.sk.v1 .sk-res{background:#1B1D1C;color:#FAF8F3;border-color:#FAF8F3}.sk.v1 .sk-res i{background:#29489A}.sk.v1 .sk-res.me i{background:#56683F}.sk.v1 .sk-fake{background:#2B2E2C;border-color:#6B6F6C;color:#CFC8B9}.sk.v1 .sk-track{background:#6B6F6C}.sk.v1 .sk-fill{background:#F2DD6B}.sk.v1 .sk-avg{background:#FAF8F3}
+.sk.v1 .sk-in{background:#1B1D1C;border-color:#FAF8F3}.sk.v1 .sk-in .sk-k{color:#F2DD6B}
+.sk.v2 .sk-card{background:#F2DD6B;border-radius:16px}.sk.v2 .sk-cov{border-radius:0}.sk.v2 .sk-btn,.sk.v2 .sk-res,.sk.v2 .sk-fake{border-radius:999px}.sk.v2 .sk-k,.sk.v2 .sk-s{color:#1B1D1C}.sk.v2 .sk-go{color:#1B1D1C}.sk.v2 .sk-res.me i{background:#C2431F}.sk.v2 .sk-res.me{color:#1B1D1C}
+.sk.v2 .sk-in{background:#FAF8F3;color:#29489A;border-radius:999px;padding-left:22px;padding-right:22px}.sk.v2 .sk-in .sk-k{color:#444845}.sk.v2 .sk-at{background:#29489A;color:#fff;border-radius:999px}
 .sk-s{display:block;margin-top:6px;font:400 12px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:#444845;text-align:center}`;
   let on = false; function css() { if (on) return; on = true; const s = document.createElement("style"); s.id = "sk-css"; s.textContent = CSS; document.head.appendChild(s); }
   /** "6d 04h 12m" until a time; "It's on" once it has come. */

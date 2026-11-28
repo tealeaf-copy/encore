@@ -71,16 +71,19 @@
   // host's brand kit display face when they have a kit (public/brandkit.js). The others are looks.js title fonts.
   const TITLE_STYLES = [["display", "Display", ""], ["clean", "Clean", "clean"], ["mono", "Mono", "mono"], ["script", "Script", "script"]];
   const titleStyleOf = (d) => (TITLE_STYLES.find((s) => s[2] === (d?.look?.titleFont || "")) || [""])[0];
-  // the effect: off unless the host picks one. public/effects.js draws it behind the page, the same here, in the guest
-  // preview and on every guest page, and holds it still for people who prefer less motion. [id, label, what it is, group]
-  const EFFECTS = [["none", "None", "Just the page.", "Quiet"], ["paper", "Paper grain", "A soft paper texture.", "Quiet"], ["stars", "Stars", "Small stars, slowly blinking. For late nights.", "Quiet"], ["twinkle", "Candlelight", "Warm points of light, barely moving.", "Quiet"],
-    ["confetti", "Confetti", "Soft paper bits, falling slowly.", "Party"], ["streamers", "Streamers", "Curly paper ribbons.", "Party"], ["balloons", "Balloons", "A few, drifting up.", "Party"], ["bulbs", "String lights", "Bulbs along the top.", "Party"], ["sparkles", "Sparkles", "Around your title.", "Party"], ["dice", "Dice", "Two dice roll in, once. For game nights.", "Party"],
-    ["petals", "Petals", "Falling slowly, in your colours.", "Seasonal"], ["snow", "Snow", "A few slow flakes.", "Seasonal"], ["leaves", "Leaves", "Autumn leaves drifting down.", "Seasonal"], ["rain", "Rain", "Rain on the window, for cozy nights.", "Seasonal"],
-    ["steam", "Steam", "Rising slowly, as over a warm pot.", "Food and drink"], ["bubbles", "Bubbles", "Small bubbles, for drinks.", "Food and drink"]];
+  // the effect: off unless the host picks one. public/effects.js draws it in the cover (never over words or buttons), the
+  // same here, in the guest preview and on every guest page, and holds it still for people who prefer less motion.
+  // [id, label, what it does, group]
+  const EFFECTS = [["none", "None", "Just the page.", "Quiet"], ["paper", "Paper grain", "A soft paper texture on the cover and the page.", "Quiet"], ["twinkle", "Candlelight", "The cover dims and warm flames glow along its edge.", "Quiet"], ["bulbs", "String lights", "Bulbs across the top of the cover, coming on one by one.", "Quiet"],
+    ["confetti", "Confetti", "One pop when the page opens, gone in two seconds.", "Party"], ["sparkles", "Sparkles", "Glints across the cover, then one now and then.", "Party"], ["dice", "Dice", "Two dice roll into the cover and stay. For game nights.", "Party"],
+    ["petals", "Petals", "Blossom drifting down the cover.", "Seasonal"], ["snow", "Snow", "Soft flakes falling in the cover.", "Seasonal"], ["leaves", "Leaves", "Autumn leaves turning as they fall.", "Seasonal"], ["rain", "Rain", "Rain on the window, for cozy nights.", "Seasonal"],
+    ["steam", "Steam", "Three curls rising, as over a hot dish.", "Food and drink"], ["bubbles", "Bubbles", "Small bubbles rising and popping. For drinks.", "Food and drink"]];
   const FX_GROUPS = ["Quiet", "Party", "Seasonal", "Food and drink"];
   // older effects from the vibes: still drawn and kept, not offered again
   const FX_OLD = { velvet: "Velvet", lanterns: "Lanterns", scanlines: "Scanlines", pixels: "Pixels", jarwall: "Jar wall" };
-  const effectOf = (d) => { const v = d?.look?.effect || "none"; return EFFECTS.some((x) => x[0] === v) || FX_OLD[v] ? v : "none"; };
+  // cut in the effects review (public/effects.js ALIAS, server/looks.js effectAlias): an event that carries one shows the one that replaced it
+  const FX_GONE = { stars: "sparkles", streamers: "confetti", balloons: "confetti" };
+  const effectOf = (d) => { const v0 = d?.look?.effect || "none", v = FX_GONE[v0] || v0; return EFFECTS.some((x) => x[0] === v) || FX_OLD[v] ? v : "none"; };
   const effectName = (d) => { const v = effectOf(d); return (EFFECTS.find((x) => x[0] === v) || [v, FX_OLD[v] || "None"])[1]; };
   const effectLevel = (d) => (d?.look?.effectLevel === "lively" && effectOf(d) !== "none" ? "lively" : "subtle");
 
@@ -693,18 +696,18 @@
 
   function effectSheet() { const W = S.W, cur = effectOf(W), old = FX_OLD[cur] ? [[cur, FX_OLD[cur], ""]] : [], stops = [], stop = () => stops.splice(0).forEach((f) => { try { f(); } catch {} });
     const tile = ([k, l, sub]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-fx="${k}"${sub ? ` title="${esc(sub)}"` : ""}><canvas class="cv-fxt" data-fxt="${k}" aria-hidden="true"></canvas><span>${esc(l)}</span></button>`;
-    const Sh = traySheet({ title: "Effect", where: cur === "sparkles" ? "#cvTitle" : "", onEnd: stop, body: `
+    const Sh = traySheet({ title: "Effect", where: cur === "none" ? "" : "#cvCover", onEnd: stop, body: `
       <div class="cv-seg cv-lvl" role="group" aria-label="How much"><button type="button" data-lvl="subtle">Subtle</button><button type="button" data-lvl="lively">Lively</button></div>
       ${old.length ? `<p class="cv-sect">Yours now</p><div class="cv-fxg" role="radiogroup" aria-label="Yours now">${old.map(tile).join("")}</div>` : ""}
       ${FX_GROUPS.map((g) => `<p class="cv-sect">${esc(g)}</p><div class="cv-fxg" role="radiogroup" aria-label="${esc(g)}">${EFFECTS.filter((x) => x[3] === g).map(tile).join("")}</div>`).join("")}
-      <p class="cv-hint">Light and quiet, it never gets in the way of a tap. It holds still for anyone who prefers less motion.</p>` });
-    // a tiny moving picture on each tile, in this event's colours
+      <p class="cv-hint">An effect plays in your cover, never over your words. It holds still for anyone who prefers less motion.</p>` });
+    // a tiny moving picture on each tile, in this event's colours; a tap plays the effect in the cover, from the top
     const thumbs = (lvl) => withFx((FX) => { stop(); if (!Sh.bg.isConnected) return; Sh.$$("[data-fxt]").forEach((c) => stops.push(FX.thumb(c, c.dataset.fxt, { look: W.look, event: W, level: lvl }))); });
     const lvlOn = () => { const none = effectOf(W) === "none"; Sh.$$("[data-lvl]").forEach((b) => { b.disabled = none; b.setAttribute("aria-pressed", String(!none && b.dataset.lvl === effectLevel(W))); }); };
     thumbs(effectLevel(W)); lvlOn();
     const put = (v, lvl) => { const L = { ...(W.look || {}), effect: v }; if (v === "none") { delete L.effect; delete L.effectLevel; } else if (lvl === "lively") L.effectLevel = "lively"; else delete L.effectLevel;
       W.look = L; W.effect = "none"; changed(); dress(); dockNames(); lvlOn(); preview("look"); };
-    Sh.$$("[data-fx]").forEach((b) => (b.onclick = () => { put(b.dataset.fx, effectLevel(W)); Sh.$$("[data-fx]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); Sh.show(b.dataset.fx === "sparkles" ? "#cvTitle" : ""); }));
+    Sh.$$("[data-fx]").forEach((b) => (b.onclick = () => { try { root.EncoreEffects?.again(q("#cvScroll", S.el)); } catch {} put(b.dataset.fx, effectLevel(W)); Sh.$$("[data-fx]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); Sh.show(b.dataset.fx === "none" ? "" : "#cvCover"); }));
     Sh.$$("[data-lvl]").forEach((b) => (b.onclick = () => { const v = effectOf(W); if (v === "none") return; put(v, b.dataset.lvl); thumbs(b.dataset.lvl); })); }
 
   // ---------- quick actions: the settings that used to be long sections, each in its own sheet ----------
@@ -880,7 +883,7 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-reply{display:grid;gap:10px;justify-items:center;padding:16px 0 4px}#cv .cv-reply p{margin:0;font-size:18px;font-weight:600}#cv .cv-reply div{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 #cv .cv-reply span{min-height:46px;min-width:96px;padding:0 18px;border-radius:999px;border:1px solid var(--cv-line2);display:inline-grid;place-items:center;font-weight:600;background:var(--cv-card)}
 #cv .cv-reply span:first-child{background:var(--lk-btn,var(--cv-acc));color:var(--lk-on-btn,#fff);border-color:transparent}
-#cv .cv-host{display:grid;gap:18px;margin-top:10px;padding:18px 16px;border-radius:6px;border:1px dashed var(--cv-line2);background:var(--pl-sand-soft,#F0E9DA);color:var(--pl-ink,#1D1B18);--cv-soft:var(--pl-soft,#5D564E)}
+#cv .cv-host{position:relative;isolation:isolate;display:grid;gap:18px;margin-top:10px;padding:18px 16px;border-radius:6px;border:1px dashed var(--cv-line2);background:var(--pl-surface,#FBF9F5);color:var(--pl-ink,#1D1B18);--cv-soft:var(--pl-soft,#5D564E)}
 #cv .cv-field,#cv .cv-f,.cv-sh .cv-f{display:grid;gap:6px;font-weight:600;font-size:16px}#cv .cv-field small,.cv-sh .cv-f small{font-weight:400;color:var(--cv-soft);font-size:14px}
 #cv .cv-field select{width:100%;min-height:48px;padding:0 12px!important;border-radius:6px!important;border:1px solid var(--cv-line2)!important;background:#fff!important;color:var(--cv-ink);font:inherit;font-size:16px;font-weight:500}
 #cv .cv-uf{display:grid;grid-template-columns:96px minmax(0,1fr);border-radius:6px;overflow:hidden;background:#fff;border:1px solid var(--cv-line2);font-weight:400}

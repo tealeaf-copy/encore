@@ -1,9 +1,11 @@
 // Per-event looks: the colours, effect, title font and reply button a host picks in "Make it yours".
 // Saved on the event as `look`; every value is checked against these lists (public/looks.js offers the same ones).
 export const LOOK = {
-  effects: ["none", "sparkles", "snow", "confetti", "petals", "paper", "velvet", "stars", "twinkle", "lanterns", "scanlines", "pixels", "jarwall",
-    // drawn by public/effects.js (the canvas Effect tray); the older ids above stay valid so old events keep their effect
-    "streamers", "balloons", "bulbs", "dice", "leaves", "rain", "steam", "bubbles"],
+  effects: ["none", "sparkles", "snow", "confetti", "petals", "paper", "velvet", "twinkle", "lanterns", "scanlines", "pixels", "jarwall",
+    // drawn by public/effects.js (the canvas Effect tray); the older vibe ids above stay valid so old events keep their effect
+    "bulbs", "dice", "leaves", "rain", "steam", "bubbles"],
+  // cut in the effects review: saved as the effect that replaced it (public/effects.js draws stored events the same way)
+  effectAlias: { stars: "sparkles", streamers: "confetti", balloons: "confetti" },
   // how much of the effect: a few shapes (subtle, the default) or more of them (lively)
   effectLevels: ["subtle", "lively"],
   titleFonts: ["clean", "bold", "serif", "script", "typewriter", "rounded", "mono", "pixel", "slab"],
@@ -37,7 +39,8 @@ export function cleanLook(v) {
   if (!v || typeof v !== "object" || Array.isArray(v)) return null;
   const o = {};
   if (Array.isArray(v.palette)) { const p = v.palette.filter((c) => typeof c === "string" && HEX.test(c)).slice(0, 3).map((c) => c.toUpperCase()); if (p.length) o.palette = p; }
-  if (LOOK.effects.includes(v.effect)) o.effect = v.effect;
+  const fx = typeof v.effect === "string" && Object.hasOwn(LOOK.effectAlias, v.effect) ? LOOK.effectAlias[v.effect] : v.effect;
+  if (LOOK.effects.includes(fx)) o.effect = fx;
   if (o.effect && o.effect !== "none" && v.effectLevel === "lively") o.effectLevel = "lively"; // subtle is the default and is not stored
   if (LOOK.titleFonts.includes(v.titleFont)) o.titleFont = v.titleFont;
   if (LOOK.buttonEmoji.includes(v.buttonEmoji)) o.buttonEmoji = v.buttonEmoji;

@@ -114,8 +114,8 @@ test("cover photo: PNG, JPEG or WebP by their bytes, 8 MB at most, the owner's o
 
 test("the host's side: one New flow, labeled fields, the calm cover, Change cover, invite size", async () => {
   const fs = await import("node:fs"), read = (f) => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
-  const d = read("public/drop.js"), idx = read("index.html"), sf = read("public/storefront.js"), inv = read("public/invite.html"), host = read("public/host.html");
-  for (const t of ["What are you making?", "Neighborhood people see", "Exact pickup spot", "How many this batch", "Start a new batch", "Clears this week's counts and keeps your items.", "No orders yet.", "How drops work", "Your drop is live", "What guests see"]) assert.ok(d.includes(t), t);
+  const d = read("public/drop.js") + read("public/dropsetup.js"), idx = read("index.html"), sf = read("public/storefront.js"), inv = read("public/invite.html"), host = read("public/host.html");
+  for (const t of ["What are you making?", "Neighborhood people see", "Exact pickup spot", "How many are you making?", "Leave empty for no limit. We stop orders when they're gone.", "Start a new batch", "Clears this week's counts and keeps your items.", "No orders yet.", "How drops work", "Your drop is live", "What guests see"]) assert.ok(d.includes(t), t);
   assert.match(d, /Add a price for \$\{x\.name\}/); assert.ok(!/—/.test(d), "no em dashes");
   assert.match(idx, /function openCreate\(seed,direct\)\{ if\(!direct&&!seed&&window\.EncoreDrop\?\.choose\)/);
   assert.match(idx.slice(idx.lastIndexOf("<script")), /comewith\.js/, "the Come with me loader is the last script");

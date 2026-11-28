@@ -44,7 +44,7 @@ test("soft shapes live only inside .pl-fun: every rule in fun.css is scoped, and
   assert.match(read("public/system.css"), /--pl-r-btn:6px/);
   // the surfaces that opt in
   assert.match(read("index.html"), /<section class="cg pl-fun" id="qsPanel"/); assert.match(read("public/start.html"), /<body class="pl-fun">/);
-  assert.match(read("public/drop.js"), /S\.bg\.classList\.add\("pl-fun", "dp-fun"\)/); assert.match(read("public/canvas.js"), /class="cv-kinds cv-ed pl-fun/);
+  assert.match(read("public/dropsetup.js"), /bg\.className = "ds-bg pl-fun"/); assert.match(read("public/canvas.js"), /class="cv-kinds cv-ed pl-fun/);
   for (const f of ["public/home.html", "public/start.html", "public/fun.css"]) assert.doesNotMatch(read(f), /fonts\.googleapis\.com\/css2\?family=(?!IBM\+Plex)/, f + " adds no new webfont");
 });
 
@@ -82,10 +82,11 @@ test("the app, the chooser, the canvas and /start: Potto arrives late into a box
   assert.match(fh, /e\.target\?\.id !== "qsText"[\s\S]*m\.set\(\{ type \}\)/, "he dresses for what you type"); assert.match(fh, /renderPrograms = function/, "and comes back when Home is redrawn");
   assert.doesNotMatch(read("public/fun.css").split("---- the top of the app's Home").pop().replace(/[^{}]*::before\{[^}]*\}/g, ""), /font-size|padding|margin|height:|width:/, "what loads late on Home only changes paint");
   const html = await (await fetch(srv.base + "/?app=1")).text(); assert.ok(html.length < 80000, "the app shell budget");
-  // the chooser: three large cards, Potto dressed for the one in hand
-  assert.match(dp, /<span class="dp-fun-p" aria-hidden="true"><span id="dpPotto"><\/span><\/span><p class="dp-lead">Pick one\. You can make the others any time\.<\/p>/);
-  assert.match(dp, /WEARS = \{ event: \["partyhat"\], drop: \["apron"\], book: \["glasses", "bowtie"\] \}/); assert.match(dp, /\.dp-fun-p\{display:block;width:132px;height:125px/);
-  for (const k of ["event", "drop", "book"]) assert.match(dp, new RegExp(`\\["${k}", I\\.`), k + " is still offered");
+  // the chooser (public/dropsetup.js): three choices, each with its own demo, Potto dressed for the one in hand, in a box that is already there
+  const ds = read("public/dropsetup.js"), dc = read("public/dropsetup.css");
+  assert.match(ds, /<span class="ds-potto" aria-hidden="true"><span id="dsPotto"><\/span><\/span>/); assert.match(dc, /\.ds-potto\{position:absolute;right:18px;top:-36px;width:64px;height:61px/);
+  for (const [k, w] of [["event", '["partyhat"]'], ["drop", '["apron"]'], ["book", '["glasses", "bowtie"]']]) { assert.ok(ds.includes(`${k}: { t: "`) && ds.includes(`wear: ${w}`), k + " is still offered, with its outfit"); assert.match(dp, new RegExp(`\\["${k}", I\\.`)); }
+  assert.match(ds, /You can make the others any time\./);
   // the canvas: he peeks over the type card, each chip has an icon, a hop for a title, a date and the first share
   assert.match(cv, /<span class="cv-potto" aria-hidden="true"><span id="cvPotto"><\/span><\/span>/); assert.match(cv, /\$\{kindIcon\(k\.k\)\}\$\{esc\(k\.label\)\}/);
   assert.match(cv, /#cv \.cv-potto\{position:absolute;right:64px;bottom:100%;width:92px;height:56px;overflow:hidden/);

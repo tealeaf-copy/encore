@@ -118,15 +118,14 @@
     const when = window.PLPickup ? window.PLPickup.line(d) : (d.slots || []).length ? `Pickup ${d.slots.slice(0, 2).join(" or ")}` : ""; // the same words as every page (public/pickup.js)
     return `<div class="dp-card"><h3>${esc(d.title || (items[0] ? (items.length > 1 ? `${items[0].name} and more` : items[0].name) : "Your drop"))}</h3>
       <p class="dp-sub">${when ? `<span>${esc(when)}</span>` : ""}${d.area ? `<span>${I.pin} ${esc(d.area)}</span>` : ""}</p>${d.note ? `<p style="margin:8px 0 0">${esc(d.note)}</p>` : ""}
-      ${d.coverPhoto || (items.find((x) => (x.photos || [])[0] || x.photo)) ? `<div class="dp-cov" style="margin:0 0 10px"><img src="${esc(d.coverPhoto || items.map((x) => (x.photos || [])[0] || x.photo).find(Boolean))}" alt=""></div>` : ""}${items.length ? items.map((x) => `<div class="dp-mi">${(x.photos || [])[0] || x.photo ? `<img class="art" src="${esc((x.photos || [])[0] || x.photo)}" alt="${esc(x.name)}">` : `<span class="art">${drawn(x.name, I.bag)}</span>`}<span><b>${esc(x.name)}</b>${+x.stock ? `<small>${x.stock} this batch</small>` : ""}</span><span class="pr">${priceIn(x.price) ? esc(money(priceIn(x.price))) : `<small>Add a price</small>`}</span></div>`).join("") : `<p class="dp-help" style="margin:10px 0 0">Your items show here.</p>`}
+      ${d.coverPhoto || (items.find((x) => (x.photos || [])[0] || x.photo)) ? `<div class="dp-cov" style="margin:0 0 10px"><img src="${esc(d.coverPhoto || items.map((x) => (x.photos || [])[0] || x.photo).find(Boolean))}" alt=""></div>` : ""}${items.length ? items.map((x) => `<div class="dp-mi">${(x.photos || [])[0] || x.photo ? `<img class="art" src="${esc((x.photos || [])[0] || x.photo)}" alt="${esc(x.name)}">` : `<span class="art">${drawn(x.name, I.bag)}</span>`}<span><b>${esc(x.name)}</b>${+x.stock ? `<small>${x.stock} to sell</small>` : ""}</span><span class="pr">${priceIn(x.price) ? esc(money(priceIn(x.price))) : `<small>Add a price</small>`}</span></div>`).join("") : `<p class="dp-help" style="margin:10px 0 0">Your items show here.</p>`}
       ${(d.slots || []).length > 2 && !window.PLPickup ? `<div class="dp-slots" aria-label="Pickup times">${d.slots.map((s) => `<span>${esc(s)}</span>`).join("")}</div>` : ""}
       ${button ? `<div class="dp-fake" aria-hidden="true">Order</div>` : ""}<p class="dp-help" style="margin:8px 0 0">${d.pay === "either" ? "They pay you ahead, or choose to pay at pickup." : d.pay === "pickup" ? "They pay at pickup." : "They pay you ahead, after ordering."}${d.address ? " They get the exact spot the day before." : ""}${d.allergens ? ` Allergens: ${esc(d.allergens)}.` : ""}</p></div>`; }
 
-  // ================= the drop setup: photos first, then what's for sale, pickup, and the last details =================
-  // A drop asks only drop questions: photos, items and prices, how many this batch, pickup windows (a date and a time
-  // each, or the same times every week), the neighborhood, the exact spot (private), when orders close, an allergen note
-  // and how people pay. Never an event's date, guest list, plus-ones, bring list or questions.
-  const HOW = `<details class="dp-how"><summary>How drops work</summary><ul><li>You show what you're making, each with a price.</li><li>People order ahead and pick a pickup time. You see every order in Orders.</li><li>They get the exact spot the day before pickup. Everyone else sees the neighborhood.</li></ul></details>`;
+  // ================= the guided setups live in public/dropsetup.js (and .css), fetched the first time one opens =================
+  // The "What are you making?" chooser, the first-time tutorial on drops ("How drops work"), the drop setup (photos,
+  // what's for sale, pickup times, getting paid) and "Something to book". Nothing shows until its styles are in, so a
+  // screen never arrives half dressed.
   const PCSS = `.dp-zone{display:grid;place-items:center;gap:6px;text-align:center;padding:28px 16px;border:2px dashed var(--pl-line-strong,#B9B2A5);border-radius:6px;background:var(--pl-surface,#FAF8F3);cursor:pointer;min-height:180px}
   .dp-zone.on{border-color:var(--pl-accent,#29489A);background:var(--pl-accent-soft,#E7ECF7)}.dp-zone b{font-size:18px}.dp-zone small{color:var(--pl-soft,#555)}.dp-zone>svg{width:40px;height:40px;color:var(--pl-accent,#29489A)}
   .dp-zbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
@@ -161,117 +160,12 @@
   const nextSat = () => { const t = new Date(); t.setDate(t.getDate() + ((6 - t.getDay() + 7) % 7 || 7)); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
   const hh = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`, mm = (t) => (/^\d{2}:\d{2}$/.test(t || "") ? +t.slice(0, 2) * 60 + +t.slice(3) : 540);
   const DAYS7 = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  async function setup(opts = {}) {
-    let D; const edit = !!opts.drop; loadJs("/pickup.js", () => {}); loadJs("/eventart.js", () => {});
-    if (edit) D = JSON.parse(JSON.stringify(opts.drop));
-    else { let L = null; try { L = (await api("/api/host/drops")).legacy; } catch {}
-      // a shop set up before drops (never converted: no priced item yet) prefills what the host already typed
-      D = { title: L?.title || "", note: L?.note || "", items: (L?.items || []).length ? L.items.map((x) => ({ ...x, price: x.price ? String(x.price) : "", photos: x.photo ? [x.photo] : [] })) : [], windows: [], area: L?.area || "", address: L?.address || "", pay: "ahead", payUrl: L?.payUrl || "", open: true, allergens: "", ...(opts.prefill || {}) }; }
-    if (D.pay === "link") D.pay = "ahead"; // a pay link was paying ahead (server/droppay.js)
-    D.items = (D.items || []).map((x) => ({ ...x, price: x.price ? String(x.price) : "", stock: +x.stock ? String(x.stock) : "", photos: (x.photos || []).length ? x.photos.slice(0, MAXPH) : x.photo ? [x.photo] : [] }));
-    D.weekly = (D.windows || []).length ? D.windows.every((w) => !w.date) : !!(edit && D.always);
-    if (!(D.windows || []).length) D.windows = (D.slots || []).length && P0() ? P0().windowsOf({ slots: D.slots, date: D.date, always: D.always }).filter((w) => w.start).map((w) => ({ date: w.date, day: w.day, start: w.start, end: w.end })) : [];
-    if (!D.windows.length) D.windows = [{ date: nextSat(), day: "Sat", start: "09:00", end: "10:00" }];
-    let step = 1, S, drag = null;
-    const STEPS = { 1: "Show what you're making", 2: "What's for sale", 3: "Pickup", 4: "Last details" }, LAST = 4;
-    const allPhotos = () => D.items.flatMap((x) => x.photos || []);
-    const pull = () => { if (!S) return; const b = S.body;
-      if (step === 2) D.items = $$(".dp-item", b).map((el, i) => ({ ...D.items[i], name: $("[data-n]", el).value.trim(), price: $("[data-p]", el).value.trim(), stock: $("[data-s]", el).value.trim() }));
-      if (step === 3) { D.weekly = !!$("#dpWeekly", b)?.checked; D.windows = $$(".dp-wrow", b).map((el) => ({ ...(D.weekly ? { day: $("[data-wd]", el).value, date: "" } : { date: $("[data-wdt]", el).value, day: "" }), start: hh(+$("[data-wa]", el).value), end: hh(+$("[data-wz]", el).value) }));
-        D.area = $("#dpArea", b).value.trim(); D.address = $("#dpAddr", b).value.trim(); D.orderByDate = $("#dpByD", b)?.value || ""; D.orderByTime = $("#dpByT", b)?.value || ""; D.windowCap = +$("#dpCap", b)?.value || 0; }
-      if (step === 4) { D.pay = $("input[name=dpPay]:checked", b)?.value || "pickup"; D.payUrl = $("#dpPayUrl", b)?.value.trim() || ""; D.note = $("#dpNote", b)?.value.trim() ?? D.note; D.allergens = $("#dpAlg", b)?.value.trim() ?? D.allergens; D.title = $("#dpTitle", b)?.value.trim() ?? D.title; } };
-    const err = (t, el) => { const e = $("#dpErr", S.bg); if (e) e.textContent = t; if (el) { el.setAttribute("aria-invalid", "true"); el.focus(); } return false; };
-    const check = () => { pull(); $$("[aria-invalid]", S.bg).forEach((x) => x.removeAttribute("aria-invalid"));
-      if (step === 2) { const rows = $$(".dp-item", S.body), filled = D.items.map((x, i) => [x, rows[i]]).filter(([x]) => x.name || x.price || (x.photos || []).length);
-        if (!filled.length) return err("Add at least one thing you're making.", rows[0] ? $("[data-n]", rows[0]) : null);
-        for (const [x, el] of filled) { if (!x.name) return err("Give this item a name.", $("[data-n]", el)); if (!priceIn(x.price)) return err(x.price ? `Check the price for ${x.name}. Use a number like 12 or 12.50.` : `Add a price for ${x.name}.`, $("[data-p]", el)); } }
-      if (step === 3) { if (!D.windows.length) return err("Add a pickup window.", $("#dpAddWin", S.body));
-        for (const [i, w] of D.windows.entries()) { const row = $$(".dp-wrow", S.body)[i]; if (!D.weekly && !w.date) return err("Pick a date for each pickup window.", $("[data-wdt]", row)); if (mm(w.end) <= mm(w.start)) return err("The end time comes after the start.", $("[data-wz]", row)); }
-        if (!D.area) return err("Add the neighborhood people see.", $("#dpArea", S.body)); }
-      if (step === 4 && D.pay !== "pickup" && D.payUrl && !/^https:\/\/\S{3,}/i.test(D.payUrl)) return err("Pay links start with https://. Or leave it empty to use your Get paid methods.", $("#dpPayUrl", S.body));
-      return true; };
-    const toBody = () => ({ ...D, items: D.items.filter((x) => x.name || x.price).map((x) => ({ ...x, price: priceIn(x.price), stock: +x.stock || 0, photo: (x.photos || [])[0] || "", photos: x.photos || [] })), windows: D.windows.map((w) => (D.weekly ? { day: w.day, start: w.start, end: w.end } : { date: w.date, start: w.start, end: w.end })) });
-    const preview = () => `<div class="dp-pv" aria-live="polite"><small>What guests see</small>${dropCard({ ...toBody(), items: toBody().items.filter((x) => x.name || x.price) })}</div>`;
-    const refreshPv = () => { pull(); const p = $(".dp-pv", S.body); if (p) p.outerHTML = preview(); };
-    const coverHTML = () => { const u = D.coverPhoto || allPhotos()[0]; if (u) return `<img src="${esc(u)}" alt="Cover">`; try { const E = window.EventArt; if (E) { E.ensureCss?.(); return E.cover({ title: D.title || "Bake", activity: "bake", coverArt: D.coverArt || null }, { title: "", label: "" }); } } catch {} return ""; };
-    const thumbs = (x, i) => `<div class="dp-thumbs" data-ti="${i}" aria-label="Photos of ${esc(x.name || "item " + (i + 1))}">${(x.photos || []).map((u, k) => `<div class="dp-th" draggable="true" data-pi="${i}" data-pk="${k}">${k ? "" : `<span class="main">Main</span>`}<img src="${esc(u)}" alt="${esc(x.name || "Item")} photo ${k + 1}"><button type="button" data-prm="${i}:${k}" aria-label="Remove photo ${k + 1}">${I.x}</button>${k ? `<button type="button" data-pmv="${i}:${k}" aria-label="Move photo ${k + 1} earlier">${I.back}</button>` : ""}</div>`).join("")}
-      ${(x.photos || []).length < MAXPH ? `<label class="dp-addph">${I.camera}<span>Add photo</span><input type="file" accept="image/*" multiple data-iph="${i}" class="dp-vh"></label>${coarse() ? `<label class="dp-addph">${I.camera}<span>Camera</span><input type="file" accept="image/*" capture="environment" data-iph="${i}" class="dp-vh"></label>` : ""}` : ""}</div>`;
-    const timeSel = (a, cur) => `<select ${a}>${TIMES.map((m) => `<option value="${m}"${m === mm(cur) ? " selected" : ""}>${tLabel(m)}</option>`).join("")}</select>`;
-    function draw() { css();
-      const foot = `<p class="dp-msg" id="dpErr" role="alert"></p>${step > 1 ? `<button type="button" class="dp-b" id="dpBack">${I.back}<span>Back</span></button>` : ""}${edit && step < LAST ? `<button type="button" class="dp-b" id="dpNext">Next</button><button type="button" class="dp-b pri" id="dpSaveNow">Save</button>` /* editing a drop: Save (and close) is the action, Next only moves on */ : `<button type="button" class="dp-b pri" id="dpNext">${step < LAST ? "Next" : edit ? "Save changes" : "Open orders"}</button>`}`;
-      let body = "";
-      if (step === 1) body = `<div class="dp-potto">${potto("happy", 48)}<p>${edit ? "Change your cover or add photos." : "Start with photos. People order what they can see."}</p></div>
-        <div class="dp-cov" id="dpCov">${coverHTML()}<button type="button" class="dp-b sm" id="dpCovBtn">${I.edit}<span>${D.coverPhoto || D.coverArt ? "Change cover" : "Choose a cover"}</span></button></div>
-        <label class="dp-zone" id="dpZone">${I.camera}<b>Add photos of what you're making</b><small>One photo for each thing you sell. You name and price them next.</small><span class="dp-zbtns"><span class="dp-b sm pri">${I.plus}<span>Choose photos</span></span></span><input type="file" accept="image/*" multiple id="dpZoneIn" class="dp-vh"></label>
-        ${coarse() ? `<p style="text-align:center;margin:8px 0 0"><label class="dp-b sm">${I.camera}<span>Take a photo</span><input type="file" accept="image/*" capture="environment" id="dpCamIn" class="dp-vh"></label></p>` : ""}
-        ${D.items.some((x) => (x.photos || []).length) ? `<p class="dp-help" style="margin:12px 0 6px">${allPhotos().length} photo${allPhotos().length === 1 ? "" : "s"} added</p><div class="dp-thumbs">${allPhotos().map((u) => `<div class="dp-th"><img src="${esc(u)}" alt=""></div>`).join("")}</div>` : `<p class="dp-nudge">No photos yet? You can open orders without them and add them later, but drops with photos get more orders.</p>`}${HOW}`;
-      if (step === 2) { if (!D.items.length) D.items.push({ name: "", price: "", stock: "", photos: [] });
-        body = `<div class="dp-potto">${potto("happy", 48)}<p>Name each thing, give it a price, and say how many you're making this batch.</p></div>
-        ${D.items.map((x, i) => `<div class="dp-item" data-i="${i}"><div class="dp-ihd"><b>Item ${i + 1}</b>${D.items.length > 1 ? `<button type="button" class="dp-b sm q" data-rm="${i}" aria-label="Remove item ${i + 1}">${I.trash}<span>Remove</span></button>` : ""}</div>${thumbs(x, i)}
-          <label class="dp-f"><span>Name</span><input data-n value="${esc(x.name)}" maxlength="60" placeholder="${["Pandan honeycomb cake", "Kaya toast box"][i] || "Another thing you make"}" autocomplete="off"></label>
-          <div class="dp-row"><label class="dp-f"><span>Price</span><span class="dp-money"><b aria-hidden="true">$</b><input data-p value="${esc(x.price)}" inputmode="decimal" placeholder="${["18", "9.50"][i] || "12"}" aria-label="Price in dollars" autocomplete="off"></span></label>
-          <label class="dp-f"><span>How many this batch <small>(optional)</small></span><input data-s value="${esc(x.stock)}" inputmode="numeric" placeholder="No limit" autocomplete="off"></label></div></div>`).join("")}
-        ${D.items.length < 12 ? `<button type="button" class="dp-b" id="dpAdd">${I.plus}<span>Add another item</span></button>` : ""}${preview()}`; }
-      if (step === 3) { const wk = !!D.weekly;
-        body = `<div class="dp-potto">${potto("happy", 48)}<p>When can people pick up? Add a window for each time. I keep your exact spot private until the day before.</p></div>
-        <label class="dp-sw"><span><b>Same times every week</b><small>${wk ? "On. People pick a weekday window." : "Off. Each window has its own date."}</small></span><input type="checkbox" role="switch" id="dpWeekly" ${wk ? "checked" : ""}><i aria-hidden="true"></i></label>
-        <div class="dp-wins" id="dpWins">${D.windows.map((w, i) => `<div class="dp-wrow" data-w="${i}">${wk ? `<label class="dp-f"><span class="dp-help">Day</span><select data-wd>${DAYS7.map((d0) => `<option${(w.day || "Sat") === d0 ? " selected" : ""}>${d0}</option>`).join("")}</select></label>` : `<label class="dp-f"><span class="dp-help">Date</span><input type="date" data-wdt value="${esc(w.date || "")}" min="${isoToday()}"></label>`}
-          <label class="dp-f"><span class="dp-help">From</span>${timeSel("data-wa", w.start)}</label><label class="dp-f"><span class="dp-help">To</span>${timeSel("data-wz", w.end || hh(mm(w.start) + 60))}</label>
-          <button type="button" class="dp-x" data-wrm="${i}" aria-label="Remove this window"${D.windows.length < 2 ? " disabled" : ""}>${I.x}</button></div>`).join("")}</div>
-        ${D.windows.length < 8 ? `<button type="button" class="dp-b" id="dpAddWin" style="margin:0 0 16px">${I.plus}<span>Add another window</span></button>` : ""}
-        <label class="dp-f"><span>Orders per window <small>(optional)</small></span><input id="dpCap" inputmode="numeric" value="${+D.windowCap || ""}" placeholder="No limit"><small>A full window can't be picked.</small></label>
-        <label class="dp-f"><span>Neighborhood people see</span><input id="dpArea" value="${esc(D.area)}" maxlength="80" placeholder="Greenpoint" autocomplete="off"><small>Shown on the drop and your page.</small></label>
-        <label class="dp-f"><span>${I.lock} Exact pickup spot <small>(optional)</small></span><input id="dpAddr" value="${esc(D.address)}" maxlength="160" placeholder="12 Kent St, Apt 3" autocomplete="off"><small>Only people who ordered get it, the day before pickup.</small></label>
-        <div class="dp-2"><label class="dp-f"><span>Orders close <small>(optional)</small></span><input id="dpByD" type="date" value="${esc(D.orderByDate || "")}" min="${isoToday()}"></label><label class="dp-f"><span>At</span>${`<select id="dpByT"><option value="">End of day</option>${TIMES.map((m) => `<option value="${hh(m)}"${hh(m) === D.orderByTime ? " selected" : ""}>${tLabel(m)}</option>`).join("")}</select>`}</label></div>${preview()}`; }
-      if (step === 4) body = `<div class="dp-potto">${potto("happy", 48)}<p>Last bits. How do people pay you?</p></div>
-        <div class="dp-opts" role="radiogroup" aria-label="How people pay">${[["ahead", I.share, "Pay ahead", "After ordering, they get your Venmo, PayPal or Cash App with the amount filled in."], ["either", I.share, "Pay ahead or at pickup", "They choose. Reminders go only to people who haven't paid or picked pickup."], ["pickup", I.bag, "Pay at pickup", "Cash or a tap when they collect."]].map(([v, ic, b, sm]) => `<label class="dp-opt"><input type="radio" name="dpPay" value="${v}" ${(D.pay || "ahead") === v ? "checked" : ""}><span class="ic">${ic}</span><span><b>${b}</b><small>${sm}</small></span></label>`).join("")}</div>
-        <div id="dpPayM" ${D.pay === "pickup" ? "hidden" : ""}></div><label class="dp-f" id="dpPayL" ${D.pay === "pickup" ? "hidden" : ""}><span>Your own pay link <small>(optional)</small></span><input id="dpPayUrl" type="url" inputmode="url" value="${esc(D.payUrl)}" placeholder="https://buy.stripe.com/..." autocomplete="off"><small>Leave it empty to use the ways you get paid above.</small></label>
-        <label class="dp-f"><span>Allergens <small>(optional)</small></span><input id="dpAlg" value="${esc(D.allergens || "")}" maxlength="200" placeholder="Contains egg, coconut and wheat"><small>Shown to everyone on the order page.</small></label>
-        <label class="dp-f"><span>A line about it <small>(optional)</small></span><textarea id="dpNote" rows="2" maxlength="240" placeholder="Baked Saturday morning, still warm at pickup.">${esc(D.note)}</textarea></label>
-        <label class="dp-f"><span>Name this drop <small>(optional)</small></span><input id="dpTitle" value="${esc(D.title)}" maxlength="80" placeholder="Pandan this Saturday"></label>${preview()}`;
-      S = sheet({ title: edit ? "Edit your drop" : ({ 1: "Show what you're making", 2: "What's for sale?", 3: "When do they pick up?", 4: "How do people pay?" })[step], sub: step === 1 && !edit ? "A drop: people order ahead and pick up." : "", step, of: LAST, stepName: STEPS[step], body, foot, label: "Set up a drop" });
-      const b = S.body; b.addEventListener("input", (e) => { e.target.removeAttribute?.("aria-invalid"); const er = $("#dpErr", S.bg); if (er) er.textContent = ""; clearTimeout(draw.t); draw.t = setTimeout(refreshPv, 150); }); b.addEventListener("change", refreshPv);
-      // photos: many at once from the drop zone (each one starts an item), or up to 4 on an item
-      const addFiles = async (files, into) => { const F = [...files].slice(0, 12); if (!F.length) return; pull(); toast(F.length > 1 ? `Adding ${F.length} photos…` : "Adding the photo…"); let n = 0;
-        for (const f of F) { try { const u = await upPhoto(f); if (into == null) D.items.push({ name: "", price: "", stock: "", photos: [u] }); else { const x = D.items[into]; if ((x.photos || []).length < MAXPH) x.photos = [...(x.photos || []), u]; } n++; } catch (e) { toast(e.message); } }
-        if (into == null) D.items = D.items.filter((x) => x.name || x.price || (x.photos || []).length); draw(); if (n) toast(n === 1 ? "Photo added." : `${n} photos added.`); };
-      for (const id of ["#dpZoneIn", "#dpCamIn"]) { const inp = $(id, b); if (inp) inp.onchange = () => addFiles(inp.files, null); }
-      const z = $("#dpZone", b); if (z) { z.addEventListener("dragover", (e) => { e.preventDefault(); z.classList.add("on"); }); z.addEventListener("dragleave", () => z.classList.remove("on")); z.addEventListener("drop", (e) => { e.preventDefault(); z.classList.remove("on"); addFiles(e.dataTransfer.files, null); }); }
-      $$("[data-iph]", b).forEach((inp) => (inp.onchange = () => addFiles(inp.files, +inp.dataset.iph)));
-      $$("[data-prm]", b).forEach((x) => (x.onclick = () => { pull(); const [i, k] = x.dataset.prm.split(":").map(Number); D.items[i].photos.splice(k, 1); draw(); }));
-      $$("[data-pmv]", b).forEach((x) => (x.onclick = () => { pull(); const [i, k] = x.dataset.pmv.split(":").map(Number), P = D.items[i].photos; [P[k - 1], P[k]] = [P[k], P[k - 1]]; draw(); }));
-      // drag a photo onto another to reorder (the first one is the item's main photo)
-      $$(".dp-th[draggable]", b).forEach((t) => { t.addEventListener("dragstart", (e) => { drag = [+t.dataset.pi, +t.dataset.pk]; t.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; });
-        t.addEventListener("dragend", () => t.classList.remove("drag")); t.addEventListener("dragover", (e) => { if (drag && +t.dataset.pi === drag[0]) e.preventDefault(); });
-        t.addEventListener("drop", (e) => { e.preventDefault(); if (!drag || +t.dataset.pi !== drag[0]) return; pull(); const P = D.items[drag[0]].photos, [m0] = P.splice(drag[1], 1); P.splice(+t.dataset.pk, 0, m0); drag = null; draw(); }); });
-      $("#dpCovBtn", b) && ($("#dpCovBtn", b).onclick = () => loadJs("/photosheet.js", () => { const PS = window.PhotoSheet, EA = window.EventArt; if (!PS) return toast("The photo picker is still loading. Try again.");
-        const ev = () => ({ title: D.title || D.items[0]?.name || "Bake", activity: "bake" });
-        PS.open({ for: "cover", current: { url: D.coverPhoto || "", source: D.coverSource || "", focus: D.coverFocus || null }, draw: EA ? { render: (svg, prompt) => { try { EA.ensureCss?.(); return EA.cover({ ...ev(), coverArt: null }, { svg, title: ev().title || String(prompt || "").slice(0, 40), label: "" }); } catch { return ""; } } } : undefined,
-          onChange: (c) => { if (c.removed) Object.assign(D, { coverPhoto: "", coverSource: "", coverFocus: null, coverArt: null });
-            else if (c.drawn) Object.assign(D, { coverPhoto: "", coverSource: "", coverFocus: null, coverArt: { kind: "custom", svg: c.drawn.svg, prompt: c.drawn.prompt } });
-            else if (c.template) Object.assign(D, { coverPhoto: "", coverSource: "", coverFocus: null, coverArt: { kind: c.template } });
-            else Object.assign(D, { coverPhoto: c.url, coverSource: c.source || "", coverFocus: c.focus || null, coverArt: null });
-            draw(); } }); }));
-      $("#dpAdd", b) && ($("#dpAdd", b).onclick = () => { pull(); D.items.push({ name: "", price: "", stock: "", photos: [] }); draw(); setTimeout(() => $$("[data-n]", S.body).pop()?.focus(), 50); });
-      $$("[data-rm]", b).forEach((x) => (x.onclick = () => { pull(); D.items.splice(+x.dataset.rm, 1); draw(); }));
-      $("#dpWeekly", b) && ($("#dpWeekly", b).onchange = () => { pull(); D.windows = D.windows.map((w) => (D.weekly ? { ...w, day: w.date ? DAYS7[new Date(w.date + "T12:00:00").getDay()] : w.day || "Sat", date: "" } : { ...w, date: w.date || nextSat(), day: "" })); draw(); });
-      $("#dpAddWin", b) && ($("#dpAddWin", b).onclick = () => { pull(); const l = D.windows[D.windows.length - 1] || { date: nextSat(), day: "Sat", start: "09:00", end: "10:00" }; D.windows.push({ ...l, start: l.end || "10:00", end: hh(mm(l.end || "10:00") + 60) }); draw(); });
-      $$("[data-wrm]", b).forEach((x) => (x.onclick = () => { pull(); D.windows.splice(+x.dataset.wrm, 1); draw(); }));
-      // ---- Get paid (public/paymethods.js): "Guests pay you through" the host's profile methods, Change opens a small sheet ----
-      if (step === 4 && $("#dpPayM", b)) { const pm = () => { const P = window.PayMethods; if (!P) return; P.dropRow($("#dpPayM", b)); };
-        if (window.PayMethods) pm(); else { const t = document.createElement("script"); t.src = "/paymethods.js"; t.onload = pm; document.head.appendChild(t); } }
-      // ---- end Get paid ----
-      $$("input[name=dpPay]", b).forEach((r) => (r.onchange = () => { if (!r.checked) return; $("#dpPayL", b).hidden = r.value === "pickup"; if ($("#dpPayM", b)) $("#dpPayM", b).hidden = r.value === "pickup"; }));
-      $("#dpBack", S.bg) && ($("#dpBack", S.bg).onclick = () => { pull(); step--; draw(); });
-      const save = async (btn) => { btn.disabled = true; const t0 = btn.textContent; btn.textContent = "Saving…"; const body0 = toBody();
-        try { const j = await api(edit ? "/api/host/drops/" + encodeURIComponent(D.id) : "/api/host/drops", body0); try { window.EncoreCommunity?.oink?.(); } catch {}
-          S.close(); if (edit) { toast(`Saved. ${body0.items.length} item${body0.items.length === 1 ? "" : "s"}, ${body0.windows.length} pickup window${body0.windows.length === 1 ? "" : "s"}. Guests see it now.`); opts.onDone?.(j); }
-          else live(j, { ...body0, ...(j.drop || {}) }, opts.onDone); }
-        catch (e) { btn.disabled = false; btn.textContent = t0; err(e.message); } };
-      $("#dpSaveNow", S.bg) && ($("#dpSaveNow", S.bg).onclick = (e) => { if (!check()) return; save(e.currentTarget); });
-      $("#dpNext", S.bg).onclick = (e) => { if (!check()) return; if (step < LAST) { step++; draw(); return; } save(e.currentTarget); }; }
-    draw(); }
-
+  let needP = null;
+  const need = () => needP || (needP = new Promise((ok) => { css(); let n = 0; const fin = (t = 0) => (window.PLPickup || t > 40 ? ok(window.EncoreDropSetup || null) : setTimeout(() => fin(t + 1), 50)), done = () => { if (!--n) fin(); };
+    for (const href of ["/fun.css", "/dropsetup.css"]) { if (document.querySelector(`link[href^="${href}"]`)) continue; n++; const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; l.onload = l.onerror = done; document.head.appendChild(l); }
+    for (const src of ["/pickup.js", "/eventart.js", "/dropsetup.js"]) { n++; loadJs(src, done); } }));
+  const lazy = (fn) => (...a) => need().then((M) => (M ? M[fn](...a) : toast("That didn't load. Check your connection and try again.")));
+  const setup = lazy("setup"), bookable = lazy("bookable"), tour = lazy("tour");
   // the moment it's live: the card guests see, the link, Share
   function live(j, d, onDone) { const url = j.url || location.origin + j.path;
     const S = sheet({ title: "Your drop is live", label: "Your drop is live", body: `<div class="dp-live">${potto("happy", 72)}<p style="margin:4px 0 0">People can order now. Every order lands in Orders.</p></div>
@@ -353,40 +247,12 @@
     show(); }
 
   // ================= something to book (a team or group experience) =================
-  function bookable(o = {}) { const X = o.exp || { name: "", price: "", min: 8, max: 20, length: "", includes: [] };
-    const pp = (p) => String(p || "").replace(/[^0-9.]/g, "");
-    const line = (x) => [priceIn(x.price) ? `From ${money(priceIn(x.price))} a person` : "", x.min && x.max ? `${x.min} to ${x.max} guests` : "", x.length].filter(Boolean).join(" · ");
-    const S = sheet({ title: o.exp ? "Edit what teams can book" : "Something to book", sub: "Teams and groups request a date. You quote, or pass.", body: `
-      <div class="dp-potto">${potto("happy", 48)}<p>Say what you'd run for a group, and the price a person. Nothing is booked until you both agree.</p></div>
-      <details class="dp-how"><summary>How requests work</summary><ul><li>They pick a date and how many people, then send a request.</li><li>You reply with a quote, or pass. You can ask questions first.</li><li>Once they accept, they pay a 50% deposit to confirm.</li></ul></details>
-      <label class="dp-f"><span>What it is</span><input id="bkName" value="${esc(X.name)}" maxlength="70" placeholder="Pottery class for your team"></label>
-      <div class="dp-row"><label class="dp-f"><span>Price a person</span><span class="dp-money"><b aria-hidden="true">$</b><input id="bkPrice" value="${esc(pp(X.price))}" inputmode="decimal" placeholder="55" aria-label="Price a person in dollars"></span></label><label class="dp-f"><span>How long</span><input id="bkLen" value="${esc(X.length || "")}" maxlength="40" placeholder="2 hours"></label></div>
-      <div class="dp-row" style="margin-top:16px"><label class="dp-f"><span>Fewest guests</span><input id="bkMin" value="${esc(X.min || 8)}" inputmode="numeric"></label><label class="dp-f"><span>Most guests</span><input id="bkMax" value="${esc(X.max || 20)}" inputmode="numeric"></label></div>
-      <label class="dp-f" style="margin-top:16px"><span>What's included <small>(optional, one per line)</small></span><textarea id="bkInc" rows="3" placeholder="Clay and glazes&#10;Firing, ready in 2 weeks">${esc((X.includes || []).join("\n"))}</textarea></label>
-      <div class="dp-pv"><small>What teams see</small><div class="dp-card" id="bkPv"></div></div>`,
-      foot: `<p class="dp-msg" id="dpErr" role="alert"></p><button type="button" class="dp-b pri" id="bkSave">${o.exp ? "Save changes" : "Add it to my page"}</button>` });
-    const v = () => ({ name: $("#bkName", S.bg).value.trim(), price: $("#bkPrice", S.bg).value.trim(), length: $("#bkLen", S.bg).value.trim(), min: Math.max(1, +$("#bkMin", S.bg).value || 1), max: Math.max(1, +$("#bkMax", S.bg).value || 1), includes: $("#bkInc", S.bg).value.split("\n").map((x) => x.trim()).filter(Boolean) });
-    const pv = () => { const x = v(); $("#bkPv", S.bg).innerHTML = `<h3>${esc(x.name || "Your experience")}</h3><p class="dp-sub">${esc(line(x) || "Add a price a person")}</p>${x.includes.length ? `<p style="margin:8px 0 0;font-size:14px">Includes: ${x.includes.map(esc).join(" · ")}</p>` : ""}<div class="dp-fake" aria-hidden="true">Request a date</div><p class="dp-help" style="margin:8px 0 0">They pick a date and headcount. You reply with a quote.</p>`; };
-    S.body.addEventListener("input", () => { $("#dpErr", S.bg).textContent = ""; pv(); }); pv();
-    $("#bkSave", S.bg).onclick = async (e) => { const x = v(), er = (t, id) => { $("#dpErr", S.bg).textContent = t; $(id, S.bg)?.focus(); };
-      if (!x.name) return er("Say what it is.", "#bkName"); if (!priceIn(x.price)) return er("Add a price a person, like 55.", "#bkPrice"); if (x.max < x.min) return er("Most guests is at least the fewest.", "#bkMax");
-      e.currentTarget.disabled = true; try { const me = (await api("/api/host/profile")).host || {}; const L = [...(me.experiences || [])]; const row = { ...(o.exp || {}), ...x, price: `${priceIn(x.price)}` };
-        if (o.exp) { const i = L.findIndex((y) => y.id === o.exp.id); if (i >= 0) L[i] = row; else L.push(row); } else L.push(row);
-        await api("/api/host/profile", { experiences: L, forHire: true }); S.close(); toast(`Added. Teams see "${x.name}, ${line(x)}" with Request a date.`); o.onDone?.(); }
-      catch (er2) { e.currentTarget.disabled = false; er(er2.message); } }; }
-
   // ================= "What are you making?" =================
-  const KINDS = [["event", I.cal, "An event", "Pick a date. Guests tap I'm in.", "Dumpling night, Sat 7pm"],
-    ["drop", I.bag, "A drop", "People order ahead, then pick up.", "Pandan cake, pick up Sat 9am"],
-    ["book", I.people, "Something to book", "Teams ask for a date. You quote.", "Pottery class, $55 a person"]];
+  const KINDS = [["event", I.cal, "An event", "Pick a date. Guests tap I'm in.", "Dumpling night, Sat 7pm"],
+    ["drop", I.bag, "A drop", "People order ahead, then pick up.", "Pandan cake, pick up Sat 9am"],
+    ["book", I.people, "Something to book", "Teams ask for a date. You quote.", "Pottery class, $55 a person"]];
   function choose(o = {}) { try { const k = new URLSearchParams(location.search).get("kind"); if (k && k !== "drop" && o.event) return o.event(); } catch {} // a guide or the host path already said what: straight to the canvas
-    const S = sheet({ title: "What are you making?", label: "What are you making?", body: `<span class="dp-fun-p" aria-hidden="true"><span id="dpPotto"></span></span><p class="dp-lead">Pick one. You can make the others any time.</p><div class="dp-acts">${KINDS.map(([k, ic, t, s, ex]) => `<button type="button" class="dp-act" data-kind="${k}"><span class="ic">${ic}</span><span><b>${t}</b><small>${s}</small><small>Like: ${esc(ex)}</small></span>${I.chev}</button>`).join("")}</div>` });
-    // the soft, playful look (public/fun.css tokens, scoped to this sheet): plush Potto on top, dressed for the one you're about to pick
-    S.bg.classList.add("pl-fun", "dp-fun"); let pm = null; const WEARS = { event: ["partyhat"], drop: ["apron"], book: ["glasses", "bowtie"] }, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    plush($("#dpPotto", S.bg), { size: 132 }).then((m) => { pm = m; if (m) S.bg.dataset.funTint = m.state.color; });
-    $$("[data-kind]", S.bg).forEach((b) => { const dress = () => pm?.set({ wear: WEARS[b.dataset.kind] }); b.addEventListener("pointerenter", dress); b.addEventListener("focus", dress);
-      b.onclick = () => { const k = b.dataset.kind, go = () => { S.close(); if (k === "event") (o.event || (() => (location.href = "/?app=1#studio")))(); else if (k === "drop") setup({ onDone: o.onDone }); else bookable({ onDone: o.onDone }); };
-        if (!pm || still) return go(); dress(); pm.react("hop"); setTimeout(go, 200); }; }); }
+    return lazy("choose")(o); }
   // plush Potto (public/pottoplush.js) and the soft tokens (public/fun.css), fetched the first time something here wants them
   function plush(el, opts) { if (!document.querySelector('link[href^="/fun.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/fun.css"; document.head.appendChild(l); }
     return new Promise((ok) => { const go = () => ok(el?.isConnected && window.PottoPlush ? window.PottoPlush.mount(el, opts) : null); if (window.PottoPlush) return go();
@@ -422,5 +288,7 @@
     const s = document.createElement("script"); s.src = "/runtemplates.js"; s.onload = () => window.RunTemplates?.messageSheet?.(); document.head.appendChild(s); }
   const clock = (t) => { const [hh, mm] = String(t).split(":").map(Number); return `${hh % 12 || 12}${mm ? ":" + String(mm).padStart(2, "0") : ""}${hh < 12 ? "am" : "pm"}`; };
 
-  window.EncoreDrop = { setup, live, manage, inbox, bookable, choose, offer, dropCard, windowLabel, KINDS };
+  window.EncoreDrop = { setup, live, manage, inbox, bookable, choose, tour, offer, dropCard, windowLabel, KINDS, _: { esc, $, $$, api, money, priceIn, I, toast, copy, loadJs, upPhoto, plush, live } };
+  // "How drops work" from help (docs/help.md): /?app=1&drops=how opens the tutorial
+  try { if (new URLSearchParams(location.search).get("drops") === "how") addEventListener("load", () => tour(), { once: true }); } catch {}
 })();

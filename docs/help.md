@@ -561,8 +561,9 @@ Your regulars join your fan club for free. Members get first dibs on new events 
 
 Keywords: start a drop, make a drop, sell for pickup, bake sale, order ahead, drop orders, batch, sell things
 Questions: How do I start a drop? | How do I sell things for pickup? | Where are my drop orders?
-Tap New and pick A drop (order ahead, pick up at a set time). Potto sets it up in 3 short steps: your items with a price, pickup times, and where. The exact address only goes to people who ordered. Share the link like an invite. Every order lands in Orders, where you mark it ready.
+A drop is a small sale you run yourself: people order ahead, then come pick up. Tap New and pick A drop. Four short steps: photos, what's for sale with a price and how many you're making, pickup times, and how people pay. The exact address only goes to people who ordered. Share the link like an invite. Every order lands in Orders, where you mark it ready.
 [New](#do:new)
+[How drops work](/?app=1&drops=how)
 
 ## Signing up as a brand
 

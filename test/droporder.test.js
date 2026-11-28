@@ -127,8 +127,8 @@ test("photo first: a drop's cover and item photos, checked uploads, the feed car
   const c = card || all[0]; assert.ok(c, "the drop is on the feed"); assert.equal(c.cover, U[0]); assert.equal(c.pickup, P.line(ev)); assert.equal(c.left, "30 of 30 left"); assert.equal(c.cta.label, "Order"); assert.equal(c.free, false);
   const fv = read("public/feedvisual.js"); assert.match(fv, /e\.drop && e\.pickup \? meta\(\["Order ahead"/);
   // the setup starts with photos, takes the camera, reorders, and opens the shared cover sheet
-  const ui = read("public/drop.js");
-  for (const t of ["Show what you're making", "Add photos of what you're making", 'capture="environment"', 'accept="image/*"', "draggable=\"true\"", "PS.open({ for: \"cover\"", "/api/photos?for=item", "Add another window", "Allergens", "Orders close", "drops with photos get more orders"]) assert.ok(ui.includes(t), t);
+  const ui = read("public/drop.js") + read("public/dropsetup.js");
+  for (const t of ["Show what you're making", "Add photos of what you're making", 'capture="environment"', 'accept="image/*"', "draggable=\"true\"", "PS.open({ for: \"cover\"", "/api/photos?for=item", "Add another time", "Allergens", "Orders close", "drops with photos get more orders"]) assert.ok(ui.includes(t), t);
 });
 
 test("in a browser at 390px: a drop made through the setup's API opens as the order page, with no reply form fields", async (t) => {

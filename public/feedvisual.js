@@ -295,8 +295,8 @@
     return `<article class="fb-card fb-ev" data-fv-id="${esc(e.id)}" data-kind="event">${lead(e.host, e.drop ? [ctx, e.where].filter(Boolean).join(" · ") : ctx || (e.city && e.city !== e.where ? e.city : ""), { type: "event", target: "event:" + e.id, name: e.title })}
       <div class="fb-cover${e.cover ? "" : " fb-cover-art"}"><a class="fb-media" href="${esc(e.cta.url)}" tabindex="-1" aria-hidden="true">${media}</a>${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}</div>
       <div class="fb-body"><h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
-      ${e.drop && e.pickup ? meta([e.pickup, e.left]) /* a drop: pickup, never an event date (public/pickup.js); the tag says Pickup, the button says Order */ : meta([when(e), e.where, st])}</div>
-      <div class="fb-go">${price ? `<span class="fb-price">${esc(price)}</span>` : ""}<a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a></div>${actRow(e)}</article>`; }
+      ${e.drop && e.pickup ? meta([e.pickup, e.left, price]) /* a drop: pickup, never an event date (public/pickup.js); the tag says Pickup, the button says Order */ : meta([when(e), e.where, st, price])}</div>
+      <div class="fb-go"><a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a></div>${actRow(e)}</article>`; }
   // not recapCard: that name is the story viewer's recap slide above, and a second declaration replaced it, so a recap story crashed
   function blendRecap(r) { const key = "fb:" + r.id;
     REG.set(key, { host: r.host, items: (r.photos || []).map((p, i) => ({ id: "m:" + (p.id || i) + ":" + r.id, type: p.type === "video" ? "video" : "image", url: p.url, poster: p.poster, caption: [r.title, dayOf(r.date, { weekday: "short" })].filter(Boolean).join(" · "), note: p.caption, by: p.by, past: true, cta: r.next ? { label: "I'm in", url: r.next.url } : { label: "Share", url: r.share.url } })) });

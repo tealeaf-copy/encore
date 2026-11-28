@@ -99,7 +99,7 @@
           g.globalAlpha = 0.8 * Math.min(1, on); g.fillStyle = "#FFFFFF"; g.beginPath(); g.ellipse(b.x - 1.2, y + 7, 0.9, 1.6, 0.3, 0, TAU); g.fill(); } } },
     // candlelight: the cover dims a little, like a room in the evening, and two to four flames out of focus along its
     // lower edge lift it back to a warm glow. The light is cut out of the dimming, so drawn lines under it stay crisp.
-    twinkle: { n: 0, init: (I) => { const { W, H } = I, n = W < 300 ? 2 : W < 520 ? 3 : 4; I.F = [];
+    twinkle: { n: 0, res: 0.75 /* all soft light: a small canvas, scaled up, looks the same and costs a fraction */, init: (I) => { const { W, H } = I, n = W < 300 ? 2 : W < 520 ? 3 : 4; I.F = [];
         for (let i = 0; i < n; i++) { const z = (i * 0.37 + rnd(0.1, 0.35)) % 1; I.F.push({ x: W * ((i + 0.5) / n + rnd(-0.1, 0.1)), y: H * rnd(0.84, 1.02), r: Math.max(8, Math.min(48, H * (0.11 + 0.15 * (1 - z)))), z, p1: rnd(0, TAU), p2: rnd(0, TAU), dip: 0, next: rnd(0.4, 2) }); } },
       draw: (I, g, dt) => { const { W, H } = I, up = I.still ? 1 : ease(I.t / 0.6), A = (I.lively ? 0.3 : 0.24) * up, dim = g.createLinearGradient(0, 0, 0, H); dim.addColorStop(0, `rgba(92,50,18,${A})`); dim.addColorStop(1, `rgba(92,50,18,${A * 0.55})`); g.fillStyle = dim; g.fillRect(0, 0, W, H);
         const hole = soft(I, "hole", [[0, "rgba(0,0,0,1)"], [0.35, "rgba(0,0,0,.8)"], [0.7, "rgba(0,0,0,.25)"], [1, "rgba(0,0,0,0)"]]), pool = soft(I, "pool", [[0, "rgba(255,176,82,.5)"], [0.5, "rgba(255,186,98,.2)"], [1, "rgba(255,190,110,0)"]]),
@@ -156,7 +156,7 @@
 
   function instance(cv, id, o) { const g = cv.getContext && cv.getContext("2d"); if (!g) return null;
     const I = { id, cv, g, thumb: !!o.thumb, lively: o.level === "lively", c: o.colors, zoom: o.thumb ? 0.6 : 1, t: 0, seen: true, still: o.still ?? reduced(), flat: mq("(prefers-reduced-transparency: reduce)"), photo: !!o.photo, W: 1, H: 1, dpr: 1, q: 1, boost: 1, wind: 0 };
-    I.size = () => { const r = cv.getBoundingClientRect(), z = I.zoom; I.W = Math.max(1, r.width / z); I.H = Math.max(1, r.height / z); I.dpr = Math.min(2, root.devicePixelRatio || 1); cv.width = Math.round(r.width * I.dpr); cv.height = Math.round(r.height * I.dpr);
+    I.size = () => { const r = cv.getBoundingClientRect(), z = I.zoom; I.W = Math.max(1, r.width / z); I.H = Math.max(1, r.height / z); I.dpr = KINDS[id].res || Math.min(2, root.devicePixelRatio || 1); cv.width = Math.round(r.width * I.dpr); cv.height = Math.round(r.height * I.dpr);
       I.n = I.live = I.thumb ? Math.min(9, KINDS[id].n) : countFor(id, I.W, I.H, o.level); I.sp = null; KINDS[id].init(I); };
     I.size(); if (I.still) still(I); else { LIVE.add(I); frame(I, 0); wake(); } return I; }
 
@@ -164,9 +164,8 @@
   const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .25 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")`;
   const CSS = `body.fxe-bk,.fxe-cover{isolation:isolate}.fxe-layer{pointer-events:none;overflow:hidden;contain:strict}.fxe-cov{position:absolute;inset:0;z-index:1;border-radius:inherit}.fxe-cover>.fxe-cov:not(#_):not(#_):not(#_){display:block!important}.fxe-vp{position:fixed;inset:0;z-index:40}.fxe-back{position:fixed;inset:0;z-index:-1}
 .fxe-layer canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;visibility:visible!important;border-radius:0}.fxe-k-paper{background-image:${GRAIN};opacity:.5;mix-blend-mode:multiply}.fxe-k-paper.lively{opacity:.85}
-.fxe-back.fxe-k-twinkle{background:radial-gradient(130% 62% at 50% 104%,rgba(255,166,70,.34),rgba(255,188,108,.15) 44%,rgba(255,200,130,0) 76%);animation:fxeUp .7s ease-out both,fxeGlow 7.3s .7s ease-in-out infinite}.fxe-back.fxe-k-twinkle.lively{filter:saturate(1.25)}
-@keyframes fxeUp{from{opacity:0}to{opacity:.84}}@keyframes fxeGlow{0%,100%{opacity:.84}13%{opacity:1}21%{opacity:.87}38%{opacity:.97}52%{opacity:.8}61%{opacity:.94}79%{opacity:1}88%{opacity:.86}}
-@media (prefers-reduced-motion:reduce){.fxe-back.fxe-k-twinkle{animation:none;opacity:.9}}`;
+.fxe-back.fxe-k-twinkle{background:radial-gradient(130% 62% at 50% 104%,rgba(255,166,70,.34),rgba(255,188,108,.15) 44%,rgba(255,200,130,0) 76%);opacity:.8;animation:fxeUp .7s ease-out}.fxe-back.fxe-k-twinkle.lively{opacity:1}
+@keyframes fxeUp{from{opacity:0}}@media (prefers-reduced-motion:reduce){.fxe-back.fxe-k-twinkle{animation:none}}`;
   function css() { if (document.getElementById("fxe-css")) return; const s = document.createElement("style"); s.id = "fxe-css"; s.textContent = CSS; document.head.appendChild(s); }
   const COVER = "#m .cov, .gxcover, #cvCover, .mk-cov", WORDS = ".ea-txt, .lk-corner, .type-cover";
   const div = (cls, id, level) => { const d = document.createElement("div"); d.className = "fxe-layer " + cls + " fxe-k-" + id + (level === "lively" ? " lively" : ""); d.setAttribute("aria-hidden", "true"); d.dataset.effect = id; d.dataset.level = level; return d; };
@@ -189,7 +188,7 @@
     const words = () => { if (ro && cover && !vp) { ro.disconnect(); ro.observe(layer); for (const el of cover.querySelectorAll(WORDS)) ro.observe(el); } clip(); };
     const ro = "ResizeObserver" in root ? new ResizeObserver(() => { clip(); if (!I || !layer.offsetWidth) return place(); clearTimeout(rt); rt = setTimeout(() => { if (!I || !layer.isConnected) return; const r = layer.getBoundingClientRect(); if (Math.abs(r.width - I.W) < 2 && Math.abs(r.height - I.H) < 2) return; I.size(); if (I.still || I.done) still(I); else frame(I, 0); }, 150); }) : null;
     // put the layer in the cover (again, when the page redrew it); no cover yet: wait for one
-    const place = () => { if (over) return; if (vp) { if (!layer.isConnected) host.appendChild(layer); } else { const c = [...scope.querySelectorAll(COVER)].find((x) => x.offsetWidth > 1); if (!c) return; if (layer.parentNode !== c) { cover && cover.classList.remove("fxe-cover"); cover = c; c.classList.add("fxe-cover"); c.appendChild(layer); words(); } }
+    const place = () => { if (over) return; if (vp) { if (!layer.isConnected) host.appendChild(layer); } else { const all = [...scope.querySelectorAll(COVER)], c = all.find((x) => x.offsetWidth > 1); if (!c) { if (ro) for (const x of all) ro.observe(x); /* hidden for now (the canvas keeps its guest preview folded away): come back when one has a size */ return; } if (layer.parentNode !== c) { cover && cover.classList.remove("fxe-cover"); cover = c; c.classList.add("fxe-cover"); c.appendChild(layer); words(); } }
       if (!rec.seen) { rec.seen = 1; io && io.observe(layer); ro && ro.observe(layer); }
       if (cv && !I && layer.getBoundingClientRect().width > 1) { I = instance(cv, id, { level, colors, still: st, photo: !!(cover && cover.querySelector("img")) }); if (I) { I.end = () => { if (ONCE[id]) { over = true; layer.remove(); LIVE.delete(I); mo && mo.disconnect(); } }; } } };
     const mo = "MutationObserver" in root ? new MutationObserver((M) => { if (!layer.isConnected || !I) place(); if (cover && M.some((m) => m.target !== layer && cover.contains(m.target))) words(); }) : null; const kill = () => { over = true; if (I) LIVE.delete(I); I = null; mo && mo.disconnect(); ro && ro.disconnect(); io && io.disconnect(); clearTimeout(rt); layer.remove(); back && back.remove(); cover && cover.classList.remove("fxe-cover"); if (host.__fxe === rec) { host.__fxe = null; host.classList.remove("fxe-host", "fxe-bk"); } };

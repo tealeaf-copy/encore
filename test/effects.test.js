@@ -81,7 +81,7 @@ const painted = () => { const c = document.querySelector(".fxe-layer canvas"); i
 const overlaps = (sel) => { const out = [], layers = [...document.querySelectorAll(".fxe-layer:not(.fxe-back)")].map((L) => [L, L.getBoundingClientRect()]).filter(([, r]) => r.width > 0);
   // hit-test with the layers made tappable for a moment: a hit-test follows the layer's real shape (its cut-outs around words on the cover)
   for (const [L] of layers) L.style.pointerEvents = "auto"; const hit = (L, x, y) => document.elementsFromPoint(x, y).includes(L);
-  for (const el of document.querySelectorAll(sel)) { if (el.closest(".fxe-layer")) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || getComputedStyle(el).visibility === "hidden") continue;
+  for (const el of document.querySelectorAll(sel)) { if (el.closest(".fxe-layer")) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || (el.checkVisibility && !el.checkVisibility({ visibilityProperty: true, opacityProperty: true }))) continue; // not drawn (inside a closed <details>, say)
     // sample points: the middle, and a little in from each corner
     const pts = [[r.left + r.width / 2, r.top + r.height / 2], [r.left + 2, r.top + 2], [r.right - 2, r.top + 2], [r.left + 2, r.bottom - 2], [r.right - 2, r.bottom - 2]];
     for (const [L] of layers) { if (!pts.some(([x, y]) => x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && hit(L, x, y))) continue;
@@ -149,6 +149,14 @@ test("in a browser: guests see the stored effect in the cover, a removed id draw
     assert.equal(await h.evaluate(() => JSON.stringify(window.EventCanvas.state().W.look || {})), "{}");
     await h.click("#cv .cv-dock [data-cv=effect]"); await h.click(".cv-sh.cv-tray [data-fx=bulbs]"); await h.click(".cv-sh.cv-tray [data-done]"); await h.waitForTimeout(200);
     assert.equal(await layer(), "bulbs", "Done keeps it"); assert.equal(await dock("effect"), "Effect: String lights");
+    // Edit and Guest view show the same effect: the same id, in the cover, drawn, in both
+    for (const id of ["twinkle", "bulbs"]) { await h.click("#cv .cv-dock [data-cv=effect]"); await h.click(`.cv-sh.cv-tray [data-fx=${id}]`); await h.click(".cv-sh.cv-tray [data-done]"); await h.waitForTimeout(500);
+      const inEdit = await h.evaluate(() => { const L = document.querySelector("#cvCover > .fxe-layer"), c = L?.querySelector("canvas"); if (!c?.width) return null; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 8) n++; return { id: L.dataset.effect, drawn: n > 12 }; });
+      await h.click("#cv .cv-mode [data-mode=guest]"); const fr = h.frames().find((f) => /\/e\/_preview/.test(f.url())); assert.ok(fr, "the guest preview frame");
+      await fr.waitForFunction(() => document.querySelector("#m .cov > .fxe-layer canvas")?.width > 1, null, { timeout: 8000 }); await h.waitForTimeout(500);
+      const inGuest = await fr.evaluate(() => { const L = document.querySelector("#m .cov > .fxe-layer"), c = L.querySelector("canvas"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 8) n++; const r = L.getBoundingClientRect(); return { id: L.dataset.effect, drawn: n > 12, shown: r.width > 100 && r.height > 50 && getComputedStyle(c).visibility === "visible" }; });
+      assert.deepEqual(inEdit, { id, drawn: true }, id + " in Edit"); assert.deepEqual(inGuest, { id, drawn: true, shown: true }, id + " in Guest view, as in Edit");
+      await h.click("#cv .cv-mode [data-mode=edit]"); await h.waitForTimeout(200); }
     // in the editor an effect is only in the cover: never over the editor's own words and buttons, never over the host-only panel
     const ed = await h.evaluate(() => { const L = [...document.querySelectorAll("#cv .fxe-layer")]; const hp = document.querySelector("#cv .cv-host"), cs = getComputedStyle(hp); return { n: L.length, inCover: L.every((x) => x.parentElement.id === "cvCover"), back: !!document.querySelector(".fxe-back"), bg: cs.backgroundColor, img: cs.backgroundImage, tag: hp.querySelector(".cv-tag").textContent.trim() }; });
     assert.equal(ed.n, 1); assert.ok(ed.inCover, "the layer is inside the cover"); assert.equal(ed.back, false, "no layer behind the editor"); assert.equal(ed.tag, "Only you see this part");

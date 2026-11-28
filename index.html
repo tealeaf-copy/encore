@@ -6196,7 +6196,7 @@ function cgHello(){ const h=new Date().getHours(); return `${h<12?"Good morning"
 function conciergeHTML(){ const S=cgState(), mine=allEvents.some(e=>!e.example), last=allEvents.filter(e=>!e.example).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
   const sugg=[["✦","Brainstorm our next event with me","brainstorm"],["▤","Plan a dinner for 14 CFOs in New York, about $28k","fill:A dinner for 14 CFOs in New York, about $28k"],["⌕","See what other brands host, like Clay","peer:Clay"],...(last?[["→",`Pick up ${last.name}`,"open:"+last.id]]:[["◎","Open a sample event to look around","sample"]])];
   const tab=window.__homeTab||(mine||S.msgs.length>1||window.__wsPersonal?"start":"how");
-  return `<div class="hw-tabs" role="tablist"><button type="button" role="tab" aria-selected="${tab==="start"}" data-hwtab="start">Start</button><button type="button" role="tab" aria-selected="${tab==="how"}" data-hwtab="how">How it works</button></div>${tab==="how"?howHTML():""}<section class="cg" id="qsPanel" aria-label="Ask Potto" ${tab==="how"?"hidden":""}><p class="cg-hi"><span class="spark">✦</span> ${cgHello()}</p><h1>${mine?"What are we hosting next?":"Let's plan something people remember"}</h1>
+  return `<div class="hw-tabs" role="tablist"><button type="button" role="tab" aria-selected="${tab==="start"}" data-hwtab="start">Start</button><button type="button" role="tab" aria-selected="${tab==="how"}" data-hwtab="how">How it works</button></div>${tab==="how"?howHTML():""}<section class="cg pl-fun" id="qsPanel" aria-label="Ask Potto" ${tab==="how"?"hidden":""}><span class="fun-potto" id="homePotto" aria-hidden="true" style="display:block;width:132px;height:125px;margin:0 auto -6px"></span><p class="cg-hi"><span class="spark">✦</span> ${cgHello()}</p><h1>${mine?"What are we hosting next?":"Let's plan something people remember"}</h1>
     <div class="cg-thread" id="cgThread" ${S.msgs.length?"":"hidden"} aria-live="polite"></div>
     <div class="cg-box"><label class="vh" for="qsText">Ask Potto</label><textarea id="qsText" rows="2" placeholder="Describe an event, ask for ideas, or name a brand to see what they host"></textarea>
       <div class="cg-bar"><span class="cg-mode"><span class="spark">✦</span> Pottery Lab concierge</span><button class="cg-send" id="qsGo" aria-label="Send" type="button">↑</button></div></div>
@@ -13569,6 +13569,7 @@ body.friends-ws #view-programs.pl-nudge-ready:not(.pl-nudge-all) > :is(.pipbrief
 <!-- /round 18 -->
 <script src="/surprise.js" defer></script><script src="/surprise-host.js" defer></script><!-- surprise touches: drawn covers, milestones and regulars on Home, invite lines and send-offs on /g (server/surprise.js) -->
 <script src="/paymethods.js" defer></script><!-- Get paid: the price setting, the drop setup, Home and the guest's pay buttons (server/paymethods.js) -->
+<script src="/funhome.js" defer></script><!-- plush Potto at the top of Home, dressed for what you type (public/pottoplush.js, public/fun.css) -->
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.

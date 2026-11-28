@@ -6,97 +6,168 @@
 <meta name="twitter:card" content="summary">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-/* /about: why Pottery Lab exists, told as a short magazine story (docs/about-story.md). Brand tokens only (public/system.css), copy per docs/brand-kit.md */
+/* /about and the signed-out landing: one character, one headline, two pills, one demo, then why Pottery Lab exists
+   (docs/about-story.md). The soft shapes are the .pl-fun language (public/fun.css); colour and type are the kit's
+   (public/system.css); copy per docs/brand-kit.md */
 *{box-sizing:border-box}html,body{overflow-x:clip}
-body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:400 17px/1.6 var(--pl-font-text);-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--pl-fun-bg,#FAF8F3);color:var(--pl-ink);font:400 17px/1.6 var(--pl-font-text);-webkit-font-smoothing:antialiased}
 a{color:inherit}.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
-h1,h2,h3{font-family:var(--pl-font-display);font-weight:var(--pl-display-weight);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1,h2,h3{font-family:var(--pl-font-display);font-weight:var(--pl-display-weight);letter-spacing:-.025em;margin:0;text-wrap:balance}
 p{margin:0;text-wrap:pretty}
-.kick{display:block;font:500 13px/1.4 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin:0 0 12px}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--pl-r-btn);padding:0 20px;font:600 17px var(--pl-font-text);text-decoration:none;border:1.5px solid transparent}
-.btn.primary{background:var(--pl-accent);color:var(--pl-on-accent)}.btn.primary:hover{background:var(--pl-accent-press)}
-.btn.quiet{border-color:var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink)}.btn.quiet:hover{background:var(--pl-raised)}
-.ctas{display:flex;gap:10px;flex-wrap:wrap}@media (max-width:560px){.ctas .btn{flex:1 1 100%}}
+.kick{display:block;font:500 13px/1.4 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-fun-grey);margin:0 0 14px}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}
 .ab-go{display:inline-flex;align-items:center;min-height:44px;font-weight:600;color:var(--pl-accent-text);text-underline-offset:3px}
-/* top */
-.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0}
-.brand{display:flex;gap:8px;align-items:center;text-decoration:none;white-space:nowrap}
-.top nav{display:flex;gap:20px;align-items:center;font-weight:500}.top nav a:not(.btn){text-decoration:none;color:var(--pl-soft)}.top nav a:not(.btn):hover{color:var(--pl-ink)}
-.top nav .btn{min-height:44px;padding:0 14px;font-size:16px}
-@media (max-width:640px){.top nav a.hide-m{display:none}}
-/* hero */
-.hero{padding:40px 0 48px;border-top:var(--pl-rule)}
-.hero h1{font-size:clamp(44px,8vw,84px);line-height:1;max-width:14ch}
-.hero .deck{font:400 clamp(19px,2.2vw,22px)/1.5 var(--pl-font-text);max-width:34em;margin:20px 0 28px}
-.hero .note{font-size:16px;color:var(--pl-soft);margin-top:14px}
-/* sections */
-.sec{border-top:var(--pl-rule);padding:32px 0 48px}
-.sec h2{font-size:clamp(30px,4.4vw,44px);line-height:1.08;max-width:20ch}
+/* top: almost no chrome */
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0}
+.brand{display:flex;gap:8px;align-items:center;text-decoration:none;white-space:nowrap;font-weight:600;min-height:44px}
+.top nav{display:flex;gap:22px;align-items:center;font-weight:500}.top nav a:not(.fun-pill){text-decoration:none;color:var(--pl-fun-grey);min-height:44px;display:inline-flex;align-items:center}.top nav a:not(.fun-pill):hover{color:var(--pl-ink)}
+.top nav .fun-pill{min-height:44px;padding:0 18px;font-size:16px}
+@media (max-width:640px){.top nav a.hide-m{display:none}.top nav{gap:14px}}
+/* first screen */
+.hero{text-align:center;padding:12px 0 0;position:relative}
+.hero::before{content:"";position:absolute;z-index:-1;left:50%;top:-90px;width:min(1100px,150vw);height:560px;transform:translateX(-50%);background:radial-gradient(closest-side,var(--pl-fun-tint),rgba(255,255,255,0));opacity:.6;pointer-events:none;transition:opacity .4s}
+.hero .fun-potto{--fun-potto:200px;margin-bottom:-14px}
+.hero h1{font-size:clamp(46px,8.6vw,96px);line-height:.98;letter-spacing:-.04em;margin:14px auto 0;max-width:12ch}
+.hero .deck{font:400 clamp(18px,2vw,22px)/1.5 var(--pl-font-text);color:var(--pl-fun-grey);max-width:32em;margin:20px auto 0}
+.hero .ctas{justify-content:center;margin-top:28px}
+.hero .note{font-size:16px;color:var(--pl-fun-grey);margin-top:14px}
+@media (max-width:480px){.hero .ctas{flex-wrap:nowrap}.hero .ctas .fun-pill{flex:1 1 0;padding:0 12px;font-size:16px}}
+@media (min-width:900px){.hero{padding-top:20px}.hero .fun-potto{--fun-potto:260px;margin-top:-28px;margin-bottom:-18px}.hero h1{max-width:none;margin-top:18px}.hero .ctas{margin-top:32px}}
+/* the demo: an invite putting itself together. Drawn in CSS, silent, loops, pauses. Without motion it is the last frame */
+.fun-demo{position:relative;margin:44px 0 0;padding:0;border-radius:28px;overflow:hidden;background:linear-gradient(160deg,var(--pl-fun-tint),var(--pl-fun-tint-2) 70%);min-height:560px;display:grid}
+.fd-stage{display:grid;gap:22px;padding:28px 20px 76px;align-content:center;justify-items:center}
+.fd-ask{display:grid;justify-items:center;gap:6px;width:100%}
+.fd-potto{position:relative;width:104px;height:99px;display:block}.fd-potto .plp{position:absolute;inset:0;width:100%;height:100%}
+.fd-line{display:flex;align-items:center;gap:10px;background:var(--pl-fun-card);border-radius:999px;padding:8px 8px 8px 20px;min-height:52px;max-width:100%;font-weight:500;box-shadow:0 1px 0 rgba(27,29,28,.06)}
+.fd-typed{white-space:nowrap;position:relative}
+.fd-send{flex:none;width:36px;height:36px;border-radius:50%;background:var(--pl-accent);display:grid;place-items:center;color:#fff}
+.fd-invite{width:min(320px,100%);background:var(--pl-fun-card);border-radius:22px;overflow:hidden;text-align:left;transform:rotate(-1.5deg);box-shadow:0 18px 40px -24px rgba(27,29,28,.35)}
+.fd-cover{display:block;width:100%;aspect-ratio:16/9;background:#F6E3A1}.fd-cover svg{display:block;width:100%;height:100%}
+.fd-body{padding:14px 18px 18px;display:grid;gap:4px}
+.fd-body small{font:500 12px/1.4 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-fun-grey)}
+.fd-body b{font:600 26px/1.15 var(--pl-font-serif);letter-spacing:-.01em}
+.fd-replies{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fd-r{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px 0 4px;border-radius:999px;background:var(--pl-fun-tint-2);font-size:14px;font-weight:500;white-space:nowrap}
+.fd-r i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff;background:#C96F5A}
+.fd-r.r2 i{background:#5D78C4}.fd-r.r3 i{background:#7F9A5A}.fd-r.r4 i{background:#8E5E96}.fd-r.is-maybe{background:transparent;box-shadow:inset 0 0 0 1.5px var(--pl-fun-line)}
+.fd-count{font-size:14px;color:var(--pl-fun-grey);margin-top:8px}
+.fd-tag{position:absolute;right:18px;bottom:22px;font:500 12px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-fun-grey)}
+.fd-pause{position:absolute;left:16px;bottom:16px}
+.fd-pause .i-play{display:none}.fun-demo:not(.is-playing) .fd-pause .i-play,.fun-demo.is-paused .fd-pause .i-play{display:block}.fun-demo:not(.is-playing) .fd-pause .i-pause,.fun-demo.is-paused .fd-pause .i-pause{display:none}
+.fd-p1{position:absolute;inset:0}
+@media (min-width:820px){.fun-demo{min-height:520px;margin-top:56px}.fd-stage{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;padding:48px 56px 64px;align-items:center}.fd-potto{width:190px;height:181px}.fd-line{font-size:19px;min-height:60px;padding-left:26px}.fd-send{width:44px;height:44px}.fd-invite{width:340px}}
+/* the loop: 12 seconds, only while .is-playing (set by the page unless the device asks for less motion) */
+.fun-demo.is-playing .fd-typed{animation:fd-type 12s steps(30,end) infinite}
+.fun-demo.is-playing .fd-p0{animation:fd-p0 12s linear infinite}.fun-demo.is-playing .fd-p1{animation:fd-p1 12s linear infinite}
+.fun-demo.is-playing .fd-send{animation:fd-send 12s ease-out infinite}
+.fun-demo.is-playing .fd-invite{animation:fd-card 12s var(--pl-fun-ease) infinite}
+.fun-demo.is-playing .fd-draw{stroke-dasharray:1;animation:fd-draw 12s ease-in-out infinite}
+.fun-demo.is-playing .fd-fill{animation:fd-fill 12s ease-out infinite}
+.fun-demo.is-playing .fd-body b,.fun-demo.is-playing .fd-body small{animation:fd-title 12s ease-out infinite}
+.fun-demo.is-playing .fd-r{animation:fd-r1 12s var(--pl-fun-ease) infinite}.fun-demo.is-playing .fd-r.r2{animation-name:fd-r2}.fun-demo.is-playing .fd-r.r3{animation-name:fd-r3}.fun-demo.is-playing .fd-r.r4{animation-name:fd-r4}
+.fun-demo.is-playing .fd-count{animation:fd-count 12s ease-out infinite}
+.fun-demo.is-paused *,.fun-demo.is-off *{animation-play-state:paused!important}
+@keyframes fd-type{0%,3%{clip-path:inset(-4px 100% -4px 0)}24%,97%{clip-path:inset(-4px 0 -4px 0)}100%{clip-path:inset(-4px 100% -4px 0)}}
+@keyframes fd-send{0%,25%{transform:scale(1)}27%{transform:scale(.86)}30%,100%{transform:scale(1)}}
+@keyframes fd-p0{0%,28%{opacity:1}29%,98%{opacity:0}100%{opacity:1}}
+@keyframes fd-p1{0%,28%{opacity:0;transform:scale(.9)}29%{opacity:1;transform:scale(.9)}31%{transform:scale(1.05)}33%,98%{opacity:1;transform:scale(1)}100%{opacity:0}}
+@keyframes fd-card{0%,32%{opacity:0;transform:translateY(22px) rotate(0)}37%,96%{opacity:1;transform:rotate(-1.5deg)}100%{opacity:0;transform:rotate(-1.5deg)}}
+@keyframes fd-draw{0%,37%{stroke-dashoffset:1}50%,100%{stroke-dashoffset:0}}
+@keyframes fd-fill{0%,48%{opacity:0}53%,100%{opacity:1}}
+@keyframes fd-title{0%,44%{opacity:0;transform:translateY(6px)}48%,100%{opacity:1;transform:none}}
+@keyframes fd-r1{0%,58%{opacity:0;transform:scale(.7)}60%{opacity:1;transform:scale(1.06)}62%,100%{opacity:1;transform:none}}
+@keyframes fd-r2{0%,64%{opacity:0;transform:scale(.7)}66%{opacity:1;transform:scale(1.06)}68%,100%{opacity:1;transform:none}}
+@keyframes fd-r3{0%,70%{opacity:0;transform:scale(.7)}72%{opacity:1;transform:scale(1.06)}74%,100%{opacity:1;transform:none}}
+@keyframes fd-r4{0%,76%{opacity:0;transform:scale(.7)}78%{opacity:1;transform:scale(1.06)}80%,100%{opacity:1;transform:none}}
+@keyframes fd-count{0%,82%{opacity:0}86%,100%{opacity:1}}
+/* sections: space instead of rules */
+.sec{padding:72px 0 0}
+.sec h2{font-size:clamp(34px,5vw,56px);line-height:1.04;letter-spacing:-.03em;max-width:18ch}
 .read{max-width:640px}.read p+p{margin-top:16px}
-.sec .lede{margin-top:12px;max-width:36em;color:var(--pl-soft)}
-@media (min-width:900px){.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px}.split .read{margin-top:4px}.split .week{margin-top:4px}}
-/* one rhythm: kicker 12px, heading to what follows 24px (12px to a lede), paragraphs 16px apart */
-.split>.read,.split>.week,.sec>h2+.read{margin-top:24px}@media (min-width:900px){.split>.read,.split>.week{margin-top:4px}}
+.sec .lede{margin-top:16px;max-width:36em;color:var(--pl-fun-grey);font-size:clamp(17px,1.6vw,19px)}
+.sec.mid{text-align:center}.sec.mid h2,.sec.mid .lede{margin-left:auto;margin-right:auto}.sec.mid .cols{text-align:left}
+@media (min-width:900px){.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;align-items:start}}
+.split>.read,.split>.week,.sec>h2+.read{margin-top:28px}@media (min-width:900px){.split>.read,.split>.week{margin-top:0}}
 /* the week behind one dinner */
-.week{list-style:none;margin:0;padding:0;max-width:680px}
-.week li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:14px 0;border-top:var(--pl-rule-dashed)}.week li:first-child{border-top:0;padding-top:0}
-.week b{font:500 13px/1.9 var(--pl-font-mono);letter-spacing:.04em;color:var(--pl-soft)}
+.week{list-style:none;margin:0;padding:8px 24px;max-width:680px;background:var(--pl-fun-card);border-radius:var(--pl-fun-r)}
+.week li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--pl-fun-line)}.week li:first-child{border-top:0}
+.week b{font:500 13px/1.9 var(--pl-font-mono);letter-spacing:.04em;color:var(--pl-fun-grey)}
+.split .read{font-size:clamp(17px,1.6vw,19px)}
 /* pull quote: our own words, not a testimonial */
-.pull{margin:0;padding:4px 0 4px 18px;border-left:3px solid var(--pl-accent);max-width:720px}
-.pull p{font:400 22px/1.5 var(--pl-font-text);letter-spacing:-.005em;color:var(--pl-ink);text-wrap:pretty}@media (min-width:900px){.pull p{font-size:24px}}
-.pull cite{display:block;margin-top:12px;font:500 13px var(--pl-font-mono);font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
-.quote-wrap{padding:8px 0 56px}@media (min-width:900px){.quote-wrap{padding-bottom:72px}}
-/* what changes: five rows */
-.pillars{list-style:none;margin:24px 0 0;padding:0;counter-reset:p}
-.pillars>li{display:grid;gap:8px 32px;padding:24px 0;border-top:var(--pl-rule-dashed)}
-@media (min-width:900px){.pillars>li{grid-template-columns:minmax(0,4fr) minmax(0,7fr)}}
-.pillars .n{display:block;font:500 13px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin-bottom:6px}
+.pull{margin:0;padding:40px 28px;border-radius:28px;background:var(--pl-fun-tint-2);text-align:center}
+.pull p{font:500 clamp(22px,3vw,32px)/1.35 var(--pl-font-text);letter-spacing:-.015em;color:var(--pl-ink);text-wrap:balance;max-width:26em;margin:0 auto}
+.pull cite{display:block;margin-top:16px;font:500 13px var(--pl-font-mono);font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-fun-grey)}
+.quote-wrap{padding:72px 0 0}@media (min-width:900px){.pull{padding:64px 56px}}
+/* what changes: four soft cards */
+.pillars{list-style:none;margin:32px 0 0;padding:0;display:grid;gap:16px}
+@media (min-width:900px){.pillars{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pillars>li{display:grid;gap:12px;align-content:start;padding:28px;background:var(--pl-fun-card);border-radius:var(--pl-fun-r)}
+.pillars .n{display:block;font:500 13px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin-bottom:8px}
 .pillars h3{font-size:28px;line-height:1.15}
-.pillars ul{margin:0;padding:0 0 0 18px;max-width:640px}.pillars ul li+li{margin-top:8px}.pillars ul li::marker{color:var(--pl-soft)}
+.pillars ul{margin:0;padding:0 0 0 18px}.pillars ul li+li{margin-top:8px}.pillars ul li::marker{color:var(--pl-fun-grey)}
 /* three readers */
-.cols{display:grid;gap:16px;margin-top:24px}
+.cols{display:grid;gap:16px;margin-top:32px}
 @media (min-width:760px){.cols{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.ab-col{background:var(--pl-surface);border:var(--pl-bw,1.5px) solid var(--pl-ink);border-radius:var(--pl-r-md);padding:20px;display:flex;flex-direction:column;gap:12px}
-.ab-col h3{font-size:24px;line-height:1.2}.ab-col p:not(.soon){flex:1}.ab-col .soon{font-size:16px;color:var(--pl-soft);padding-top:10px;border-top:var(--pl-rule-dashed)}.ab-col .soon b{font-weight:600;color:var(--pl-ink)}
+.ab-col{background:var(--pl-fun-card);border-radius:var(--pl-fun-r);padding:28px;display:flex;flex-direction:column;gap:12px}
+.ab-col .kick{margin:0;color:var(--pl-accent-text)}
+.ab-col h3{font-size:26px;line-height:1.15}.ab-col p:not(.soon){flex:1}.ab-col .soon{font-size:16px;color:var(--pl-fun-grey);padding-top:12px;border-top:1px solid var(--pl-fun-line)}.ab-col .soon b{font-weight:600;color:var(--pl-ink)}
 /* live: what's on right now (public discover data) */
-#feed{display:grid;gap:0;margin-top:24px;border-top:var(--pl-rule-dashed);max-width:820px}
-.fi{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-bottom:var(--pl-rule-dashed);text-decoration:none;color:inherit}
+#feed{display:grid;gap:0;margin-top:28px;max-width:820px;background:var(--pl-fun-card);border-radius:var(--pl-fun-r);padding:6px 20px}
+.fi{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--pl-fun-line);text-decoration:none;color:inherit}.fi:first-child{border-top:0}
 .fi .av{width:44px;height:44px;border-radius:50%;background:var(--pl-raised);display:grid;place-items:center;overflow:hidden}.fi .av svg{width:44px;height:44px}
-.fi b{display:block;font-weight:600}.fi small{display:block;color:var(--pl-soft);font-size:15px}.fi .see{font-weight:600;color:var(--pl-accent-text);font-size:15px;white-space:nowrap}
-.fi-ex{font:500 12px var(--pl-font-mono);text-transform:uppercase;color:var(--pl-soft)}
-.fi-sk{height:72px;border-bottom:var(--pl-rule-dashed);background:linear-gradient(90deg,transparent,var(--pl-raised),transparent) 0 0/200% 100%;animation:sk 1.4s linear infinite}@keyframes sk{to{background-position:-200% 0}}
+.fi b{display:block;font-weight:600}.fi small{display:block;color:var(--pl-fun-grey);font-size:15px}.fi .see{font-weight:600;color:var(--pl-accent-text);font-size:15px;white-space:nowrap}
+.fi-ex{font:500 12px var(--pl-font-mono);text-transform:uppercase;color:var(--pl-fun-grey)}
+.fi-sk{height:72px;border-top:1px solid var(--pl-fun-line);background:linear-gradient(90deg,transparent,var(--pl-fun-tint-2),transparent) 0 0/200% 100%;animation:sk 1.4s linear infinite}.fi-sk:first-child{border-top:0}@keyframes sk{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.fi-sk{animation:none}}
 /* beliefs */
-.beliefs{list-style:none;margin:24px 0 0;padding:0;max-width:720px;counter-reset:b}
-.beliefs li{counter-increment:b;display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;padding:12px 0;border-top:var(--pl-rule-dashed)}
-.beliefs li::before{content:counter(b,decimal-leading-zero);font:500 13px/1.9 var(--pl-font-mono);color:var(--pl-soft)}
+.beliefs{list-style:none;margin:28px 0 0;padding:0;max-width:760px;counter-reset:b}
+.beliefs li{counter-increment:b;display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;padding:16px 0;border-top:1px solid var(--pl-fun-line)}.beliefs li:first-child{border-top:0}
+.beliefs li::before{content:counter(b,decimal-leading-zero);font:500 13px/1.9 var(--pl-font-mono);color:var(--pl-fun-grey)}
 .beliefs b{font-weight:600}
-.motto{margin-top:24px;max-width:720px}.motto p:first-child{font:var(--pl-display-weight) clamp(26px,3.4vw,34px)/1.2 var(--pl-font-display);letter-spacing:-.02em}.motto p+p{margin-top:8px;color:var(--pl-soft)}
-.small{font-size:16px;color:var(--pl-soft);margin-top:24px;max-width:720px}.small a{color:var(--pl-ink)}
+.motto{margin-top:32px;max-width:760px;padding:28px;border-radius:var(--pl-fun-r);background:var(--pl-fun-tint-2)}.motto p:first-child{font:var(--pl-display-weight) clamp(26px,3.4vw,36px)/1.15 var(--pl-font-display);letter-spacing:-.025em}.motto p+p{margin-top:8px;color:var(--pl-fun-grey)}
+.small{font-size:16px;color:var(--pl-fun-grey);margin-top:24px;max-width:720px}.small a{color:var(--pl-ink)}
 /* end */
-.end{text-align:center;padding-bottom:56px}.end h2{margin:0 auto}.end .close{max-width:30em;margin:12px auto 0;color:var(--pl-soft)}.end .ctas{justify-content:center;margin-top:24px}.end .potto{display:block;margin:0 auto 16px;width:88px;height:auto}
-footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 0 48px;border-top:var(--pl-rule);color:var(--pl-soft);font-size:16px}
-footer .ftl{display:flex;gap:16px;flex-wrap:wrap}footer .ftl a{min-width:44px;text-align:center}footer a{text-decoration:none}footer a:hover{color:var(--pl-ink);text-decoration:underline}
-@media (min-width:900px){.wrap{padding:0 32px}.hero{padding:64px 0 72px}.sec{padding:40px 0 72px}}
+.end{text-align:center;padding-bottom:72px}.end h2{margin:20px auto 0}.end .ctas{justify-content:center;margin-top:28px}.end .fun-potto{--fun-potto:120px}
+@media (max-width:560px){.end .ctas .fun-pill{flex:1 1 100%}}
+footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 0 48px;color:var(--pl-fun-grey);font-size:16px}
+footer .ftl{display:flex;gap:4px 16px;flex-wrap:wrap}footer .ftl a{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}footer a{text-decoration:none}footer a:hover{color:var(--pl-ink);text-decoration:underline}
+@media (min-width:900px){.wrap{padding:0 32px}.sec{padding-top:112px}.quote-wrap{padding-top:112px}.end{padding-bottom:96px}}
 </style>
-<link rel="stylesheet" id="craftCss" href="/craft.css"><link rel="stylesheet" id="systemCss" href="/system.css">
-</head><body class="home about" data-shell="tabs">
+<link rel="stylesheet" href="/fun.css"><link rel="stylesheet" id="craftCss" href="/craft.css"><link rel="stylesheet" id="systemCss" href="/system.css">
+</head><body class="home about pl-fun" data-shell="tabs">
 <div class="wrap">
 <header class="top">
   <a class="brand" href="/" aria-label="Pottery Lab"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a>
-  <nav aria-label="Pottery Lab"><a href="/feed" class="hide-m">What's on</a><a href="/teams/discover" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="btn primary" href="/signup?mode=friends">Start hosting</a></nav>
+  <nav aria-label="Pottery Lab"><a href="/feed" class="hide-m">What's on</a><a href="/teams/discover" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="fun-pill is-quiet" href="/signup?mode=friends">Start hosting</a></nav>
 </header>
 
 <main>
 <div class="hero">
-  <span class="kick">Why we exist</span>
-  <h1>Your co-host for every plan.</h1>
+  <span class="fun-potto" id="heroPotto"></span>
+  <h1 id="heroH">Your co-host for every plan.</h1>
   <p class="deck">Potto brainstorms the idea, finds the time that works for everyone, designs the invite, chases the replies and keeps the group going.</p>
-  <div class="ctas"><a class="btn primary" href="/start" data-plan>Plan your first event</a><a class="btn quiet" href="/feed">Explore what's on</a></div>
+  <div class="ctas"><a class="fun-pill is-primary" href="/start" id="heroGo">Plan with Potto</a><a class="fun-pill is-quiet" href="/feed">Explore what's on</a></div>
   <p id="inviteOnlyLine" class="note" hidden>New pages are invite only for now. Ask a host for a code.</p>
+  <figure class="fun-demo" id="demo" role="group" aria-label="A short demo with no sound. One sentence turns into an invite, then replies come in.">
+    <div class="fd-stage" aria-hidden="true">
+      <div class="fd-ask"><span class="fd-potto"><span class="fd-p0" id="fdP0"></span><span class="fd-p1" id="fdP1"></span></span>
+        <div class="fd-line"><span class="fd-typed">Taco night at mine, Friday at 7</span><span class="fd-send"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span></div></div>
+      <div class="fd-invite">
+        <span class="fd-cover"><svg viewBox="0 0 320 180" fill="none" stroke="#33261F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <g class="fd-fill"><ellipse cx="160" cy="132" rx="104" ry="20" fill="#FFFDF8" stroke="none"/><path d="M84 122a40 40 0 0 1 80 0z" fill="#F1B95B" stroke="none"/><path d="M156 122a40 40 0 0 1 80 0z" fill="#F1B95B" stroke="none"/><path d="M96 104q8-14 22-8t24-4q10 0 12 14z" fill="#9DB274" stroke="none"/><path d="M168 104q8-14 22-8t24-4q10 0 12 14z" fill="#EE7F6B" stroke="none"/></g>
+          <path class="fd-draw" pathLength="1" d="M56 132c0 11 46 20 104 20s104-9 104-20"/><path class="fd-draw" pathLength="1" d="M84 122a40 40 0 0 1 80 0z"/><path class="fd-draw" pathLength="1" d="M156 122a40 40 0 0 1 80 0z"/>
+          <path class="fd-draw" pathLength="1" d="M124 62q-8-10 0-20t0-20"/><path class="fd-draw" pathLength="1" d="M160 56q-8-10 0-20t0-20"/><path class="fd-draw" pathLength="1" d="M196 62q-8-10 0-20t0-20"/></svg></span>
+        <div class="fd-body"><small>Fri · 7pm · Mai's place</small><b>Taco night</b>
+          <div class="fd-replies"><span class="fd-r r1"><i>S</i>I'm in</span><span class="fd-r r2"><i>J</i>I'm in</span><span class="fd-r r3"><i>A</i>I'm in</span><span class="fd-r r4 is-maybe"><i>L</i>Maybe</span></div>
+          <span class="fd-count">3 are in. Potto reminds the rest.</span></div>
+      </div>
+    </div>
+    <span class="fd-tag" aria-hidden="true">Example</span>
+    <button type="button" class="fun-round fd-pause" id="demoPause" aria-label="Play the demo"><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg><svg class="i-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button>
+  </figure>
 </div>
 
-<section class="sec" aria-labelledby="what">
+<section class="sec mid" aria-labelledby="what">
   <span class="kick">What it is</span>
   <h2 id="what">A personal assistant for events.</h2>
   <p class="lede">Potto helps you pick the idea, finds a date that works for everyone, designs the invite, handles the replies and keeps the group going after. And it introduces you to hosts near you: a flower workshop for your team, a chef for a birthday, a run club to join, or a fellow host to team up with.</p>
@@ -154,7 +225,7 @@ footer .ftl{display:flex;gap:16px;flex-wrap:wrap}footer .ftl a{min-width:44px;te
   </ol>
 </section>
 
-<section class="sec" aria-labelledby="who">
+<section class="sec mid" aria-labelledby="who">
   <span class="kick">04 · Who it's for</span>
   <h2 id="who">Good for everyone at the table.</h2>
   <div class="cols">
@@ -184,20 +255,36 @@ footer .ftl{display:flex;gap:16px;flex-wrap:wrap}footer .ftl a{min-width:44px;te
 </section>
 
 <section class="sec end" aria-labelledby="go">
-  <span id="pottoEnd" aria-hidden="true"></span>
+  <span class="fun-potto" id="pottoEnd" aria-hidden="true"></span>
   <h2 id="go">This time, let Pottery Lab chase the replies.</h2>
-  <div class="ctas"><a class="btn primary" href="/start" data-plan>Plan your first event</a><a class="btn quiet" href="/feed">Find something this weekend</a><a class="btn quiet" href="/teams/discover">Book a host for your team</a></div>
+  <div class="ctas"><a class="fun-pill is-primary" href="/start" data-plan>Plan your first event</a><a class="fun-pill is-quiet" href="/feed">Find something this weekend</a><a class="fun-pill is-quiet" href="/teams/discover">Book a host for your team</a></div>
 </section>
 </main>
 
 <footer><span>Pottery Lab</span><span class="ftl"><a href="/feed">What's on</a><a href="/discover">Discover</a><a href="/hosts">Hosts</a><a href="/teams/discover">For brands</a><a href="/security">Security</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></span></footer>
 </div>
-<script src="/shell.js"></script><script src="/authguard.js"></script><script src="/avatars.js"></script><script src="/mascot.js"></script>
+<script src="/shell.js"></script><script src="/authguard.js"></script><script src="/avatars.js"></script><script src="/pottoplush.js"></script>
 <script>
 (function () {
   const AV = window.EncoreAvatars;
-  // Potto once on the page: at the end, a moment rather than a fixture
-  try { if (window.Potto) document.getElementById("pottoEnd").innerHTML = Potto.svg("wave", 88, ""); } catch {}
+// Plush Potto (public/pottoplush.js): a different colour, shape and outfit each visit, in a box whose size is
+  // already reserved. He looks at the button you're about to press and hops when you get there.
+  try { const P = window.PottoPlush; if (P) {
+    const hero = document.getElementById("heroPotto"), sp = () => document.createElement("span");
+    const m = P.mount(hero.appendChild(sp()), { size: 190, label: "Potto, the Pottery Lab mascot" });
+    document.body.dataset.funTint = m.state.color;
+    const go = document.getElementById("heroGo"); go.addEventListener("pointerenter", () => m.react("hop")); go.addEventListener("focus", () => { m.look(go); m.react("tilt"); });
+    P.mount(document.getElementById("pottoEnd").appendChild(sp()), { size: 120 });
+    // the demo: the same Potto with nothing on, then dressed for dinner
+    const st = m.state; document.getElementById("fdP0").innerHTML = P.svg({ size: 150, color: st.color, shape: st.shape, wear: [] }); document.getElementById("fdP1").innerHTML = P.svg({ size: 150, color: st.color, shape: st.shape, wear: ["chefhat"] });
+  } } catch (e) { console.warn(e); }
+  // the demo loops unless the device asks for less motion; the round button pauses and plays it; it rests off screen
+  try { const demo = document.getElementById("demo"), btn = document.getElementById("demoPause"), calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const set = (on) => { demo.classList.toggle("is-playing", on || demo.classList.contains("is-playing")); demo.classList.toggle("is-paused", !on); btn.setAttribute("aria-label", on ? "Pause the demo" : "Play the demo"); };
+    if (!calm) set(true);
+    btn.addEventListener("click", () => set(!demo.classList.contains("is-playing") || demo.classList.contains("is-paused")));
+    if ("IntersectionObserver" in window) new IntersectionObserver((L) => demo.classList.toggle("is-off", !L[0].isIntersecting)).observe(demo);
+  } catch (e) { console.warn(e); }
   // signed in (the shell's encore_in hint): it's not their first event, so the button just says Plan an event
   try { if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) document.querySelectorAll("[data-plan]").forEach((a) => { a.textContent = "Plan an event"; }); } catch {}
   fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c?.inviteOnly) document.getElementById("inviteOnlyLine").hidden = false; }).catch(() => {});

@@ -66,7 +66,7 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
 .pt-id{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--pl-frame)}
 .pt-id b{font:600 14px var(--pl-font-text);color:var(--pl-ink);letter-spacing:0}
 .pt-body{flex:1;overflow:auto;padding:16px 16px 8px;overscroll-behavior:contain}
-.pt-hi{margin:8px 4px 16px;font:400 28px/1.15 var(--pl-font-display);letter-spacing:-.015em}
+.pt-sheet .pt-hi{margin:8px 4px 16px!important;font:600 24px/1.2 var(--pl-font-text)!important;letter-spacing:0!important;color:var(--pl-ink)}
 .pt-sub{margin:-8px 4px 16px;color:var(--pl-soft);font-size:15px}
 .pt-sug{display:flex;flex-direction:column;border:1px solid var(--pl-line);border-radius:12px;overflow:hidden;background:#fff}
 .pt-sug button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;cursor:pointer;font-size:15px;line-height:1.35;color:var(--pl-ink)}
@@ -178,11 +178,14 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
 
   // ---------- the sheet ----------
   let S = null; // { el, threadId, turns, status, attach: { eventId, title } | null, photo: { type, data, url } | null, view }
-  let statusP = null; const status = () => (statusP ||= api("/api/potto/status").catch(() => ({ ai: "missing_key", can: {}, unavailable: "" })));
+  // the event on screen: the one open in the app (?open=), its chat, its invite or its plan page
+  const hereId = () => { try { const o = new URLSearchParams(location.search).get("open"); if (o) return o; if (P === "/" && location.hash === "#studio") { const d = window.HostEvent?.draft?.(); if (d?.id && !d.example) return String(d.id); } const m = /^\/(?:chats|e|i|plans|post\/e)\/([A-Za-z0-9_-]{1,80})$/.exec(location.pathname); return m ? m[1] : ""; } catch { return ""; } };
+  // asked each time the sheet opens, so the three questions fit what's on screen now
+  const status = () => api(`/api/potto/status?eventId=${encodeURIComponent(hereId())}&tz=${encodeURIComponent(tz())}`).catch(() => ({ ai: "missing_key", can: {}, unavailable: "" }));
+  /** Three questions to start from: the server's, about this person's own events and the one on screen; else plain ones. */
   function suggestions(st) {
-    const host = st.hosting;
-    return host ? ["Draft a reminder for Saturday", "Who hasn't replied?", "Fill my open spots", "Ideas for a winter supper club"]
-      : ["What's on this weekend that's cozy and small?", "Who's going to Friday's game night?", "Find a supper club near me", "Ideas for a first dinner I could host"]; }
+    if (Array.isArray(st.suggest) && st.suggest.length) return st.suggest.slice(0, 3);
+    return st.hosting ? ["What's missing from my invite?", "Who hasn't replied?", "Fill my open spots"] : ["What's on this weekend?", "What should I host?", "Which date works for everyone?"]; }
   async function open(o = {}) {
     if (!signed()) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
     if (S) { S.el.querySelector("textarea")?.focus(); return; }
@@ -222,7 +225,8 @@ body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-are
     let y0 = null; const hd = el.querySelector(".pt-hd"), grab = el.querySelector(".pt-grab"), sheet = el.querySelector(".pt-sheet");
     for (const h of [hd, grab]) { h.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true }); h.addEventListener("touchmove", (e) => { if (y0 == null) return; const dy = e.touches[0].clientY - y0; if (dy > 0) sheet.style.transform = `translateY(${dy}px)`; }, { passive: true }); h.addEventListener("touchend", (e) => { const dy = (e.changedTouches[0].clientY - (y0 ?? 0)); y0 = null; if (dy > 90) close(); else sheet.style.transform = ""; }); }
     view("chat"); setTimeout(() => ta.focus({ preventScroll: true }), 60);
-    S.status = await status(); if (!S) return; note(S.status.unavailable); if (!S.turns.length && S.view === "chat") view("chat");
+    S.status = await status(); if (!S) return; note(S.status.unavailable);
+    if (S.status.here && !S.attach && !S.turns.length) { S.attach = { eventId: S.status.here.eventId, title: S.status.here.title }; chips(); } if (!S.turns.length && S.view === "chat") view("chat");
     if (o.q) { ta.value = o.q; fit(); }
     if (o.listen && SR) listen(ta, mic, fit);
   }

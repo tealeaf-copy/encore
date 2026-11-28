@@ -323,7 +323,8 @@
       const x = { name: X.name, price: `${priceIn(X.price)}`, length: X.length, min: X.min, max: X.max, includes: X.inc.split("\n").map((s) => s.trim()).filter(Boolean) };
       b.disabled = true; try { const me = (await api("/api/host/profile")).host || {}; const L = [...(me.experiences || [])]; const row = { ...(o.exp || {}), ...x };
         if (o.exp) { const i = L.findIndex((y) => y.id === o.exp.id); if (i >= 0) L[i] = row; else L.push(row); } else L.push(row);
-        await api("/api/host/profile", { experiences: L, forHire: true }); S.close(); toast(`${edit ? "Saved" : "Added"}. Teams see "${x.name}, ${line(x)}" with Request a date.`); o.onDone?.(); }
+        const sv = await api("/api/host/profile", { experiences: L, forHire: true }); S.close(); toast(`${edit ? "Saved" : "Added"}. Teams see "${x.name}, ${line(x)}" with Request a date.`);
+        o.onDone?.({ book: true, name: x.name, handle: sv?.host?.handle || me.handle || "" }); } // the caller takes the host to where it now lives (their page), not back to wherever the chooser opened
       catch (er2) { b.disabled = false; er(er2.message); } });
     draw(0, true); }
 

@@ -13155,7 +13155,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 
   // --- create: What's the plan? ---
   const TPL=[["Supper club","Supper club at my place, Saturday 7pm, 8 spots, $35 a person"],["Hack night","Hack night at the office, Thursday 6:30pm, about 20 people, pizza and lightning demos"],["Game night","Board game night at my place, Friday 7pm, 6 people, bring a snack"],["Potluck","Potluck in the park, Sunday 1pm, everyone brings a dish"],["Run club","Easy 5k run, Saturday 8am, McCarren Park, coffee after"],["Book club","Book club at the café, first Tuesday 7pm, 10 people"]];
-  function openCreate(seed,direct){ if(!direct&&!seed&&window.EncoreDrop?.choose) return window.EncoreDrop.choose({event:()=>openCreate("",true),onDone:j=>{ if(j?.id){ location.hash="#programs"; location.reload() } }});
+  function openCreate(seed,direct){ if(!direct&&!seed&&window.EncoreDrop?.choose) return window.EncoreDrop.choose({event:()=>openCreate("",true),onDone:j=>{ if(j?.id){ location.hash="#programs"; location.reload() } else if(j?.book&&j.handle){ location.href="/@"+encodeURIComponent(j.handle)+"?added=1#offer" } }});
     // the create canvas (public/canvas.js): a new event is made on the invite itself
     if(!seed&&window.EventCanvas?.open&&!window.__hvClassic) return window.EventCanvas.open({mode:"new"});
     const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>

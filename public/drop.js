@@ -274,6 +274,7 @@
     // one place for what's coming: the old "Coming up" grid is folded into this one
     $$(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; });
     const redraw = () => { sec.remove(); offer(h, first, d, isOwner); };
+    if (location.hash === "#offer" && !offer.went) { offer.went = 1; setTimeout(() => sec.scrollIntoView({ block: "start", behavior: "auto" }), 350); } // arriving from "Add it to my page": land on what was just added
     const req = (id) => { const bk = $("#book"); if (!bk) { location.href = `/x/${h.handle}/${encodeURIComponent(id)}`; return; } bk.__expand?.(true); bk.__open?.(id); bk.scrollIntoView({ behavior: "smooth", block: "start" }); };
     const draw = () => window.PLHostItems.render(sec, { h, d, owner: isOwner, events: ev, drops, exps: X,
       art: { drop: (x) => (x.cover ? `<img src="${esc(x.cover)}" alt="" loading="lazy">` : drawn(`${x.title} ${x.items.map((i) => i.name).join(" ")}`, I.bag, "currentColor")), exp: (x) => (x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy">` : drawn(x.name, I.people, "currentColor")) },

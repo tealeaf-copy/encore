@@ -4,7 +4,7 @@
 //   - from Potto's line on the overview and on Home: "5 people haven't replied to Dumpling night. Want me to nudge them?"
 // The card shows who gets it (names and "by email" or "by text", never an address), the exact message, and
 // Send / Edit / Not now. Nothing is sent until Send. An event shared only as a link gets a message to copy or share,
-// and can post it to the group chat. "Message the maybes" is the same card with who: "maybe".
+// and can post it to the group chat in one tap (the card is the confirm step: no second dialog anywhere). "Message the maybes" is the same card with who: "maybe".
 // Loaded by public/shell.js for signed-in people on the app, and by public/potto.js when an answer carries a nudge.
 (function () {
   if (window.PLNudge) return;
@@ -107,16 +107,13 @@
     function drawPaste() { const P = K.P, text = K.paste ?? P.paste.text, chat = P.paste.chat, canShare = typeof navigator.share === "function";
       el.innerHTML = `${o.inline ? "" /* Potto's answer above already says it */ : `<p class="pn-lead">You shared this one as a link, so I can't see who has it and I can't message them myself. Here's a nudge to paste where you shared it.</p>`}
         ${K.editing ? `<label class="pn-cap" for="pnBody">The message</label><textarea id="pnBody" maxlength="500">${esc(text)}</textarea>` : `<p class="pn-cap">The message</p><div class="pn-msg"><p class="pn-text">${esc(text)}</p></div>`}
-        ${K.asking ? `<p class="pn-quiet">Post this to the ${chat.going === 1 ? "1 guest" : `${chat.going} guests`} in the group chat?</p><div class="pn-btns"><button type="button" class="pn-b pri" data-post>Post it</button><button type="button" class="pn-b ghost" data-back>Not now</button></div>`
-          : `<div class="pn-btns"><button type="button" class="pn-b pri" data-copy>Copy</button>${canShare ? `<button type="button" class="pn-b" data-share>Share</button>` : ""}${chat ? `<button type="button" class="pn-b" data-chat>Post to the group chat</button>` : ""}${K.editing ? "" : `<button type="button" class="pn-b" data-edit>Edit</button>`}${o.inline ? "" : closeBtn("Close")}</div>`}
+        <div class="pn-btns"><button type="button" class="pn-b pri" data-copy>Copy</button>${canShare ? `<button type="button" class="pn-b" data-share>Share</button>` : ""}${chat ? `<button type="button" class="pn-b" data-post>Post to the group chat (${chat.going} in)</button>` : ""}${K.editing ? "" : `<button type="button" class="pn-b" data-edit>Edit</button>`}${o.inline ? "" : closeBtn("Close")}</div>
         <p class="pn-fine" role="status" data-said style="margin:8px 0 0"></p><p class="pn-err" role="alert"></p>`;
       const ta = el.querySelector("textarea"); if (ta) ta.addEventListener("input", () => { K.paste = ta.value; });
       const cur = () => (K.paste ?? P.paste.text).trim(), said = (t) => { el.querySelector("[data-said]").textContent = t; };
       el.querySelector("[data-copy]")?.addEventListener("click", async () => said((await copy(cur())) ? "Copied. Paste it where you shared the invite." : "I couldn't copy it. Select the message and copy it by hand."));
       el.querySelector("[data-share]")?.addEventListener("click", async () => { try { await navigator.share({ text: cur() }); } catch {} });
       el.querySelector("[data-edit]")?.addEventListener("click", () => { K.editing = true; drawPaste(); el.querySelector("textarea").focus(); });
-      el.querySelector("[data-chat]")?.addEventListener("click", () => { K.asking = true; drawPaste(); el.querySelector("[data-post]").focus(); });
-      el.querySelector("[data-back]")?.addEventListener("click", () => { K.asking = false; drawPaste(); });
       el.querySelector("[data-post]")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; try { await api(chat.url, { text: cur() }); done(`Posted to the group chat for the ${chat.going === 1 ? "1 guest" : `${chat.going} guests`} already in. I didn't message anyone else.`); o.onSent?.({ chat: true }); } catch (x) { e.currentTarget.disabled = false; el.querySelector(".pn-err").textContent = x.message; } });
       el.querySelector("[data-no]")?.addEventListener("click", no); }
     if (K.P) return draw();

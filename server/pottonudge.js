@@ -24,8 +24,12 @@
 // ENCORE_NUDGES_PER_DAY messages per host a day (default 50). From 9pm to 9am where the event is, nudges wait for 9am
 // (runDue, every few minutes outside tests) and the host is told so. Whoever replied in the meantime is dropped.
 //
-// The record: system/nudge-<hash of workspace and event> { ws, eventId, people: { <person id>: { name, keys, ch, at: [ms],
-// queued } }, sends, queue, dismissedAt }. The overview shows "Nudged Tue" beside the person and Potto answers "who did I
+// For a shared "drafts to approve" card: draft(ws, eventId, user, { who }) builds { id, kind, eventId, title, to: [{ name,
+// via }], skipped, body, message, when, actions } and sends nothing; sendDraft(ws, draftId, user, { body }) is the one
+// call that sends (twice is safe: the 3-day gap stops a repeat); history(ws, eventId) lists what went out.
+//
+// The record: system/nudge-<hash of workspace and event> { ws, eventId, people: { <person id>: { name, ch, at: [ms],
+// queued } }, sends, queue, dismissedAt }. It holds names and ids (a hash), never an address or a number. The overview shows "Nudged Tue" beside the person and Potto answers "who did I
 // nudge?" from it. system/nudgeuse-<hash of workspace> { day, n } counts the day's sends.
 //
 // The proactive line ("5 people haven't replied to Dumpling night. Want me to nudge them?") shows on the overview and
@@ -52,6 +56,9 @@ const digits = (p) => String(p || "").replace(/[^\d+]/g, "");
 const b64u = (t) => Buffer.from(String(t), "utf8").toString("base64url");
 const list = (L) => (L.length <= 1 ? L.join("") : L.length === 2 ? L.join(" and ") : `${L.slice(0, -1).join(", ")} and ${L[L.length - 1]}`);
 const people = (n) => (n === 1 ? "1 person" : `${n} people`);
+/** A name for a sentence: the first name, or the whole label for someone known only by a number or a masked address. */
+const short = (name) => { const s = String(name || "").trim(); return /^Number ending |\*\*\*@/.test(s) ? s : first(s) || s || "Someone"; };
+const maskEmail = (e) => { const [a, b] = String(e || "").split("@"); return a && b ? `${a[0]}***@${b}` : ""; };
 const niceDay = (iso) => (ISO.test(iso || "") ? new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "");
 const clock12 = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ""); if (!m) return ""; const h = +m[1] % 12 || 12; return `${h}${m[2] === "00" ? "" : ":" + m[2]}${+m[1] < 12 ? "am" : "pm"}`; };
 /** "Sat, Dec 5 at 7pm" */
@@ -140,7 +147,8 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
     const mail = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true), sms = smsConfig(), brand = isBrandWs(ws);
     const ok = [], skipped = [];
     for (const c of X0.list) {
-      const name = c.full ? String(c.full).trim() : c.phone ? `Number ending ${c.phone.slice(-4)}` : "Someone", fn = first(c.full);
+      // a name, else what the People page shows for someone without one: a masked address or the number's last four
+      const full = /@/.test(String(c.full || "")) ? "" : String(c.full || "").trim(), name = full || (c.email ? maskEmail(c.email) : c.phone ? `Number ending ${c.phone.slice(-4)}` : "Someone"), fn = first(full);
       const base = { pid: c.pid, name, first: fn, email: c.email, phone: c.phone, link: c.link, at: c.at, source: c.source };
       // privacy first: these people are never listed
       let hidden = false; try { hidden = (!!c.email && !!F?.blocked?.(ws, c.email)) || mutedHost(ws, c.email); } catch {} if (hidden) continue;
@@ -188,18 +196,18 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
     const r = await sendSms(smsConfig(), { to: p.phone, text: text + STOP_TAIL });
     return r.ok ? { ok: true } : { ok: false, why: r.stopped ? "replied STOP to texts" : "the text didn't go through" };
   }
-  function mark(ws, id, p, t, r) { const P = r.people[p.pid] || { at: [] }; r.people[p.pid] = { ...P, name: p.name, keys: [p.email, lc(p.name)].filter(Boolean), ch: p.channel, at: [...(P.at || []), t] }; delete r.people[p.pid].queued;
+  function mark(ws, id, p, t, r) { const P = r.people[p.pid] || { at: [] }; r.people[p.pid] = { ...P, name: p.name, ch: p.channel, at: [...(P.at || []), t] }; delete r.people[p.pid].queued; delete r.people[p.pid].keys;
     if (p.source === "plan") { try { const pl = I.plan(ws, id); if (pl.people[p.pid]) { pl.people[p.pid].reminders = [...(pl.people[p.pid].reminders || []), t]; I.save(ws, id, pl); } } catch {} } }
 
   /** What happened, in Potto's words. Only what really went out is called sent. */
   function reportOf({ sent, queued, held, skipped, who }) {
-    const out = [], names = (L) => (L.length <= 3 ? list(L.map((x) => first(x.name) || x.name)) : String(L.length));
+    const out = [], names = (L) => (L.length <= 3 ? list(L.map((x) => short(x.name))) : String(L.length));
     if (sent.length) out.push(`Sent to ${names(sent)}.`);
-    if (queued.length) out.push(`It's after 9pm where your guests are, so ${queued.length === 1 ? `the nudge to ${first(queued[0].name) || queued[0].name} goes` : `${sent.length ? "the other " : ""}${queued.length} nudges go`} out at 9am.`);
+    if (queued.length) out.push(`It's after 9pm where your guests are, so ${queued.length === 1 ? `the nudge to ${short(queued[0].name)} goes` : `${sent.length ? "the other " : ""}${queued.length} nudges go`} out at 9am.`);
     if (!sent.length && !queued.length) out.push(skipped.length || held.length ? "I didn't send anything." : who === "maybe" ? "No one said Maybe, so there was no one to message." : "There was no one to nudge.");
-    if (skipped.length === 1) { const s = skipped[0], n = first(s.name) || s.name; out.push(/^(emails|texts) are off$/.test(s.why) ? `${n} has ${s.why.replace(" are", "")}, so I skipped them.` : `I skipped ${n} (${s.why}).`); }
-    else if (skipped.length) out.push(`I skipped ${list(skipped.slice(0, 6).map((s) => `${first(s.name) || s.name} (${s.why})`))}${skipped.length > 6 ? ` and ${skipped.length - 6} more` : ""}.`);
-    if (held.length) out.push(`You've reached today's limit of ${nudgesPerDay()} nudges, so ${held.length === 1 ? `${first(held[0].name) || held[0].name} is` : `${held.length} are`} still waiting. Ask me again tomorrow.`);
+    if (skipped.length === 1) { const s = skipped[0], n = short(s.name); out.push(/^(emails|texts) are off$/.test(s.why) ? `${n} has ${s.why.replace(" are", "")}, so I skipped them.` : `I skipped ${n} (${s.why}).`); }
+    else if (skipped.length) out.push(`I skipped ${list(skipped.slice(0, 6).map((s) => `${short(s.name)} (${s.why})`))}${skipped.length > 6 ? ` and ${skipped.length - 6} more` : ""}.`);
+    if (held.length) out.push(`You've reached today's limit of ${nudgesPerDay()} nudges, so ${held.length === 1 ? `${short(held[0].name)} is` : `${held.length} are`} still waiting. Ask me again tomorrow.`);
     return out.join(" ");
   }
 
@@ -212,7 +220,7 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
     const host = hostName(ws, u), quiet = inQuiet(t, tz), due = quiet ? nextMorning(t, tz) : 0, r = X0.rec, sent = [], queued = [], held = [], failed = [];
     for (const p of ok) {
       if (capLeft(ws) <= 0) { held.push(p); continue; }
-      if (quiet) { r.queue.push({ pid: p.pid, who, body: line, origin, host, due, by: lc(u?.email) }); r.people[p.pid] = { ...(r.people[p.pid] || { at: [] }), name: p.name, keys: [p.email, lc(p.name)].filter(Boolean), ch: p.channel, queued: due }; spend(ws); queued.push(p); continue; }
+      if (quiet) { r.queue.push({ pid: p.pid, who, body: line, origin, host, due, by: lc(u?.email) }); r.people[p.pid] = { ...(r.people[p.pid] || { at: [] }), name: p.name, ch: p.channel, queued: due }; spend(ws); queued.push(p); continue; }
       const d = await deliver(ws, id, ev, p, { who, body: line, origin, host });
       if (d.ok) { mark(ws, id, p, t, r); spend(ws); sent.push(p); } else failed.push({ ...p, why: d.why }); }
     if (sent.length || queued.length) { r.sends.push({ at: t, who, n: sent.length, queued: queued.length, by: lc(u?.email) }); try { S0(ws).add("outbox", { kind: "nudge", eventId: id, to: [`${sent.length + queued.length} ${sent.length + queued.length === 1 ? "guest" : "guests"}`], subject: line.slice(0, 200), at: t, status: queued.length && !sent.length ? "queued" : "sent" }); } catch {} }
@@ -236,7 +244,9 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
   function state(ws, id, { t = clock() } = {}) {
     const X0 = sortOut(ws, id, "noreply", { t }); if (!X0) return null; const { ev, tz, ok, skipped, rec: r } = X0, g = gate(ws, ev, t);
     const cur = new Set([...ok, ...skipped].map((p) => p.pid));
-    const nudged = Object.entries(r.people).filter(([, P]) => (P.at || []).length || P.queued).map(([pid, P]) => { const last = (P.at || [])[(P.at || []).length - 1] || 0; return { id: pid, name: P.name || "", keys: P.keys || [], n: (P.at || []).length, waiting: cur.has(pid), label: P.queued && !last ? "Nudge goes at 9am" : `Nudged ${dayLabel(last, t, tz)}` }; });
+    // keys let the host's own guest list find the row (their email or name, which the host already holds); worked out now, not stored
+    const keys = new Map(); let mb = []; try { mb = candidates(ws, id, "maybe")?.list || []; } catch {} for (const p of [...ok, ...skipped, ...mb]) keys.set(p.pid, [p.email, lc(p.name || p.full)].filter(Boolean));
+    const nudged = Object.entries(r.people).filter(([, P]) => (P.at || []).length || P.queued).map(([pid, P]) => { const last = (P.at || [])[(P.at || []).length - 1] || 0; return { id: pid, name: P.name || "", keys: keys.get(pid) || [lc(P.name)].filter(Boolean), n: (P.at || []).length, waiting: cur.has(pid), label: P.queued && !last ? "Nudge goes at 9am" : `Nudged ${dayLabel(last, t, tz)}` }; });
     for (const p of [...ok, ...skipped]) if (p.nudges && !nudged.some((n) => n.id === p.pid)) nudged.push({ id: p.pid, name: p.name, keys: [p.email, lc(p.name)].filter(Boolean), n: p.nudges, waiting: true, label: `Nudged ${dayLabel(p.last, t, tz)}` });
     return { eventId: id, waiting: ok.length + skipped.length, can: g ? 0 : ok.length, gate: g, linkOnly: !X0.known, nudged, suggest: suggestOf(ws, id, { t, X0 }) };
   }
@@ -257,8 +267,8 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
 
   /** Potto's context gains the people on the invite plan who haven't replied, and who was nudged (first names only). */
   function enrich(u, ctx) { try { const t = clock(); for (const e of ctx.myEvents || []) { if (e.date < ctx.today) continue; const X0 = sortOut(u.ws, e.id, "noreply", { t }); if (!X0) continue;
-      const names = [...X0.ok, ...X0.skipped].map((p) => first(p.name)).filter(Boolean); e.noReply = [...new Set([...(e.noReply || []), ...names])].slice(0, 40); e.canNudge = gate(u.ws, X0.ev, t) ? 0 : X0.ok.length;
-      const N = Object.values(X0.rec.people).filter((P) => (P.at || []).length).map((P) => ({ name: first(P.name), day: dayLabel(P.at[P.at.length - 1], t, X0.tz) })).filter((x) => x.name); if (N.length) e.nudged = N.slice(0, 40); } } catch {} return ctx; }
+      const names = [...X0.ok, ...X0.skipped].map((p) => p.first).filter(Boolean); e.noReply = [...new Set([...(e.noReply || []), ...names])].slice(0, 40); e.canNudge = gate(u.ws, X0.ev, t) ? 0 : X0.ok.length;
+      const N = Object.values(X0.rec.people).filter((P) => (P.at || []).length).map((P) => ({ name: /\*\*\*@|^Number ending /.test(P.name || "") ? "" : first(P.name), day: dayLabel(P.at[P.at.length - 1], t, X0.tz) })).filter((x) => x.name); if (N.length) e.nudged = N.slice(0, 40); } } catch {} return ctx; }
 
   /** Ask Potto: the nudge asks, answered here from the lists above. Returns null for anything else. */
   function pottoAnswer(u, message, ctx, { origin = "" } = {}) {
@@ -274,23 +284,36 @@ export function makeNudges({ store, C, X, I, F, inviteToken = null, clock: clock
     const hasRec = (e) => Object.values(rec(u.ws, e.id).people).some((P) => (P.at || []).length || P.queued);
     const e = named || (whoN ? mine.find(hasRec) : mine.find(has)) || mine[0], links = [{ label: "Guest list", href: e.guestsLink }];
     if (whoN) { const r = rec(u.ws, e.id), t = clock(), tz = tzOf(u.ws, eventOf(u.ws, e.id)), X0 = sortOut(u.ws, e.id, "noreply"), still = new Set((X0 ? [...X0.ok, ...X0.skipped] : []).map((p) => p.pid));
-      const L = Object.entries(r.people).filter(([, P]) => (P.at || []).length || P.queued).map(([pid, P]) => ({ pid, name: first(P.name) || P.name || "Someone", last: (P.at || [])[(P.at || []).length - 1] || 0, n: (P.at || []).length, queued: P.queued || 0, ch: P.ch }));
-      for (const p of X0 ? [...X0.ok, ...X0.skipped] : []) if (p.nudges && !L.some((x) => x.pid === p.pid)) L.push({ pid: p.pid, name: first(p.name) || p.name, last: p.last, n: p.nudges, queued: 0, ch: p.channel });
+      const L = Object.entries(r.people).filter(([, P]) => (P.at || []).length || P.queued).map(([pid, P]) => ({ pid, name: short(P.name), last: (P.at || [])[(P.at || []).length - 1] || 0, n: (P.at || []).length, queued: P.queued || 0, ch: P.ch }));
+      for (const p of X0 ? [...X0.ok, ...X0.skipped] : []) if (p.nudges && !L.some((x) => x.pid === p.pid)) L.push({ pid: p.pid, name: short(p.name), last: p.last, n: p.nudges, queued: 0, ch: p.channel });
       if (!L.length) return { answer: `You haven't nudged anyone about ${e.title} yet.`, links };
       const bits = L.slice(0, 12).map((x) => `${x.name} (${x.last ? `${dayLabel(x.last, t, tz)}${x.n > 1 ? ", twice" : ""}` : "goes at 9am"})`), back = L.filter((x) => x.last && !still.has(x.pid)).map((x) => x.name);
       return { answer: `For ${e.title} you nudged ${list(bits)}${L.length > 12 ? ` and ${L.length - 12} more` : ""}.${back.length ? ` ${list(back.slice(0, 6))} ${back.length === 1 ? "has" : "have"} replied since.` : ""}`, links }; }
     const P = preview(u.ws, e.id, u, { who: want, origin }); if (!P) return null;
     const action = { id: `nudge-${want}-${e.id}`, type: "nudge", eventId: e.id, who: want, label: "Check and send" };
-    const skippedLine = P.skipped.length ? ` I'd skip ${list(P.skipped.slice(0, 5).map((s) => `${first(s.name) || s.name} (${s.why})`))}${P.skipped.length > 5 ? ` and ${P.skipped.length - 5} more` : ""}.` : "";
+    const skippedLine = P.skipped.length ? ` I'd skip ${list(P.skipped.slice(0, 5).map((s) => `${short(s.name)} (${s.why})`))}${P.skipped.length > 5 ? ` and ${P.skipped.length - 5} more` : ""}.` : "";
     if (P.gate) return { answer: P.gate, links };
-    if (P.count) { const names = P.people.slice(0, 8).map((p) => `${first(p.name) || p.name} ${p.by}`);
+    if (P.count) { const names = P.people.slice(0, 8).map((p) => `${short(p.name)} ${p.by}`);
       return { answer: `${maybe ? `${people(P.count)} said Maybe to ${e.title}` : `I can nudge ${people(P.count)} about ${e.title}`}: ${list(names)}${P.count > 8 ? ` and ${P.count - 8} more` : ""}.${skippedLine} Here's the message. Nothing goes out until you tap Send.${P.quiet ? " It's late where they are, so it would go at 9am." : ""}`, links, actions: [action] }; }
     if (P.linkOnly) return { answer: `You shared ${e.title} as a link, so I can't see who has it and I can't message them myself. Here's a nudge to paste where you shared it${P.paste?.chat ? ", or post it to the group chat for the guests already in" : ""}:\n\n"${P.paste.text}"`, links, actions: [{ ...action, label: "Copy or share it" }] };
     if (maybe) return { answer: P.skipped.length ? `No one I can message right now.${skippedLine}` : `No one said Maybe to ${e.title}.`, links };
     return { answer: P.skipped.length ? `No one I can nudge about ${e.title} right now.${skippedLine}` : `Everyone you invited to ${e.title} has replied.`, links };
   }
 
-  return { gate, candidates, sortOut, preview, send, runDue, state, suggestOf, suggestTop, dismiss, enrich, pottoAnswer, rec, capLeft, setClock: (fn) => { clock = fn || clock0; } };
+  // ---- the same thing as a draft, for a shared "drafts to approve" card (one primary Send, Edit, Not now, then a done state) ----
+  const draftId = (who, id) => `nudge-${who === "maybe" ? "maybe" : "noreply"}-${id}`;
+  const readDraftId = (did) => { const m = /^nudge-(maybe|noreply)-([A-Za-z0-9_-]{1,80})$/.exec(String(did || "")); return m ? { who: m[1], eventId: m[2] } : null; };
+  /** A draft: { id, kind, eventId, title, to: [{ name, via }], skipped: [{ name, why }], body, message, when, actions, blocked }. Building one sends nothing. */
+  function draft(ws, id, u, { who = "noreply", origin = "" } = {}) { const P = preview(ws, id, u, { who, origin }); if (!P) return null;
+    return { id: draftId(who, id), kind: who === "maybe" ? "nudge-maybe" : "nudge", eventId: id, title: who === "maybe" ? `Message the maybes for ${P.event.title}` : `Nudge ${people(P.count)} about ${P.event.title}`,
+      to: P.people.map((p) => ({ name: p.name, via: p.channel })), skipped: P.skipped, body: P.body, message: P.sample?.text || P.paste?.text || "", when: P.quiet ? "9am" : "now", blocked: P.gate || "", linkOnly: P.linkOnly,
+      actions: P.count && !P.gate ? ["send", "edit", "dismiss"] : P.linkOnly ? ["copy", "dismiss"] : ["dismiss"] }; }
+  /** Send a draft by its id, for its owner. Safe to call twice: whoever just got it is inside the 3-day gap, so the second call sends nothing. */
+  async function sendDraft(ws, did, u, { body = "", origin = "" } = {}) { const D = readDraftId(did); if (!D || !eventOf(ws, D.eventId)) return { error: "No such draft.", status: 404 }; return send(ws, D.eventId, u, { who: D.who, body, origin }); }
+  /** What went out for an event, newest first: [{ at, who, sent, queued }], and per person { name, via, at: [ms], queued }. */
+  function history(ws, id) { const r = rec(ws, id); return { sends: r.sends.slice().reverse().map((s) => ({ at: s.at, who: s.who, sent: s.n, queued: s.queued || 0 })), people: Object.values(r.people).map((P) => ({ name: P.name || "", via: P.ch || "", at: P.at || [], queued: P.queued || 0 })) }; }
+
+  return { gate, candidates, sortOut, preview, send, runDue, state, suggestOf, suggestTop, dismiss, enrich, pottoAnswer, rec, capLeft, draft, sendDraft, history, draftId, setClock: (fn) => { clock = fn || clock0; } };
 }
 
 export function mountPottoNudge(app, { store, small, currentUser, C, X, publicOrigin = () => "" }) {
@@ -308,6 +331,8 @@ export function mountPottoNudge(app, { store, small, currentUser, C, X, publicOr
     if (b.confirm !== true) return bad(res, "Check who gets it and the message, then tap Send.", 400, "confirm_required");
     const r = await N.send(H.ws, H.id, H.u, { who: whoOf(b.who), body: typeof b.body === "string" ? b.body : "", origin: origin(req) }); if (r.error) return bad(res, r.error, r.status, r.code);
     res.json({ ...r, state: N.state(H.ws, H.id) }); });
+  app.get("/api/host/nudge/:id/draft", (req, res) => { const H = host(req, res); if (!H) return; res.json({ draft: N.draft(H.ws, H.id, H.u, { who: whoOf(req.query.who), origin: origin(req) }) }); });
+  app.get("/api/host/nudge/:id/history", (req, res) => { const H = host(req, res); if (!H) return; res.json(N.history(H.ws, H.id)); });
   app.post("/api/host/nudge/:id/dismiss", small, (req, res) => { const H = host(req, res); if (!H) return; res.json(N.dismiss(H.ws, H.id)); });
   if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => N.runDue().catch((e) => console.warn("[nudges]", e?.message)), 5 * 60e3); t.unref?.(); }
   return N;

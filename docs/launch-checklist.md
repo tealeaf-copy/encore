@@ -227,6 +227,7 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `ENCORE_POTTO_TEXT` | No | `0` turns Potto by text off even with Twilio set (sign-in codes still go out). See docs/potto-text.md. |
 | `ENCORE_WEATHER` | No | The weather line on the guests' morning-of card (server/delightafter.js). `open-meteo` reads Open-Meteo's free forecast for the area's centre (never the address) at the start time, no key needed; allow `api.open-meteo.com` if outbound traffic is limited. `fake` is for tests and demos. Unset: no weather line at all. |
 | `ENCORE_INVITES_PER_MEMBER` | No | Friend invites each member can text (default 5). |
+| `ENCORE_NUDGES_PER_DAY` | No | Nudges to people who haven't replied, per host a day (default 50). Each person gets two at most per event, three days apart, never within 2 hours of the start. See server/pottonudge.js. |
 | `TWILIO_WHATSAPP_FROM` | No | The WhatsApp sender number through Twilio. Turns on Potto by WhatsApp. |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_NUMBER` | No | Meta's WhatsApp Cloud API instead of Twilio. |
 | `POTTO_WA_TEMPLATE_LANG` | No | Language code for WhatsApp templates on the Cloud API (default `en_US`). |

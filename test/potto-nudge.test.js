@@ -215,6 +215,14 @@ test("Ask Potto: the nudge is an action to confirm, never a send; remind everyon
   const sm = await send(zo, "ask1", { who: "maybe" }); assert.equal(sm.sent, 1); assert.equal(sm.report, "Sent to Mo.");
   const mm = mailTo("mo.may@example.com").pop(); assert.equal(mm.subject, "Still a maybe for Noodle club?"); assert.match(mm.text, /Unsubscribe: /);
   assert.equal(mailTo("ivy.ask@example.com").filter((m) => /maybe/.test(m.subject)).length, 0, "only the maybes");
+  // the same nudge as a draft for a shared card: who and how, the message, one Send; sending by id twice sends once
+  const d = (await getJ("/api/host/nudge/ask1/draft", zo.cookie)).draft;
+  assert.deepEqual([d.id, d.kind, d.eventId, d.title, d.when, d.actions], ["nudge-noreply-ask1", "nudge", "ask1", "Nudge 2 people about Noodle club", "now", ["send", "edit", "dismiss"]]);
+  assert.deepEqual(d.to, [{ name: "Ivy Ask", via: "email" }, { name: "Jon Ask", via: "email" }]); assert.match(d.message, /^Hi Ivy, Zoe here\. Are you in for Noodle club/); assert.equal(fakeOutbox.length, m0 + 1, "building a draft sends nothing");
+  const s1 = await N.sendDraft(zo.ws, d.id, { name: "Zoe Ask", email: zo.email }, { origin: srv.base }), s2 = await N.sendDraft(zo.ws, d.id, { name: "Zoe Ask", email: zo.email }, { origin: srv.base });
+  assert.equal(s1.sent, 2); assert.equal(s2.sent, 0); assert.equal(mailTo("ivy.ask@example.com").filter((m) => /^Are you in/.test(m.subject)).length, 1);
+  assert.equal((await N.sendDraft(zo.ws, "nudge-noreply-nope", { name: "Zoe" })).status, 404);
+  const hi = await getJ("/api/host/nudge/ask1/history", zo.cookie); assert.deepEqual(hi.sends.map((x) => [x.who, x.sent]), [["noreply", 2], ["maybe", 1]]); assert.ok(!JSON.stringify(hi).includes("@"), "names and channels, no addresses");
   // remind everyone who's in: the reminder that already exists (the group chat, on Send)
   const rm = await ask(zo, "Remind everyone who's in");
   assert.match(rm.answer, /Here's a reminder for Noodle club\. It goes to the 1 guest in the group chat once you tap Send\./); assert.match(rm.answer, /my reminder the day before/);
@@ -347,12 +355,12 @@ test("browser, 390 touch: a link-only event gets a message to copy or share, and
     const card = page.locator("#ptSheet [data-nk]"); await card.locator("[data-copy]").waitFor({ timeout: 20000 });
     assert.match(await page.locator("#ptSheet .pt-po").last().innerText(), /^You shared Link picnic as a link, so I can't see who has it and I can't message them myself\./); assert.equal(await card.locator(".pn-lead").count(), 0, "said once");
     const msg = (await card.locator(".pn-text").innerText()).trim(); assert.match(msg, /^Hi all, Lin here\. Are you in for Link picnic on .+\? One tap to reply: http\S+\/e\/linkw$/);
-    assert.equal(await card.locator(".pn-b.pri").count(), 1); assert.ok((await card.locator(".pn-btns button").allInnerTexts()).map((x) => x.trim()).includes("Post to the group chat"));
+    assert.equal(await card.locator(".pn-b.pri").count(), 1); assert.ok((await card.locator(".pn-btns button").allInnerTexts()).map((x) => x.trim()).includes("Post to the group chat (1 in)"));
     for (const b of await card.locator(".pn-btns button").all()) assert.ok((await b.boundingBox()).height >= 44);
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.waitForTimeout(250); await page.screenshot({ path: `${SHOTS}/w390-9-link-only.png` }); }
     await card.locator("[data-copy]").click(); await page.locator("#ptSheet [data-said]", { hasText: "Copied" }).waitFor(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), msg);
-    // the group chat is a send, so it asks first
-    await card.locator("[data-chat]").click(); assert.match(await card.locator(".pn-quiet").innerText(), /^Post this to the 1 guest in the group chat\?$/); await card.locator("[data-back]").click(); await card.locator("[data-chat]").click(); await card.locator("[data-post]").click();
+    // the group chat: one tap on a button that says who gets it
+    await card.locator("[data-post]").click();
     await card.locator(".pn-done").waitFor(); assert.equal((await card.locator(".pn-done").innerText()).trim(), "Posted to the group chat for the 1 guest already in. I didn't message anyone else.");
     assert.equal(fakeOutbox.length, m0, "no emails"); assert.deepEqual(errs, []);
   } finally { await ctx.close(); }

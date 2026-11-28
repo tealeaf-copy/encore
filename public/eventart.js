@@ -73,11 +73,13 @@
     // it still draws something baked or a market stall, never the party scene (a cake called "Pandan" drew a party hat)
     if (e.drop || e.preorder || (Array.isArray(e.orderItems) && e.orderItems.length)) { const names = (Array.isArray(e.orderItems) ? e.orderItems : Array.isArray(e.items) ? e.items : []).map((x) => (x && x.name) || "").join(" ").toLowerCase(), txt = `${title} ${names}`;
       for (const [re, k] of WORDS) if (re.test(names)) add(k);
-      if (!out.some((k) => FOOD_KINDS.includes(k))) { const k = SAVORY.test(txt) ? "cook" : SWEET.test(txt) ? "bake" : out.length && out[0] !== "party" ? "" : names ? "bake" : "market"; if (k) out.unshift(k); } }
+      // things that aren't food (mugs, prints, candles) draw the shop: a paper bag with a tag, not something baked
+      if (!out.some((k) => FOOD_KINDS.includes(k))) { const k = SAVORY.test(txt) ? "cook" : SWEET.test(txt) ? "bake" : GOODS.test(txt) ? "shop" : out.length && out[0] !== "party" ? "" : names ? "bake" : "market"; if (k) out.unshift(k); } }
     return out; }
   const FOOD_KINDS = ["bake", "cook", "dumpling", "taco", "coffee", "tea", "wine", "dinner", "brunch", "potluck"];
   const SWEET = /pandan|honeycomb|chiffon|kaya|\bjam\b|brownie|\btart|flan|pudding|custard|granola|dessert|sweet|treat|\bbun|loaf|bagel|focaccia|toast|banh|bánh|chocolate|caramel|macaron|scone|muffin|tiramisu|cheesecake|ube\b|matcha|snack/;
   const SAVORY = /kimchi|chil[li]|crisp\b|sauce|noodle|pickle|ferment|tofu|\brice\b|curry|sando|sandwich|\bpho\b|broth|dumpling|empanada|tamale|lasagn|meal ?prep|bento|jerky|sausage|cheese\b/;
+  const GOODS = /\bmugs?\b|\bcups?\b|tumbler|\bbowls?\b|\bplates?\b|\bvases?\b|planter|ceramic|pottery|stoneware|\bprints?\b|poster|\bzines?\b|riso|sticker|postcard|\bcards?\b|notebook|\bbooks?\b|candle|incense|\bsoaps?\b|\btotes?\b|\bbags?\b|t-?shirt|\btees?\b|hoodie|sweatshirt|\bhats?\b|\bcaps?\b|beanie|scar(?:f|ves)|\bsocks?\b|jewel|earring|necklace|bracelet|\brings?\b|\bpins?\b|patch(?:es)?\b|keychain|magnet|blanket|quilt|\byarn\b|\bframes?\b|painting|\bphotos?\b|vinyl|record\b|cassette|merch|\bplants?\b|bouquet|flowers?\b|\bpots?\b|\btoys?\b|\bpuzzles?\b|ornament/;
   function kindOf(e = {}) { return kindsOf(e)[0] || "party"; }
   const RELATED = { run: ["walk", "hike", "bike", "yoga"], walk: ["hike", "picnic", "run"], hike: ["walk", "picnic", "run"], bike: ["run", "picnic"], yoga: ["tea", "garden", "walk"], swim: ["picnic", "yoga"],
     bake: ["coffee", "tea", "brunch"], coffee: ["bake", "tea", "brunch"], tea: ["bake", "coffee", "book"], dinner: ["wine", "cook", "potluck"], cook: ["dinner", "potluck", "bake"], taco: ["wine", "party", "potluck"], dumpling: ["cook", "tea", "potluck"], potluck: ["dinner", "cook", "picnic"], brunch: ["coffee", "bake"], wine: ["dinner", "music"], picnic: ["wine", "games", "walk"],
@@ -99,6 +101,9 @@
   for (const w of WORDS) if (w[1] === "games" && /\|board\|/.test(w[0].source)) w[0] = new RegExp(w[0].source.replace(/\|board\|/, "|\\bboard|"));
   Object.assign(RELATED, { laptop: ["tech", "coffee", "talk"], controller: ["games", "screen", "party"], screen: ["controller", "movie", "games"] });
   Object.assign(LABEL, { laptop: "Hack night", controller: "Game night", screen: "Watch party" }); Object.assign(TONE, { laptop: "mint", controller: "lilac", screen: "sky" });
+  // a drop of things that aren't food: a paper bag on its handles with a price tag, and a small parcel beside it
+  ART.shop = (A) => `<path ${S} d="M26 134h150"/><path ${S} d="M70 60c0-34 40-34 40 0"/><path ${W} d="M52 60h76l8 74H44z"/><path ${F(A)} d="M48 98h84l3 22H46z"/><path ${S} d="M52 60l10 12h56l10-12"/><path ${S} d="M112 50c16-8 30-2 36 12"/><rect ${F(A)} x="138" y="60" width="24" height="34" rx="5" transform="rotate(16 150 77)"/><circle ${W} cx="152" cy="69" r="3.5"/><rect ${W} x="142" y="110" width="34" height="24" rx="3"/><path ${S} d="M159 110v24"/><path ${S} d="M40 42l-6-8M30 58l-10-2M56 30l-2-10"/>`;
+  Object.assign(RELATED, { shop: ["craft", "giveaway", "paint"] }); Object.assign(LABEL, { shop: "Shop" }); Object.assign(TONE, { shop: "sand" });
   // the kinds on "What are you planning?" (public/canvas.js) that had no drawing of their own: existing art only
   WORDS.push([/\bpop-?ups?\b|\bsale\b|\bbazaar\b/, "market"], [/\bsummit\b|conference|\bforum\b|offsite/, "talk"], [/\btrip\b|getaway|weekend away|\bcabin\b|road ?trip/, "pin"]);
   Object.assign(LABEL, { pin: "Trip" }); if (!TONE.pin) TONE.pin = "sky";

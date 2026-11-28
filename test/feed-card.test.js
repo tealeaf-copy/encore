@@ -24,8 +24,14 @@ test("a drop with no photo draws food or a stall, never the party scene", () => 
     { title: "Birthday party box", drop: true, orderItems: [{ name: "Kimchi jar" }] }, { title: "Small batch", orderItems: [{ name: "Jar no. 4" }] }, { title: "Weekend drop", drop: true }]) {
     const kinds = EA.kindsOf(e), s = EA.spec({ ...e, id: "x1" });
     assert.notEqual(kinds[0], "party", JSON.stringify(e)); assert.ok(FOOD.includes(kinds[0]), `${e.title}: ${kinds[0]}`); assert.ok(FOOD.includes(s.kind), `${e.title} spec: ${s.kind}`); }
+  // a drop of things that aren't food draws the shop (a bag with a tag): never baked goods, never the party scene
+  for (const e of [{ title: "Studio seconds", drop: true, orderItems: [{ name: "Speckled mug" }, { name: "Small bowl" }] }, { title: "Riso prints", drop: true }, { title: "Winter candles", drop: true, orderItems: [{ name: "Fig candle" }] }, { title: "Party tote", preorder: true, orderItems: [{ name: "Tote bag" }] }]) {
+    const kinds = EA.kindsOf(e), s = EA.spec({ ...e, id: "x2" }); assert.equal(kinds[0], "shop", JSON.stringify(e)); assert.equal(s.kind, "shop"); assert.ok(!s.scene.some((k) => FOOD.includes(k) || k === "party"), `${e.title}: ${s.scene}`); }
+  assert.match(EA.drawing("shop", "#29489A"), /^<svg [^>]*viewBox="0 0 200 150"/); assert.equal(EA.labelOf("shop"), "Shop");
+  // food words still win: a mug cake is cake, a brownie tin is brownies
+  assert.equal(EA.kindsOf({ title: "Mug cakes", drop: true })[0], "bake"); assert.equal(EA.kindsOf({ title: "Friday box", drop: true, orderItems: [{ name: "Brownie tin" }, { name: "Mug" }] })[0], "bake");
   // an event that is not a drop keeps its own picture
-  assert.equal(EA.kindsOf({ title: "Evening 5k" })[0], "run");
+  assert.equal(EA.kindsOf({ title: "Evening 5k" })[0], "run"); assert.equal(EA.kindsOf({ title: "Mug painting night" })[0], "paint");
 });
 
 const open = async (pw, browser, { w, h, phone, out = false }) => {

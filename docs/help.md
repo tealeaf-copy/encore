@@ -221,6 +221,13 @@ Questions: Does Potto send reminders? | How do I turn off reminders?
 Potto reminds guests who said yes the day before, by email, and by text when they gave a phone and texting is set up. The Remind guests the day before switch on your event is on by default; turn it off for that event if you'd rather not. You get a note in your notifications once they're sent.
 [Open my event](#do:open)
 
+## Nudge people who haven't replied
+
+Keywords: nudge, nudge guests, haven't replied, no reply, not replied, chase, follow up, remind people who haven't replied, message the maybes, maybes
+Questions: How do I nudge people who haven't replied? | Can Potto chase replies for me? | Who can Potto nudge?
+Ask Potto to "nudge the people who haven't replied", or tap Nudge on your event's overview. Potto shows who gets it, by email or by text, and the exact message. You can edit it, and nothing goes out until you tap Send. Potto can only nudge people you invited through Pottery Lab who haven't replied, never anyone who unsubscribed or replied STOP. Each person gets two nudges at most per event, at least three days apart, and none in the last 2 hours before it starts. After 9pm a nudge waits until 9am. If you only shared a link, Potto gives you a message to paste where you shared it. "Message the maybes" works the same way.
+[Open my event](#do:open)
+
 ## Weekly, monthly and courses
 
 Keywords: weekly, monthly, weekly events, monthly events, repeating events, repeat, every week, every month, recurring, run club, book club, next one, next date, course, sessions, class pass, drop-in, drop in

@@ -110,9 +110,9 @@ test("Replies: one level, the person answered and the others in that thread hear
   let M = await inbox("maya"); assert.equal(M.filter((n) => /replied to your comment/.test(n.text)).length, 1); assert.match(M.find((n) => /replied/.test(n.text)).text, /^Jun replied to your comment on Chess in the park: "I have two\."/);
   assert.match(M.find((n) => /replied/.test(n.text)).link, /^\/post\/e\/fsChess#c-/);
   assert.equal((await inbox("jun")).filter((n) => /replied/.test(n.text)).length, 0, "not for your own reply");
-  // a reply to a reply joins the first comment's replies; Jun hears "also replied", Maya's note is batched
+  // a reply to a reply joins the first comment's replies; Jun, the person answered, hears "replied to your comment", Maya's note is batched
   const r2 = await say("noor", "e:fsChess", "I'll bring one too.", r1.comment.id); assert.equal(r2.comment.re, m.comment.id);
-  assert.match((await inbox("jun")).find((n) => /replied/.test(n.text))?.text || "", /^Noor also replied on Chess in the park/);
+  assert.match((await inbox("jun")).find((n) => /replied/.test(n.text))?.text || "", /^Noor replied to your comment on Chess in the park/);
   assert.equal((await inbox("maya")).filter((n) => /replied/.test(n.text)).length, 1, "one note per thread an hour");
   // the host hears about the comment once, and not twice when a reply was to the host
   assert.ok((await inbox("rosa")).some((n) => /commented on Chess in the park/.test(n.text)));

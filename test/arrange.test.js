@@ -124,7 +124,7 @@ test("at 1280 with a mouse and a keyboard: drag, move up and down, hide and brin
     const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push(m.text()); }); p.on("requestfailed", (r) => { if (r.url().startsWith(srv.base) && !/ERR_ABORTED/.test(r.failure()?.errorText || "")) errs.push("failed " + r.url()); });
     await p.goto(srv.base + "/@" + S.handle); await p.waitForTimeout(1200);
     // the door is in Edit page
-    await p.click(".store-fab:not(.shop-fab)"); await p.click(".store-pane .pla-door button"); await p.waitForSelector('[data-pl-sec="past"] .pla-chrome', { timeout: 15000 }); await p.waitForTimeout(600);
+    await p.click("#topEdit"); await p.click(".store-pane .pla-door button"); await p.waitForSelector('[data-pl-sec="past"] .pla-chrome', { timeout: 15000 }); await p.waitForTimeout(600);
     // mouse drag by the grip: Past events above Kudos
     let o = await order(p); const pastAt = o.indexOf("past"), kudosAt = o.indexOf("kudos"); assert.ok(pastAt > kudosAt);
     await p.evaluate(() => document.querySelector('[data-pl-sec="past"]').scrollIntoView({ block: "center" })); await p.waitForTimeout(200);

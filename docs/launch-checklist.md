@@ -212,6 +212,8 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `ENCORE_SIGNUP_PER_HOUR` | No | Sign-ups per address per hour. |
 | `ENCORE_TEAMUP_WEEKLY` | No | Team up requests one host can send in 7 days (default 5). server/collab.js. |
 | `ENCORE_RSVP_PER_HOUR`, `ENCORE_RSVP_IP_PER_HOUR` | No | Replies per event and per address per hour. Raise them for a very big event. |
+| `ENCORE_DM_PER_HOUR`, `ENCORE_DM_PHOTOS_PER_HOUR` | No | Direct messages one person can send in an hour (default 200) and photos in them (default 30). server/dm.js. |
+| `ENCORE_DM_NEW_PER_DAY`, `ENCORE_DM_REQUESTS_PER_DAY` | No | New conversations one person can start in a day (default 30), and how many of those can be requests to people they have no tie to (default 8). Lower them if strangers get spammed. |
 | `ENCORE_CONTACT_PER_HOUR`, `ENCORE_CONTACT_MATCH_PER_HOUR`, `ENCORE_CONTACT_MATCH_PER_IP_HOUR` | No | The contact form, and finding friends from contacts. |
 | `ENCORE_NOTE_PER_HOUR`, `ENCORE_NOTE_IP_PER_HOUR` | No | Notes to hosts. |
 | `ENCORE_CONFNOM_PER_HOUR`, `ENCORE_CWM_PER_HOUR`, `ENCORE_INTEREST_PER_IP_HOUR` | No | Nominations, "Come with me?" asks, and interest sign-ups. |

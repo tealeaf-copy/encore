@@ -29,7 +29,7 @@ test("sharekit.js: a clean global, three formats with their own actions, plain c
   for (const t of ["Sending to someone?", "Tap to copy", "Share flyer", "Post to socials or send with the link.", "Scan to reply"]) assert.ok(s.includes(t), t);
   const rows = s.slice(s.indexOf("const ROWS = {"), s.indexOf("let at = -1"));
   const labels = (k) => [...rows.slice(rows.indexOf(k + ": [")).split("]],")[0].matchAll(/\["([A-Z][A-Za-z ]+)", IC\./g)].map((m) => m[1]);
-  assert.deepEqual(labels("link"), ["Copy link", "Messages", "Instagram", "WhatsApp", "More"]);
+  assert.deepEqual(labels("link"), ["Copy link", "Messages", "Instagram", "WhatsApp", "Chats", "More"]); // Chats: as a card in a direct message, signed in only (public/dmstart.js)
   assert.deepEqual(labels("flyer"), ["Save", "Messages", "Stories", "More"]);
   assert.deepEqual(labels("qr"), ["Save", "Messages", "More"]);
   assert.match(s, /c\.width = 1080; c\.height = 1920/, "the flyer is 1080x1920"); assert.match(s, /c\.width = 1200; c\.height = 630/, "the link card is 1200x630");

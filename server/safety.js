@@ -26,8 +26,8 @@ export const textHash = (t) => sha(String(t || "").trim().replace(/\s+/g, " ").t
 const clean = (s, n) => String(s ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, n);
 
 export const REASONS = { spam: "Spam or scam", hate: "Hate or harassment", sexual: "Sexual content", violence: "Violence or threats", unsafe: "Unsafe event or person", private: "Shares private info", fake: "Fake or misleading", other: "Something else" };
-const TYPES = ["post", "moment", "kudos", "review", "host", "person", "event", "comment", "other"];
-const TARGET_RE = /^(person|host|post|moment|text|event|comment|other):[^\s]{1,300}$/;
+const TYPES = ["post", "moment", "kudos", "review", "host", "person", "event", "comment", "message", "other"];
+const TARGET_RE = /^(person|host|post|moment|text|event|comment|dm|other):[^\s]{1,300}$/;
 
 // ---------- the text filter ----------
 // Whole words only (so "Scunthorpe" and "classic" pass), with common letter swaps (f*ck, sh1t, @ss).
@@ -135,9 +135,12 @@ export function mountSafety(app, { store, small, currentUser, X, publicOrigin, e
     if ((type === "kudos" || type === "review") && !target && text) target = "text:" + textHash(text);
     if (!TARGET_RE.test(target)) return res.status(400).json({ code: "invalid", message: "What are you reporting?" });
     const u0 = viewer(req); if (u0 && verifyRequired() && !emailVerified(u0.email)) return res.status(403).json({ code: "verify_email", message: "Confirm your email first, then you can report. Tap the link we sent you." });
+    // a direct message or conversation ("dm:<thread>[:<message>]", server/dm.js): only its two people can report it, and
+    // the last messages ride along so the team can read what happened without opening anyone's inbox
+    let dm = null; if (target.startsWith("dm:") || type === "message") { dm = u0 ? app.locals.dm?.reportContext?.(u0.email, target) : null; if (!dm) return res.status(404).json({ code: "not_found", message: "This conversation isn't here." }); }
     const u = u0, from = u ? lc(u.email) : EMAIL_RE.test(lc(b.email)) ? lc(b.email) : "", who = u ? "u:" + sha(lc(u.email)) : "ip:" + sha(req.ip || "?");
     const id = crypto.randomBytes(9).toString("base64url");
-    const r = { kind: "report", id, type, target, reason, note: clean(b.note, 1000), text, name: clean(b.name, 120), url: /^\/[^/]/.test(String(b.url || "")) ? clean(b.url, 300) : "", from, who, at: Date.now(), status: "open" };
+    const r = { kind: "report", id, type, target, reason, note: clean(b.note, 1000), text: dm ? dm.text : text, name: dm ? dm.name : clean(b.name, 120), ...(dm ? { messages: dm.messages, about: dm.about } : {}), url: dm ? "" : /^\/[^/]/.test(String(b.url || "")) ? clean(b.url, 300) : "", from, who, at: Date.now(), status: "open" };
     store.set("system/report-" + id, r);
     // three different people on the same thing: hide it now, a person looks next
     // launch review: only reports from verified accounts at least 7 days old count toward hiding; throwaway accounts and
@@ -169,6 +172,7 @@ export function mountSafety(app, { store, small, currentUser, X, publicOrigin, e
       const owner = ws && getWorkspace(ws)?.ownerEmail; if (owner) X?.notify?.(owner, { kind: "moderation", key: "hid-" + target, text: `${what} was hidden after several reports (${reason}). A person reviews it within 24 hours.`, link: "/community#contact" }); } catch {} }
   function afterHide(target, hidden) {
     if (target.startsWith("moment:")) { const url = target.slice(7); for (const ws of allWorkspaceIds()) { const St = scopeStore(store, ws); for (const d of St.list("moments")) if (d.data?.url === url) St.update("moments/" + d.id, hidden ? { hidden: true, modHidden: Date.now() } : { hidden: false, modHidden: null }); } }
+    if (target.startsWith("dm:")) { try { app.locals.dm?.modRemove?.(target, hidden); } catch {} } // a reported message reads "Message removed" for both
     try { X?.bust?.(); } catch {}
   }
   const PAGE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "moderation.html");

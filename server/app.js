@@ -81,6 +81,7 @@ import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: 
 import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.js"; import { mountInvites } from "./invites.js"; // People, seats by audience and the invite plan (server/people.js, seats.js, invites.js) // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { makeReplyDigest } from "./replydigest.js"; // the host's reply summary: one email per event every few hours (server/replydigest.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
+import { mountDM } from "./dm.js"; // direct messages, in the same Chats list (server/dm.js)
 import { mountSurprise } from "./surprise.js"; import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountTrends } from "./trends.js"; // Potto's idea engine: platform trends, trend notes, Potto's ideas (server/trends.js)
 import { mountInspiration } from "./inspiration.js"; // inspiration cards in the feed (server/inspiration.js)
@@ -316,7 +317,7 @@ function sseStart(res) {
 export function createApp({ store, dataDir }) {
   const C = makeCommunity(store);
   const assetsDirFor = () => assetsDir;
-  const X = makeSocial(store, { C, saveBlob: async (body, contentType, ws) => { const id = randomId(), meta = { id, url: "/_blob/" + id, sizeBytes: body.length, contentType, createdAt: Date.now(), ws }; await fsp.writeFile(path.join(assetsDirFor(), id), body); await fsp.writeFile(path.join(assetsDirFor(), id + ".json"), JSON.stringify(meta)); return meta; } });
+  const X = makeSocial(store, { C, saveBlob: async (body, contentType, ws, extra = null) => { const id = randomId(), meta = { id, url: "/_blob/" + id, sizeBytes: body.length, contentType, createdAt: Date.now(), ws, ...(extra && typeof extra === "object" ? extra : {}) }; await fsp.writeFile(path.join(assetsDirFor(), id), body); await fsp.writeFile(path.join(assetsDirFor(), id + ".json"), JSON.stringify(meta)); return meta; } });
   // Every request works in one workspace's slice of the store (see server/workspaces.js).
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
@@ -605,7 +606,7 @@ export function createApp({ store, dataDir }) {
   app.get("/work", (req, res) => sendStatic(res, "landing.html", "<p>Page missing.</p>"));
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
   app.get("/plans", (req, res) => sendStatic(res, "plans.html", "<p>Plans page missing.</p>"));
-  app.get(["/chats", "/chats/:eventId"], (req, res) => sendStatic(res, "chats.html", "<p>Chats page missing.</p>")); // group chats (server/chat.js, public/chats.html)
+  app.get(["/chats", "/chats/:eventId", "/chats/dm/:id"], (req, res) => sendStatic(res, "chats.html", "<p>Chats page missing.</p>")); // group chats (server/chat.js, public/chats.html)
   app.get("/quiz", (req, res) => sendStatic(res, "quiz.html", "<p>Quiz page missing.</p>"));
   app.get("/teams", (req, res) => sendStatic(res, "teams.html", "<p>Teams page missing.</p>"));
   app.get("/gifts", (req, res) => sendStatic(res, "gifts.html", "<p>Gifts page missing.</p>"));
@@ -790,6 +791,7 @@ export function createApp({ store, dataDir }) {
     if (!/^[A-Za-z0-9]{20}$/.test(id)) return res.status(404).end();
     try {
       const meta = JSON.parse(await fsp.readFile(path.join(assetsDir, id + ".json"), "utf8"));
+      if (meta.dm) return res.status(404).end(); // a photo in a direct message: only its two people, through /api/dm/:id/media (server/dm.js)
       const type = String(meta.contentType || "").split(";")[0].trim().toLowerCase();
       // Files stored before uploads were restricted may have any type: those are served as plain downloads.
       res.set({ "Content-Type": UPLOAD_OK(type) ? meta.contentType : "application/octet-stream", "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": BLOB_CSP, "Cross-Origin-Resource-Policy": "same-origin" });
@@ -836,6 +838,9 @@ export function createApp({ store, dataDir }) {
   app.locals.replyDigest = RD;
   if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => RD.run().catch((e) => console.warn("[replydigest]", e?.message)), 20 * 60e3); t.unref?.(); }
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
+  mountDM(app, { store, small, currentUser, C, X, isAdmin, publicOrigin: (req) => originOf(req), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }), // direct messages (server/dm.js)
+    blobs: { save: (...a) => X.saveBlob(...a), read: async (id) => { try { return { meta: JSON.parse(await fsp.readFile(path.join(assetsDir, id + ".json"), "utf8")), path: path.join(assetsDir, id) }; } catch { return null; } },
+      remove: async (ids) => { for (const id of ids || []) if (/^[A-Za-z0-9]{20}$/.test(id)) { await fsp.rm(path.join(assetsDir, id), { force: true }); await fsp.rm(path.join(assetsDir, id + ".json"), { force: true }); } } } });
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
   mountFeedComments(app, { small, currentUser, X, sendHtml: (req, res, html) => sendText(req, res, html) }); // ---- comments on feed cards and the post page (server/feedcomments.js), next to the feed blend it reads ----
   mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X });

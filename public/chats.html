@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Chats · Pottery Lab</title>
-<meta name="description" content="The group chats for the events you're in.">
+<meta name="description" content="Group chats for the events you're in, and messages with one person.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#EFEBE2">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -9,7 +9,8 @@
 </head><body class="pl-chats">
 <div class="ch-app" id="chApp">
   <aside class="ch-list" id="chList" aria-label="Chats">
-    <div class="ch-lhead"><h1>Chats</h1>
+    <div class="ch-lhead"><div class="ch-ltop"><a class="ch-icon" id="chReqBack" href="/chats" aria-label="Back to chats" hidden><svg class="ch-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg></a><h1 id="chHead">Chats</h1>
+      <button type="button" class="ch-btn ch-newbtn" id="chNew" hidden><svg class="ch-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/></svg>New message</button></div>
       <label class="ch-search"><svg class="ch-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg><span class="ch-sr">Search chats</span><input id="chQ" type="search" placeholder="Search" autocomplete="off" enterkeyhint="search"></label></div>
     <div class="ch-rows" id="chRows" data-calm="chats"><div class="ch-skel" data-calm-wait></div><div class="ch-skel" data-calm-wait></div><div class="ch-skel" data-calm-wait></div></div>
   </aside>

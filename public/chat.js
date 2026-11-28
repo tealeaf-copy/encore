@@ -1,6 +1,8 @@
 // Group chats, in the browser (/chats and /chats/<event>; server/chat.js). The inbox on the left (or the whole screen on a
 // phone), the thread on the right. Guests without an account are known by the replies this browser holds
 // (localStorage "encore-rsvp-<event>": rid and code) or by an emailed link (#reply=<rid>.<token>).
+// Direct messages (server/dm.js) live in the same list and the same thread view: their ids read "dm/<thread>", their
+// pages /chats/dm/<thread>, and /chats/dm/requests lists message requests. apiOf() picks the right API for an id.
 // Polling, not sockets: every 3 seconds while the tab is visible, slowing to 15 when nothing changes, never when hidden.
 (function () {
   if (window.__plChats) return; window.__plChats = 1;
@@ -14,7 +16,7 @@
     reply: I('<path d="M10 7 5 12l5 5"/><path d="M5.5 12H14a5 5 0 0 1 5 5v1"/>'), more: I('<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>'),
     smile: I('<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.4 2.2 2 3.5 2s2.5-.6 3.5-2M9 9.5v.01M15 9.5v.01"/>'), mute: I('<path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H8"/><path d="M10 20.5a2 2 0 0 0 4 0M4 4l16 16"/>'),
     bell: I('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'), lock: I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>'),
-    x: I('<path d="M6 6l12 12M18 6 6 18"/>'), flag: I('<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>'), block: I('<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>'), trash: I('<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>'),
+    plus: I('<path d="M12 5v14M5 12h14"/>'), x: I('<path d="M6 6l12 12M18 6 6 18"/>'), flag: I('<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>'), block: I('<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>'), trash: I('<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>'),
     copy: I('<rect x="8" y="8" width="11" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h1"/>'), cal: I('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
     help: I('<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.1-2.4 3.6M12 17.2v.1"/>'), open: I('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>'), down: I('<path d="M12 5v13M6 12.5l6 6 6-6"/>'), people: I('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1.2-3.5 3.6-5.2 6.5-5.2s5.3 1.7 6.5 5.2"/><circle cx="17" cy="9.5" r="2.8"/><path d="M16 14.6c2.6 0 4.5 1.5 5.5 4.4"/>'),
   };
@@ -51,37 +53,56 @@
     return 1.05 / (L(a) + 0.05) >= 4.5 ? a : "#29489A"; }
 
   // ---- routing: /chats and /chats/<event> ----
-  const route = { id: (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(location.pathname) || [])[1] || "" };
-  function go(id, push = true) { route.id = id || ""; if (push) history.pushState({ chat: route.id }, "", route.id ? "/chats/" + encodeURIComponent(route.id) : "/chats"); document.body.classList.toggle("ch-open", !!route.id); paintRows(); openThread(); }
-  addEventListener("popstate", () => { const id = (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(location.pathname) || [])[1] || ""; if (id !== route.id) go(id, false); });
+  const isDm = (id) => /^dm\//.test(id || ""), REQ = "dm/requests";
+  const idOf = (path) => { const d = /^\/chats\/dm\/([a-z0-9]{1,40})/.exec(path); return d ? "dm/" + d[1] : (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(path) || [])[1] || ""; };
+  const hrefOf = (id) => (id ? "/chats/" + (isDm(id) ? id : encodeURIComponent(id)) : "/chats");
+  const apiOf = (id) => (isDm(id) ? "/api/dm/" + id.slice(3) : "/api/chats/" + encodeURIComponent(id));
+  const route = { id: idOf(location.pathname), reqs: false }; if (route.id === REQ) { route.id = ""; route.reqs = true; }
+  function go(id, push = true) { const reqs = id === REQ; route.id = reqs ? "" : id || ""; route.reqs = reqs || (!!route.id && (B?.requests || []).some((r) => r.id === route.id)); if (push) history.pushState({ chat: route.id }, "", reqs ? "/chats/" + REQ : hrefOf(route.id)); document.body.classList.toggle("ch-open", !!route.id); paintRows(); openThread(); }
+  addEventListener("popstate", () => { const id = idOf(location.pathname); if (id !== (route.reqs && !route.id ? REQ : route.id)) go(id, false); });
   window.openChat = (id) => go(String(id || "")); // other code can open a chat in place
 
   // ---- the inbox ----
   let B = null, q = "", chSeg = (() => { try { return sessionStorage.getItem("pl.chSeg") || "all"; } catch { return "all"; } })();
   async function loadInbox() { let ok = true; try { B = await api("/api/chats", { proofs: proofs() }); } catch { ok = false; B = B || { chats: [] }; } paintRows(); badge(); return ok; }
-  function badge() { const n = (B?.chats || []).filter((c) => c.unread > 0).length; window.__plChatsUnread = n; document.title = (n ? `(${n}) ` : "") + "Chats · Pottery Lab"; $$("[data-chats-badge]").forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n); }); try { window.PLChatNav?.set?.(n); } catch {} }
-  function rowHTML(c) { const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0;
+  const rowOf = (id) => (B?.chats || []).find((x) => x.id === id) || (B?.dms || []).find((x) => x.id === id) || (B?.requests || []).find((x) => x.id === id) || null;
+  function badge() { const n = [...(B?.chats || []), ...(B?.dms || [])].filter((c) => c.unread > 0).length; window.__plChatsUnread = n; document.title = (n ? `(${n}) ` : "") + "Chats · Pottery Lab"; $$("[data-chats-badge]").forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n); }); try { window.PLChatNav?.set?.(n); } catch {} }
+  // a direct message: a round face where an event chat has its square cover, and "Direct message" under the last line
+  function dmRowHTML(c) { const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0, req = c.state === "request_in";
+    return `<a class="ch-row ch-dm${un ? " unread" : ""}" href="${hrefOf(c.id)}" data-id="${esc(c.id)}"${cur} aria-label="${esc(c.title)}, direct message${un ? `, ${c.unread} new` : ""}"><span class="ch-thumb round">${av(c.face, "big")}</span>
+      <span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname" title="${esc(c.title)}">${esc(c.title)}</span><span class="ch-rtime ch-mono">${esc(c.at ? rel(c.at) : "")}</span></span>
+      <span class="ch-rlast"><span>${c.last ? `${c.last.by ? esc(c.last.by) + ": " : ""}${esc(c.last.text)}` : ""}</span>${c.muted ? G.mute.replace('class="ch-ic ', 'class="ch-ic ch-muted ') : ""}${un && !req ? `<b class="ch-n">${c.unread > 99 ? "99+" : c.unread}</b>` : ""}</span>
+      <span class="ch-when"><span class="ch-kind">${req ? "Request" : "Direct message"}</span>${c.state === "request_out" ? " · Waiting for them to accept" : ""}</span></span></a>`; }
+  function rowHTML(c) { if (c.dm) return dmRowHTML(c); const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0;
     const last = c.locked ? `${G.lock}<span>${esc(c.lockedLine || "")}</span>` : c.last ? `<span>${c.last.system ? esc(c.last.text) : `${esc(c.last.by)}: ${esc(c.last.text)}`}</span>` : `<span>${c.role === "host" ? "Say hi to your guests" : "Say hi to the group"}</span>`;
     const faces = c.faces?.length ? `<span class="ch-faces">${c.faces.slice(0, 2).map((f) => av(f)).join("")}</span>` : "";
-    return `<a class="ch-row${un ? " unread" : ""}${c.locked ? " locked" : ""}" href="/chats/${encodeURIComponent(c.id)}" data-id="${esc(c.id)}"${cur} aria-label="${esc(c.title)}${un ? `, ${c.unread} new` : ""}">${thumb(c).replace("</span>", faces + "</span>")}
+    return `<a class="ch-row${un ? " unread" : ""}${c.locked ? " locked" : ""}" href="/chats/${encodeURIComponent(c.id)}" data-id="${esc(c.id)}"${cur} aria-label="${esc(c.title)}, event chat${un ? `, ${c.unread} new` : ""}">${thumb(c).replace("</span>", faces + "</span>")}
       <span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname">${esc(c.title)}</span><span class="ch-rtime ch-mono">${esc(c.at ? rel(c.at) : "")}</span></span>
       <span class="ch-rlast">${last}${c.muted ? G.mute.replace('class="ch-ic ', 'class="ch-ic ch-muted ') : ""}${un ? `<b class="ch-n">${c.unread > 99 ? "99+" : c.unread}</b>` : ""}</span>
-      ${c.upcoming && c.when ? `<span class="ch-when">${window.EventTypes && c.etype ? window.EventTypes.tag(c.etype) + " " : ""}${c.role === "cohost" ? '<span class="ch-tag">Co-hosting</span> ' : ""}${esc(c.when)}</span>` : ""}</span></a>`; }
-  function paintRows() { const box = $("#chRows"); if (!box || !B) return; const t = q.trim().toLowerCase();
-    const L = (B.chats || []).filter((c) => !t || [c.title, c.last?.text, c.last?.by, ...(c.faces || []).map((f) => f.name)].join(" ").toLowerCase().includes(t));
-    if (!(B.chats || []).length) { box.innerHTML = `<div class="ch-empty">${window.Potto ? window.Potto.svg("wave", 96, "Potto waving") : ""}<b>No chats yet</b><span>When you're in for an event, its group chat shows up here.</span><a class="ch-btn primary" href="/discover">Find something to do</a>${B.signedIn ? "" : `<a href="/login?next=/chats" style="color:var(--pl-accent-text);font-weight:600;min-height:44px;display:inline-flex;align-items:center">Have an account? Sign in</a>`}</div>`; return; }
-    if (!L.length) { box.innerHTML = `<p class="ch-sec" style="justify-content:center">Nothing matches "${esc(q)}"</p>`; return; }
-    // two groups: what you're hosting and what you're going to; each shows coming dates first, past ones folded below
-    const hosting = (c) => c.role === "host" || c.role === "cohost", seg = ["all", "hosting", "going"].includes(chSeg) ? chSeg : "all";
-    const H = L.filter(hosting), G = L.filter((c) => !hosting(c)), n = (A) => A.filter((c) => c.unread > 0).length;
-    const tabs = H.length && G.length ? `<div class="ch-seg" role="tablist" aria-label="Show">${[["all", "All", L], ["hosting", "Hosting", H], ["going", "Going", G]].map(([k, lab, A]) => `<button type="button" role="tab" data-chseg="${k}" aria-selected="${seg === k}">${lab}${n(A) ? ` <b class="ch-n">${n(A)}</b>` : ""}</button>`).join("")}</div>` : "";
-    const group = (title, A, sub) => { if (!A.length) return ""; const up = A.filter((c) => c.upcoming), past = A.filter((c) => !c.upcoming);
-      return `<section class="ch-grp"><h2 class="ch-sec">${title}<span class="ch-sec-n">${A.length}</span></h2>${sub ? `<p class="ch-sub">${sub}</p>` : ""}${up.map(rowHTML).join("")}${past.length ? (up.length ? `<details class="ch-past"${t ? " open" : ""}><summary>Past (${past.length})</summary>${past.map(rowHTML).join("")}</details>` : past.map(rowHTML).join("")) : ""}</section>`; };
-    box.innerHTML = tabs + (seg !== "going" ? group("Hosting", H, H.length && G.length ? "" : "") : "") + (seg !== "hosting" ? group(H.length ? "Going" : "Your events", G, "") : "") +
+      <span class="ch-when"><span class="ch-kind">Event chat</span>${c.upcoming && c.when ? ` · ${window.EventTypes && c.etype ? window.EventTypes.tag(c.etype) + " " : ""}${c.role === "cohost" ? '<span class="ch-tag">Co-hosting</span> ' : ""}${esc(c.when)}` : ""}</span></span></a>`; }
+  function paintRows() { const box = $("#chRows"); if (!box || !B) return; const t = q.trim().toLowerCase(), has = (c) => !t || [c.title, c.handle, c.last?.text, c.last?.by, ...(c.faces || []).map((f) => f.name)].join(" ").toLowerCase().includes(t);
+    const head = $("#chHead"); if (head) head.textContent = route.reqs ? "Requests" : "Chats"; const bk = $("#chReqBack"); if (bk) bk.hidden = !route.reqs; const nb = $("#chNew"); if (nb) nb.hidden = route.reqs || !B.signedIn;
+    if (route.reqs) { const R = (B.requests || []).filter(has); // message requests: people you have no tie to yet (server/dm.js)
+      box.innerHTML = `<p class="ch-sub ch-reqnote">Messages from people you don't know yet. They can't send more, and won't see that you read it, until you accept.</p>` + (R.length ? R.map(rowHTML).join("") : `<div class="ch-empty"><b>${(B.requests || []).length ? "Nothing matches" : "No requests"}</b><span>${(B.requests || []).length ? "Try another name." : "When someone new writes to you, it waits here."}</span></div>`); return; }
+    const D = (B.dms || []).filter(has), L = (B.chats || []).filter(has), nReq = (B.requests || []).length;
+    const reqRow = nReq ? `<a class="ch-row ch-reqrow" href="/chats/${REQ}" data-id="${REQ}"><span class="ch-thumb round">${G.people}</span><span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname">Requests</span></span><span class="ch-rlast"><span>${nReq === 1 ? "1 person you don't know yet" : `${nReq} people you don't know yet`}</span><b class="ch-n ch-n-quiet">${nReq > 99 ? "99+" : nReq}</b></span></span></a>` : "";
+    const links = (B.links || []).map((l) => `<a class="ch-row ch-linkrow" href="${esc(l.href)}"><span class="ch-thumb round">${G.open}</span><span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname">${esc(l.label)}</span></span><span class="ch-rlast"><span>${esc(l.sub)}</span></span></span></a>`).join("");
+    if (!(B.chats || []).length && !(B.dms || []).length) { box.innerHTML = reqRow + `<div class="ch-empty">${window.Potto ? window.Potto.svg("wave", 96, "Potto waving") : ""}<b>No chats yet</b><span>When you're in for an event, its group chat shows up here. Messages with one person live here too.</span><a class="ch-btn primary" href="/discover">Find something to do</a>${B.signedIn ? "" : `<a href="/login?next=/chats" style="color:var(--pl-accent-text);font-weight:600;min-height:44px;display:inline-flex;align-items:center">Have an account? Sign in</a>`}</div>` + links; return; }
+    if (!L.length && !D.length) { box.innerHTML = `<p class="ch-sec" style="justify-content:center">Nothing matches "${esc(q)}"</p>`; return; }
+    // three groups: direct messages, what you're hosting and what you're going to; each event group shows coming dates first, past ones folded below
+    const hosting = (c) => c.role === "host" || c.role === "cohost", H = L.filter(hosting), G2 = L.filter((c) => !hosting(c)), n = (A) => A.filter((c) => c.unread > 0).length;
+    const kinds = [["all", "All", [...D, ...L]], ["direct", "Direct", D], ["hosting", "Hosting", H], ["going", "Going", G2]].filter(([k, , A]) => k === "all" || A.length), seg = kinds.some(([k]) => k === chSeg) ? chSeg : "all";
+    const tabs = kinds.length > 2 ? `<div class="ch-seg" role="tablist" aria-label="Show">${kinds.map(([k, lab, A]) => `<button type="button" role="tab" data-chseg="${k}" aria-selected="${seg === k}">${lab}${n(A) ? ` <b class="ch-n">${n(A)}</b>` : ""}</button>`).join("")}</div>` : "";
+    const group = (title, A) => { if (!A.length) return ""; const up = A.filter((c) => c.upcoming), past = A.filter((c) => !c.upcoming);
+      return `<section class="ch-grp"><h2 class="ch-sec">${title}<span class="ch-sec-n">${A.length}</span></h2>${up.map(rowHTML).join("")}${past.length ? (up.length ? `<details class="ch-past"${t ? " open" : ""}><summary>Past (${past.length})</summary>${past.map(rowHTML).join("")}</details>` : past.map(rowHTML).join("")) : ""}</section>`; };
+    const direct = D.length && (seg === "all" || seg === "direct") ? `<section class="ch-grp"><h2 class="ch-sec">Direct messages<span class="ch-sec-n">${D.length}</span></h2>${D.map(rowHTML).join("")}</section>` : "";
+    box.innerHTML = reqRow + tabs + direct + (seg === "all" || seg === "hosting" ? group("Hosting", H) : "") + (seg === "all" || seg === "going" ? group(H.length ? "Going" : "Your events", G2) : "") + (seg === "all" ? links : "") +
       (B.signedIn ? "" : `<p class="ch-hint">On another phone? <a href="/signup?mode=friends&amp;next=/chats">Make a free account</a> to see your chats anywhere.</p>`); }
   $("#chQ")?.addEventListener("input", (e) => { q = e.target.value; paintRows(); });
   document.addEventListener("click", (e) => { const sb = e.target.closest?.("[data-chseg]"); if (sb) { chSeg = sb.dataset.chseg; try { sessionStorage.setItem("pl.chSeg", chSeg); } catch {} paintRows(); document.querySelector(`[data-chseg="${chSeg}"]`)?.focus(); } });
   document.addEventListener("click", (e) => { const a = e.target.closest?.(".ch-row[data-id]"); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); go(a.dataset.id); });
+  $("#chReqBack")?.addEventListener("click", (e) => { e.preventDefault(); go(""); });
+  $("#chNew")?.addEventListener("click", newMessage);
 
   // ---- the thread ----
   let T = null, V = "", pending = [], replyTo = null, firstPaint = true, unreadFrom = 0, timer = 0, delay = 3000, idle = 0, loading = false, openFor = "";
@@ -90,27 +111,31 @@
   let pinned = true; const ro = "ResizeObserver" in window ? new ResizeObserver(() => { if (pinned) toBottom(false); const j = $("#chJump"); if (j && atBottom()) j.hidden = true; }) : null;
   const toBottom = (smooth) => { const s = scroller(); if (s) s.scrollTo({ top: s.scrollHeight, behavior: smooth ? "smooth" : "auto" }); };
   function stateView(title, line, c, actions = "") { $("#chThread").innerHTML = `${header(c, true)}<div class="ch-state">${c ? thumb(c) : ""}<b>${esc(title)}</b><span>${esc(line)}</span>${actions}</div>`; wireHeader(); }
-  function header(c, bare) { const ev = c?.event || c || {}; return `<header class="ch-thead"><a class="ch-icon ch-back" href="/chats" aria-label="Back to chats" data-back>${G.back}</a>
+  function header(c, bare) { const ev = c?.event || c || {}; if (c?.dm) { const P = c.peer || c.face || { name: c.title }, sub = c.state === "request_in" ? "Message request" : P.handle || c.handle ? "@" + (P.handle || c.handle) : "Direct message"; // one person: their face and name, never a host's colours
+      return `<header class="ch-thead"><a class="ch-icon ch-back" href="${route.reqs ? "/chats/" + REQ : "/chats"}" aria-label="${route.reqs ? "Back to requests" : "Back to chats"}" data-back>${G.back}</a><button type="button" class="ch-who" ${bare ? "disabled" : "data-det"} aria-label="${esc(P.name || ev.title || "")}: conversation details"><span class="ch-thumb round">${av(P, "big")}</span><span style="min-width:0"><b>${esc(P.name || ev.title || "")}</b><small>${esc(sub)}</small></span></button>${bare ? "" : `<button type="button" class="ch-icon" data-det aria-label="Conversation details">${G.info}</button>`}</header>`; }
+    return `<header class="ch-thead"><a class="ch-icon ch-back" href="/chats" aria-label="Back to chats" data-back>${G.back}</a>
       ${ev.title ? `<button type="button" class="ch-who" ${bare ? "disabled" : "data-det"} aria-label="${esc(ev.title)}: chat details">${thumb({ ...ev, art: ev.art })}<span style="min-width:0"><b>${esc(ev.title)}</b><small>${esc([ev.when, ev.inCount ? `${ev.inCount} in` : "", ev.cancelled ? "Cancelled" : ""].filter(Boolean).join(" · "))}</small></span></button>` : `<span style="flex:1"></span>`}
       ${bare || !ev.title ? "" : `<button type="button" class="ch-icon" data-det aria-label="Chat details">${G.info}</button>`}</header>`; }
-  function wireHeader() { $$("[data-back]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); if (history.state?.chat !== undefined && history.length > 1 && document.referrer.includes("/chats")) history.back(); else go(""); })); $$("[data-det]").forEach((b) => (b.onclick = details)); }
+  function wireHeader() { $$("[data-back]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); if (history.state?.chat !== undefined && history.length > 1 && document.referrer.includes("/chats")) history.back(); else go(route.reqs ? REQ : ""); })); $$("[data-det]").forEach((b) => (b.onclick = details)); }
 
   async function openThread() { clearTimeout(timer); const box = $("#chThread"); if (!box) return;
-    if (!route.id) { T = null; openFor = ""; box.innerHTML = `<div class="ch-blank">${window.Potto ? window.Potto.svg("wave", 120, "Potto waving") : ""}<b style="font:600 20px var(--ch-display);color:var(--ch-ink)">Pick a chat</b><span>Every event you're in has one.</span></div>`; return; }
-    if (openFor !== route.id) { openFor = route.id; pinned = true; T = null; V = ""; pending = []; replyTo = null; firstPaint = true; unreadFrom = 0; const c = (B?.chats || []).find((x) => x.id === route.id);
+    if (!route.id) { T = null; openFor = ""; box.innerHTML = `<div class="ch-blank">${window.Potto ? window.Potto.svg("wave", 120, "Potto waving") : ""}<b style="font:600 20px var(--ch-display);color:var(--ch-ink)">${route.reqs ? "Pick a request" : "Pick a chat"}</b><span>${route.reqs ? "Read it first. Nothing is sent back until you accept." : "Every event you're in has one, and you can message people one to one."}</span></div>`; return; }
+    if (openFor !== route.id) { openFor = route.id; pinned = true; T = null; V = ""; pending = []; replyTo = null; firstPaint = true; unreadFrom = 0; const c = rowOf(route.id);
       box.innerHTML = `${header(c, true)}<div class="ch-body"><div class="ch-scroll"><div class="ch-msgs"><div class="ch-skel" style="width:60%"></div><div class="ch-skel" style="width:45%;align-self:flex-end"></div></div></div></div>`; wireHeader(); }
     delay = 3000; idle = 0; await poll(true); }
   async function poll(force) { clearTimeout(timer); if (!route.id || loading) return; if (document.hidden && !force) return schedule();
     // signed out with no reply on this phone: there's nothing to ask the server, so say how to get in (no failed request)
+    if (!T && isDm(route.id) && !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return stateView("Sign in to see your messages", "Messages are between you and one other person.", null, `<a class="ch-btn primary" href="/login?next=${encodeURIComponent(hrefOf(route.id))}">Sign in</a>`);
     if (!T && !qOf(route.id) && !/(?:^|;\s*)encore_in=1/.test(document.cookie)) { const id = route.id, c = (B?.chats || []).find((x) => x.id === id);
       return stateView("Not in the chat yet", "Reply to the invite, or sign in, and the chat opens here.", c, `<a class="ch-btn primary" href="/g#rsvp-${encodeURIComponent(id)}">Open the invite</a><a href="/login?next=${encodeURIComponent("/chats/" + id)}" style="color:#B04A30;font-weight:600">Sign in</a>`); }
     loading = true; const id = route.id;
-    try { const read = !document.hidden && atBottom() ? "&read=1" : ""; const j = await api(`/api/chats/${encodeURIComponent(id)}?${qOf(id)}${read}${V && !force ? `&v=${V}` : ""}`); if (id !== route.id) return;
+    try { const read = !document.hidden && atBottom() ? "&read=1" : ""; const j = await api(`${apiOf(id)}?${qOf(id)}${read}${V && !force ? `&v=${V}` : ""}`); if (id !== route.id) return;
       if (j.proof) { ls.set("encore-rsvp-" + id, JSON.stringify(j.proof)); linkProof = null; }
-      if (j.same) { idle++; patchLive(j); } else { idle = 0; const fresh = !T; T = j; V = j.v; if (fresh) unreadFrom = j.unreadFrom || 0; paint(); if (read && B) { const c = B.chats.find((x) => x.id === id); if (c && c.unread) { c.unread = 0; paintRows(); badge(); } } }
+      if (j.same) { idle++; patchLive(j); } else { idle = 0; const fresh = !T; T = j; V = j.v; if (fresh) unreadFrom = j.unreadFrom || 0; paint(); if (read && B) { const c = rowOf(id); if (c && c.unread && c.state !== "request_in") { c.unread = 0; paintRows(); badge(); } } }
       delay = idle < 6 ? 3000 : idle < 20 ? 5000 : idle < 60 ? 8000 : 15000; }
-    catch (err) { if (id !== route.id) return; if (!T) { const c = (B?.chats || []).find((x) => x.id === id);
-        if (err.status === 404) stateView("This chat isn't here", "The event may have been deleted, or the link is cut off.", c, `<a class="ch-btn" href="/chats">See your chats</a>`);
+    catch (err) { if (id !== route.id) return; if (!T) { const c = isDm(id) ? null : (B?.chats || []).find((x) => x.id === id);
+        if (isDm(id) && (err.status === 404 || err.status === 401)) stateView(err.status === 401 ? "Sign in to see your messages" : "This conversation isn't here", err.status === 401 ? "Messages are between you and one other person." : "It may have been deleted, or the link is cut off.", null, err.status === 401 ? `<a class="ch-btn primary" href="/login?next=${encodeURIComponent(hrefOf(id))}">Sign in</a>` : `<a class="ch-btn" href="/chats">See your chats</a>`);
+        else if (err.status === 404) stateView("This chat isn't here", "The event may have been deleted, or the link is cut off.", c, `<a class="ch-btn" href="/chats">See your chats</a>`);
         else if (err.status === 403) stateView(err.code === "not_member" ? "This chat is for guests who are in" : "Not in the chat yet", err.message, c, `<a class="ch-btn primary" href="/g#rsvp-${encodeURIComponent(id)}">Open the invite</a>${B?.signedIn ? "" : `<a href="/login?next=${encodeURIComponent("/chats/" + id)}" style="color:var(--pl-accent-text);font-weight:600">Sign in</a>`}`);
         else stateView("Couldn't open the chat", "Check your connection and try again.", c, `<button class="ch-btn" type="button" onclick="location.reload()">Try again</button>`); loading = false; return; }
       delay = Math.min(30000, delay * 2); }
@@ -121,17 +146,23 @@
 
   const isHost = () => T?.me?.role === "host" || T?.me?.role === "cohost";
   const member = (who) => (T?.members || []).find((m) => m.who === who) || null;
-  function msgHTML(m, grpMine) { const tools = T.me.canWrite && !m.removed ? `<div class="ch-tools">${T.me.canWrite ? `<button type="button" data-tool="react" aria-label="React">${G.smile}</button><button type="button" data-tool="reply" aria-label="Reply">${G.reply}</button>` : ""}<button type="button" data-tool="more" aria-label="More">${G.more}</button></div>` : "";
+  // a card in a direct message: an event, a drop, a host page or a story. A story that ran out says so and opens nothing.
+  function cardHTML(c, mine) { if (!c) return ""; const lab = c.reply ? `<span class="ch-card-l">${mine ? "You replied to their story" : "Replied to your story"}</span>` : "", kind = { event: "Event", drop: "Drop", host: "Host page", story: "Story" }[c.type] || "";
+    if (c.gone || !c.url) return `${lab}<div class="ch-card gone">${esc(c.title || "No longer available")}</div>`;
+    return `${lab}<a class="ch-card${c.type === "story" ? " story" : ""}" href="${esc(c.url)}">${c.img ? `<img src="${esc(c.img)}" alt="" loading="lazy">` : `<span class="ch-card-i" aria-hidden="true">${G.open}</span>`}<span class="ch-card-t"><small>${esc(kind)}</small><b>${esc(c.title)}</b>${c.sub ? `<span>${esc(c.sub)}</span>` : ""}</span></a>`; }
+  const canAct = () => (T.dm ? T.state === "open" : T.me.canWrite);
+  function msgHTML(m, grpMine) { const tools = (T.dm ? !m._pending : T.me.canWrite) && !m.removed ? `<div class="ch-tools">${canAct() ? `<button type="button" data-tool="react" aria-label="React">${G.smile}</button><button type="button" data-tool="reply" aria-label="Reply">${G.reply}</button>` : ""}<button type="button" data-tool="more" aria-label="More">${G.more}</button></div>` : "";
     const R = Object.entries(m.reactions || {}); const q = m.replyTo ? `<span class="ch-q" data-goto="${esc(m.replyTo.id)}"><b>${esc(m.replyTo.by)}</b>${esc(m.replyTo.text)}</span>` : "";
     const ph = m.photo ? `<button type="button" class="ch-ph" data-ph="${esc(m.photo.url)}" aria-label="Photo from ${esc(m.by || "you")}, open it"><img src="${esc(m.photo.url)}" alt="" loading="lazy" ${m.photo.w && m.photo.h ? `width="260" height="${Math.round((260 * m.photo.h) / m.photo.w)}"` : ""}></button>` : "";
-    const body = m.removed ? `<div class="ch-b ch-gone">Message removed</div>` : m.text ? `<div class="ch-b${m.role === "host" && !grpMine ? " ch-host" : ""}${!q && emojiOnly(m.text) ? " ch-only" : ""}">${q}${linkify(esc(m.text))}</div>` : q ? `<div class="ch-b">${q}</div>` : "";
+    const body = m.removed ? `<div class="ch-b ch-gone">Message removed</div>` : m.held ? `<div class="ch-b ch-gone">Photo. Accept the request to see it.</div>` : m.text ? `<div class="ch-b${m.role === "host" && !grpMine ? " ch-host" : ""}${!q && emojiOnly(m.text) ? " ch-only" : ""}">${q}${T.plain ? esc(m.text) : linkify(esc(m.text))}</div>` : q ? `<div class="ch-b">${q}</div>` : "";
     const when = `<div class="ch-at ch-mono" hidden>${esc(m._pending ? "Sending" : clockOf(m.at))}</div>`;
-    return `<div class="ch-m${m._pending ? " pending" : ""}${m._failed ? " failed" : ""}" data-id="${esc(m.id)}" tabindex="-1">${ph}${body}${R.length ? `<div class="ch-rx">${R.map(([e, r]) => `<button type="button" class="${r.mine ? "mine" : ""}" data-rx="${esc(e)}" aria-label="${esc(e)} ${r.n}${r.mine ? ", yours" : ""}">${e}${r.n > 1 ? `<span class="ch-mono">${r.n}</span>` : ""}</button>`).join("")}</div>` : ""}${m.pinned ? `<div class="ch-pinned-tag">${G.pin}Pinned</div>` : ""}${m._failed ? `<button type="button" class="ch-retry" data-retry="${esc(m.id)}">Didn't send. Tap to try again</button>` : ""}${when}${tools}</div>`; }
+    return `<div class="ch-m${m._pending ? " pending" : ""}${m._failed ? " failed" : ""}" data-id="${esc(m.id)}" tabindex="-1">${cardHTML(m.card, m.mine)}${ph}${body}${R.length ? `<div class="ch-rx">${R.map(([e, r]) => `<button type="button" class="${r.mine ? "mine" : ""}" data-rx="${esc(e)}" aria-label="${esc(e)} ${r.n}${r.mine ? ", yours" : ""}">${e}${r.n > 1 ? `<span class="ch-mono">${r.n}</span>` : ""}</button>`).join("")}</div>` : ""}${m.pinned ? `<div class="ch-pinned-tag">${G.pin}Pinned</div>` : ""}${m._failed ? `<button type="button" class="ch-retry" data-retry="${esc(m.id)}">Didn't send. Tap to try again</button>` : ""}${when}${tools}</div>`; }
   function msgsHTML() { const L = [...T.messages, ...pending], out = []; let day = "", grp = null, lastAt = 0, newShown = !unreadFrom, joinRun = null; const many = (T.members || []).length > 2;
     const flush = () => { if (!grp) return; const p = grp.mine ? null : member(grp.who) || { name: grp.by, tint: "#F6D7A7" };
       out.push(`<div class="ch-grp${grp.mine ? " me" : ""}">${grp.mine ? "" : av(p)}<div class="ch-col">${!grp.mine && many ? `<div class="ch-name">${esc(grp.by)}${grp.role === "host" ? '<span class="ch-tag">Host</span>' : grp.role === "cohost" ? '<span class="ch-tag">Co-host</span>' : ""}</div>` : ""}${grp.items.map((m) => msgHTML(m, grp.mine)).join("")}</div></div>`); grp = null; };
     for (const m of L) { const dk = dayKey(m.at || now()); if (dk !== day) { flush(); day = dk; out.push(`<div class="ch-day">${esc(dayLabel(m.at || now()))}</div>`); lastAt = 0; }
       if (!newShown && m.at > unreadFrom && !m.mine && m.kind !== "system") { flush(); out.push(`<div class="ch-new" role="separator" aria-label="New messages"><span>New messages</span></div>`); newShown = true; }
+      if (m.kind === "note") { flush(); out.push(`<div class="ch-sys ch-note" data-id="${esc(m.id)}">${esc(m.text)}${m.card && !m.card.gone && m.card.url ? ` <a href="${esc(m.card.url)}">See the story</a>` : ""}</div>`); lastAt = m.at; continue; } // a story reaction or answer: one small row (server/dm.js)
       if (m.kind === "system") { flush(); if (m.sys === "joined" && joinRun && out[out.length - 1] === joinRun.html) { joinRun.names.push(m.text.replace(/ is in\.$/, "")); out.pop(); } else joinRun = m.sys === "joined" ? { names: [m.text.replace(/ is in\.$/, "")] } : null;
         if (joinRun) { const N = joinRun.names, line = N.length === 1 ? `${N[0]} is in.` : N.length <= 4 ? `${N.slice(0, -1).join(", ")} and ${N[N.length - 1]} are in.` : `${N.slice(0, 3).join(", ")} and ${N.length - 3} more are in.`; joinRun.html = `<div class="ch-sys">${esc(line)}</div>`; out.push(joinRun.html); } else out.push(`<div class="ch-sys">${esc(m.text)}</div>`); lastAt = m.at; continue; }
       joinRun = null;
@@ -139,38 +170,42 @@
       const who = m.mine ? "me" : m.who; if (!grp || grp.who !== who || m.at - grp.last > 5 * 60e3) { flush(); grp = { who, by: m.by, role: m.role, mine: !!m.mine, items: [], last: m.at }; }
       grp.items.push(m); grp.last = m.at; lastAt = m.at; }
     flush();
-    const s = T.seen, lastMine = [...L].reverse().find((m) => m.kind !== "system"); if (s && s.n && lastMine && lastMine.id === s.id) out.push(`<div class="ch-seen">Seen by ${s.n <= 2 ? esc(s.names.join(" and ")) : s.n === 3 && s.names.length === 3 ? esc(`${s.names[0]}, ${s.names[1]} and ${s.names[2]}`) : `<span class="ch-mono">${s.n}</span>`}</div>`);
+    const s = T.seen, lastMine = [...L].reverse().find((m) => m.kind !== "system"); if (s && s.n && lastMine && lastMine.id === s.id) out.push(T.dm ? `<div class="ch-seen">Seen</div>` : `<div class="ch-seen">Seen by ${s.n <= 2 ? esc(s.names.join(" and ")) : s.n === 3 && s.names.length === 3 ? esc(`${s.names[0]}, ${s.names[1]} and ${s.names[2]}`) : `<span class="ch-mono">${s.n}</span>`}</div>`);
     if (T.typing?.length) out.push(`<div class="ch-typing">${av(member((T.members || []).find((x) => x.name === T.typing[0])?.who) || { name: T.typing[0] })}<span class="ch-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>${esc(T.typing.length === 1 ? `${T.typing[0]} is typing` : `${T.typing.join(" and ")} are typing`)}</span></div>`);
-    if (!T.messages.filter((m) => m.kind !== "system").length && !pending.length) out.push(`<div class="ch-sys" style="margin:24px auto">${isHost() ? "Your guests are here. Say hi, share the plan, or pin what to bring." : `Say hi. ${esc(T.event.host)} and everyone who's in can see this.`}</div>`);
+    if (T.dm) { if (!T.messages.length && !pending.length) out.push(`<div class="ch-sys" style="margin:24px auto">${T.request ? `${esc(T.peer.first)} doesn't know you yet, so this goes to them as a request. You can send one message, words only, until they accept.` : T.me.canWrite ? `Say hi to ${esc(T.peer.first)}. Only the two of you can read this.` : ""}</div>`); }
+    else if (!T.messages.filter((m) => m.kind !== "system").length && !pending.length) out.push(`<div class="ch-sys" style="margin:24px auto">${isHost() ? "Your guests are here. Say hi, share the plan, or pin what to bring." : `Say hi. ${esc(T.event.host)} and everyone who's in can see this.`}</div>`);
     return out.join(""); }
   function pinsHTML() { const P = (T.pins || []).filter((p) => !p.removed); if (!P.length) return ""; const p = P[P.length - 1];
     return `<button type="button" class="ch-pin" data-goto="${esc(p.id)}" aria-label="Pinned message, go to it">${G.pin}<span>${esc(p.kind === "photo" ? "Photo" : p.text)}</span>${P.length > 1 ? `<small class="ch-mono">${P.length}</small>` : ""}</button>`; }
-  function composerHTML() { if (!T.me.canWrite) return `<div class="ch-ro">${esc(T.event.cancelled ? "This event was cancelled, so the chat is closed." : T.me.readOnly || "You can read this chat.")}${T.me.role === "guest" && !T.event.cancelled ? ` <a href="${esc(T.event.url)}">Open the invite</a>` : ""}</div>`;
+  function composerHTML() { if (T.dm && T.state === "request_in") return `<div class="ch-req" id="chReq"><p><b>${esc(T.peer.first)} wants to send you a message.</b> They can't send more, and won't know you read this, until you accept.</p><div class="ch-req-b"><button type="button" class="ch-btn primary" data-req="accept">Accept</button><button type="button" class="ch-btn" data-req="delete">Delete</button><button type="button" class="ch-btn" data-req="block">Block</button></div></div>`;
+    if (T.dm && !T.me.canWrite) return `<div class="ch-ro">${esc(T.me.readOnly || "You can't send messages here.")}${T.link ? ` <a href="${esc(T.link)}">Open booking requests</a>` : ""}</div>`;
+    if (!T.me.canWrite) return `<div class="ch-ro">${esc(T.event.cancelled ? "This event was cancelled, so the chat is closed." : T.me.readOnly || "You can read this chat.")}${T.me.role === "guest" && !T.event.cancelled ? ` <a href="${esc(T.event.url)}">Open the invite</a>` : ""}</div>`;
     return `<form class="ch-comp" id="chComp" autocomplete="off">${replyTo ? `<div class="ch-replying"><div><b>Replying to ${esc(replyTo.mine ? "yourself" : replyTo.by)}</b><span>${esc(replyTo.kind === "photo" ? "Photo" : replyTo.text)}</span></div><button type="button" class="ch-icon" data-unreply aria-label="Cancel reply">${G.x}</button></div>` : ""}
-      <div class="ch-hint" id="chHint" hidden></div>${!replyTo && !T.messages.some((m) => m.mine) && !pending.length ? `<div class="ch-quick" role="group" aria-label="Quick hellos">${(isHost() ? ["Hi all, so glad you're coming", "Here's the plan:", "What should everyone bring?"] : ["Hi everyone", "Can't wait", "What should I bring?"]).map((t) => `<button type="button" data-quick="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
-      <div class="ch-crow"><label class="ch-icon" aria-label="Send a photo" style="cursor:pointer">${G.photo}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" id="chFile" hidden></label>
-      <div class="ch-field"><label class="ch-sr" for="chIn">Message</label><textarea id="chIn" rows="1" maxlength="1000" placeholder="Message" enterkeyhint="send"></textarea></div>
+      <div class="ch-hint" id="chHint" hidden></div>${!T.dm && !replyTo && !T.messages.some((m) => m.mine) && !pending.length ? `<div class="ch-quick" role="group" aria-label="Quick hellos">${(isHost() ? ["Hi all, so glad you're coming", "Here's the plan:", "What should everyone bring?"] : ["Hi everyone", "Can't wait", "What should I bring?"]).map((t) => `<button type="button" data-quick="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
+      <div class="ch-crow">${T.dm && (T.request || T.state === "request_out") ? "" : `<label class="ch-icon" aria-label="Send a photo" style="cursor:pointer">${G.photo}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" id="chFile" hidden></label>${T.dm ? `<button type="button" class="ch-icon" id="chShare" aria-label="Share an event, a page or a story">${G.plus}</button>` : ""}`}
+      <div class="ch-field"><label class="ch-sr" for="chIn">Message</label><textarea id="chIn" rows="1" maxlength="${T.dm ? T.limits?.text || 2000 : 1000}" placeholder="${T.dm ? `Message ${esc(T.peer.first)}` : "Message"}" enterkeyhint="send"></textarea></div>
       <button class="ch-send" type="submit" id="chSend" aria-label="Send" disabled>${G.send}</button></div></form>`; }
   function paint() { const box = $("#chThread"); if (!box || !T) return; const keepDraft = $("#chIn")?.value || ls.get("pl.chatDraft." + route.id) || "", hadFocus = document.activeElement?.id === "chIn";
-    document.documentElement.style.setProperty("--ch-accent", accentFor(T.event.accent));
+    document.documentElement.style.setProperty("--ch-accent", T.dm ? "#29489A" : accentFor(T.event.accent));
     const stick = firstPaint || pinned, prev = scroller()?.scrollTop || 0, lastSeen = paint.last || 0, newOthers = !firstPaint && T.messages.some((m) => m.at > lastSeen && !m.mine && m.kind !== "system"); paint.last = Math.max(0, ...T.messages.map((m) => m.at || 0)); if (paint.for !== route.id) { paint.for = route.id; paint.last = Math.max(0, ...T.messages.map((m) => m.at || 0)); }
     if (!$("#chScroll") || box.dataset.for !== route.id) { box.dataset.for = route.id;
       box.innerHTML = `${header(T)}<div id="chPins">${pinsHTML()}</div><div class="ch-body"><div class="ch-scroll" id="chScroll" role="log" aria-live="polite" aria-relevant="additions"><div class="ch-msgs" id="chMsgs">${msgsHTML()}</div></div><button type="button" class="ch-jump round" id="chJump" hidden aria-label="Go to the latest">${G.down}<span>New messages</span></button></div><div id="chCompWrap">${composerHTML()}</div>`;
-      wireHeader(); wireComposer(keepDraft); scroller().addEventListener("scroll", onScroll, { passive: true }); ro?.observe($("#chMsgs")); }
-    else { $(".ch-thead").outerHTML = header(T); wireHeader(); $("#chPins").innerHTML = pinsHTML(); $("#chMsgs").innerHTML = msgsHTML(); const ro = !T.me.canWrite; if (ro !== !$("#chComp")) { $("#chCompWrap").innerHTML = composerHTML(); wireComposer(keepDraft); } }
+      wireHeader(); wireComposer(keepDraft); scroller().addEventListener("scroll", onScroll, { passive: true }); ro?.observe($("#chMsgs")); paint.mode = T.dm ? T.state + "|" + !T.me.canWrite + "|" + !!T.request : ""; }
+    else { $(".ch-thead").outerHTML = header(T); wireHeader(); $("#chPins").innerHTML = pinsHTML(); $("#chMsgs").innerHTML = msgsHTML(); const ro = !T.me.canWrite, mode = T.dm ? T.state + "|" + ro + "|" + !!T.request : ""; if (ro !== !$("#chComp") || (T.dm && paint.mode !== mode)) { $("#chCompWrap").innerHTML = composerHTML(); wireComposer(keepDraft); } paint.mode = mode; }
     if (stick) { toBottom(false); if (firstPaint && unreadFrom) { const n = $(".ch-new"); if (n && n.offsetTop < scroller().scrollHeight - scroller().clientHeight - 40) n.scrollIntoView({ block: "center" }); } } else { scroller().scrollTop = prev; if (newOthers) { const j = $("#chJump"); j.hidden = false; j.classList.remove("round"); } }
     if (hadFocus) $("#chIn")?.focus({ preventScroll: true }); firstPaint = false; requestAnimationFrame(() => { const j = $("#chJump"); if (j && atBottom()) { j.hidden = true; j.classList.add("round"); pinned = true; } }); }
   function patchLive(j) { if (!T) return; const ch = JSON.stringify([T.typing, T.seen]) !== JSON.stringify([j.typing, j.seen]); T.typing = j.typing; T.seen = j.seen; if (ch) { const st = atBottom(); $("#chMsgs").innerHTML = msgsHTML(); if (st) toBottom(false); } }
-  function onScroll() { const j = $("#chJump"), s = scroller(); pinned = atBottom(); if (!atBottom() && s && s.scrollHeight - s.scrollTop - s.clientHeight > s.clientHeight * 1.2 && j.hidden) { j.hidden = false; j.classList.add("round"); } if (atBottom()) { j.hidden = true; j.classList.add("round"); if (T && B?.chats?.find((c) => c.id === route.id)?.unread) api(`/api/chats/${encodeURIComponent(route.id)}/read`, bodyOf(route.id)).catch(() => {}); } }
+  function onScroll() { const j = $("#chJump"), s = scroller(); pinned = atBottom(); if (!atBottom() && s && s.scrollHeight - s.scrollTop - s.clientHeight > s.clientHeight * 1.2 && j.hidden) { j.hidden = false; j.classList.add("round"); } if (atBottom()) { j.hidden = true; j.classList.add("round"); if (T && rowOf(route.id)?.unread && T.state !== "request_in") api(`${apiOf(route.id)}/read`, bodyOf(route.id)).catch(() => {}); } }
 
   // ---- composing ----
   let typedAt = 0;
-  function wireComposer(draft) { const f = $("#chComp"); if (!f) return; const ta = $("#chIn"), send = $("#chSend"), hint = $("#chHint");
+  function wireComposer(draft) { $$("[data-req]").forEach((b) => (b.onclick = () => requestAct(b.dataset.req))); const f = $("#chComp"); if (!f) return; const ta = $("#chIn"), send = $("#chSend"), hint = $("#chHint");
     const size = () => { ta.style.height = "auto"; ta.style.height = Math.min(132, ta.scrollHeight) + "px"; };
     const check = () => { const t = ta.value; send.disabled = !t.trim(); ls.set("pl.chatDraft." + route.id, t);
       const contact = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(t) || /(?:\+?\d[\s().-]*){7,}\d/.test(t);
-      hint.hidden = !contact; if (contact) hint.textContent = isHost() ? "Everyone in this chat will see this number or email." : "Numbers and emails are hidden in group chats. To swap details, ask the host.";
-      if (t.trim() && now() - typedAt > 3000) { typedAt = now(); api(`/api/chats/${encodeURIComponent(route.id)}/typing`, bodyOf(route.id)).catch(() => {}); } };
+      if (T.dm) { hint.hidden = !(contact && (T.request || T.state === "request_out")); hint.textContent = "Phone numbers and emails can't go in a first message. Share them once they accept."; } else
+      hint.hidden = !contact; if (contact && !T.dm) hint.textContent = isHost() ? "Everyone in this chat will see this number or email." : "Numbers and emails are hidden in group chats. To swap details, ask the host.";
+      if (t.trim() && now() - typedAt > 3000 && (!T.dm || T.state === "open")) { typedAt = now(); api(`${apiOf(route.id)}/typing`, bodyOf(route.id)).catch(() => {}); } };
     if (draft) { ta.value = draft; } size(); check();
     ta.addEventListener("input", () => { size(); check(); });
     ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && fine) { e.preventDefault(); f.requestSubmit(); } });
@@ -178,28 +213,29 @@
     f.onsubmit = (e) => { e.preventDefault(); const t = ta.value.trim(); if (!t) return; $(".ch-quick", f)?.remove(); ta.value = ""; ls.set("pl.chatDraft." + route.id, ""); size(); check(); sendText(t); ta.focus({ preventScroll: true }); };
     $("[data-unreply]", f)?.addEventListener("click", () => { replyTo = null; $("#chCompWrap").innerHTML = composerHTML(); wireComposer(ta.value); $("#chIn").focus(); });
     $$("[data-quick]", f).forEach((b) => (b.onclick = () => { const t = b.dataset.quick; if (/:$/.test(t)) { ta.value = t + " "; size(); check(); ta.focus(); return; } $(".ch-quick", f)?.remove(); sendText(t); }));
-    $("#chFile").onchange = (e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) sendPhoto(file); }; }
+    $("#chShare") && ($("#chShare").onclick = shareSheet);
+    if ($("#chFile")) $("#chFile").onchange = (e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) sendPhoto(file); }; }
   async function sendText(text, again) { const id = route.id, rt = replyTo; replyTo = null; const tmp = again || { id: "tmp" + now(), text, kind: "text", mine: true, at: now(), by: T.me.name, role: T.me.role, reactions: {}, _pending: true, ...(rt ? { replyTo: { id: rt.id, by: rt.by, text: rt.kind === "photo" ? "Photo" : rt.text } } : {}) };
     tmp._pending = true; tmp._failed = false; pinned = true; if (!again) pending.push(tmp); if (rt) { $("#chCompWrap").innerHTML = composerHTML(); wireComposer(""); }
     $("#chMsgs").innerHTML = msgsHTML(); toBottom(false);
-    try { const j = await api(`/api/chats/${encodeURIComponent(id)}/messages`, bodyOf(id, { text, ...(tmp.replyTo ? { replyTo: tmp.replyTo.id } : {}) })); pending = pending.filter((p) => p !== tmp); if (id !== route.id) return; T.messages.push(j.message); V = ""; $("#chMsgs").innerHTML = msgsHTML(); toBottom(true); idle = 0; delay = 3000; schedule(); }
+    try { const j = await api(`${apiOf(id)}/messages`, bodyOf(id, { text, ...(tmp.replyTo ? { replyTo: tmp.replyTo.id } : {}) })); pending = pending.filter((p) => p !== tmp); if (id !== route.id) return; T.messages.push(j.message); V = ""; $("#chMsgs").innerHTML = msgsHTML(); toBottom(true); idle = 0; delay = 3000; if (T.dm && (T.state !== "open" || T.messages.length === 1)) { poll(true); loadInbox(); } else schedule(); }
     catch (err) { tmp._pending = false; tmp._failed = true; tmp._err = err.message; if (id === route.id) { $("#chMsgs").innerHTML = msgsHTML(); toast(err.message); } } }
   async function shrink(file) { if (file.type === "image/gif" && file.size < 8e6) return { blob: file, type: "image/gif" }; try { const bmp = await createImageBitmap(file); const k = Math.min(1, 2048 / Math.max(bmp.width, bmp.height)), w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
       const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(bmp, 0, 0, w, h); const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.86)); return { blob, type: "image/jpeg", w, h }; } catch { return { blob: file, type: file.type || "image/jpeg" }; } }
   async function sendPhoto(file) { const id = route.id; if (!/^image\//.test(file.type || "image/")) { toast("Photos only."); return; } const url = URL.createObjectURL(file);
     const tmp = { id: "tmp" + now(), kind: "photo", photo: { url }, text: "", mine: true, at: now(), by: T.me.name, reactions: {}, _pending: true }; pending.push(tmp); $("#chMsgs").innerHTML = msgsHTML(); toBottom(true);
-    try { const s = await shrink(file); const j = await api(`/api/chats/${encodeURIComponent(id)}/photo?${qOf(id)}${s.w ? `&w=${s.w}&h=${s.h}` : ""}`, s.blob, { type: s.type }); pending = pending.filter((p) => p !== tmp); if (id !== route.id) return; T.messages.push(j.message); V = ""; $("#chMsgs").innerHTML = msgsHTML(); toBottom(true); }
+    try { const s = await shrink(file); const j = await api(`${apiOf(id)}/photo?${qOf(id)}${s.w ? `&w=${s.w}&h=${s.h}` : ""}`, s.blob, { type: s.type }); pending = pending.filter((p) => p !== tmp); if (id !== route.id) return; T.messages.push(j.message); V = ""; $("#chMsgs").innerHTML = msgsHTML(); toBottom(true); }
     catch (err) { pending = pending.filter((p) => p !== tmp); if (id === route.id) $("#chMsgs").innerHTML = msgsHTML(); toast(err.message); } }
 
   // ---- reactions, replies and the message menu (long-press on a phone, hover tools or right-click with a mouse) ----
   const msgOf = (id) => T?.messages.find((m) => m.id === id) || pending.find((m) => m.id === id) || (T?.pins || []).find((m) => m.id === id);
-  async function react(m, e) { const on = !m.reactions?.[e]?.mine; try { const j = await api(`/api/chats/${encodeURIComponent(route.id)}/react`, bodyOf(route.id, { id: m.id, emoji: e, on })); Object.assign(m, { reactions: j.message.reactions }); V = ""; $("#chMsgs").innerHTML = msgsHTML(); try { navigator.vibrate?.(8); } catch {} } catch (err) { toast(err.message); } }
+  async function react(m, e) { const on = !m.reactions?.[e]?.mine; try { const j = await api(`${apiOf(route.id)}/react`, bodyOf(route.id, { id: m.id, emoji: e, on })); Object.assign(m, { reactions: j.message.reactions }); V = ""; $("#chMsgs").innerHTML = msgsHTML(); try { navigator.vibrate?.(8); } catch {} } catch (err) { toast(err.message); } }
   function startReply(m) { replyTo = m; $("#chCompWrap").innerHTML = composerHTML(); wireComposer($("#chIn")?.value || ls.get("pl.chatDraft." + route.id) || ""); $("#chIn")?.focus(); }
   function sheet(html, onWire) { closeSheet(); const s = document.createElement("div"); s.className = "ch-scrim"; s.innerHTML = `<div class="ch-sheet" role="dialog" aria-modal="true"><div class="ch-grab" aria-hidden="true"></div>${html}</div>`; document.body.appendChild(s);
     const prevFocus = document.activeElement; s.addEventListener("click", (e) => { if (e.target === s) closeSheet(); }); const key = (e) => { if (e.key === "Escape") closeSheet(); }; document.addEventListener("keydown", key); s._done = () => { document.removeEventListener("keydown", key); /* the header that opened it redraws while the chat is open: focus its twin */ const lab = prevFocus?.getAttribute?.("aria-label"), to = prevFocus?.isConnected ? prevFocus : lab && document.querySelector(`[aria-label="${CSS.escape(lab)}"]`); try { to?.focus?.({ preventScroll: true }); } catch {} };
-    onWire?.(s); setTimeout(() => s.querySelector("button,a,input")?.focus({ preventScroll: true }), 30); return s; }
+    onWire?.(s); setTimeout(() => s.querySelector("[data-focus],button,a,input")?.focus({ preventScroll: true }), 30); return s; }
   function closeSheet() { const s = $(".ch-scrim"); if (s) { s.remove(); s._done?.(); } }
-  function menu(m, onlyReact) { if (!T || !m || m._pending) return; const mine = !!m.mine, host = isHost(), who = member(m.who), canBlock = !mine && who?.role === "guest" && !host;
+  function menu(m, onlyReact) { if (!T || !m || m._pending) return; if (T.dm) return dmMenu(m, onlyReact); const mine = !!m.mine, host = isHost(), who = member(m.who), canBlock = !mine && who?.role === "guest" && !host;
     const acts = onlyReact ? "" : [T.me.canWrite && !m.removed ? `<button class="ch-act" data-a="reply">${G.reply}Reply</button>` : "", m.text && !m.removed ? `<button class="ch-act" data-a="copy">${G.copy}Copy</button>` : "",
       host && !m.removed ? `<button class="ch-act" data-a="pin">${G.pin}${m.pinned ? "Unpin" : "Pin for everyone"}</button>` : "", (mine || host) && !m.removed ? `<button class="ch-act warn" data-a="unsend">${G.trash}${mine ? "Unsend" : "Remove message"}</button>` : "",
       !mine ? `<button class="ch-act warn" data-a="report">${G.flag}Report</button>` : "", canBlock ? `<button class="ch-act warn" data-a="block">${G.block}Block ${esc(m.by)}</button>` : ""].join("");
@@ -209,17 +245,17 @@
       $$("[data-a]", s).forEach((b) => (b.onclick = async () => { const a = b.dataset.a; closeSheet();
         if (a === "reply") startReply(m);
         if (a === "copy") { try { await navigator.clipboard.writeText(m.text); toast("Copied."); } catch { toast("Couldn't copy."); } }
-        if (a === "pin") { try { await api(`/api/chats/${encodeURIComponent(route.id)}/pin`, bodyOf(route.id, { id: m.id, on: !m.pinned })); toast(m.pinned ? "Unpinned." : "Pinned for everyone."); V = ""; poll(true); } catch (err) { toast(err.message); } }
-        if (a === "unsend") { try { await api(`/api/chats/${encodeURIComponent(route.id)}/unsend`, bodyOf(route.id, { id: m.id })); V = ""; poll(true); } catch (err) { toast(err.message); } }
+        if (a === "pin") { try { await api(`${apiOf(route.id)}/pin`, bodyOf(route.id, { id: m.id, on: !m.pinned })); toast(m.pinned ? "Unpinned." : "Pinned for everyone."); V = ""; poll(true); } catch (err) { toast(err.message); } }
+        if (a === "unsend") { try { await api(`${apiOf(route.id)}/unsend`, bodyOf(route.id, { id: m.id })); V = ""; poll(true); } catch (err) { toast(err.message); } }
         if (a === "report") report(m);
-        if (a === "block") { try { await api(`/api/chats/${encodeURIComponent(route.id)}/block`, bodyOf(route.id, { who: m.who })); toast(`Blocked. You won't see ${m.by}'s messages here.`); V = ""; poll(true); } catch (err) { toast(err.message); } } })); }); }
+        if (a === "block") { try { await api(`${apiOf(route.id)}/block`, bodyOf(route.id, { who: m.who })); toast(`Blocked. You won't see ${m.by}'s messages here.`); V = ""; poll(true); } catch (err) { toast(err.message); } } })); }); }
   function report(m) { const who = member(m.who);
     sheet(`<div class="ch-det"><h2>Report this message?</h2><p>${esc(T.event.host)} and the Pottery Lab team will see it. ${esc(m.by)} won't know it was you.</p>
       <div class="ch-acts">${["Spam", "Rude or unkind", "Makes me feel unsafe", "Something else"].map((r) => `<button class="ch-act" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
       ${who?.role === "guest" ? `<label class="ch-tog"><span>Also block ${esc(m.by)}<small>You won't see their messages in this chat.</small></span><input type="checkbox" id="chAlsoBlock"></label>` : ""}</div>`, (s) => {
-      $$("[data-r]", s).forEach((b) => (b.onclick = async () => { const block = !!$("#chAlsoBlock", s)?.checked; closeSheet(); try { await api(`/api/chats/${encodeURIComponent(route.id)}/report`, bodyOf(route.id, { id: m.id, reason: b.dataset.r, block })); toast("Thanks. We'll take a look."); if (block) { V = ""; poll(true); } } catch (err) { toast(err.message); } })); }); }
+      $$("[data-r]", s).forEach((b) => (b.onclick = async () => { const block = !!$("#chAlsoBlock", s)?.checked; closeSheet(); try { await api(`${apiOf(route.id)}/report`, bodyOf(route.id, { id: m.id, reason: b.dataset.r, block })); toast("Thanks. We'll take a look."); if (block) { V = ""; poll(true); } } catch (err) { toast(err.message); } })); }); }
   // the chat's details: the event, who's in, mute, and the host's controls
-  function details() { if (!T) return; const host = isHost(), M = T.members || [];
+  function details() { if (!T) return; if (T.dm) return dmDetails(); const host = isHost(), M = T.members || [];
     sheet(`<div class="ch-det"><h2>${esc(T.event.title)}</h2><p>${esc([T.event.when, `${T.event.inCount} in`].filter(Boolean).join(" · "))}</p>
       ${T.event.hostHandle ? `<div class="ch-hrow"><a href="/@${encodeURIComponent(T.event.hostHandle)}"><b>${esc(T.event.hostFull || T.event.host)}</b><small>${T.me.role === "host" ? "Your page" : "Host"}</small></a>${host ? "" : `<button type="button" class="plf-btn" data-pl-follow="${esc(T.event.hostHandle)}" data-name="${esc(T.event.hostFull || T.event.host)}" aria-pressed="false">Follow</button>`}</div>` : ""}
       <div class="ch-acts"><a class="ch-act" href="${esc(T.event.url)}">${G.open}Open the event</a><a class="ch-act" href="/help" data-help="${T.me.role === "guest" ? "guest" : "host"}">${G.help || G.open}Get help</a>${T.me.role === "guest" ? `<a class="ch-act" href="/e/${encodeURIComponent(T.event.id)}.ics?${qOf(T.event.id)}">${G.cal}Add to calendar</a>` : ""}</div>
@@ -227,9 +263,61 @@
       ${host ? `<label class="ch-tog"><span>Guests who said Maybe can read it<small>They can't send until they're in.</small></span><input type="checkbox" id="chMaybe" ${T.me.maybeRead ? "checked" : ""}></label>` : ""}
       <h3><span class="ch-mono">${M.length}</span> in the chat</h3><div class="ch-ppl">${M.map((p) => `<div class="ch-p">${av(p)}<span>${esc(p.name)}${p.who === T.me.who ? "<small>You</small>" : p.role === "host" ? "<small>Host</small>" : p.role === "cohost" ? "<small>Co-host</small>" : p.readOnly ? "<small>Reading</small>" : ""}</span>${host && p.canRemove && p.who !== T.me.who ? `<button type="button" class="ch-btn" data-rm="${esc(p.who)}" data-n="${esc(p.name)}">Remove</button>` : ""}</div>`).join("")}</div>
       ${T.me.role === "guest" ? `<p style="margin:14px 0 0;font-size:13px;color:var(--ch-smoke)">You're ${esc(T.me.name)} here. Guests see first names only, never emails or numbers.</p>` : ""}</div>`, (s) => {
-      $("#chMute", s).onchange = async (e) => { try { const j = await api(`/api/chats/${encodeURIComponent(route.id)}/mute`, bodyOf(route.id, { on: e.target.checked })); T.me.muted = j.muted; toast(j.muted ? "Muted. No alerts from this chat." : "Alerts are back on."); loadInbox(); } catch (err) { toast(err.message); e.target.checked = !e.target.checked; } };
-      $("#chMaybe", s) && ($("#chMaybe", s).onchange = async (e) => { try { await api(`/api/chats/${encodeURIComponent(route.id)}/settings`, bodyOf(route.id, { maybeRead: e.target.checked })); T.me.maybeRead = e.target.checked; } catch (err) { toast(err.message); } });
-      $$("[data-rm]", s).forEach((b) => (b.onclick = async () => { if (!confirm(`Take ${b.dataset.n} out of the chat? Their messages stay. They keep their spot.`)) return; try { await api(`/api/chats/${encodeURIComponent(route.id)}/remove`, bodyOf(route.id, { who: b.dataset.rm })); b.closest(".ch-p").remove(); toast(`${b.dataset.n} is out of the chat.`); V = ""; poll(true); } catch (err) { toast(err.message); } })); }); }
+      $("#chMute", s).onchange = async (e) => { try { const j = await api(`${apiOf(route.id)}/mute`, bodyOf(route.id, { on: e.target.checked })); T.me.muted = j.muted; toast(j.muted ? "Muted. No alerts from this chat." : "Alerts are back on."); loadInbox(); } catch (err) { toast(err.message); e.target.checked = !e.target.checked; } };
+      $("#chMaybe", s) && ($("#chMaybe", s).onchange = async (e) => { try { await api(`${apiOf(route.id)}/settings`, bodyOf(route.id, { maybeRead: e.target.checked })); T.me.maybeRead = e.target.checked; } catch (err) { toast(err.message); } });
+      $$("[data-rm]", s).forEach((b) => (b.onclick = async () => { if (!confirm(`Take ${b.dataset.n} out of the chat? Their messages stay. They keep their spot.`)) return; try { await api(`${apiOf(route.id)}/remove`, bodyOf(route.id, { who: b.dataset.rm })); b.closest(".ch-p").remove(); toast(`${b.dataset.n} is out of the chat.`); V = ""; poll(true); } catch (err) { toast(err.message); } })); }); }
+
+  // ---- direct messages: the message menu, the conversation's details, requests, report, new message, share a card ----
+  const tidNow = () => route.id.slice(3);
+  function dmMenu(m, onlyReact) { const mine = !!m.mine, open = T.state === "open";
+    const acts = onlyReact ? "" : [open && !m.removed ? `<button class="ch-act" data-a="reply">${G.reply}Reply</button>` : "", m.text && !m.removed ? `<button class="ch-act" data-a="copy">${G.copy}Copy</button>` : "",
+      mine && !m.removed ? `<button class="ch-act warn" data-a="unsend">${G.trash}Unsend</button>` : "", !mine ? `<button class="ch-act warn" data-a="report">${G.flag}Report</button>` : ""].join("");
+    sheet(`${open && !m.removed ? `<div class="ch-react" role="group" aria-label="React">${T.reactions.map((e) => `<button type="button" data-e="${e}" class="${m.reactions?.[e]?.mine ? "on" : ""}" aria-label="React ${e}">${e}</button>`).join("")}</div>` : ""}
+      ${onlyReact ? "" : `<div class="ch-quote">${m.kind === "photo" ? "Photo" : esc(String(m.text || m.card?.title || "").slice(0, 200))}</div><div class="ch-acts">${acts}</div>`}`, (s) => {
+      $$("[data-e]", s).forEach((b) => (b.onclick = () => { closeSheet(); react(m, b.dataset.e); }));
+      $$("[data-a]", s).forEach((b) => (b.onclick = async () => { const a = b.dataset.a; closeSheet();
+        if (a === "reply") startReply(m);
+        if (a === "copy") { try { await navigator.clipboard.writeText(m.text); toast("Copied."); } catch { toast("Couldn't copy."); } }
+        if (a === "unsend") { try { await api(`${apiOf(route.id)}/unsend`, { id: m.id }); V = ""; poll(true); loadInbox(); } catch (err) { toast(err.message); } }
+        if (a === "report") dmReport(m); })); }); }
+  // Report goes to the team's queue (POST /api/report) with the last messages attached, so someone can read what happened
+  function dmReport(m) { const R = [["spam", "Spam or scam"], ["hate", "Hate or harassment"], ["sexual", "Sexual content"], ["violence", "Violence or threats"], ["unsafe", "Makes me feel unsafe"], ["other", "Something else"]];
+    sheet(`<div class="ch-det"><h2>${m ? "Report this message?" : "Report this conversation?"}</h2><p>The Pottery Lab team will see the last messages here and look within 24 hours. ${esc(T.peer.first)} won't know it was you.</p>
+      <div class="ch-acts">${R.map(([k, l]) => `<button class="ch-act" data-r="${k}">${l}</button>`).join("")}</div>
+      <label class="ch-tog"><span>Also block ${esc(T.peer.first)}<small>Neither of you can write here, and it leaves your chats.</small></span><input type="checkbox" id="chAlsoBlock"></label></div>`, (s) => {
+      $$("[data-r]", s).forEach((b) => (b.onclick = async () => { const block = !!$("#chAlsoBlock", s)?.checked, tid = tidNow(); closeSheet();
+        try { await api("/api/report", { type: "message", target: `dm:${tid}${m ? ":" + m.id : ""}`, reason: b.dataset.r }); toast("Thanks. We'll take a look."); if (block) await blockPeer(true); } catch (err) { toast(err.message); } })); }); }
+  async function blockPeer(quiet) { const nm = T.peer.first; if (!quiet && !confirm(`Block ${nm}? Neither of you will be able to write here, and you won't see their posts or events. You can unblock in Settings.`)) return;
+    try { await api(`${apiOf(route.id)}/block`, {}); toast(`Blocked ${nm}.`); await loadInbox(); go(route.reqs ? REQ : ""); } catch (err) { toast(err.message); } }
+  async function requestAct(a) { const id = route.id;
+    if (a === "block") return blockPeer(false);
+    try { if (a === "accept") { await api(`${apiOf(id)}/accept`, {}); route.reqs = false; V = ""; await loadInbox(); await poll(true); $("#chIn")?.focus(); }
+      if (a === "delete") { await api(`${apiOf(id)}/delete`, {}); toast("Request deleted."); await loadInbox(); go((B.requests || []).length ? REQ : ""); } } catch (err) { toast(err.message); } }
+  function dmDetails() { const P = T.peer;
+    sheet(`<div class="ch-det"><h2>${esc(P.name)}</h2><p>${esc(P.handle ? "@" + P.handle : "Direct message")}. Only the two of you can read this.</p>
+      <div class="ch-acts">${P.handle ? `<a class="ch-act" href="/@${encodeURIComponent(P.handle)}">${G.open}See their page</a>` : ""}</div>
+      <label class="ch-tog"><span>Mute this conversation<small>No alerts or emails. It stays in your chats.</small></span><input type="checkbox" id="chMute" ${T.me.muted ? "checked" : ""}></label>
+      <div class="ch-acts"><button class="ch-act warn" data-d="delete">${G.trash}Delete conversation</button>${P.gone ? "" : `<button class="ch-act warn" data-d="block">${G.block}Block ${esc(P.first)}</button><button class="ch-act warn" data-d="report">${G.flag}Report</button>`}</div>
+      <p style="margin:10px 0 0;font-size:13px;color:var(--ch-smoke)">Deleting clears it for you only. ${esc(P.first)} keeps their copy.</p></div>`, (s) => {
+      $("#chMute", s).onchange = async (e) => { try { const j = await api(`${apiOf(route.id)}/mute`, { on: e.target.checked }); T.me.muted = j.muted; toast(j.muted ? "Muted. No alerts from this conversation." : "Alerts are back on."); loadInbox(); } catch (err) { toast(err.message); e.target.checked = !e.target.checked; } };
+      $$("[data-d]", s).forEach((b) => (b.onclick = async () => { const a = b.dataset.d; closeSheet();
+        if (a === "report") return dmReport(null); if (a === "block") return blockPeer(false);
+        if (a === "delete") { if (!confirm(`Delete this conversation? It clears for you. ${P.first} keeps their copy.`)) return; try { await api(`${apiOf(route.id)}/delete`, {}); toast("Conversation deleted."); await loadInbox(); go(""); } catch (err) { toast(err.message); } } })); }); }
+  // New message: people you can write to without asking (friends, people from your events, hosts and their guests)
+  function newMessage() { let t = 0;
+    sheet(`<div class="ch-det"><h2 id="chNewH" tabindex="-1" data-focus>New message</h2><p>People you can message now: friends, and people from the same events.</p>
+      <label class="ch-search"><svg class="ch-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg><span class="ch-sr">Search people</span><input id="chPq" type="search" placeholder="Search by name" autocomplete="off" enterkeyhint="search"></label>
+      <div class="ch-pick" id="chPick" aria-live="polite"><div class="ch-skel" style="height:52px"></div></div></div>`, (s) => {
+      const box = $("#chPick", s), draw = async () => { const q0 = $("#chPq", s).value.trim(); let j; try { j = await api("/api/dm/people?q=" + encodeURIComponent(q0)); } catch (err) { box.innerHTML = `<p class="ch-sub">${esc(err.message)}</p>`; return; } if (!s.isConnected || $("#chPq", s).value.trim() !== q0) return;
+        box.innerHTML = j.people.length ? j.people.map((p) => `<button type="button" class="ch-p ch-pbtn" data-pid="${esc(p.pid)}">${av(p)}<span>${esc(p.name)}<small>${esc(p.why || "")}</small></span></button>`).join("")
+          : `<p class="ch-sub">${q0 ? `Nobody you can message by that name yet.` : "Nobody yet."} To write to someone new, open their page or their card on a guest list and tap Message.</p>`;
+        $$("[data-pid]", box).forEach((b) => (b.onclick = async () => { b.disabled = true; try { const r = await api("/api/dm/open", { pid: b.dataset.pid }); closeSheet(); await loadInbox(); go("dm/" + r.id); } catch (err) { toast(err.message); b.disabled = false; } })); };
+      $("#chPq", s).oninput = () => { clearTimeout(t); t = setTimeout(draw, 220); }; draw(); }); }
+  // Share into this conversation: one of your events or drops, a host page, or your story, as a card
+  function shareSheet() { sheet(`<div class="ch-det"><h2>Share with ${esc(T.peer.first)}</h2><p>It shows as a card they can tap. Or paste a Pottery Lab link in a message.</p><div class="ch-pick" id="chShareL"><div class="ch-skel" style="height:52px"></div></div></div>`, async (s) => { const box = $("#chShareL", s); let j;
+      try { j = await api("/api/dm/shareables"); } catch (err) { box.innerHTML = `<p class="ch-sub">${esc(err.message)}</p>`; return; } if (!s.isConnected) return; const K = { event: "Event", drop: "Drop", host: "Host page", story: "Story" };
+      box.innerHTML = j.items.length ? j.items.map((c, i) => `<button type="button" class="ch-p ch-pbtn" data-i="${i}">${c.img ? `<span class="ch-av sq"><img src="${esc(c.img)}" alt=""></span>` : `<span class="ch-av sq" aria-hidden="true">${G.open}</span>`}<span>${esc(c.title)}<small>${esc([K[c.type], c.sub].filter(Boolean).join(" · "))}</small></span></button>`).join("") : `<p class="ch-sub">Nothing to share yet. Events you host or are in for show here, and so do your stories.</p>`;
+      $$("[data-i]", box).forEach((b) => (b.onclick = async () => { const c = j.items[+b.dataset.i], id = route.id; closeSheet(); try { const r = await api(`${apiOf(id)}/messages`, { card: { type: c.type, id: c.id } }); if (id !== route.id) return; T.messages.push(r.message); V = ""; pinned = true; $("#chMsgs").innerHTML = msgsHTML(); toBottom(true); loadInbox(); } catch (err) { toast(err.message); } })); }); }
 
   // pointer and touch on messages
   let press = 0, pressXY = null;
@@ -238,10 +326,10 @@
   document.addEventListener("touchend", () => { clearTimeout(press); press = 0; }, { passive: true });
   document.addEventListener("contextmenu", (e) => { const m = e.target.closest?.(".ch-m"); if (!m || e.target.closest("a")) return; e.preventDefault(); if (fine) menu(msgOf(m.dataset.id)); });
   // a double tap likes it, the way people expect
-  let lastTap = 0; document.addEventListener("click", (e) => { const b = e.target.closest?.(".ch-b"); if (!b || e.target.closest("a,.ch-q")) return; const at = b.closest(".ch-m")?.querySelector(".ch-at"); if (at) at.hidden = !at.hidden; if (!T?.me?.canWrite) return; const t = now(); if (t - lastTap < 300) { if (at) at.hidden = true; const m = msgOf(b.closest(".ch-m")?.dataset.id); if (m && !m.reactions?.["❤️"]?.mine) react(m, "❤️"); lastTap = 0; } else lastTap = t; });
+  let lastTap = 0; document.addEventListener("click", (e) => { const b = e.target.closest?.(".ch-b"); if (!b || e.target.closest("a,.ch-q")) return; const at = b.closest(".ch-m")?.querySelector(".ch-at"); if (at) at.hidden = !at.hidden; if (!T?.me?.canWrite || (T.dm && T.state !== "open")) return; const t = now(); if (t - lastTap < 300) { if (at) at.hidden = true; const m = msgOf(b.closest(".ch-m")?.dataset.id); if (m && !m.reactions?.["❤️"]?.mine) react(m, "❤️"); lastTap = 0; } else lastTap = t; });
   document.addEventListener("click", (e) => {
     const tool = e.target.closest?.("[data-tool]"); if (tool) { const m = msgOf(tool.closest(".ch-m")?.dataset.id); if (tool.dataset.tool === "reply") startReply(m); else menu(m, tool.dataset.tool === "react"); return; }
-    const rx = e.target.closest?.("[data-rx]"); if (rx) { const m = msgOf(rx.closest(".ch-m")?.dataset.id); if (m && T?.me?.canWrite) react(m, rx.dataset.rx); return; }
+    const rx = e.target.closest?.("[data-rx]"); if (rx) { const m = msgOf(rx.closest(".ch-m")?.dataset.id); if (m && T && canAct()) react(m, rx.dataset.rx); return; }
     const g = e.target.closest?.("[data-goto]"); if (g) { const el = $(`.ch-m[data-id="${CSS.escape(g.dataset.goto)}"]`); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.remove("hl"); void el.offsetWidth; el.classList.add("hl"); } else toast("That message is further back."); return; }
     const ph = e.target.closest?.("[data-ph]"); if (ph) { const v = document.createElement("div"); v.className = "ch-viewer"; v.innerHTML = `<button type="button" class="ch-icon" aria-label="Close">${G.x}</button><img src="${esc(ph.dataset.ph)}" alt="">`; v.onclick = () => v.remove(); document.body.appendChild(v); v.querySelector("button").focus(); return; }
     const rt = e.target.closest?.("[data-retry]"); if (rt) { const m = pending.find((p) => p.id === rt.dataset.retry); if (m) sendText(m.text, m); return; }
@@ -256,7 +344,8 @@
 
   // ---- start ----
   document.body.classList.toggle("ch-open", !!route.id); fit();
-  loadInbox().then(() => { if (!route.id && wide() && B?.chats?.length) { const first = B.chats.find((c) => !c.locked); if (first) { route.id = first.id; history.replaceState({ chat: first.id }, "", "/chats/" + encodeURIComponent(first.id)); paintRows(); } } openThread(); });
+  loadInbox().then(() => { if (route.id && (B?.requests || []).some((r) => r.id === route.id)) { route.reqs = true; paintRows(); }
+    if (!route.id && !route.reqs && wide() && (B?.chats?.length || B?.dms?.length)) { const first = (B.chats || []).find((c) => !c.locked) || (B.dms || [])[0]; if (first) { route.id = first.id; history.replaceState({ chat: first.id }, "", hrefOf(first.id)); paintRows(); } } openThread(); });
   // the inbox refreshes every 12 seconds while the tab shows, on the shared poller (public/poller.js), paused while hidden
   if (window.PLPoll) window.PLPoll.every("chat-inbox", async () => { if (!(await loadInbox())) throw new Error("inbox"); }, { ms: 12000, max: 120000 }); else setInterval(() => { if (!document.hidden) loadInbox(); }, 12000);
 })();

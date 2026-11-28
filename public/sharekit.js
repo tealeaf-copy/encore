@@ -44,6 +44,7 @@
   // drawn glyphs (1.75 stroke, currentColor): no third-party logos
   const G = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const IC = { link: G('<path d="M10 14a4 4 0 0 0 5.7 0l2.8-2.8a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 0 0 5.7 5.7l1-1"/>'),
+    chat: G('<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17h0A1.5 1.5 0 0 1 4 15.5z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>'),
     sms: G('<path d="M4.5 6.5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4 3.5v-3.5h0a1.5 1.5 0 0 1-1.5-1.5z"/>'), wa: G('<path d="M5.2 19.2l1-3.4a7.6 7.6 0 1 1 2.6 2.5z"/><path d="M9.3 9.2c.3 2.2 2.3 4.2 4.6 4.6l1-1.1-1.6-.8-.6.6c-.9-.4-1.6-1.1-2-2l.6-.6-.8-1.6z"/>'),
     ig: G('<rect x="4.5" y="4.5" width="15" height="15" rx="4.5"/><circle cx="12" cy="12" r="3.4"/><path d="M16.6 7.4h.01"/>'), story: G('<circle cx="12" cy="12" r="7.5" stroke-dasharray="3.2 2.4"/><path d="M12 9v6M9 12h6"/>'),
     more: G('<path d="M12 4.5v10M8 8l4-3.5L16 8M5.5 12.5v6h13v-6"/>'), save: G('<path d="M12 4.5v10M8 11l4 3.5 4-3.5M5.5 18.5h13"/>'), x: G('<path d="M6 6l12 12M18 6L6 18"/>', 22), prev: G('<path d="M14.5 6 8.5 12l6 6"/>', 20), next: G('<path d="m9.5 6 6 6-6 6"/>', 20) };
@@ -142,7 +143,7 @@
 .plsh-tap{margin:0;color:var(--pl-muted,#6E665D);font-size:13px;text-align:center;min-height:18px}
 .plsh-dots{display:flex;justify-content:center;align-items:center;margin:6px 0 0}.plsh-dots button{width:44px;height:44px;margin:-8px;border:0;background:none;display:grid;place-items:center;cursor:pointer;padding:0}.plsh-dots button::after{content:"";width:6px;height:6px;border-radius:3px;background:var(--pl-line-strong,#CFC6B8);transition:width .2s,background .2s}.plsh-dots button[aria-current="true"]::after{width:18px;background:var(--pl-ink,#1D1B18)}
 .plsh-nav{position:absolute;top:46%;width:40px;height:40px;border-radius:50%;border:1px solid var(--pl-line,#E2DCD1);background:var(--pl-surface,#FBF9F5);color:var(--pl-ink,#1D1B18);display:none;place-items:center;cursor:pointer}@media (hover:hover) and (min-width:700px){.plsh-nav{display:grid}}.plsh-nav[disabled]{opacity:0;pointer-events:none}.plsh-nav.p{left:10px}.plsh-nav.n{right:10px}
-.plsh-row{display:flex;justify-content:center;gap:4px;padding:14px 8px 0}
+.plsh-row{display:flex;justify-content:center;gap:4px;padding:14px 8px 0}.plsh-row:has(.plsh-t:nth-child(6)){gap:1px;padding-left:2px;padding-right:2px}
 .plsh-t{flex:0 1 68px;min-width:0;display:grid;justify-items:center;gap:6px;border:0;background:none;color:var(--pl-ink,#1D1B18);font:500 13px/1.2 var(--pl-font-text,system-ui);cursor:pointer;padding:4px 0;text-align:center}
 .plsh-t i{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:var(--pl-raised,#ECE6DB);color:var(--pl-ink,#1D1B18);font-style:normal;transition:background .15s}.plsh-t:hover i{background:var(--pl-line,#E2DCD1)}.plsh-t.pri i{background:var(--pl-ink,#1D1B18);color:#fff}
 .plsh-t:focus-visible{outline:none}.plsh-t:focus-visible i{outline:2px solid var(--pl-ink,#1D1B18);outline-offset:2px}
@@ -205,8 +206,11 @@
       if (how === "save") { if (phone() && (await shareFile(b, file))) return; download(b, file); return say(k === "qr" ? "QR code saved" : "Flyer saved"); }
       if (how === "story") { const ok = await copyText(D.url); if (await shareFile(b, file)) return; download(b, file); return say(ok ? "Saved. The link is copied for a link sticker" : "Saved. Add it to your story"); }
       if (await shareFile(b, file, { text: msg })) return; download(b, file); await copyText(msg); if (how === "sms") { say("Saved. Attach it in Messages"); if (isPhone) setTimeout(() => { location.href = smsTo(msg); }, 600); } else say("Saved, and the link is copied"); };
+    // "Chats" (signed in only): the event or drop as a card in a direct message on Pottery Lab (public/dmstart.js, loaded on the tap)
+    const dmId = /(?:^|;\s*)encore_in=1/.test(document.cookie) ? String(D.eventId || D.event?.id || (/\/e\/([A-Za-z0-9_-]{1,80})(?:[?#]|$)/.exec(D.url) || [])[1] || "") : "";
+    const inChat = () => { tr("dm"); const go = () => { close(); window.PLDMStart.share({ type: "event", id: dmId, title: D.title }); }; if (window.PLDMStart) return go(); const t = document.createElement("script"); t.src = "/dmstart.js"; t.onload = go; document.head.appendChild(t); };
     const ROWS = {
-      link: [["Copy link", IC.link, async () => { tr("copy"); if (await copyText(D.url)) say("Link copied"); }, 1], ["Messages", IC.sms, sms], ["Instagram", IC.ig, insta], ["WhatsApp", IC.wa, () => { tr("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener"); }], ["More", IC.more, more]],
+      link: [["Copy link", IC.link, async () => { tr("copy"); if (await copyText(D.url)) say("Link copied"); }, 1], ["Messages", IC.sms, sms], ["Instagram", IC.ig, insta], ["WhatsApp", IC.wa, () => { tr("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener"); }], ...(dmId ? [["Chats", IC.chat, inChat]] : []), ["More", IC.more, more]],
       flyer: [["Save", IC.save, () => img("flyer", "save"), 1], ["Messages", IC.sms, () => img("flyer", "sms")], ["Stories", IC.story, () => img("flyer", "story")], ["More", IC.more, () => img("flyer", "more")]],
       qr: [["Save", IC.save, () => img("qr", "save"), 1], ["Messages", IC.sms, () => img("qr", "sms")], ["More", IC.more, () => img("qr", "more")]] };
     let at = -1; const drawRow = () => { const R = ROWS[S[at].k]; row.innerHTML = R.map(([l, ic, , pri], i) => `<button type="button" class="plsh-t${pri ? " pri" : ""}" data-t="${i}"><i>${ic}</i><span>${esc(l)}</span></button>`).join(""); $$("[data-t]", row).forEach((b) => (b.onclick = () => R[+b.dataset.t][2]())); };

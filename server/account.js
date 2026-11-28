@@ -9,6 +9,9 @@
 //   file uploaded to it (photos, covers). A team workspace with other people stays theirs; the next person becomes owner.
 // - your account record, so every session you have stops working on the next request
 // - your sign-in methods: Apple and Google identities, passkeys, and the Apple token, revoked with Apple (server/signin.js)
+// - your direct messages (server/dm.js): every message you wrote and its photos; the other person keeps their own
+//   messages in a closed conversation that says the account was deleted
+// - your stories (server/storymake.js): the slides and their image and video files, and who saw or answered them
 // - your posts, friends, bell, saves, boards, library lists and their share links, push devices, blocks, settings
 //   (system docs that carry your email); what you added to a friend's shared list goes too (server/library.js)
 // - on other hosts' events: photos you added are deleted with their files; your replies and kudos stay as numbers for
@@ -60,6 +63,12 @@ export async function deleteAccountNow(store, email, { assetsDir, X = null, push
   else if (ws && ws !== DEFAULT_WS) { if (u.owner) { const next = others[0]; putDbUser({ ...next, owner: true }); updateWorkspace(ws, { ownerEmail: next.email }); } }
   // 2. everything else that carries their email
   const blobUrls = [];
+  // direct messages (server/dm.js): what they wrote goes, with its photos; the other person keeps their own side
+  try { const d = X?.dm?.forget?.(em); if (d) { out.messages = d.messages; for (const id of d.files) blobUrls.push("/_blob/" + id); } } catch (e) { console.warn("[account] dm", e?.message); }
+  // stories (server/storymake.js): each slide's picture or video, its poster and overlay, and uploads that never made a story
+  try { for (const d of store.listPrefix("system", "pstory-")) { const s = d.data; if (s && lc(s.authorEmail || s.author) === em) for (const u of [s.url, s.poster, s.overlay]) if (u) blobUrls.push(u); }
+    for (const x of store.get("system/storyup-" + socialHash(em))?.data?.list || []) if (x?.url) blobUrls.push(x.url);
+    X?.storyOf?.forget?.(em); } catch (e) { console.warn("[account] stories", e?.message); }
   for (const d of store.dumpPrefix("")) {
     const p = d.path; if (p === userPath(em) || (out.workspace && p.startsWith(`ws/${ws}/`))) continue;
     const s = JSON.stringify(d.data).toLowerCase(); if (!s.includes(em)) continue;

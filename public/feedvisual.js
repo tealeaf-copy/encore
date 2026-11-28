@@ -270,29 +270,33 @@
     const id = "fbAdd" + nAdd++;
     return `<form class="fb-add" data-fb-add="${esc(t)}" novalidate>${face(ME || { g: 1 })}<label class="fb-sr" for="${id}">Add a comment</label><textarea id="${id}" rows="1" maxlength="500" placeholder="Add a comment…" enterkeyhint="send" autocomplete="off"></textarea>${funBtns()}<button type="submit" class="fb-sendc" disabled>Send</button><p class="fb-add-err" role="alert"></p></form>`; };
   /** The social block: a thin line, the faces and names, the action row, the latest comments, the comment box. */
-  const socBlock = (it, acts) => `<div class="fb-soc" data-fb-soc="${esc(it.kudos?.target || "")}">${kudosLine(it.kudos || {})}${acts}${cmPreview(it)}${addBox(it)}</div>`;
+  // feed card: "Tuongvan is going" and "You gave kudos" share one small line above the action row (stacked faces, then the words)
+  const proofIn = (P) => (P?.line ? `<span class="fb-proof">${stack(P.faces, P.sketches)}<span>${esc(P.line)}</span></span>` : "");
+  const socBlock = (it, acts) => `<div class="fb-soc" data-fb-soc="${esc(it.kudos?.target || "")}"><div class="fb-social">${proofIn(it.proof)}${kudosLine(it.kudos || {})}</div>${acts}${cmPreview(it)}${addBox(it)}</div>`;
   function actRow(it, { kudosLabel = "Kudos" } = {}) { const k = it.kudos || {};
     return socBlock(it, `<div class="fb-acts" role="group" aria-label="Kudos, comment and share">
       ${k.target ? kudosBtn(k, "fb-act", kudosLabel) : ""}
       ${commentBtn(it)}
       ${it.share ? `<button type="button" class="fb-act" data-fb-share="${esc(it.share.url)}" data-title="${esc(it.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>`); }
   const meta = (L) => `<p class="fb-meta">${esc(L.filter(Boolean).join(" · "))}</p>`;
+  // feed card: one post is one card. Header, cover (the type tag on its corner), body (title, one line, one facts line),
+  // the one primary button with the price next to it, then the social row. The page behind the title has everything in full.
   function evCard(e, i) { const st = e.spotsLeft != null && e.spotsLeft <= 5 ? (e.spotsLeft ? `${e.spotsLeft} spot${e.spotsLeft === 1 ? "" : "s"} left` : "Full") : "";
-    const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="800" height="500" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` : art({ ...e, hood: e.where }, { title: "" });
-    const P = e.proof || {};
-    return `<article class="fb-card fb-ev" data-fv-id="${esc(e.id)}" data-kind="event">${lead(e.host, [e.members ? "For members" : e.followed ? "A host you follow" : "", e.where].filter(Boolean).join(" · "), { type: "event", target: "event:" + e.id, name: e.title })}
-      ${P.line ? `<p class="fb-proof">${stack(P.faces, P.sketches)}<span>${esc(P.line)}</span></p>` : ""}
-      <a class="fb-media" href="${esc(e.cta.url)}" tabindex="-1" aria-hidden="true">${media}</a>
-      ${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
-      ${e.drop && e.pickup ? meta(["Order ahead", e.pickup.replace(/^Pickup /, "Pickup "), e.left || e.price]) /* a drop: pickup, never an event date (public/pickup.js) */ : meta([when(e), e.free ? "Free" : e.price, st])}
-      <a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a>${actRow(e)}</article>`; }
+    const F = e.coverSpec?.focus, pos = e.cover && F && Number.isFinite(+F.x) && Number.isFinite(+F.y) ? ` style="object-position:${+F.x}% ${+F.y}%"` : ""; // a photo keeps its focus point in the shorter crop
+    const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="800" height="400"${pos} ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` : art({ ...e, hood: e.where }, { title: "" });
+    const ctx = e.members ? "For members" : e.followed ? "A host you follow" : "", price = e.drop ? e.price : e.free ? "Free" : e.price;
+    return `<article class="fb-card fb-ev" data-fv-id="${esc(e.id)}" data-kind="event">${lead(e.host, e.drop ? [ctx, e.where].filter(Boolean).join(" · ") : ctx || (e.city && e.city !== e.where ? e.city : ""), { type: "event", target: "event:" + e.id, name: e.title })}
+      <div class="fb-cover${e.cover ? "" : " fb-cover-art"}"><a class="fb-media" href="${esc(e.cta.url)}" tabindex="-1" aria-hidden="true">${media}</a>${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}</div>
+      <div class="fb-body"><h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
+      ${e.drop && e.pickup ? meta([e.pickup, e.left]) /* a drop: pickup, never an event date (public/pickup.js); the tag says Pickup, the button says Order */ : meta([when(e), e.where, st])}</div>
+      <div class="fb-go">${price ? `<span class="fb-price">${esc(price)}</span>` : ""}<a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a></div>${actRow(e)}</article>`; }
   // not recapCard: that name is the story viewer's recap slide above, and a second declaration replaced it, so a recap story crashed
   function blendRecap(r) { const key = "fb:" + r.id;
     REG.set(key, { host: r.host, items: (r.photos || []).map((p, i) => ({ id: "m:" + (p.id || i) + ":" + r.id, type: p.type === "video" ? "video" : "image", url: p.url, poster: p.poster, caption: [r.title, dayOf(r.date, { weekday: "short" })].filter(Boolean).join(" · "), note: p.caption, by: p.by, past: true, cta: r.next ? { label: "I'm in", url: r.next.url } : { label: "Share", url: r.share.url } })) });
-    const sub = ["Recap", dayOf(r.date, { weekday: "short", month: "short", day: "numeric" }), r.where].filter(Boolean).join(" · ");
-    return `<article class="fb-card fb-recap" data-fv-id="${esc(r.id)}" data-kind="recap">${lead(r.host, sub, { type: "event", target: "event:" + r.id, name: r.title })}
+    const facts = [dayOf(r.date, { weekday: "short", month: "short", day: "numeric" }), r.where].filter(Boolean); // the header says what it is, the facts line says when and where (the same places as an event card)
+    return `<article class="fb-card fb-recap" data-fv-id="${esc(r.id)}" data-kind="recap">${lead(r.host, "Recap", { type: "event", target: "event:" + r.id, name: r.title })}
       ${r.by ? `<p class="fb-by">${initial(r.by, 20)}<span><b>${esc(r.by.name)}</b> shared ${esc(plural(r.by.photos, "photo"))}</span></p>` : ""}
-      <h3 class="fb-title sm">${esc(r.title)}</h3>
+      <h3 class="fb-title sm">${esc(r.title)}</h3>${facts.length ? meta(facts) : ""}
       ${r.note ? `<blockquote class="fb-note"${rep({ type: "kudos", text: r.note.text, name: r.note.name || "" })}><p>${esc(r.note.text)}</p>${r.note.name ? `<cite>${esc(r.note.name)}</cite>` : ""}</blockquote>` : ""}
       ${r.stats?.length ? `<p class="fb-stats">${r.stats.map((s) => `<span>${esc(s)}</span>`).join("")}</p>` : ""}
       ${r.polaroid?.caption ? `<p class="fb-line">${esc(r.polaroid.caption)}</p>` : ""}<div class="fb-photos${r.polaroid ? " fb-pol" : ""}" role="group" aria-label="Photos from ${esc(r.title)}" tabindex="0">${(r.photos || []).map((p, i) => `<button type="button" class="fb-ph" data-fv-open="${esc(key)}" data-k="${i}" aria-label="Open photo ${i + 1} of ${r.photos.length}">${mediaBox(p, { ratio: r.polaroid ? "1/1" : "4/5" })}${r.polaroid ? `<span class="fb-stamp">${esc(r.polaroid.stamp)}</span>` : ""}</button>`).join("")}</div>
@@ -301,7 +305,7 @@
   function milestoneCard(m) { const k = m.kudos || {};
     return `<article class="fb-card fb-ms" data-kind="milestone">${lead(m.host, m.type === "streak" ? "Streak" : "Milestone", m.person ? { type: "person", target: "person:" + m.person.key, key: m.person.key, name: m.person.name } : { type: "host", target: "host:" + m.host.handle, handle: m.host.handle, name: m.host.name })}
       <div class="fb-ms-b"><span class="fb-ms-n" aria-hidden="true">${esc(m.type === "streak" ? m.n + "w" : ord(m.n))}</span><div><h3 class="fb-ms-t">${esc(m.text)}</h3>${m.sub ? `<p class="fb-line">${esc(m.sub)}</p>` : ""}</div></div>
-      ${socBlock(m, `<div class="fb-acts" role="group" aria-label="Kudos, comment and share">${k.target ? kudosBtn(k, "fb-send", k.mine ? "Kudos sent" : "Send kudos") : ""}${commentBtn(m)}${m.share ? `<button type="button" class="fb-act" data-fb-share="${esc(m.share.url)}" data-title="${esc(m.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>`)}</article>`; }
+      ${socBlock(m, `<div class="fb-acts" role="group" aria-label="Kudos, comment and share">${k.target ? kudosBtn(k, "fb-act fb-send", k.mine ? "Kudos sent" : "Send kudos") : ""}${commentBtn(m)}${m.share ? `<button type="button" class="fb-act" data-fb-share="${esc(m.share.url)}" data-title="${esc(m.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>`)}</article>`; }
   const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
   function followRow(f, signedIn) { let gone = []; try { gone = signedIn ? [] : JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); } catch {}
     f = { ...f, cards: (f.cards || []).filter((c) => !gone.includes(c.type === "host" ? "host:" + c.handle : "person:" + c.key)) }; if (f.cards.length < 2) return "";
@@ -315,13 +319,16 @@
       <div class="fb-ideas-go"><button type="button" class="fb-ghost" data-fb-deck>Swipe ideas</button><a class="fb-link" href="/ideas">See them all</a></div></section>`;
   /** A host's post to their fan club ({kind:"club"}, server/fanclub.js), shown to members only; kudos is the club heart. */
   const clubCard = (u) => (u?.host?.handle ? `<article class="fb-card fb-upd" data-kind="club">${lead(u.host, ["For " + (u.club?.name || "members"), u.at ? new Date(u.at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""].filter(Boolean).join(" · "), u.report ? { type: "post", target: u.report, name: u.host.name } : null)}
-      <p class="fb-text">${esc(u.text || "")}</p>${u.photo && /^\/_blob\/[A-Za-z0-9]{20}$/.test(u.photo) ? `<span class="fb-media"><img class="fv-img" src="${esc(u.photo)}" alt="" loading="lazy" decoding="async"></span>` : ""}${actRow(u)}</article>` : "");
+      ${longText(u.text || "")}${u.photo && /^\/_blob\/[A-Za-z0-9]{20}$/.test(u.photo) ? `<span class="fb-media"><img class="fv-img" src="${esc(u.photo)}" alt="" loading="lazy" decoding="async"></span>` : ""}${actRow(u)}</article>` : "");
+  // feed card: long words are clamped with a More button that opens them in place (never cut off for good)
+  const longText = (t, cls = "fb-text") => (String(t).length > 280 || String(t).split("\n").length > 6 ? `<p class="${cls} fb-clamp">${esc(t)}</p><button type="button" class="fb-more" data-fb-more aria-expanded="false">More</button>` : `<p class="${cls}">${esc(t)}</p>`);
+  document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-fb-more]"); if (!b) return; const p = b.previousElementSibling; p?.classList.remove("fb-clamp"); b.remove(); p?.setAttribute("tabindex", "-1"); p?.focus({ preventScroll: true }); });
   const rowCard = (r) => `<section class="fb-card fb-rowc" data-kind="row"><header class="fb-sec"><h2>${esc(r.title || "More coming up")}</h2><a href="/discover">Discover</a></header>${row(r.items.map((e) => mini({ ...e, hood: e.where })).join(""), r.title || "More coming up")}</section>`;
   const RENDER = { event: evCard, recap: blendRecap, milestone: milestoneCard, ideas: ideasCard, club: clubCard, row: rowCard };
   /** The stream, in the server's order. postRender draws a friend's post (public/feed.html). */
   function blendHtml(B, { postRender = null, signedIn: si = false } = {}) { let n = 0; SI = !!si; ME = B.me || ME; SOC.clear(); for (const it of B.items || []) if (it?.kudos?.target) SOC.set(it.kudos.target, it);
     const parts = (B.items || []).map((it) => { try { if (it.kind === "post") return postRender ? postRender(it) : ""; if (it.kind === "follow") return followRow(it, si); const f = RENDER[it.kind] || RENDER[it.type]; return f ? f(it, it.kind === "event" ? n++ : 0) : ""; } catch { return ""; } }).filter(Boolean);
-    return `<div class="fb-stream">${parts.join("")}</div>`; }
+    return `<div class="fb-stream${LEADFULL ? " fb-full" : ""}">${parts.join("")}</div>`; }
   // what the stream's buttons do: kudos (toggled), comment, share, follow, add a friend, dismiss, open the ideas deck
   const say = (b, t) => { const s = b.querySelector("span"); if (s) s.textContent = t; else b.textContent = t; };
   const note = (t) => { if (window.PLToast) return window.PLToast(t); const n = document.createElement("div"); n.setAttribute("role", "status"); n.className = "fb-toast"; n.textContent = t; document.body.appendChild(n); setTimeout(() => n.remove(), 3200); };
@@ -345,7 +352,7 @@
   /** Comment: the cursor goes in the card's own box (or the post page's), the box comes up to the middle of the screen. */
   function focusBox(t) { const ta = document.querySelector(`form[data-fb-add="${CSS.escape(t)}"] textarea`) || document.querySelector("[data-pp-box] textarea");
     if (!ta) { const p = postOf(t); if (p) location.href = p; return; } try { ta.focus({ preventScroll: true }); ta.scrollIntoView({ block: "center", behavior: RM() ? "auto" : "smooth" }); } catch { ta.focus(); } }
-  document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-fb-comment]"); if (!b) return; e.preventDefault(); focusBox(b.dataset.fbComment); });
+  document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-fb-comment]"); if (!b) return; e.preventDefault(); b.closest(".fb-soc")?.classList.add("fb-open"); /* feed card: the box waits closed until Comment */ focusBox(b.dataset.fbComment); });
   // the comment box on a card: it grows as you write, Enter sends on a keyboard (Shift+Enter for a new line)
   const grow = (ta) => { const f = ta.form; ta.style.height = "auto"; ta.style.height = Math.min(132, ta.scrollHeight + 2) + "px"; const on = !!ta.value.trim(); f.classList.toggle("on", on); const s = f.querySelector(".fb-sendc"); if (s) s.disabled = !on || !!f.dataset.busy; };
   document.addEventListener("input", (e) => { const ta = e.target.closest?.("form.fb-add textarea"); if (!ta) return; const er = ta.form.querySelector(".fb-add-err"); if (er) er.textContent = ""; grow(ta); });
@@ -775,6 +782,72 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
 .fb-stream :focus-visible{outline:3px solid var(--fb-ink);outline-offset:2px}
 @media (min-width:700px){.fb-title{font-size:28px}.fb-photos,.fb-fcs,.fb-rowc .fv-row{margin:0;padding-left:0;padding-right:0}.fb-ph{flex-basis:46%}.fb-card{padding:36px 0}}
 @media (prefers-reduced-motion:reduce){.fb-cta,.fb-fc,.fb-act.pop svg,.fb-send.pop svg,.fb-f.fb-in{transition:none!important;animation:none!important}.fb-fc.gone{transform:none}}
+/* ==== FEED CARD: start. One post is one card: one surface, one edge, 12px between cards, no rules inside. Groups:
+   header / cover / body (title, line, facts) / primary / social. 4px inside a group, 8 to 12px between groups.
+   .fb-full is the post page (public/post.html), which keeps its open layout. Comment list markup is untouched. ==== */
+.fb-stream{--fb-pad:12px;gap:12px}
+.fb-stream:not(.fb-full)>:is(.fb-card,.fv-post){padding:var(--fb-pad);border:1px solid var(--fb-line);border-radius:var(--pl-r-md,6px);background:var(--fb-card);box-sizing:border-box}
+.fb-stream .fb-lead{margin:-4px 0 6px}.fb-stream:not(.fb-full) .fb-host small{white-space:normal;overflow:visible;overflow-wrap:anywhere}.fb-stream.fb-full .fb-lead{margin:0 0 12px}
+.fb-stream:not(.fb-full) .fb-follow-in{position:relative;min-height:32px;padding:0 12px}.fb-stream:not(.fb-full) .fb-follow-in::after{content:"";position:absolute;inset:-6px 0}
+/* a host you already follow: the button is a small check (its words stay for screen readers; the line under the name says it) */
+html body .fb-stream:not(.fb-full) .fb-lead .fb-follow-in[data-plf-on=true]{min-width:44px;padding:0;justify-content:center;border-color:transparent!important;background:none!important;color:var(--fb-soft)}.fb-stream:not(.fb-full) .fb-lead [data-plf-on=true] .plf-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fb-cover{position:relative;margin:0 0 12px}.fb-stream:not(.fb-full) .fb-cover{margin:0 calc(0px - var(--fb-pad)) 10px}.fb-stream:not(.fb-full) .fb-cover .fb-media{border-radius:0}
+.fb-cover .fb-media{aspect-ratio:2/1}.fb-cover-art .fb-media{aspect-ratio:5/2}.fb-cover .fb-media .ea-cover{width:100%;height:100%}
+html body .fb-cover>.pl-type.pl-type--b{position:absolute;left:10px;top:10px;z-index:1;display:inline-flex;margin:0;box-shadow:0 0 0 1px rgba(27,29,28,.18)}
+.fb-body{min-width:0}
+.fb-stream .fb-title{margin:0 0 2px;font:600 20px/1.25 var(--sys-display);letter-spacing:-.005em}.fb-stream .fb-title.sm{font-size:18px;margin:0 0 6px}
+.fb-stream .fb-title a{display:inline;position:relative;padding:0;margin:0}.fb-stream .fb-title a::after{content:"";position:absolute;inset:-10px 0}
+.fb-stream:not(.fb-full) .fb-ev .fb-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fb-stream .fb-line{font-size:14px;line-height:1.4}
+.fb-stream .fb-meta{margin:4px 0 0;font:400 14px/1.4 var(--pl-font-text,"IBM Plex Sans",system-ui);letter-spacing:0;color:var(--fb-soft)}
+.fb-stream:not(.fb-full) .fb-meta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fb-go{display:flex;align-items:center;gap:12px;margin:12px 0 0}.fb-price{flex:none;max-width:45%;font:600 16px/1.2 var(--pl-font-text,"IBM Plex Sans",system-ui);color:var(--fb-ink);font-variant-numeric:tabular-nums}
+.fb-stream .fb-cta{flex:1;width:auto;min-width:0;min-height:48px;margin:0}
+.fb-stream .fb-soc{margin-top:8px;border-top:0}.fb-stream:not(.fb-full) .fb-soc:last-child{margin-bottom:-8px}
+.fb-social{display:flex;align-items:center;gap:6px;min-width:0;font-size:13px;line-height:1.3;color:var(--fb-soft)}
+.fb-social .fb-proof{flex:0 1 auto;min-width:0;display:inline-flex;align-items:center;gap:6px;min-height:28px;margin:0;font-size:13px;color:var(--fb-ink)}.fb-social .fb-proof>span:last-child{overflow-wrap:anywhere}
+.fb-social .fb-count{position:relative;flex:0 1 auto;min-width:0;min-height:28px;margin:0;gap:6px;font-size:13px}.fb-social .fb-count::after{content:"";position:absolute;inset:-8px 0}
+.fb-social .fb-proof+.fb-count:not([hidden])::before{content:"·";flex:none}
+.fb-social .fb-f,.fb-social .fb-stack .fv-av{width:20px!important;height:20px!important;font-size:10px!important}
+.fb-stream .fb-acts,.fb-stream .fb-ms .fb-acts{display:flex;flex-wrap:nowrap;gap:0;margin:0 -8px}
+.fb-stream .fb-act,.fb-stream .fb-act.fb-send{flex:0 0 33.333%;box-sizing:border-box;min-width:0;min-height:44px;margin:0;padding:0 4px;gap:5px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--fb-soft);font:500 13px var(--pl-font-text,"IBM Plex Sans",system-ui)}
+.fb-stream .fb-act svg{width:18px;height:18px}.fb-stream .fb-act:hover{background:none;color:var(--fb-soft)}.fb-stream .fb-act[aria-pressed=true],.fb-stream .fb-act[aria-pressed=true]:hover{color:var(--fb-acc-text)}
+@media (hover:hover){.fb-stream .fb-act:hover{background:var(--fb-linen);color:var(--fb-ink)}.fb-stream .fb-act[aria-pressed=true]:hover{color:var(--fb-acc-text)}}
+.fb-stream .fb-n::before{content:none}
+/* comments on a feed card: the latest ones as one quiet inset, the box closed until Comment is tapped; emoji and GIF once you are in the box */
+.fb-stream:not(.fb-full) .fb-cm{margin:2px 0 8px;padding:6px 10px;border-radius:var(--pl-r-md,6px);background:var(--pl-page)}
+.fb-stream:not(.fb-full) .fb-cm:has(.fb-cm-all) .fb-cms>li:nth-last-child(n+3){display:none}
+.fb-stream:not(.fb-full) .fb-c p{font-size:14px;line-height:1.4;-webkit-line-clamp:2}.fb-stream .fb-c .fb-at{font:400 12px/1.4 var(--pl-font-text,"IBM Plex Sans",system-ui);letter-spacing:0}
+.fb-stream:not(.fb-full) .fb-cm-all{position:relative;min-height:28px;font-size:13px}.fb-stream:not(.fb-full) .fb-cm-all::after{content:"";position:absolute;inset:-8px 0}
+.fb-stream:not(.fb-full) .fb-soc:not(.fb-open)>.fb-add{display:none}
+.fb-stream:not(.fb-full) .fb-add{margin:4px 0 8px}.fb-stream .fb-add textarea:focus{outline:2px solid var(--fb-acc)!important;outline-offset:0!important}
+.fb-stream:not(.fb-full) .fb-add:not(:focus-within):not(.on):not(:has([aria-expanded=true])) .fx-b{display:none}
+/* the other kinds: the same container and scale, only the body differs */
+.fb-stream .fb-by{margin:0 0 6px;font-size:13px}.fb-stream .fb-note{margin:0 0 8px;padding-left:10px}.fb-stream .fb-note p{font-size:15px;line-height:1.4}
+.fb-stream .fb-stats{margin:0 0 10px;font:500 13px/1.4 var(--pl-font-text,"IBM Plex Sans",system-ui)}
+.fb-stream:not(.fb-full) :is(.fb-photos,.fb-fcs,.fb-rowc .fv-row){margin-left:calc(0px - var(--fb-pad));margin-right:calc(0px - var(--fb-pad));padding-left:var(--fb-pad);padding-right:var(--fb-pad);scroll-padding:0 var(--fb-pad)}
+.fb-stream:not(.fb-full) .fb-photos{gap:6px}.fb-stream:not(.fb-full) .fb-photos:not(.fb-pol) .fb-ph{flex:0 0 44%;max-width:240px}.fb-stream:not(.fb-full) .fb-photos:not(.fb-pol) .fv-mb{aspect-ratio:1/1!important}
+.fb-stream:not(.fb-full) .fb-photos:not(.fb-pol) .fb-ph:only-child{flex-basis:100%;max-width:none}.fb-stream:not(.fb-full) .fb-photos:not(.fb-pol) .fb-ph:only-child .fv-mb{aspect-ratio:2/1!important}
+.fb-stream:not(.fb-full) .fb-pol .fb-ph{flex:0 0 52%;max-width:240px}
+.fb-stream .fb-next{margin-top:8px;padding:0 10px;border:0;border-radius:var(--pl-r-md,6px);background:var(--pl-page)}
+.fb-stream .fb-ms-b{gap:12px}.fb-stream .fb-ms-n{width:48px;height:48px;font-size:16px}.fb-stream .fb-ms-t{margin:0 0 2px;font-size:17px}
+.fb-stream .fb-sec{margin:0 0 8px}.fb-stream .fb-sec h2{font-size:17px}
+.fb-stream .fb-fc{flex-basis:148px;padding:16px 10px 12px;border-radius:var(--pl-r-md,6px);background:var(--pl-page);border-color:transparent}
+.fb-stream .fb-rowc .fv-tile-m{aspect-ratio:4/3}.fb-stream .fb-rowc .fv-tile small{font:400 13px/1.4 var(--pl-font-text,"IBM Plex Sans",system-ui);letter-spacing:0}.fb-stream .fb-ideas-go{margin-top:12px}.fb-stream .fb-src{font:400 13px/1.4 var(--pl-font-text,"IBM Plex Sans",system-ui)}.fb-stream .fb-text{margin:0 0 10px;font-size:15px;line-height:1.45}
+.fb-clamp{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.fb-more{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 0;padding:0;border:0;background:none;color:var(--fb-acc-text);font:600 14px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.fb-stream:not(.fb-full) .fb-upd .fb-media{display:block;aspect-ratio:3/2;margin:0 calc(0px - var(--fb-pad));border-radius:0}
+.fb-stream:not(.fb-full)>.fb-insp .ins-frame{border:0;border-radius:0;background:none;padding:0}
+.fb-stream:not(.fb-full) .pll-fc .pll-fc-by{margin:-4px 0 6px}.fb-stream:not(.fb-full) .pll-fc .pll-fc-cv i{border:1px solid var(--fb-line)}
+/* a friend's post (public/feed.html postCard): the same card, header and action row */
+.fb-stream .fv-post .ptext{margin:0 0 10px;font-size:15px;line-height:1.45;color:var(--fb-ink);overflow-wrap:anywhere}
+.fb-stream .fv-post .fb-cover .fb-media{aspect-ratio:4/3;max-height:360px;width:100%}.fb-stream .fb-recap .fb-meta{margin:-2px 0 8px}
+.fb-stream .fv-post .plink{margin:0 0 10px;padding:8px 10px;border:0;border-radius:var(--pl-r-md,6px);background:var(--pl-page)}
+.fb-stream .fv-post .fv-ask{margin:0 0 4px;font:600 15px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui);color:var(--fb-ink)}
+.fb-stream .fv-post .cheers{display:flex;align-items:center;min-height:28px;margin:0!important;font-size:13px;font-weight:400;color:var(--fb-soft)}
+.fb-stream .fv-post .fb-act.on{color:var(--fb-acc-text)}html body .fb-stream .fb-act.cheer{margin:0;padding:0 4px!important;background:none!important;font-size:13px!important}.fb-stream .fv-post .fb-soc{margin-top:0}
+@media (min-width:700px){.fb-stream{--fb-pad:16px;gap:16px}.fb-stream .fb-title{font-size:22px}.fb-stream .fb-title.sm{font-size:19px}.fb-stream:not(.fb-full) .fb-card{padding:var(--fb-pad)}.fb-stream:not(.fb-full) .fb-photos:not(.fb-pol) .fb-ph{flex-basis:38%}}
+/* ==== FEED CARD: end ==== */
 `;
   /** "?interests=…&city=…" from what this visitor picked (pl.interests), for /api/public/feed, or "". */
   function publicQuery() { let v = null; try { v = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch {} if (!v || typeof v !== "object") v = {};
@@ -782,7 +855,7 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = c0.slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
-  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
+  const social = { ICON, longText, postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
   window.FeedVisual = { rail, openStories, openOne, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
   window.FeedVisual.actRow = actRow; // list cards (public/listcards.js) reuse the kudos, comment and share row
   // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:

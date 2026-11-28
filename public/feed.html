@@ -125,6 +125,19 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 .fv-btn.cheer.on{background:#FBEBC4;border-color:#E9D29A}
 .fv-empty-line{margin:0;color:var(--pl-soft);font-size:14px}.fv-empty-line a,.fv-empty-line button{color:var(--pl-accent-text);font-weight:600;background:none;border:0;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
 .fpw{display:inline-flex}.tabs .fpw{margin-left:auto}.tabs .fpw+.bell-d{margin-left:0}.top .fp,.tabs .fp{display:inline-grid;place-items:center;min-width:44px;min-height:44px;color:var(--pl-frame)}.top .fp svg{width:22px;height:22px}
+/* ==== FEED CARD (the page around the cards): start ==== */
+/* the stories row, the tabs, the opening and the posts share one 600px column (the older section wall keeps its wide one) */
+body.pre-feed .fgrid,body:is(.tab-feed,.pub-feed) .fgrid{grid-template-columns:minmax(0,600px)!important}
+body:is(.tab-feed,.pub-feed) .fgrid:has(.fv-wall){grid-template-columns:minmax(0,960px)!important}
+body:is(.tab-feed,.pub-feed) #m>.sp-card{margin:0 0 12px;border-width:1px}
+body:is(.tab-feed,.pub-feed) .fv-intro{margin-bottom:16px}
+.fb-stream .ptext{white-space:pre-line}
+/* nothing slides under the phone's status bar: the safe area at the top is the page's own colour, and the page header sits below it */
+html::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--pl-page,#EFEBE2);z-index:6;pointer-events:none}
+.top{top:env(safe-area-inset-top,0px)}
+/* the "+" steps aside while it would sit on a button or link of a post */
+.pc-fab.fb-dodge{opacity:0;pointer-events:none}
+/* ==== FEED CARD (the page around the cards): end ==== */
 </style><link rel="stylesheet" href="/playful.css">
 <script src="/calm.js"></script><script src="/authguard.js"></script><script src="/place.js"></script><script src="/autocomplete.js" defer></script>
 </head><body>
@@ -163,6 +176,11 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")}${e.city ? " in " + e.city : (window.EncorePlace?.get()?.city ? " in " + window.EncorePlace.get().city : "")} that are public`;
   // the "+" (public/composer.js): a post, a photo, a link, Who's in?, and tiles for an event, a drop, photos, the fan club
   window.PLToast = (t) => toast(t); try { window.PLComposer?.mount({ onPosted: () => load() }); } catch {}
+  // feed card: the "+" never covers a control of a post. Where it would, it steps aside until you scroll on.
+  { let t = 0; const dodge = () => { t = 0; const f = $(".pc-fab"); if (!f) return; const r = f.getBoundingClientRect(); let hit = false;
+      if (r.width && !f.classList.contains("away")) for (const x of [r.left + 6, r.left + r.width / 2, r.right - 6]) for (const y of [r.top + 6, r.top + r.height / 2, r.bottom - 6]) { if (hit) break; for (const el of document.elementsFromPoint(x, y)) { if (el === f || f.contains(el)) continue; const c = el.closest?.("a,button,textarea,input,summary"); if (c && c.closest(".fb-stream,#spCard")) hit = true; break; } }
+      f.classList.toggle("fb-dodge", hit); };
+    const soon = () => { if (!t) t = setTimeout(dodge, 90); }; addEventListener("scroll", soon, { passive: true }); addEventListener("resize", soon); window.PLFabDodge = soon; }
   window.PLFeedReload = () => load(); // the city from your workspace lands after the first draw: redraw in place, no page reload
   // your workspace's city, asked for alongside the feed the first time on a device, so the first draw already has it
   // (the page used to draw, then reload itself once to pick the city up)
@@ -203,7 +221,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
       try { const r = await fetch("/api/me/posts/photo", { method: "POST", headers: { "Content-Type": f.type }, body: f }); const j = await r.json(); if (!r.ok) throw new Error(j.message || "Couldn't upload."); draftPhoto = j.url; const pv = $("#pPrev"); pv.hidden = false; pv.innerHTML = `<img src="${esc(j.url)}" alt=""><button type="button" aria-label="Remove photo">×</button>`; pv.querySelector("button").onclick = () => { draftPhoto = ""; pv.hidden = true; pv.innerHTML = ""; }; } catch (e) { toast(e.message); } $("#pPhoto").textContent = "Photo"; };
     c.onsubmit = async (ev) => { ev.preventDefault(); const text = $("#pText").value.trim(), link = $("#pLink").value.trim(); if (!text && !link && !draftPhoto) { toast("Write something first."); return; } $("#pSend").disabled = true;
       try { await post("/api/me/posts", { text, link, photo: draftPhoto }); draftPhoto = ""; toast("Posted. Your friends see it in their feed."); await load(); } catch (e) { toast(e.message); } $("#pSend") && ($("#pSend").disabled = false); };
-    m.querySelectorAll("[data-cheer]").forEach((b) => (b.onclick = async () => { const [a, id] = b.dataset.cheer.split("|"); b.disabled = true; try { const j = await post(`/api/me/posts/${encodeURIComponent(a)}/${encodeURIComponent(id)}/cheer`); b.textContent = b.dataset.ask ? (j.cheered ? "You're in" : "I'm in") : j.cheered ? "Cheered" : "Cheer"; b.classList.toggle("on", j.cheered); } catch (e) { toast(e.message); } b.disabled = false; }));
+    m.querySelectorAll("[data-cheer]").forEach((b) => (b.onclick = async () => { const [a, id] = b.dataset.cheer.split("|"); b.disabled = true; try { const j = await post(`/api/me/posts/${encodeURIComponent(a)}/${encodeURIComponent(id)}/cheer`); (b.querySelector("span") || b).textContent = b.dataset.ask ? (j.cheered ? "You're in" : "I'm in") : j.cheered ? "Cheered" : "Cheer"; b.classList.toggle("on", j.cheered); b.setAttribute("aria-pressed", String(!!j.cheered)); } catch (e) { toast(e.message); } b.disabled = false; }));
     m.querySelectorAll("[data-pdel]").forEach((b) => (b.onclick = async () => { if (!confirm("Delete this post?")) return; await fetch("/api/me/posts/" + b.dataset.pdel, { method: "DELETE" }); load(); })); }
   // ---- the right-hand column ----
   async function drawSide() { const el = $("#side"); if (!el) return; let S; try { S = await api("/api/me/sidebar"); } catch { el.innerHTML = ""; return; }
@@ -233,10 +251,14 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
   // ---- visual feed: your people's posts, photos and events media-first, with the public wall around them ----
   // a post from a friend: the same scrapbook page as a past event (an instant photo, the words, one action)
-  function postCard(it) { const host = (() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })();
-    return `<article class="fv-card fv-scrap fv-post"${it.mine ? "" : ` data-report="${esc(JSON.stringify({ type: "post", target: `post:${it.author}:${it.id}`, key: it.author, name: it.who?.name || "" }))}"`}><p class="fv-by">${window.FeedVisual.avatar(it.who, 24)}<span><b>${nm(it.who)}</b> posted · <span class="num">${ago(it.at)}</span></span></p>${it.media ? `<div class="fv-album n1"><span class="fv-ph lead" style="--r:-.8deg"><span class="fv-tape top" style="--tp:var(--pl-sand);--tr:-4deg" aria-hidden="true"></span><span class="fv-mb" style="aspect-ratio:4/5"><img src="${esc(it.media.url)}" alt="${esc(it.text ? it.text.slice(0, 80) : "Photo from " + nm(it.who))}" width="400" height="500" loading="lazy" decoding="async"></span>${it.text ? `<span class="fv-cap">${esc(it.text.split("\n")[0].slice(0, 60))}</span>` : ""}</span></div>` : ""}
-      ${it.text && (!it.media || it.text.length > 60) ? `<p class="ptext">${esc(it.text).replace(/\n/g, "<br>")}</p>` : ""}${it.link ? `<a class="plink" href="${esc(it.link)}" target="_blank" rel="noopener nofollow"><b>${esc(host)}</b><small>${esc(it.link)}</small></a>` : ""}
-      ${it.ask ? `<p class="fv-ask">Who's in?</p>` : ""}${(it.cheers || []).length ? `<p class="cheers">${esc(it.ask ? (it.cheers.length > 2 ? `${it.cheers[0]} and ${it.cheers.length - 1} more are in` : `${it.cheers.join(" and ")} ${it.cheers.length === 1 ? "is" : "are"} in`) : it.cheers.length > 2 ? `${it.cheers[0]} and ${it.cheers.length - 1} friends cheered` : `${it.cheers.join(" and ")} cheered`)}</p>` : ""}<div class="fv-acts"><button class="fv-btn cheer ${it.cheered ? "on" : ""}" data-cheer="${esc(it.author)}|${esc(it.id)}"${it.ask ? ` data-ask="1"` : ""}>${it.ask ? (it.cheered ? "You're in" : "I'm in") : it.cheered ? "Cheered" : "Cheer"}</button>${it.mine ? `<button class="linkbtn pdel" data-pdel="${esc(it.id)}">Delete</button>` : ""}</div></article>`; }
+  // feed card: the same container, header and action row as every other kind (public/feedvisual.js, the FEED CARD block)
+  function postCard(it) { const host = (() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })(), FV = window.FeedVisual, who = it.who || {}, C = it.cheers || [];
+    const face = `<span class="fb-ring" style="--ring:var(--pl-line)">${FV.avatar(who, 36)}</span><span><b>${nm(who)}</b><small>Posted <span class="num">${ago(it.at)}</span> ago</small></span>`;
+    const cheers = !C.length ? "" : it.ask ? (C.length > 2 ? `${C[0]} and ${C.length - 1} more are in` : `${C.join(" and ")} ${C.length === 1 ? "is" : "are"} in`) : C.length > 2 ? `${C[0]} and ${C.length - 1} friends cheered` : `${C.join(" and ")} cheered`;
+    return `<article class="fb-card fv-post" data-kind="post"><header class="fb-lead"${it.mine ? "" : ` data-report="${esc(JSON.stringify({ type: "post", target: `post:${it.author}:${it.id}`, key: it.author, name: who.name || "" }))}"`}>${who.handle ? `<a class="fb-host" href="/h/${esc(who.handle)}">${face}</a>` : `<span class="fb-host">${face}</span>`}</header>
+      ${it.text ? FV.social.longText(it.text, "ptext") : ""}${it.media ? `<div class="fb-cover"><span class="fb-media"><img class="fv-img" src="${esc(it.media.url)}" alt="${esc(it.text ? it.text.slice(0, 80) : "Photo from " + (who.name || "a friend"))}" width="800" height="600" loading="lazy" decoding="async"></span></div>` : ""}
+      ${it.link ? `<a class="plink" href="${esc(it.link)}" target="_blank" rel="noopener nofollow"><b>${esc(host)}</b><small>${esc(it.link)}</small></a>` : ""}${it.ask ? `<p class="fv-ask">Who's in?</p>` : ""}
+      <div class="fb-soc"><div class="fb-social">${cheers ? `<p class="cheers">${esc(cheers)}</p>` : ""}</div><div class="fb-acts" role="group" aria-label="${it.ask ? "Join in" : "Cheer"}"><button type="button" class="fb-act cheer${it.cheered ? " on" : ""}" data-cheer="${esc(it.author)}|${esc(it.id)}"${it.ask ? ` data-ask="1"` : ""} aria-pressed="${!!it.cheered}">${FV.social.ICON?.kudos || ""}<span>${it.ask ? (it.cheered ? "You're in" : "I'm in") : it.cheered ? "Cheered" : "Cheer"}</span></button>${it.mine ? `<button type="button" class="fb-act" data-pdel="${esc(it.id)}"><span>Delete post</span></button>` : ""}</div></div></article>`; }
   function drawFeed(m) { setTimeout(placeChip, 0);
     const here = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
     // hosts you follow who host elsewhere still show; the public "further out" row covers the rest of the world
@@ -245,7 +267,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
     const FG = new Map((F.upcoming || []).map((e) => [e.id, e.friendsGoing || []])); for (const e of [...Object.values(F.events || {}), ...((F.visual || {}).upcoming || [])]) if (FG.get(e.id)?.length) e.friendsGoing = FG.get(e.id);
     const empty = `<p class="fv-empty-line"><button type="button" id="goFriends">Add friends</button> or follow a host below.</p>`;
     m.innerHTML = window.FeedVisual.composeSignedIn({ ...F, items: keep }, { postRender: postCard, empty });
-    window.FeedVisual.wire(m);
+    window.FeedVisual.wire(m); window.PLFabDodge?.();
     $("#goFriends") && ($("#goFriends").onclick = () => { tab = "friends"; selTab(); draw(); }); }
   // ---- my event profile ----
   const QZ = [["host", "How often are you the host?", [["often", "🏡 Most of the time"], ["sometimes", "🔁 Now and then"], ["rarely", "🙋 I'm usually a guest"]]], ["rsvp", "When do you usually reply?", [["first", "🐣 Right away"], ["planner", "📅 After checking my week"], ["last", "🪑 Last minute, if there's a spot"]]], ["room", "At an event, you're the one who…", [["spark", "⚡ Gets everyone going"], ["chill", "🧘 Keeps it easy"], ["helper", "🙌 Helps out"]]], ["bring", "You usually bring…", [["food", "🧺 Something to share"], ["friend", "🔗 A friend"], ["self", "😊 Just me, happy to be there"]]]];

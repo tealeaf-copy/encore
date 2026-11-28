@@ -265,7 +265,10 @@
     // ---- an inspiration card's "Plan this" (public/inspire.js): ?insp=<card>&ititle=&idate=&iplace=&ihood=&icity=&icover= starts fresh, filled in ----
     let insp = null; try { const u = new URL(location.href), id = u.searchParams.get("insp"); if (id) { if (!editing && /^[a-z0-9:-]{2,80}$/.test(id)) { const g = (k) => String(u.searchParams.get(k) || "").slice(0, 80).trim(); insp = { id, title: g("ititle"), date: /^\d{4}-\d{2}-\d{2}$/.test(g("idate")) ? g("idate") : "", place: g("iplace"), hood: g("ihood"), city: g("icity"), cover: /^[a-z]{2,12}$/.test(g("icover")) ? g("icover") : "" }; }
       for (const k of ["insp", "ititle", "idate", "iplace", "ihood", "icity", "icover"]) u.searchParams.delete(k); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
-    const key = keyOf(editing ? cur : null), kept = pre || pickRun || insp ? null : ls.get(key);
+    // ---- an availability poll's "Pick this date" (public/feedpoll.js): ?poll=<id>&popt=<a to e>&ptitle=&pdate=&ptime= starts fresh, filled in; the saved event carries fromPoll so the poll's card turns into "It's on" (server/feedpoll.js) ----
+    let poll = null; try { const u = new URL(location.href), id = u.searchParams.get("poll"); if (id) { const g = (k) => String(u.searchParams.get(k) || "").slice(0, 80).trim(); if (!editing && /^[a-f0-9]{24}$/.test(id) && /^[a-e]$/.test(g("popt"))) poll = { ref: id + "." + g("popt"), title: g("ptitle"), date: /^\d{4}-\d{2}-\d{2}$/.test(g("pdate")) ? g("pdate") : "", time: /^\d{2}:\d{2}$/.test(g("ptime")) ? g("ptime") : "" };
+      for (const k of ["poll", "popt", "ptitle", "pdate", "ptime"]) u.searchParams.delete(k); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
+    const key = keyOf(editing ? cur : null), kept = pre || pickRun || insp || poll ? null : ls.get(key);
     if (kept?.d && (editing ? kept.base === (cur.updatedAt || null) : (kept.d.pubTitle || kept.d.date || kept.d.why))) { W = { ...W, ...kept.d, id: W.id }; note = editing ? "Your unsaved changes are back." : "Picked up your draft from earlier."; }
     if (!editing && W.effect === "confetti") W.effect = "none";
     const club = (editing && CLUB?.events?.find((x) => x.id === cur.id)?.visibility) || "everyone";
@@ -279,6 +282,7 @@
     if (pre) applyPreset(pre, false);
     else if (!editing && S.W.planKind === "run") runDefaults(S.W);
     if (insp) { const W = S.W; W.inspiredBy = insp.id; if (insp.title) { W.pubTitle = insp.title; W.name = insp.title; } if (insp.date) W.date = insp.date; if (insp.place) W.venueName = insp.place; if (insp.hood) W.hood = insp.hood; if (insp.city) W.city = insp.city; if (insp.cover) W.coverArt = { ...(W.coverArt || {}), kind: insp.cover }; S.dirty = true; } // ---- end inspiration ----
+    if (poll) { const W = S.W; W.fromPoll = poll.ref; if (poll.title) { W.pubTitle = poll.title; W.name = poll.title; } if (poll.date) W.date = poll.date; if (poll.time) W.startTime = poll.time; S.dirty = true; } // ---- end availability poll ----
     build(); if (root.PLCohost) root.PLCohost.opened?.(cohost()); else (root.__plCohostQ = root.__plCohostQ || []).push(() => root.PLCohost?.opened?.(cohost())); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
   // ---- co-host hook (public/cohost.js): "Here's your night" from one sentence, the card under the title. Looks good
   // fills the title, kind, day, time, spots and the drawn cover in one go; the host still saves. ----

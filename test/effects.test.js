@@ -59,6 +59,8 @@ test("one list: effects.js draws every id the server allows, the canvas offers 1
   assert.ok(FX.countFor("petals", 568, 355, "lively") > FX.countFor("petals", 568, 355, "subtle"), "lively has more");
   assert.ok(FX.countFor("snow", 358, 224) < FX.countFor("snow", 568, 355), "fewer in a phone's cover");
   assert.equal(FX.countFor("stars", 568, 355), FX.countFor("sparkles", 568, 355), "a removed id counts as its replacement");
+  // a look with an effect and no colours leaves the colours of the cover drawing alone
+  assert.match(LKsrc, /\n\.lk-light :is\(\.cov,[^{]*\{fill:var\(--lk-spot\)\}/, "the drawing is recoloured only when the look carries colours");
   const src = read("public/effects.js");
   assert.match(src, /requestAnimationFrame/); assert.match(src, /visibilitychange/); assert.match(src, /IntersectionObserver/); assert.match(src, /prefers-reduced-motion: reduce/); assert.match(src, /prefers-reduced-transparency: reduce/);
   assert.doesNotMatch(src, /shadowBlur|\.filter\s*=/, "glows are stamped sprites, no blur per frame"); assert.doesNotMatch(src.replace(/xmlns=.http:\/\/www\.w3\.org\/2000\/svg./g, ""), /https?:\/\//, "no outside assets");
@@ -122,6 +124,12 @@ test("in a browser: guests see the stored effect in the cover, a removed id draw
     for (const id of ["confetti", "rain"]) { await q.evaluate((id) => { window.EncoreEffects.again(document.body); window.EncoreEffects.mount(document.body, { effect: id }); }, id); await q.waitForTimeout(200); assert.equal(await q.evaluate(() => document.querySelectorAll(".fxe-layer").length), 0, id + " is left out for less motion"); }
     await q.evaluate(() => { window.EncoreEffects.again(document.body); window.EncoreEffects.mount(document.body, { effect: "twinkle" }); }); await q.waitForTimeout(300);
     assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector(".fxe-back")).animationName), "none", "the glow behind the page holds still"); const g1 = await snap(); await q.waitForTimeout(500); assert.equal(g1, await snap(), "candlelight holds still");
+    // candlelight is light: blended into the cover (ink under it stays ink), brighter along the lower edge than at the top, and no dots
+    const cl = await q.evaluate(() => { const L = document.querySelector(".fxe-cov.fxe-k-twinkle"), c = L.querySelector("canvas"), g = c.getContext("2d"), lum = (y) => { const d = g.getImageData(0, y, c.width, 1).data; let t = 0; for (let i = 0; i < d.length; i += 4) t += d[i] + d[i + 1] + d[i + 2]; return t / (d.length / 4) / 3; };
+      const mid = g.getImageData(0, c.height >> 1, c.width, 1).data; let jumps = 0; for (let i = 4; i < mid.length; i += 4) if (Math.abs(mid[i] - mid[i - 4]) > 24) jumps++;
+      return { blend: getComputedStyle(L).mixBlendMode, iso: getComputedStyle(L.parentElement).isolation, top: lum(2), low: lum(c.height - 3), a: mid[3], jumps }; });
+    assert.equal(cl.blend, "multiply", "candlelight is multiplied into the cover"); assert.equal(cl.iso, "isolate", "and into nothing else"); assert.equal(cl.a, 255, "a whole map of light, no holes");
+    assert.ok(cl.low > cl.top + 4, "the glow rises from the lower edge: " + JSON.stringify(cl)); assert.ok(cl.top > 170, "the top is an evening shade, not a dark one"); assert.equal(cl.jumps, 0, "soft light across the middle: no dots or hard edges");
     await rm.close();
 
     // the canvas: tap an effect and it is in the cover at once; Cancel puts back what was there; Done keeps it

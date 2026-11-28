@@ -32,7 +32,7 @@
 .rv-st{display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}.rv-st.on{fill:currentColor}
 .rv-sum{display:inline-flex;align-items:center;gap:6px;font:600 15px/1.3 var(--sys-sans);color:var(--pl-ink);font-variant-numeric:tabular-nums}.rv-sum>span{display:inline-flex;color:var(--pl-accent-text)}
 .rv-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 8px;min-height:20px}
-.rv-flag{font:500 12px/1.3 var(--sys-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
+.rv-flag{font:500 13px/1.35 var(--sys-sans);color:var(--pl-soft)}
 .rv-card .kd-qw::before{display:none}
 .rv-card .kd-q{white-space:pre-line}
 .rv-ph{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;border-bottom:var(--pl-bw,1.5px) solid var(--pl-line-strong);background:var(--pl-line-strong)}
@@ -48,8 +48,9 @@
 @media (hover:hover) and (pointer:fine){.rv-btn:not(.rv-go):not(.rv-danger):not(:disabled):hover{background:var(--pl-raised)}}
 .rv-link{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;border:0;background:none;color:var(--pl-soft);font:600 15px/1.2 var(--sys-sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .rv-write{flex:none}
+.kd .kd-head{min-height:44px}
 .rv-block{margin:28px 0 8px;text-align:left}
-.rv-block h2{margin:0;font:600 20px/1.25 var(--sys-sans);color:var(--pl-ink)}
+.rv-block h2{margin:0;font:600 24px/1.2 var(--sys-sans);color:var(--pl-ink)}
 .rv-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .rv-head>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
 .rv-list{margin-top:14px;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));align-items:start}
@@ -76,6 +77,7 @@
 .rv-sheet label.rv-l,.rv-sheet legend{display:block;padding:0;font:600 16px/1.3 var(--sys-sans);color:var(--pl-ink)}
 .rv-sheet .rv-note{margin:2px 0 0;color:var(--pl-soft);font:400 14px/1.45 var(--sys-sans)}
 .rv-sheet textarea,.rv-sheet select{display:block;width:100%;margin-top:6px;padding:12px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:#fff;color:var(--pl-ink);font:400 16px/1.5 var(--sys-sans)}
+.rv-sheet textarea:focus,.rv-sheet select:focus{box-shadow:none;border-color:var(--pl-ink)}
 .rv-sheet textarea{min-height:132px;resize:vertical}.rv-sheet select{min-height:48px}
 .rv-pick{border:0;margin:0;padding:0;min-width:0}
 .rv-pick div{display:flex;align-items:center;gap:0;margin:4px 0 0 -8px}
@@ -103,11 +105,11 @@
 
   // ---------- a review as a card (the host page's kudos section and every list) ----------
   /** r: one review from the server. i, n, row: its place in the host page's row (public/kudoswall.js). o: { owner } */
-  function card(r, i = 0, n = 0, row = false) {
+  function card(r, i = 0, n = 0, row = false, owner = false) { if (owner && !r.own) r = { ...r, own: true }; // the host's own page: their controls are there from the first paint
     const words = String(r.love || "").trim(), name = String(r.name || "").trim() || "A guest", id = "rvq" + String(r.id || i).replace(/[^A-Za-z0-9_-]/g, "");
     const meta = [month(r.month), r.event ? `${r.what || "Came to"} ${r.event}` : ""].filter(Boolean).join(" · "), ph = (r.photos || []).slice(0, 3);
     const av = name === "A guest" ? "" : esc(name.charAt(0).toUpperCase());
-    const flag = r.hidden ? (r.own ? "Hidden from your page" : "Hidden by the host. Only you can see it.") : r.pinned ? "Pinned" : "";
+    const flag = r.hidden ? (r.own ? "Hidden from your page" : "Hidden by the host. Only you can see it.") : r.pinned ? "Pinned" : r.private ? "Private event. Only guests who were there see this." : "";
     const acts = r.own ? `<button type="button" class="rv-btn" data-rv-act="reply">${r.reply ? "Edit reply" : "Reply"}</button>${r.hidden ? "" : `<button type="button" class="rv-btn" data-rv-act="pin" aria-pressed="${r.pinned ? "true" : "false"}">${r.pinned ? "Unpin" : "Pin"}</button>`}<button type="button" class="rv-btn" data-rv-act="hide">${r.hidden ? "Show on my page" : "Hide"}</button>`
       : r.mine ? `<button type="button" class="rv-btn" data-rv-act="edit">Edit</button>` : "";
     const report = r.mine ? "" : `<button type="button" class="rv-link" data-rv-act="report">Report</button>`;
@@ -128,7 +130,7 @@
     check(); let t = 0; addEventListener("resize", () => { clearTimeout(t); t = setTimeout(check, 150); }); document.fonts?.ready?.then(check).catch(() => {}); root._rvCheck = check; }
 
   // ---------- sheets ----------
-  function sheet(html, label) { style(); const bg = document.createElement("div"); bg.className = "rv-bg"; bg.innerHTML = `<div class="rv-sheet" role="dialog" aria-modal="true" aria-labelledby="${label}">${html}</div>`;
+  function sheet(html, label) { style(); $$(".rv-toast").forEach((n) => n.remove()); const bg = document.createElement("div"); bg.className = "rv-bg"; bg.innerHTML = `<div class="rv-sheet" role="dialog" aria-modal="true" aria-labelledby="${label}">${html}</div>`;
     const prev = document.activeElement, el = bg.firstChild, scroll = document.documentElement.style.overflow;
     const close = () => { bg.remove(); document.removeEventListener("keydown", key); document.documentElement.style.overflow = scroll; try { prev && prev.focus({ preventScroll: true }); } catch {} };
     const key = (e) => { if (e.key === "Escape") return close(); if (e.key !== "Tab") return; const F = $$("button:not(:disabled),textarea,select,input:not(:disabled),a[href]", el).filter((x) => x.offsetParent !== null || x.type === "radio"); if (!F.length) return;
@@ -165,7 +167,7 @@
         </form>`);
       const el = S.el, T = $("#rvText", el), C = $("#rvCount", el), err = $("#rvErr", el);
       const paint = () => { const v = +($("input[name=rating]:checked", el)?.value || 0); $$(".rv-pick label", el).forEach((l, i) => $("svg", l).classList.toggle("on", i < v)); const s = $("#rvSay", el); if (s) s.textContent = v ? `${v} of 5` : ""; };
-      $$("input[name=rating]", el).forEach((x) => x.addEventListener("change", paint)); paint();
+      $$("input[name=rating]", el).forEach((x) => x.addEventListener("change", () => { paint(); err.textContent = ""; })); paint(); T.addEventListener("input", () => { err.textContent = ""; });
       const count = () => { const left = L.max - T.value.length; C.hidden = left > 200; if (left <= 200) C.textContent = `${left} ${left === 1 ? "character" : "characters"} left`; }; T.addEventListener("input", count); count();
       const sel = $("#rvWhich", el); if (sel) sel.onchange = () => { f = forms[+sel.value] || f; draw(); setTimeout(() => $("#rvWhich", S.el)?.focus(), 0); };
       const thumbs = () => { const box = $("#rvThumbs", el); if (!box) return; box.innerHTML = photos.map((u, i) => `<span class="rv-thumb"><img src="${esc(u)}" alt="Photo ${i + 1}"><button type="button" data-rm="${i}" aria-label="Take photo ${i + 1} off this review"><span aria-hidden="true">×</span></button></span>`).join(""); const add = $("#rvAdd", el); if (add) add.disabled = photos.length >= L.photos; };
@@ -185,7 +187,7 @@
           done?.(j.review, f);
         } catch (e) { err.textContent = e.message; b.disabled = false; } busy = false; };
       const del = $("#rvDel", el); if (del) del.onclick = () => { S.set(`<h2 id="rvT">Delete your review?</h2><p class="rv-sub">It comes off ${esc(f.host ? f.host + "'s" : "the host's")} page for good.</p><p class="rv-err" id="rvErr" role="alert"></p><div class="rv-row" style="margin-top:16px"><button type="button" class="rv-btn rv-danger" id="rvYes">Delete review</button><button type="button" class="rv-btn" id="rvNo">Keep it</button></div>`);
-        $("#rvNo", S.el).onclick = draw; $("#rvYes", S.el).onclick = async (e) => { e.currentTarget.disabled = true; try { await api("/api/public/reviews/delete", { subject: f.subject, ...proofOf(f) }); f.mine = null; S.close(); toast("Review deleted."); done?.(null, f); } catch (x) { $("#rvErr", S.el).textContent = x.message; e.currentTarget.disabled = false; } }; };
+        $("#rvNo", S.el).onclick = draw; $("#rvYes", S.el).onclick = async (e) => { e.currentTarget.disabled = true; try { await api("/api/public/reviews/delete", { subject: f.subject, ...proofOf(f) }); f.mine = null; S.set(`<h2 id="rvT">Review deleted</h2><p class="rv-sub">It's off ${esc(f.host ? f.host + "'s" : "the host's")} page.</p><div class="rv-row" style="margin-top:16px"><button type="button" class="rv-btn rv-go" data-x>Done</button></div>`); done?.(null, f); } catch (x) { $("#rvErr", S.el).textContent = x.message; e.currentTarget.disabled = false; } }; };
     };
     draw(); return S;
   }
@@ -201,39 +203,44 @@
       <form novalidate><div><label class="rv-l" for="rvReply">Your reply</label><p class="rv-note" id="rvRH">Public, under their review. One reply, up to 400 characters.</p>
       <textarea id="rvReply" rows="4" maxlength="400" aria-describedby="rvRH">${esc(r.reply?.text || "")}</textarea></div><p class="rv-err" id="rvErr" role="alert"></p>
       <div class="rv-row"><button type="submit" class="rv-btn rv-go">Save</button><button type="button" class="rv-btn" data-x>Cancel</button>${r.reply ? `<button type="button" class="rv-link rv-end" id="rvRm">Remove reply</button>` : ""}</div></form>`, "rvT");
-    const send = async (text) => { try { const j = await api("/api/host/reviews/" + encodeURIComponent(r.id), { reply: text }); S.close(); toast(text ? "Reply saved." : "Reply removed."); after(j); } catch (e) { $("#rvErr", S.el).textContent = e.message; } };
+    const send = async (text) => { try { const j = await api("/api/host/reviews/" + encodeURIComponent(r.id), { reply: text }); S.close(); after(j); } catch (e) { $("#rvErr", S.el).textContent = e.message; } };
     $("form", S.el).onsubmit = (e) => { e.preventDefault(); const t = $("#rvReply", S.el).value.trim(); if (t.length < 2) { $("#rvErr", S.el).textContent = "Write your reply first."; return; } send(t); };
     const rm = $("#rvRm", S.el); if (rm) rm.onclick = () => send(""); }
   function hideSheet(r, after) { const S = sheet(`<h2 id="rvT">Hide this review?</h2><p class="rv-sub">It comes off your page and every public page. ${esc(r.name && r.name !== "A guest" ? r.name : "The guest")} can still see it, and the Pottery Lab team is told.${r.rating ? " Its star rating still counts toward your average." : ""}</p>
       <p class="rv-err" id="rvErr" role="alert"></p><div class="rv-row" style="margin-top:16px"><button type="button" class="rv-btn rv-go" id="rvYes">Hide review</button><button type="button" class="rv-btn" data-x>Cancel</button></div>`, "rvT");
-    $("#rvYes", S.el).onclick = async (e) => { e.currentTarget.disabled = true; try { const j = await api("/api/host/reviews/" + encodeURIComponent(r.id), { hide: true }); S.close(); toast("Hidden from your page."); after(j); } catch (x) { $("#rvErr", S.el).textContent = x.message; e.currentTarget.disabled = false; } }; }
+    $("#rvYes", S.el).onclick = async (e) => { e.currentTarget.disabled = true; try { const j = await api("/api/host/reviews/" + encodeURIComponent(r.id), { hide: true }); S.close(); after(j); } catch (x) { $("#rvErr", S.el).textContent = x.message; e.currentTarget.disabled = false; } }; }
   async function report(r) { try { if (!window.EncoreSafety) await new Promise((ok, no) => { const s = document.createElement("script"); s.src = "/safety.js"; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); window.EncoreSafety.report({ type: "review", text: r.love || "", name: r.name || "" }); } catch { toast("Couldn't open the report form. Try again."); } }
   /** One click handler for a container of cards. get(id) returns the review; refresh() redraws after a change. */
   function wireActs(root, get, refresh) { if (!root || root.dataset.rvActs) return; root.dataset.rvActs = "1";
     root.addEventListener("click", async (e) => { const b = e.target.closest("[data-rv-act]"); if (!b) return; const r = get(b.closest("[data-rv]")?.dataset.rv); if (!r) return; const a = b.dataset.rvAct;
+      // the card says what happened (Pinned, Hidden from your page, the reply itself), and the keyboard stays on it
+      const back = async () => { await refresh(); setTimeout(() => document.querySelector(`[data-rv="${String(r.id).replace(/[^A-Za-z0-9_-]/g, "")}"] [data-rv-act="${a}"]`)?.focus({ preventScroll: true }), 40); };
       if (a === "report") return report(r);
       if (a === "edit") return open(r.subject, r.proof || proofFor(r.subject), () => refresh());
-      if (a === "reply") return replySheet(r, refresh);
-      if (a === "hide") { if (!r.hidden) return hideSheet(r, refresh); b.disabled = true; try { await api("/api/host/reviews/" + encodeURIComponent(r.id), { hide: false }); toast("Back on your page."); refresh(); } catch (x) { toast(x.message); b.disabled = false; } return; }
-      if (a === "pin") { b.disabled = true; try { await api("/api/host/reviews/" + encodeURIComponent(r.id), { pin: !r.pinned }); toast(r.pinned ? "Unpinned." : "Pinned to the top of your page."); refresh(); } catch (x) { toast(x.message); b.disabled = false; } } }); }
+      if (a === "reply") return replySheet(r, back);
+      if (a === "hide") { if (!r.hidden) return hideSheet(r, back); b.disabled = true; try { await api("/api/host/reviews/" + encodeURIComponent(r.id), { hide: false }); await back(); } catch (x) { toast(x.message); b.disabled = false; } return; }
+      if (a === "pin") { b.disabled = true; try { await api("/api/host/reviews/" + encodeURIComponent(r.id), { pin: !r.pinned }); await back(); } catch (x) { toast(x.message); b.disabled = false; } } }); }
   const proofFor = (subject) => { const [k, id] = String(subject || "").split(":"); if (k !== "event") return {}; const p = proofs().find((x) => x.id === id); return p ? { rid: p.rid, code: p.code } : {}; };
 
   // ---------- the host page: the viewer's own view of the kudos section (public/kudoswall.js drew the public one) ----------
   /** S: the strengths the page drew from. o: the same options the page passed to EncoreKudos.mount, plus { handle }. */
   async function host(S, o = {}) {
-    if (!o.handle || !window.EncoreKudos || !(signedIn() || proofs().length)) return;
-    let V; const load = async () => { try { V = await view({ host: o.handle }); } catch { V = null; } return V; };
-    const draw = () => { if (!V) return; const mineOrOwner = V.owner || (V.writable || []).length || V.reviews.some((r) => r.mine || r.hidden);
-      const same = !mineOrOwner && V.reviews.length === (S.reviews || []).length; if (same) return;
-      const sec0 = document.getElementById("kudos"), wasAll = sec0?.classList.contains("is-all");
-      const S2 = { ...S, reviews: V.reviews, reviewCount: V.count, rating: V.rating }; let sec = window.EncoreKudos.mount(S2, o);
-      if (!sec && (V.writable || []).length) { const at = document.querySelector("main .s-past") || o.at; if (!at) return; const tpl = document.createElement("template");
+    if (!window.EncoreKudos) return;
+    let V = { reviews: (S && S.reviews) || [] };
+    const get = (id) => V.reviews.find((r) => r.id === id), again = async () => { await load(); draw(); };
+    const load = async () => { try { V = await view({ host: o.handle }); V.loaded = true; } catch {} };
+    wireActs(document.getElementById("kudos"), get, again); // Report works for everyone, signed in or not
+    if (!o.handle || !(signedIn() || proofs().length)) return;
+    const draw = () => { if (!V.loaded) return; const W = V.writable || [], own = V.owner || W.length || V.reviews.some((r) => r.mine || r.hidden);
+      if (!own && V.reviews.length === ((S && S.reviews) || []).length) return; // nothing of theirs here: the page stays as it was drawn
+      const wasAll = document.getElementById("kudos")?.classList.contains("is-all");
+      let sec = window.EncoreKudos.mount({ ...S, reviews: V.reviews, reviewCount: V.count, rating: V.rating }, o);
+      if (!sec && W.length) { const at = document.querySelector("main .s-past") || o.at; if (!at) return; const tpl = document.createElement("template");
         tpl.innerHTML = `<section class="kd kd-few s-kudos" id="kudos" aria-labelledby="kdH"><div class="kd-head"><h2 class="sec" id="kdH">Kudos and reviews</h2></div></section>`; sec = tpl.content.firstElementChild; if (at.classList.contains("s-past")) at.before(sec); else at.prepend(sec); }
       if (!sec) return; if (wasAll) $(".kd-all", sec)?.click();
-      const W = V.writable || []; if (W.length) { const head = $(".kd-head", sec), b = document.createElement("button"); b.type = "button"; b.className = "rv-btn rv-write"; b.textContent = W.every((x) => x.mine) ? "Edit your review" : "Write a review";
-        b.onclick = () => write(W.map((x) => ({ ...x })), again); (($(".kd-ctl", head)) || head).prepend(b); }
-      wireActs(sec, (id) => V.reviews.find((r) => r.id === id), again); };
-    const again = async () => { await load(); draw(); };
+      if (W.length) { const head = $(".kd-head", sec), b = document.createElement("button"); b.type = "button"; b.className = "rv-btn rv-write"; b.textContent = W.every((x) => x.mine) ? "Edit your review" : "Write a review";
+        b.onclick = () => write(W.map((x) => ({ ...x })), again); ($(".kd-ctl", head) || head).prepend(b); }
+      wireActs(sec, (id) => { const r = get(id), w = r?.mine ? W.find((x) => x.subject === r.subject) : null; return w ? { ...r, proof: proofOf(w) } : r; }, again); };
     await load(); draw();
   }
 
@@ -242,11 +249,11 @@
   async function block(el, q, o = {}) { if (!el) return null; style();
     let V; const load = async () => { try { V = await view(q); } catch { V = null; } };
     const draw = () => { if (!V || (!V.reviews.length && !V.write)) { el.innerHTML = ""; el.hidden = true; return; } el.hidden = false; el.classList.add("rv-block");
-      const w = V.write, sum = sumHTML(V.count, V.rating);
+      const w = o.entry === false ? null : V.write, sum = sumHTML(V.count, V.rating); if (!V.reviews.length && !w) { el.innerHTML = ""; el.hidden = true; return; }
       el.innerHTML = `<div class="rv-head"><div><h2 id="rvH">${esc(o.title || "Reviews")}</h2>${sum}</div>${w ? `<button type="button" class="rv-btn rv-write" id="rvWrite">${w.mine ? "Edit your review" : "Write a review"}</button>` : ""}</div>`
         + (V.reviews.length ? `<div class="rv-list">${V.reviews.map((r, i) => card(r, i, V.reviews.length, false)).join("")}</div>` : `<p class="rv-note" style="margin-top:6px">No reviews yet. Yours would be the first.</p>`);
       const b = $("#rvWrite", el); if (b) b.onclick = () => write({ ...w }, again);
-      const list = $(".rv-list", el); if (list) { delete el.dataset.rvMore; wireMore(el); el._rvCheck?.(); } wireActs(el, (id) => { const r = V.reviews.find((x) => x.id === id); return r && w && r.mine ? { ...r, proof: proofOf(w) } : r; }, again); };
+      const list = $(".rv-list", el); if (list) { delete el.dataset.rvMore; wireMore(el); el._rvCheck?.(); } wireActs(el, (id) => { const r = V.reviews.find((x) => x.id === id); return r && V.write && r.mine ? { ...r, proof: proofOf(V.write) } : r; }, again); };
     const again = async () => { await load(); draw(); o.changed?.(V); };
     await load(); draw(); return V; }
 
@@ -256,12 +263,12 @@
     b.onclick = () => open("event:" + id, proof, (r) => { b.textContent = r ? "Edit your review" : "Write a review"; o.done?.(r); }); el.appendChild(b); return b; }
   // the full invite (/g#rsvp-<id>) after the day: the button sits in the kudos ask, the event's reviews under the page
   function invite() { if (location.pathname !== "/g") return; let last = "";
-    const go = () => { const ask = document.getElementById("kudosAsk"), id = decodeURIComponent((location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/) || [])[1] || ""); if (!ask || !id) return;
+    const go = () => { const id = decodeURIComponent((location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/) || [])[1] || ""), ask = document.getElementById("kudosAsk"), home = document.getElementById("view-guest"); if (!id) return;
       const p = proofs().find((x) => x.id === id) || {};
-      if (!ask.querySelector(".rv-write") && (p.rid || signedIn())) { const w = document.createElement("div"); w.className = "rv-entry"; w.style.cssText = "margin-top:4px"; entry(w, id, p.rid ? { rid: p.rid, code: p.code } : {}, { done: () => { last = ""; go(); } }); (ask.querySelector(":scope > div") || ask).appendChild(w); }
-      if (last === id) return; last = id; let box = document.getElementById("rvEvent"); if (!box) { box = document.createElement("section"); box.id = "rvEvent"; box.hidden = true; (ask.closest("#view-guest") || ask.parentElement).appendChild(box); }
-      block(box, { event: id }, { title: "Reviews" }).then((V) => { const b = ask.querySelector(".rv-write"); if (b && V?.write?.mine) b.textContent = "Edit your review"; if (V && !V.write) ask.querySelector(".rv-entry")?.remove(); }); };
-    const start = () => { go(); new MutationObserver(() => { clearTimeout(go.t); go.t = setTimeout(go, 60); }).observe(document.body, { childList: true, subtree: true }); addEventListener("hashchange", () => { last = ""; document.getElementById("rvEvent")?.remove(); go(); }); };
+      if (ask && !ask.querySelector(".rv-write") && (p.rid || signedIn())) { const w = document.createElement("div"); w.className = "rv-entry"; w.style.cssText = "margin-top:4px"; entry(w, id, p.rid ? { rid: p.rid, code: p.code } : {}, { done: () => { last = ""; go(); } }); (ask.querySelector(":scope > div") || ask).appendChild(w); }
+      if (last === id || !home || !home.children.length || home.hidden) return; last = id; let box = document.getElementById("rvEvent"); if (!box) { box = document.createElement("section"); box.id = "rvEvent"; box.hidden = true; home.appendChild(box); }
+      block(box, { event: id }, { title: "Reviews", entry: false }).then((V) => { const a = document.getElementById("kudosAsk"), b = a?.querySelector(".rv-write"); if (b && V?.write?.mine) b.textContent = "Edit your review"; if (V && !V.write) a?.querySelector(".rv-entry")?.remove(); }); };
+    const start = () => { go(); new MutationObserver(() => { clearTimeout(go.t); go.t = setTimeout(() => { if (!document.getElementById("rvEvent")) last = ""; go(); }, 80); }).observe(document.body, { childList: true, subtree: true }); addEventListener("hashchange", () => { last = ""; document.getElementById("rvEvent")?.remove(); go(); }); };
     if (document.body) start(); else addEventListener("DOMContentLoaded", start); }
   invite();
 

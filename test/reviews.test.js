@@ -4,6 +4,7 @@
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startServer } from "./helpers.js";
@@ -266,6 +267,10 @@ test("where they show: the host page's data, the hire view and directory card, a
   const lou = (await getJ("/api/public/host/lou-rv/trust")).j; assert.equal(lou.reviews, 0); assert.ok(!lou.lines.some((l) => l.k === "reviews"), "no reviews, no line");
   const D = (await getJ("/api/public/hosts")).j.hosts.find((h) => h.handle === "maya-rv"); assert.equal(D.reviews, P2.reviewCount); assert.deepEqual(D.rating, P2.rating);
   assert.match(fs.readFileSync(path.join(ROOT, "public/hosts.html"), "utf8"), /\["reviews", "bookings", "returned", "again", "guests"\]/);
+  // the hosts directory (/hosts): the same count on a real host's card, nothing on a host with none
+  const dir = (await getJ("/api/public/discover")).j.hosts, dm = dir.find((h) => h.handle === "maya-rv"); assert.equal(dm.reviews, P2.reviewCount); assert.deepEqual(dm.rating, P2.rating);
+  assert.ok(dir.length > 1 && dir.filter((h) => h.handle !== "maya-rv").every((h) => !("reviews" in h)), "no count without real reviews, and never on an example page");
+  assert.match(fs.readFileSync(path.join(ROOT, "public/hostdir.html"), "utf8"), /h\.reviews \? `<span class="f">/);
   // the feed: a past event's quote is a review now, scrubbed and cut on a sentence
   const X = srv.app.locals.social, I = X.index(), c = srv.app.locals.feedVisual.card(I, I.events.get("rvPaid"), {}); assert.equal(c.quote.review, true); assert.ok(c.quote.rating >= 4); assert.ok(c.quote.text.length <= 220);
   // what a person may still review with this host: the ones without a review first
@@ -290,4 +295,102 @@ test("the pages carry their hooks, small and marked, and the budgets hold", () =
   assert.match(src, /role="img" aria-label="\$\{n\} out of 5 stars"/); assert.match(src, /aria-label="\$\{SAY\[i\]\}"/); assert.ok(!/[★⭐☆]/u.test(src), "stars are drawn, not emoji");
   assert.match(src, /Its star rating still counts toward your average/);
   assert.ok(!/—/.test(src + rd("server/reviews.js")), "no em dashes");
+});
+
+test("in a browser, at 390 and 1280: write from the kudos page, read it on the host page with More, the host replies and pins", async (t) => {
+  let pw; try { pw = createRequire(import.meta.url)("playwright"); } catch { return t.skip("no playwright"); }
+  let br; try { br = await pw.chromium.launch(); } catch { return t.skip("no browser"); }
+  const SHOTS = process.env.RV_SHOTS || "", shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + ".png"), fullPage: false }); } };
+  const LONG = "We booked two seats on a whim and it turned into the best night of the month. Maya met everyone at the door by name, the first course was on the table within ten minutes, and the ragu had clearly been on since the day before. "
+    + "The room is small, so you end up talking to the people next to you, which is the point. I would tell a friend to come hungry, to say yes to the second helping, and to stay for the coffee at the end because that is when the stories start. "
+    + "Only note: the long table is snug, so bring a jacket you can hang up rather than a big bag.";
+  try {
+    for (const [tag, opts] of [["390", pw.devices["iPhone 13"]], ["1280", { viewport: { width: 1280, height: 800 } }]]) {
+      R.resetLimits();
+      for (const d of S.list("reviews")) if (/^w\d+\.rv@/.test(d.data.email || "")) S.delete("reviews/" + d.id); R.bust(); // one walker at a time
+      const who = "w" + tag; code[who] = "CW" + tag + "Z"; rid[who] = S.add("rsvps", { eventId: "rvPaid", name: tag === "390" ? "Nora Quinn" : "Omar Haddad", email: `${who}.rv@guest.example.com`, response: "going", code: code[who], createdAt: Date.now() }).id; srv.app.locals.social.bust();
+      const watch = (page, errs) => { page.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); }); page.on("pageerror", (e) => errs.push(String(e))); page.on("requestfailed", (q) => { if (!/fonts\.g/.test(q.url())) errs.push("failed " + q.url()); }); page.on("response", (r) => { if (r.status() >= 400 && !/fonts\.g/.test(r.url())) errs.push(r.status() + " " + r.url()); }); };
+      const cls = (page) => page.evaluate(() => window.__cls || 0), clsInit = "window.__cls=0;try{new PerformanceObserver((l)=>{for(const e of l.getEntries())if(!e.hadRecentInput)window.__cls+=e.value}).observe({type:'layout-shift',buffered:true})}catch{}";
+      const noOverflow = async (page, what) => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${what}: no sideways scroll at ${tag}`);
+
+      // ---- the guest, from the kudos link ----
+      const g = await br.newContext({ ...opts }), gp = await g.newPage(), ge = []; watch(gp, ge); await gp.addInitScript(clsInit);
+      await gp.goto(`${srv.base}/k/rvPaid?rid=${rid[who]}&code=${code[who]}`); await gp.waitForSelector("#send");
+      const entry = gp.locator("#rvIn .rv-write"); await entry.waitFor(); assert.equal(await entry.textContent(), "Write a review"); assert.ok((await entry.boundingBox()).height >= 44);
+      await shot(gp, `${tag}-1-kudos-page`);
+      await entry.click(); const sheet = gp.locator(".rv-sheet"); await sheet.waitFor();
+      assert.equal(await sheet.getAttribute("aria-modal"), "true"); assert.equal(await sheet.locator("h2").textContent(), "Write a review"); assert.match(await sheet.locator(".rv-sub").textContent(), /Pasta night, with Maya/);
+      // stars: a radio group of five 44px targets with names, arrows move it, and it's required
+      const radios = sheet.locator('.rv-pick input[type=radio]'); assert.equal(await radios.count(), 5);
+      assert.deepEqual(await radios.evaluateAll((L) => L.map((x) => x.getAttribute("aria-label"))), ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"]);
+      for (const b of await sheet.locator(".rv-pick label").all()) { const bb = await b.boundingBox(); assert.ok(bb.width >= 44 && bb.height >= 44, "44px stars"); }
+      assert.equal(await sheet.locator(".rv-go").count(), 1, "one primary"); assert.equal(await sheet.locator("label[for=rvText]").textContent(), "Your review");
+      assert.match(await sheet.locator("#rvHint").textContent(), /Optional\. A rating on its own is fine\. What was it like\? What would you tell a friend\?/);
+      await sheet.locator("#rvSave").click(); assert.equal(await sheet.locator("#rvErr").textContent(), "Pick a rating, 1 to 5 stars.");
+      await radios.nth(2).focus(); await gp.keyboard.press("ArrowRight"); await gp.keyboard.press("ArrowRight"); assert.equal(await sheet.locator(".rv-pick input:checked").getAttribute("value"), "5");
+      await gp.keyboard.press("ArrowLeft"); assert.equal(await sheet.locator("#rvSay").textContent(), "4 of 5"); assert.equal(await sheet.locator(".rv-pick svg.on").count(), 4);
+      // the count shows only near the limit
+      await sheet.locator("#rvText").fill(LONG); assert.equal(await sheet.locator("#rvCount").isHidden(), true, "no count while there's plenty of room");
+      await sheet.locator("#rvText").fill("x".repeat(1100)); assert.equal(await sheet.locator("#rvCount").textContent(), "100 characters left"); await sheet.locator("#rvText").fill(LONG);
+      assert.match(await sheet.locator(".rv-where").textContent(), /It shows on Maya's page and on the event's page, with your first name\./);
+      // the row of buttons shares a height, and nothing is cut off under the sheet
+      const hs = await sheet.locator(".rv-row .rv-btn").evaluateAll((L) => L.map((b) => Math.round(b.getBoundingClientRect().height))); assert.equal(new Set(hs).size, 1, "buttons in a row share a height: " + hs);
+      const save = await sheet.locator("#rvSave").boundingBox(); assert.ok(save.y + save.height <= opts.viewport.height + 1 || (await sheet.evaluate((el) => el.scrollHeight > el.clientHeight)), "Save is reachable");
+      await shot(gp, `${tag}-2-write-sheet`);
+      await sheet.locator("#rvSave").click(); await gp.waitForFunction(() => document.querySelector(".rv-sheet h2")?.textContent === "Saved");
+      assert.match(await sheet.textContent(), /It shows on Maya's page and on the event's page, with your first name\. You can change or delete it any time\./); await shot(gp, `${tag}-3-saved`);
+      await sheet.locator("[data-x]").click(); assert.equal(await gp.locator(".rv-bg").count(), 0); assert.equal(await entry.textContent(), "Edit your review");
+      assert.ok((await cls(gp)) < 0.05, `kudos page CLS ${await cls(gp)}`); await noOverflow(gp, "kudos page"); assert.deepEqual(ge, [], "kudos page console and network clean");
+      // a free event's form has no stars at all
+      await gp.goto(`${srv.base}/k/rvFree?rid=${rid.bo}&code=${code.bo}`); await gp.locator(".rv-write").first().waitFor(); await gp.locator(".rv-write").first().click(); await gp.locator(".rv-sheet #rvText").waitFor();
+      assert.equal(await gp.locator(".rv-sheet .rv-pick").count(), 0, "no star control on a free event"); assert.match(await gp.locator(".rv-sheet #rvHint").textContent(), /^In your own words\./); await shot(gp, `${tag}-4-free-event-sheet`);
+      await gp.keyboard.press("Escape"); assert.equal(await gp.locator(".rv-bg").count(), 0, "Escape closes it");
+      // the guest's own host-page view: Edit on theirs, no Report on it
+      await gp.goto(`${srv.base}/k/rvPaid?rid=${rid[who]}&code=${code[who]}`); await gp.evaluate(([id, r, c]) => localStorage.setItem("encore-rsvp-" + id, JSON.stringify({ rid: r, code: c, response: "going" })), ["rvPaid", rid[who], code[who]]);
+      await gp.goto(`${srv.base}/@maya-rv`); await gp.waitForSelector("#kudos .rv-write"); const mineCard = gp.locator("#kudos .rv-card", { hasText: "We booked two seats" });
+      assert.equal(await mineCard.locator('[data-rv-act="edit"]').count(), 1); assert.equal(await mineCard.locator('[data-rv-act="report"]').count(), 0, "no Report on your own"); assert.equal(await gp.locator("#kudos .rv-write").textContent(), "Edit your review");
+      await gp.locator("#kudos").scrollIntoViewIfNeeded(); await shot(gp, `${tag}-5-host-page-author`); await g.close();
+
+      // ---- a visitor on the host page ----
+      const v = await br.newContext({ ...opts }), vp = await v.newPage(), ve = []; watch(vp, ve); await vp.addInitScript(clsInit);
+      await vp.goto(`${srv.base}/@maya-rv`); await vp.waitForSelector("#kudos .rv-card");
+      assert.match(await vp.locator("#kdH").textContent(), /^Kudos and reviews \d+$/); assert.match(await vp.locator("#kudos .kd-sum").textContent(), /^\d\.\d · \d+ reviews/);
+      const card = vp.locator("#kudos .rv-card", { hasText: "We booked two seats" }); await card.scrollIntoViewIfNeeded();
+      assert.equal(await card.locator(".rv-stars").getAttribute("aria-label"), "4 out of 5 stars"); assert.equal(await card.locator(".kd-who b").textContent(), tag === "390" ? "Nora" : "Omar");
+      assert.match(await card.locator(".kd-who small").textContent(), /^[A-Z][a-z]{2} \d{4} · Came to Pasta night$/);
+      const more = card.locator(".kd-more"); assert.equal(await more.isVisible(), true, "a long review is clamped with More"); const h0 = (await card.locator(".kd-q").boundingBox()).height;
+      await shot(vp, `${tag}-6-host-page-visitor`);
+      await more.click(); assert.equal(await more.textContent(), "Less"); assert.ok((await card.locator(".kd-q").boundingBox()).height > h0, "More shows the whole review");
+      assert.ok(await card.locator(".kd-q").evaluate((q) => q.scrollHeight <= q.clientHeight + 2), "nothing cut off once open"); await shot(vp, `${tag}-7-host-page-more`);
+      assert.equal(await vp.locator('#kudos [data-rv-act="reply"], #kudos [data-rv-act="pin"], #kudos [data-rv-act="hide"], #kudos [data-rv-act="edit"], #kudos .rv-write').count(), 0, "no owner or author controls for a visitor");
+      const rep = card.locator('[data-rv-act="report"]'); assert.equal(await rep.count(), 1); assert.ok((await rep.boundingBox()).height >= 44); await rep.click(); await vp.waitForSelector(".sf form"); await vp.keyboard.press("Escape");
+      assert.ok((await cls(vp)) < 0.05, `host page CLS ${await cls(vp)}`); await noOverflow(vp, "host page"); assert.deepEqual(ve, [], "host page console and network clean"); await v.close();
+
+      // ---- the host on their own page ----
+      const h = await br.newContext({ ...opts }); await h.addCookies([...host.split("; ").map((c) => c.split("=")), ["encore_in", "1"]].map(([name, ...val]) => ({ name, value: val.join("="), url: srv.base })));
+      const hp = await h.newPage(), he = []; watch(hp, he); await hp.addInitScript(clsInit);
+      await hp.goto(`${srv.base}/@maya-rv`); await hp.waitForSelector('#kudos [data-rv-act="reply"]');
+      const hc = hp.locator("#kudos .rv-card", { hasText: "We booked two seats" }); await hc.scrollIntoViewIfNeeded();
+      assert.equal(await hc.locator('[data-rv-act="report"]').count(), 1, "the host can report a review"); assert.equal(await hp.locator("#kudos .rv-write").count(), 0, "the host doesn't review themselves");
+      const ah = await hc.locator(".rv-acts .rv-btn").evaluateAll((L) => L.map((b) => Math.round(b.getBoundingClientRect().height))); assert.equal(new Set(ah).size, 1); assert.ok(ah[0] >= 44);
+      await shot(hp, `${tag}-8-host-own-page`);
+      await hc.locator('[data-rv-act="reply"]').click(); const rs = hp.locator(".rv-sheet"); await rs.waitFor(); assert.match(await rs.locator("h2").textContent(), /^Reply to (Nora|Omar)$/); assert.equal(await rs.locator("label[for=rvReply]").textContent(), "Your reply");
+      await rs.locator("#rvReply").fill("Thank you. The long table gets a coat rail next month."); await shot(hp, `${tag}-9-reply-sheet`); await rs.locator(".rv-go").click();
+      await hp.waitForSelector("#kudos .rv-reply"); assert.match(await hp.locator("#kudos .rv-card", { hasText: "We booked two seats" }).locator(".rv-reply").textContent(), /Maya replied.*coat rail/s);
+      // pin: tom, lena or dee may hold pins from the tests above; free them first so there is room
+      for (const d of S.list("reviews")) if (d.data.pinnedAt) S.update("reviews/" + d.id, { pinnedAt: undefined }); R.bust(); await hp.goto(`${srv.base}/@maya-rv`); await hp.waitForSelector('#kudos [data-rv-act="pin"]');
+      await hp.locator("#kudos .rv-card", { hasText: "We booked two seats" }).locator('[data-rv-act="pin"]').click(); await hp.waitForSelector('#kudos [data-rv-act="pin"][aria-pressed="true"]');
+      const firstCard = hp.locator("#kudos .rv-card").first(); assert.match(await firstCard.textContent(), /We booked two seats/); assert.equal(await firstCard.locator(".rv-flag").textContent(), "Pinned"); assert.equal(await firstCard.locator('[data-rv-act="pin"]').textContent(), "Unpin");
+      await hp.waitForFunction(() => document.activeElement?.dataset.rvAct === "pin"); /* the keyboard stays on the button after the card moves */ assert.equal(await hp.locator(".rv-toast").count(), 0, "the card says Pinned; no toast over the page");
+      assert.match(await hp.locator("#kudos .rv-card", { hasText: "for the table only" }).locator(".rv-flag").textContent(), /^Private event\. Only guests who were there see this\.$/);
+      await firstCard.scrollIntoViewIfNeeded(); await shot(hp, `${tag}-10-host-replied-pinned`);
+      // hide says what it does, in plain words
+      await firstCard.locator('[data-rv-act="hide"]').click(); await hp.waitForSelector(".rv-sheet #rvYes"); assert.match(await hp.locator(".rv-sheet .rv-sub").textContent(), /can still see it, and the Pottery Lab team is told\. Its star rating still counts toward your average\./);
+      await shot(hp, `${tag}-11-hide-confirm`); await hp.locator(".rv-sheet [data-x]").click();
+      assert.ok((await cls(hp)) < 0.05, `host's own page CLS ${await cls(hp)}`); await noOverflow(hp, "host's own page"); assert.deepEqual(he, [], "host's page console and network clean");
+      await hp.locator("#kudos .rv-card").first().locator('[data-rv-act="pin"]').click(); await hp.waitForFunction(() => !document.querySelector('#kudos [data-rv-act="pin"][aria-pressed="true"]')); await h.close();
+      // the visitor sees the reply, and never the controls
+      const v2 = await br.newContext({ ...opts }), p2 = await v2.newPage(); await p2.goto(`${srv.base}/@maya-rv`); await p2.waitForSelector("#kudos .rv-reply"); assert.equal(await p2.locator("#kudos [data-rv-act]:not([data-rv-act=report])").count(), 0); await v2.close();
+    }
+  } finally { await br.close(); }
 });

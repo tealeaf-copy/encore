@@ -160,7 +160,7 @@ export function makeReviews(store, { C, X, V = () => null }) {
       event: listed || mine || host ? (r.kind === "booking" ? r.title : titleOf(ev)) || "" : "", what: r.kind === "drop" ? "Ordered" : r.kind === "booking" ? "Booked" : "Came to", month,
       tags: r.tags || [], verified: r.verified || null, verifiedLabel: VERIFIED_LABEL[r.verified] || "", ...(photos.length ? { photos } : {}),
       ...(r.reply?.text ? { reply: { text: noContact(r.reply.text), at: r.reply.at, name: first(h.name) || hostName(r.ws) || "The host" } } : {}),
-      ...(r.pinnedAt && !r.hidden ? { pinned: true } : {}), ...(mine ? { mine: true, subject: (r.kind === "booking" ? "booking:" : "event:") + (r.bookingId || r.eventId) } : {}), ...((mine || host) && r.hidden ? { hidden: true } : {}), ...(host ? { own: true } : {}) };
+      ...(r.pinnedAt && !r.hidden ? { pinned: true } : {}), ...(mine ? { mine: true, subject: (r.kind === "booking" ? "booking:" : "event:") + (r.bookingId || r.eventId) } : {}), ...((mine || host) && r.hidden ? { hidden: true } : {}), ...(host ? { own: true } : {}), ...(!openTo(r, ev) ? { private: true } : {}) };
   }
   /** Pinned first (newest pin first), then newest. */
   const pinOf = (r) => (r.pinnedAt && !r.hidden ? r.pinnedAt : 0);
@@ -267,6 +267,9 @@ export function mountReviews(app, { store, small, currentUser, C, X }) {
   app.locals.reviews = R;
   // kudos and reviews travel together: every page that reads a host's strengths gets the reviews with them
   const base = X.hostStrengths; X.hostStrengths = (ws, o) => { const S0 = base(ws, o); return o?.year ? S0 : R.intoStrengths(ws, S0); };
+  // the hosts directory card: a count, and the average once 3 are rated, for real hosts with real reviews only
+  const discover0 = C.discover; if (typeof discover0 === "function") C.discover = (...a) => { const d = discover0(...a); if (!d || !Array.isArray(d.hosts) || !R.all().length) return d;
+    return { ...d, hosts: d.hosts.map((h) => { if (!h?.handle || h.showcase || h.sample) return h; const ws = C.wsOfHandle(h.handle), s = ws ? R.summaryOf(ws) : null; return s && (s.count || s.rating) ? { ...h, reviews: Math.max(s.count, s.rating?.n || 0), ...(s.rating ? { rating: s.rating } : {}) } : h; }) }; };
   X.reviewQuote = (x, email) => R.quoteFor(x, email);
   X.reviewSummary = (ws, scope) => R.summaryOf(ws, scope);
   const user = (req) => { try { const u = currentUser(req); return u && u.email ? u : null; } catch { return null; } };

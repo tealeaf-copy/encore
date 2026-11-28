@@ -106,7 +106,7 @@
       + (row ? `<div class="kd-ctl"><button type="button" class="kd-nav" data-dir="-1" aria-controls="kdList" aria-label="Previous kudos">${ARROW("M11 4 6 9l5 5")}</button><button type="button" class="kd-nav" data-dir="1" aria-controls="kdList" aria-label="Next kudos">${ARROW("m7 4 5 5-5 5")}</button><button type="button" class="kd-all" aria-expanded="false" aria-controls="kdList">See all</button></div>` : "")
       + `</div>${sum || rsum ? `<p class="kd-sum">${rsum}${rsum && sum ? " · " : ""}${esc(sum)}</p>` : ""}`
       + (top.length ? `<ul class="kd-tags" aria-label="What guests mention most">${top.map((t) => `<li>${esc(t.label || TAGS[t.tag] || t.tag)} <b>${+t.n} of ${n}</b></li>`).join("")}</ul>` : "")
-      + `<div class="kd-list" id="kdList"${row ? ` role="region" aria-roledescription="carousel" aria-label="${word} from guests" tabindex="0"` : ""}>${R.map((r, i) => RV.card(r, i, all, row)).join("")}${L.map((k, i) => card(k, i + R.length, all, row)).join("")}</div>`
+      + `<div class="kd-list" id="kdList"${row ? ` role="region" aria-roledescription="carousel" aria-label="${word} from guests" tabindex="0"` : ""}>${R.map((r, i) => RV.card(r, i, all, row, !!o.owner)).join("")}${L.map((k, i) => card(k, i + R.length, all, row)).join("")}</div>`
       + (row ? `<p class="kd-sr" aria-live="polite"></p>` : "") + `</section>`;
   }
 

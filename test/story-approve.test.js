@@ -155,7 +155,8 @@ for (const W of [390, 1280]) test(`browser at ${W}: approve, edit a caption, reo
   const own1 = await upload(E, host, { caption: "the first course" }), own2 = await upload(E, host), g1 = await upload(E, g, { caption: "what a night" }), g2 = await upload(E, g);
   const ctxFor = async (who) => { const ctx = await browser.newContext(W === 390 ? { ...pw.devices["iPhone 13"], viewport: { width: 390, height: 844 }, reducedMotion: "reduce", serviceWorkers: "block" } : { viewport: { width: 1280, height: 800 }, reducedMotion: "reduce", serviceWorkers: "block" });
     if (who) await ctx.addCookies(who.cookie.split("; ").map((kv) => { const i = kv.indexOf("="); return { name: kv.slice(0, i), value: kv.slice(i + 1), url: srv.base }; }).concat([{ name: "encore_in", value: "1", url: srv.base }]));
-    await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" })); return ctx; };
+    await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" }));
+    await ctx.addInitScript(() => { window.__cls = 0; try { new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: "layout-shift", buffered: true }); } catch {} }); return ctx; };
   const errs = []; const watch = (page) => { page.on("pageerror", (e) => errs.push("pageerror " + e.message)); page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push("console " + m.text()); });
     page.on("response", (r) => { if (r.status() >= 400 && r.url().startsWith(srv.base) && !/favicon/.test(r.url())) errs.push(r.status() + " " + r.url()); }); };
   const msg = (page, re) => page.waitForFunction((s) => [...document.querySelectorAll(".ys-msg")].some((m) => new RegExp(s).test(m.textContent)), re, { timeout: 10000 });
@@ -165,6 +166,7 @@ for (const W of [390, 1280]) test(`browser at ${W}: approve, edit a caption, reo
     const first = await page.evaluate(() => ({ h1: document.querySelector("h1").textContent, waiting: document.querySelectorAll("#ysW ~ .ys-ev .ys-ph").length, all: document.querySelector("[data-all]").textContent, pri: document.querySelectorAll("#ys .ys-b.go").length, sw: document.querySelector("[data-sw]").getAttribute("aria-checked"),
       small: [...document.querySelectorAll("#ys .ys-b, #ys .ys-sw, #ys .ys-in")].filter((b) => { const r = b.getBoundingClientRect(); return r.height < 44 || r.width < 44; }).length, over: document.documentElement.scrollWidth - innerWidth,
       clipped: [...document.querySelectorAll("#ys h3")].filter((x) => x.scrollWidth > x.clientWidth + 1).length, fonts: [...new Set([...document.querySelectorAll("#ys *")].map((x) => getComputedStyle(x).fontFamily.split(",")[0].replace(/"/g, "").trim()))] }));
+    assert.ok((await page.evaluate(() => window.__cls)) < 0.05, "Your stories doesn't jump as it loads: " + (await page.evaluate(() => window.__cls)));
     assert.equal(first.h1, "Your stories"); assert.equal(first.waiting, 2); assert.equal(first.all, "Approve all 2"); assert.equal(first.pri, 1, "one primary"); assert.equal(first.sw, "false"); assert.equal(first.small, 0, "44px targets"); assert.ok(first.over <= 1); assert.equal(first.clipped, 0);
     assert.ok(first.fonts.every((f) => /IBM Plex/.test(f)), first.fonts.join()); await shot(page, "stories-waiting");
     // approve one, leave one out
@@ -177,6 +179,12 @@ for (const W of [390, 1280]) test(`browser at ${W}: approve, edit a caption, reo
     const order = () => page.$$eval(`[data-ev="${E}"] > .ys-ph`, (L) => L.map((li) => li.dataset.id)); assert.deepEqual(await order(), [own1, own2, g1]);
     await page.click(`[data-k="${g1}:up"]`); await msg(page, "Order saved\\."); await page.click(`[data-k="${g1}:up"]`); await page.waitForFunction((id) => document.querySelector(`[data-k="${id}:up"]`)?.disabled === true, g1, { timeout: 10000 });
     assert.deepEqual(await order(), [g1, own1, own2]); assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `${g1}:down`, "focus stays with the photo that moved");
+    // and by drag (a mouse here; a long press does the same on a phone): the first photo is pulled under the second, then put back
+    if (W === 1280) { const box = async (id) => page.$eval(`[data-id="${id}"] [data-drag]`, (el) => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+      await page.$eval(`[data-id="${own1}"]`, (el) => el.scrollIntoView({ block: "center" })); const a = await box(g1), b = await page.$eval(`[data-id="${own1}"]`, (li) => { const r = li.getBoundingClientRect(); return { x: r.x + 44, y: r.bottom - 42 }; }); /* the lower half of the next row */ await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x, a.y + 20, { steps: 3 }); await page.mouse.move(b.x, b.y, { steps: 8 }); await page.mouse.up();
+      await page.waitForFunction(() => !document.querySelector(".ys-ph.drag"), null, { timeout: 10000 }); await page.waitForTimeout(600); assert.deepEqual(await order(), [own1, g1, own2], "dragged under the next photo"); await msg(page, "Order saved\\.");
+      assert.deepEqual((await ring(handle)).items.map((i) => i.id), ["m:" + own1, "m:" + g1, "m:" + own2], "the dragged order is what visitors get");
+      await page.click(`[data-k="${g1}:up"]`); await page.waitForFunction((id) => document.querySelector(`[data-k="${id}:up"]`)?.disabled === true, g1, { timeout: 10000 }); }
     // save to a highlight
     await page.click(`[data-k="${g1}:hl"]`); await page.waitForSelector("#ysSheet #ysNew"); assert.equal(await page.evaluate(() => document.activeElement?.id), "ysNew");
     await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#ysSheet")); assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `${g1}:hl`, "Esc closes; focus returns");
@@ -197,6 +205,7 @@ for (const W of [390, 1280]) test(`browser at ${W}: approve, edit a caption, reo
     // a visitor: the highlight ring under the header, the viewer, and no owner tools
     ctx = await ctxFor(null); page = await ctx.newPage(); watch(page); await page.goto(srv.base + "/@" + handle, { waitUntil: "domcontentloaded" }); await page.waitForSelector(".hl-row .hl-ring", { timeout: 20000 }); await page.waitForTimeout(800);
     const v = await page.evaluate(() => ({ rings: [...document.querySelectorAll(".hl-ring")].map((b) => [b.querySelector("small").textContent, b.getBoundingClientRect().height >= 44, !!b.querySelector("img")]), tools: !!document.querySelector("#topStories, #topEdit, .ys-b"), text: document.body.innerText, over: document.documentElement.scrollWidth - innerWidth }));
+    if (SHOTS) console.log(`# host page CLS with a highlight row at ${W}: ${await page.evaluate(() => window.__cls.toFixed(4))}`);
     assert.deepEqual(v.rings, [["Supper clubs", true, true]]); assert.equal(v.tools, false, "no editor for visitors"); assert.doesNotMatch(v.text, /Waiting for you|Your stories/); assert.ok(v.over <= 1); await shot(page, "page-visitor");
     await page.click(".hl-ring"); await page.waitForSelector(".fv-sv", { timeout: 15000 }); await page.waitForTimeout(400); assert.equal(await page.$eval(".fv-sv .fv-sv-top b", (b) => getComputedStyle(b).color), "rgb(255, 255, 255)", "the viewer reads on the host page"); await shot(page, "page-visitor-viewer"); await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector(".fv-sv")); await ctx.close();
     assert.deepEqual(errs, [], "console clean, no failed requests");

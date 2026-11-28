@@ -56,11 +56,12 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   const label = (f) => LABEL[f] || f.charAt(0).toUpperCase() + f.slice(1);
   const revLine = (r) => r && r.count ? `${r.count} review${r.count === 1 ? "" : "s"}${r.would_go_again_pct != null ? ` · ${r.would_go_again_pct}% would go again` : ""}` : "";
   const src = (u) => /partiful\.com/i.test(u) ? "From Partiful" : /lu\.ma|luma\.com/i.test(u) ? "From Luma" : /eventbrite\./i.test(u) ? "From Eventbrite" : "";
-  let cursor = null, hostRev = {}, shown = [];
+  let cursor = null, hostRev = {}, shown = [], MY = ""; // MY: the signed-in host's handle (their own events say Manage)
   // a drawn cover when the host has no photo (EventArt), never an emoji
   const cover = (e) => e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy">` : window.EventArt ? EventArt.cover({ id: e.id, title: e.title, activity: e.format || "" }, { title: "", label: "" }) : "";
-  // one quiet status word at most: Past, Full, a few spots left, or Ask to join
-  const statusOf = (e) => e.status === "past" ? "Past" : e.spots_left === 0 ? "Full" : e.spots_left != null && e.spots_left <= 5 ? `${e.spots_left} spot${e.spots_left === 1 ? "" : "s"} left` : e.ask_to_join ? "Ask to join" : "";
+  // one quiet status word at most: Yours, Past, Full, a few spots left, or Ask to join
+  const own = (e) => !!MY && e.host?.handle === MY && e.source === "hosted";
+  const statusOf = (e) => e.status === "past" ? "Past" : own(e) ? "Yours" : e.spots_left === 0 ? "Full" : e.spots_left != null && e.spots_left <= 5 ? `${e.spots_left} spot${e.spots_left === 1 ? "" : "s"} left` : e.ask_to_join ? "Ask to join" : "";
   function card(e, seen) {
     const place = [e.area, e.city].filter(Boolean).join(", "), st = statusOf(e);
     const meta = [st ? `<b>${esc(st)}</b>` : "", e.format && e.format !== "other" ? esc(label(e.format)) : "", e.status === "upcoming" && e.price ? esc(e.price) : "", esc(src(e.original_link))].filter(Boolean).join(" · ");
@@ -79,7 +80,7 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     return `<article class="ls-card ev"><div class="ls-media">${cover(e)}</div>
       <div class="ls-body">${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(whenLine(e))}</p><a class="ls-title" href="${esc(e.url)}">${esc(e.title)}</a><p class="ls-sub">by ${esc(e.host.name)}${place ? " · " + esc(place) : ""}</p>
       ${extra ? `<p class="ls-sub">${esc(extra)}</p>` : ""}${talk}${rv}
-      <div class="ls-acts"><a class="ls-btn${e.status === "upcoming" ? " primary" : ""}" href="${esc(e.url)}" aria-label="See the event: ${esc(e.title)}">See the event</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${menu.join("")}</div></details></div></div></article>`;
+      <div class="ls-acts">${own(e) ? `<a class="ls-btn${e.status === "upcoming" ? " primary" : ""}" href="/?app=1&amp;open=${encodeURIComponent(e.id)}#studio" aria-label="Manage: ${esc(e.title)}">Manage</a>` : `<a class="ls-btn${e.status === "upcoming" ? " primary" : ""}" href="${esc(e.url)}" aria-label="See the event: ${esc(e.title)}">See the event</a>`}<details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${menu.join("")}</div></details></div></div></article>`;
   }
   const qs = (extra = {}) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ q: st.q, city: st.city, format: st.format, type: st.type, status: st.status, ...extra })) if (v) u.set(k, v); return u.toString(); };
   async function load(more) {
@@ -127,7 +128,8 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   $("#grid").addEventListener("click", (ev) => { const b = ev.target.closest(".rv-btn"); if (b) { b.closest("details")?.removeAttribute("open"); reviews(b.dataset.id); } });
   $("#dlX").onclick = () => $("#dlg").close();
   $("#dlg").addEventListener("click", (ev) => { if (ev.target === $("#dlg")) $("#dlg").close(); });
-  Promise.all([facets(), hosts()]).finally(() => load());
+  const mine = () => (/(?:^|;\s*)encore_in=1/.test(document.cookie) ? fetch("/api/host/discover-status", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((s) => { MY = String(s?.handle || ""); }).catch(() => {}) : null);
+  Promise.all([facets(), hosts(), mine()]).finally(() => load());
 })();
 </script>
 <script src="/lists.js"></script><script src="/nav.js"></script><script src="/shell.js"></script>

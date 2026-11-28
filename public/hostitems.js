@@ -83,7 +83,9 @@
   const keyOf = (it) => (it.kind === "experience" ? "x:" : it.kind === "scrap" ? "s:" : "e:") + it.id;
   /** The one action on an item: for its owner Manage, for a guest the item's own. { label, href } or { label, act } or { note } */
   function actionOf(it, R) { const e = it.raw;
-    if (it.kind === "event") { if (R.owner || e.you === "host") return { label: "Manage", href: `/?app=1&open=${encodeURIComponent(e.id)}#studio` };
+    if (it.kind === "event") { if (R.owner || e.you === "host") return { label: "Manage", href: `/?app=1&open=${encodeURIComponent(e.id)}#studio`, ...(e.cancelled ? { note: "Cancelled" } : {}) };
+      // the viewer already replied: say so, and open their invite (never I'm in twice)
+      const YOU = { going: "You're going", requested: "You asked to join", waitlist: "On the waitlist" }; if (YOU[e.you] && !e.cancelled) return { label: "View", href: `/e/${encodeURIComponent(e.id)}`, note: YOU[e.you] };
       if (e.you === "cohost") return { label: "View", href: `/e/${encodeURIComponent(e.id)}`, note: "You're co-hosting" };
       if (e.private) return { note: "Link only" }; if (e.cancelled) return { note: "Cancelled" };
       return { label: e.preorder ? "Order" : e.approvalRequired ? "Ask to join" : e.stage === "interest" ? "I'd go" : "I'm in", href: `/e/${encodeURIComponent(e.id)}` }; }

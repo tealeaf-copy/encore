@@ -269,7 +269,8 @@ export function mountTeamUp(app, { store, small, currentUser, C, X, sendStatic, 
   function draftEvent(r) { const S = scopeStore(store, r.fromWs); let id = "tu" + crypto.randomBytes(6).toString("base64url").replace(/[^A-Za-z0-9]/g, "x"); while (!claimEvent(id, r.fromWs)) id = "tu" + crypto.randomBytes(6).toString("hex");
     const A = card(r.fromWs) || r.from, B = card(r.toWs) || r.to, title = r.title || clean(r.idea.split(/[.!?\n]/)[0], 70) || "Hosted together", hosts = [A, B].map((h) => ({ handle: h.handle, name: h.name, first: h.first, avatarArt: h.avatarArt, avatarUrl: h.avatarUrl, accent: h.accent }));
     const roles = [r.roles.from && `${A.first || A.name}: ${r.roles.from}`, r.roles.to && `${B.first || B.name}: ${r.roles.to}`].filter(Boolean).join("\n"), now = Date.now();
-    const doc = { id, name: title, pubTitle: title, why: lc(r.idea).replace(/[.!?\s]+$/, "") === lc(title).replace(/[.!?\s]+$/, "") ? "" : r.idea, date: r.dates[0] || "", ...(r.dates.length > 1 ? { dateOptions: r.dates } : {}), city: A.city || B.city || "", cohosts: [{ handle: B.handle, name: B.name }], teamUp: { id: r.id, hosts, split: r.split, cost: r.cost, audience: r.audience },
+    // kind/casual: a friends' event like any other made in the planner, so both invites draw it in the house look (without them it fell back to the old formal invite)
+    const doc = { id, kind: "social", casual: true, name: title, pubTitle: title, why: lc(r.idea).replace(/[.!?\s]+$/, "") === lc(title).replace(/[.!?\s]+$/, "") ? "" : r.idea, date: r.dates[0] || "", ...(r.dates.length > 1 ? { dateOptions: r.dates } : {}), city: A.city || B.city || "", cohosts: [{ handle: B.handle, name: B.name }], teamUp: { id: r.id, hosts, split: r.split, cost: r.cost, audience: r.audience },
       ...(roles ? { sections: [{ icon: "people", title: "Who's doing what", body: roles }] } : {}), published: false, discoverable: false, createdAt: now, updatedAt: now, fromTeamUp: r.id };
     if (doc.dateOptions) delete doc.date; // a date poll, not a fixed date
     S.set("events/" + id, doc); return id; }
@@ -299,7 +300,8 @@ export function mountTeamUp(app, { store, small, currentUser, C, X, sendStatic, 
     for (const r of all().filter((x) => x.status === "accepted" && (x.fromWs === ws || x.toWs === ws)).sort((a, b) => (b.decidedAt || 0) - (a.decidedAt || 0))) {
       const ow = r.fromWs === ws ? r.toWs : r.fromWs, c = card(ow); if (!c || blockedBetween(ws, ow)) continue; const e = r.eventId ? scopeStore(store, r.eventWs || r.fromWs).get("events/" + r.eventId)?.data : null;
       const k = c.handle, cur = by.get(k) || { partner: c, events: [] }; if (e && e.discoverable && e.published && !e.cancelled && !e.unlisted) cur.events.push({ id: r.eventId, title: e.pubTitle || e.name || "", date: e.date || "", upcoming: (e.date || "9") >= today }); by.set(k, cur); }
-    res.json({ collaborations: [...by.values()].slice(0, 8) }); });
+    // "Hosts Mai has hosted with": a yes with no live event yet (still a draft) is not a collaboration on the page
+    res.json({ collaborations: [...by.values()].filter((c) => c.events.length).slice(0, 8) }); });
 
   // ---- the thread page ----
   app.get(["/teamup", "/teamup/:id"], (req, res) => sendStatic(res, "teamup.html", "<p>Team up page missing.</p>"));

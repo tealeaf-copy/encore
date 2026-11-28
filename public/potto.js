@@ -39,10 +39,10 @@
 
   // ---------- styles ----------
   const css = document.createElement("style"); css.id = "pottoUiCss"; css.textContent = `
-.pt-dock{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));z-index:55;display:flex;justify-content:center;pointer-events:none;padding:0 16px}
+.pt-dock{position:fixed;left:0;right:0;bottom:var(--pt-dock-b,calc(76px + env(safe-area-inset-bottom)));z-index:55;display:flex;justify-content:center;pointer-events:none;padding:0 16px}
 .pt-dock::before{content:"";position:absolute;left:0;right:0;top:-28px;bottom:-90px;background:linear-gradient(rgba(244,240,232,0),var(--pl-page) 42%);pointer-events:none}
 .pt-dock-in{position:relative;pointer-events:auto;display:flex;align-items:center;gap:8px;width:min(560px,100%)}
-@media (min-width:861px){.pt-dock{bottom:24px}body.es-has-rail .pt-dock{left:224px}}
+@media (min-width:861px){.pt-dock{bottom:24px!important}body.es-has-rail .pt-dock{left:224px}}
 .pt-round,.pt-pill{height:48px;border:1px solid var(--pl-line);background:var(--pl-surface);color:var(--pl-ink);box-shadow:var(--pl-shadow-float);cursor:pointer;font:500 16px var(--pl-font-text);-webkit-tap-highlight-color:transparent}
 .pt-round{flex:none;width:48px;border-radius:50%;display:grid;place-items:center;padding:0;text-decoration:none}
 .pt-pill{flex:1;min-width:0;border-radius:999px;display:flex;align-items:center;gap:10px;padding:0 6px 0 16px;text-align:left}
@@ -51,7 +51,7 @@
 .pt-pill .pt-pm{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--pl-ink)}
 .pt-round:hover,.pt-pill:hover{border-color:var(--pl-line-strong)}
 .pt-round:focus-visible,.pt-pill:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
-body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}
+body.pt-has-dock{padding-bottom:calc(var(--pt-dock-b,76px) + 74px + env(safe-area-inset-bottom))!important}
 @media (min-width:861px){body.pt-has-dock{padding-bottom:96px!important}}
 .pt-bg{position:fixed;inset:0;z-index:9100;background:rgba(29,27,24,.32);display:flex;align-items:flex-end;justify-content:center;animation:pt-fade .18s ease-out}
 .pt-sheet{width:min(560px,100%);height:min(88vh,760px);height:min(88dvh,760px);background:var(--pl-surface);border-radius:16px 16px 0 0;box-shadow:var(--pl-shadow-float);display:flex;flex-direction:column;font-family:var(--pl-font-text);color:var(--pl-ink);animation:pt-up .24s cubic-bezier(.2,.8,.2,1);overflow:hidden}
@@ -167,6 +167,11 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
       <button type="button" class="pt-pill" data-pt="ask" aria-label="Ask Potto"><span class="pt-pf">${FACE(22)}</span><span class="pt-pl">Ask Potto</span>${SR ? `<span class="pt-pm" data-pt="mic" role="img" aria-label="Speak">${I(IC.mic, 20)}</span>` : ""}</button>
       <a class="pt-round" href="${esc(comp.href)}" aria-label="${esc(comp.label)}">${I(IC.compose)}</a></div>`;
     document.body.appendChild(d); document.body.classList.add("pt-has-dock");
+    // the dock sits above the tab bar as it really is: larger text or a browser's own toolbar makes the bar taller than
+    // 76px, and the bar then covered the dock's lower edge
+    const bar = () => [...document.querySelectorAll(".es-tabs,nav.tabs,#gBar")].map((t) => t.getBoundingClientRect()).filter((r) => r.height > 20 && r.top > innerHeight * 0.6 && r.bottom >= innerHeight - 4).sort((a, b) => a.top - b.top)[0];
+    const fit = () => { if (innerWidth > 860) { d.style.removeProperty("--pt-dock-b"); document.body.style.removeProperty("--pt-dock-b"); return; } const r = bar(), v = r ? `${Math.round(innerHeight - r.top) + 12}px` : ""; for (const el of [d, document.body]) v ? el.style.setProperty("--pt-dock-b", v) : el.style.removeProperty("--pt-dock-b"); };
+    fit(); try { const ro = new ResizeObserver(fit); document.querySelectorAll(".es-tabs,nav.tabs,#gBar").forEach((t) => ro.observe(t)); addEventListener("resize", fit); [300, 1200, 3000].forEach((ms) => setTimeout(fit, ms)); } catch {}
     d.querySelector('[data-pt="search"]').onclick = () => (opts.onSearch ? opts.onSearch() : (location.href = "/discover"));
     d.querySelector('[data-pt="ask"]').onclick = (e) => open({ listen: !!e.target.closest('[data-pt="mic"]') });
     return d; }

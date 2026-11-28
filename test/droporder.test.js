@@ -125,7 +125,7 @@ test("photo first: a drop's cover and item photos, checked uploads, the feed car
   const F = JSON.parse((await getJ("/api/public/feed", { cookie: other.cookie })).text), card = JSON.stringify(F).includes(id) ? (F.blend?.items || F.blend || []).flat?.().find?.((x) => x?.id === id) : null;
   const all = []; const walk = (x) => { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === "object") { if (x.id === id && x.kind === "event") all.push(x); Object.values(x).forEach(walk); } }; walk(F);
   const c = card || all[0]; assert.ok(c, "the drop is on the feed"); assert.equal(c.cover, U[0]); assert.equal(c.pickup, P.line(ev)); assert.equal(c.left, "30 of 30 left"); assert.equal(c.cta.label, "Order"); assert.equal(c.free, false);
-  const fv = read("public/feedvisual.js"); assert.match(fv, /e\.drop && e\.pickup \? meta\(\["Order ahead"/);
+  const fv = read("public/feedvisual.js"); assert.match(fv, /e\.drop && e\.pickup \? meta\(\[e\.pickup, e\.left\]\)/); // the tag says Pickup and the button says Order, so the facts line is the pickup and what's left
   // the setup starts with photos, takes the camera, reorders, and opens the shared cover sheet
   const ui = read("public/drop.js");
   for (const t of ["Show what you're making", "Add photos of what you're making", 'capture="environment"', 'accept="image/*"', "draggable=\"true\"", "PS.open({ for: \"cover\"", "/api/photos?for=item", "Add another window", "Allergens", "Orders close", "drops with photos get more orders"]) assert.ok(ui.includes(t), t);

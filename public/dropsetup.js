@@ -336,7 +336,7 @@
       vis: () => `<span class="ds-ph"><b class="t">Pottery class for your team</b><span class="s">From $55 a person · 8 to 20 guests</span><span class="ds-flow ds-seq">${fl(av("A", "#DCEBF6"), "Acme Design asks for a date", "12 people · Thu, Dec 10")}${fl(check, "You quote $660", "They pay a deposit to confirm")}</span></span>` } };
   function choose(o = {}) { const S = shell({ label: "What are you making?", tint: KIND.event.tint }), ORDER = ["event", "drop", "book"], IC = { event: I.cal, drop: I.bag, book: I.people }; let k = "event", pm = null; togKeys(S);
     S.set({ first: true, top: topBar(0, 0, true), pane: `<h2 class="ds-h" id="dsH">What are you making?</h2><p class="ds-sub" id="dsKind" aria-live="polite">${KIND[k].say}</p>${toggle("What are you making?", k, ORDER.map((x) => [x, KIND[x].t, IC[x]]), "k3")}${visWrap(KIND[k].vis(), { cls: "ds-tall ds-chv" })}<p class="ds-note" id="dsLike">Like: ${KIND[k].like}</p>`,
-      foot: `<button type="button" class="ds-go" id="dsStart">${KIND[k].go}</button><p class="ds-note" style="margin:6px 0 0">You can make the others any time.</p>` });
+      foot: `<button type="button" class="ds-go" id="dsStart">${KIND[k].go}</button><p class="ds-note" id="dsAny" style="margin:6px 0 0">You can make the others any time.</p>` });
     $$("[data-tog]", S.bg).forEach((b) => (b.dataset.kind = b.dataset.tog));
     potto(S, KIND[k].wear).then((m) => (pm = m));
     const pick = (n) => { if (n === k || !KIND[n]) return; k = n; S.bg.dataset.funTint = KIND[k].tint; $$("[data-tog]", S.bg).forEach((x) => { const on = x.dataset.tog === k; x.setAttribute("aria-checked", String(on)); x.tabIndex = on ? 0 : -1; });

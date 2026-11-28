@@ -119,3 +119,5 @@ html body .ds .ds-f .ds-money input:not([type=file]):focus{outline:none!importan
 .ds .dp-thumbs{gap:10px;margin:0 0 10px}.ds .dp-th,.ds .dp-addph{width:104px;height:104px;border-radius:14px}.ds .dp-th{border:0}.ds .dp-th button{width:44px;height:44px;border-radius:50%}.ds .dp-th .main{left:6px;top:6px;padding:5px 9px;border-radius:999px;font:600 13px/1 var(--ds-text);text-transform:none}
 .ds .dp-addph{gap:2px;align-content:center;border-color:var(--ds-edge);background:var(--ds-bg);color:var(--ds-ink);font:600 14px/1.2 var(--ds-text)}
 .ds input::placeholder,.ds textarea::placeholder{color:#6F736F;opacity:1}
+/* a short phone: the chooser keeps to one screen by dropping its two footnotes (the card already shows the example) */
+@media (max-height:700px){#dsLike,#dsAny{display:none}.ds-tog.k3 button{min-height:64px}.ds-pane:has(.ds-chv){padding-bottom:8px}.ds-chv.ds-visw{margin-top:38px}}

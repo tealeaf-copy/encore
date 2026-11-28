@@ -88,7 +88,7 @@ for (const [W, H] of [[390, 844], [390, 664]]) test(`in a browser at ${W}x${H}: 
     await screen("chooser"); assert.equal(await p.locator("#dpSheet [data-kind]").count(), 3); const demos = new Set();
     for (const [kind, re, go] of [["event", /Dumpling night[\s\S]*I'm in[\s\S]*Lan is in/, "Start an event"], ["drop", /Pandan this Saturday[\s\S]*Pandan cake[\s\S]*Order · \$36/, "Start a drop"], ["book", /Pottery class for your team[\s\S]*\$55 a person[\s\S]*Acme Design asks for a date[\s\S]*You quote \$660/, "Start something to book"]]) {
       await p.tap(`#dpSheet [data-kind="${kind}"]`); assert.equal(await p.locator(`#dpSheet [data-kind="${kind}"]`).getAttribute("aria-checked"), "true"); const tx = await visText(); assert.match(tx, re, kind); demos.add(tx);
-      assert.equal(await p.locator("#dsStart").innerText(), go); assert.ok((await p.locator("#dsKind").innerText()).length > 30, "one plain sentence"); assert.match(await p.locator("#dsLike").innerText(), /^Like: \S/, "and a real example"); }
+      assert.equal(await p.locator("#dsStart").innerText(), go); assert.ok((await p.locator("#dsKind").innerText()).length > 30, "one plain sentence"); assert.match(await p.locator("#dsLike").textContent(), /^Like: \S/, "and a real example"); }
     assert.equal(demos.size, 3, "a different demo for each"); await p.waitForTimeout(500); assert.ok(await p.locator("#dsStart").isVisible(), "nothing moved on by itself");
     // ---- A drop, the first time: the tutorial, four cards ----
     await p.tap('#dpSheet [data-kind="drop"]'); await p.tap("#dsStart"); await p.waitForSelector("#dsSkip");

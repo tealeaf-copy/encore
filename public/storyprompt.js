@@ -61,6 +61,15 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
       onEach: (f, r, err) => err && tell(err.message),
       onDone: (n) => { setTimeout(() => { window.__spPick = 0; }, 400); if (!n) return; tell(doneText(n, ev.open !== false)); /* said once: in the line, or as the page's toast */ o.onDone?.(n); hush = true; loading = null; load(true).then(() => changed(n, ev)); } }); }
 
+  // ---------- the story composer (public/storycomposer.js): fetched on the first tap, never with the page ----------
+  const need = (src) => new Promise((res, rej) => { let s = q(`script[data-sp-src="${src}"]`); if (s?.dataset.ok) return res(); if (!s) { s = document.createElement("script"); s.src = src; s.dataset.spSrc = src; document.head.appendChild(s); } s.addEventListener("load", () => { s.dataset.ok = "1"; res(); }); s.addEventListener("error", () => { s.remove(); rej(new Error("offline")); }); });
+  /** Open the composer. o: { eventId, from, onDone }. Signed out: the sign-in page. */
+  function compose(o = {}) { if (!inHint()) { location.href = "/login?next=" + encodeURIComponent(PATH + location.search); return Promise.resolve(null); }
+    if (!q("#scCss")) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/storycomposer.css"; l.id = "scCss"; document.head.appendChild(l); }
+    return Promise.all([window.EventArt ? 0 : need("/eventart.js"), window.Potto ? 0 : need("/mascot.js"), window.PLStoryKit ? 0 : need("/storykit.js"), window.PLStoryComposer ? 0 : need("/storycomposer.js")])
+      .then(() => window.PLStoryComposer.open({ ...o, onDone: (R, msg) => { say(msg); o.onDone?.(R); hush = true; loading = null; load(true).then(() => changed(R.ids?.length || 1, { id: o.eventId || "" })); } }))
+      .catch(() => { say("Couldn't open the story maker. Check your connection and tap again."); return null; }); }
+
   // ---------- sheets ----------
   function sheet({ title, body, from }) { css(); q("#spSheet")?.remove(); const prev = from || document.activeElement, bg = document.createElement("div"); bg.className = "sp-scrim"; bg.id = "spSheet";
     bg.innerHTML = `<div class="sp-sheet" role="dialog" aria-modal="true" aria-labelledby="spSheetH"><div class="sp-top"><h2 id="spSheetH">${esc(title)}</h2><button type="button" class="sp-x" data-sp-close>Close</button></div><div class="sp-body">${body}</div></div>`;
@@ -69,15 +78,8 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
       if (e.key === "Tab") { const F = qa("button,a[href]", bg).filter((x) => !x.disabled); if (!F.length) return; const a = F[0], z = F[F.length - 1]; if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } else if (!bg.contains(document.activeElement)) { e.preventDefault(); a.focus(); } } };
     document.addEventListener("keydown", key, true); bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("[data-sp-close]")) close(); });
     document.body.appendChild(bg); (q(".sp-list button", bg) || q(".sp-b", bg) || q(".sp-x", bg)).focus(); return { bg, close }; }
-  /** The event sheet: your recent events, newest first. A tap closes it and opens the file chooser for that event. */
-  function eventSheet(from, o = {}) { const L = (D || EMPTY).events;
-    const S = sheet({ title: "Add photos to your story", from, body: `<p class="sp-p">Pick the event they're from.</p><ul class="sp-list">${L.map((e, i) => `<li><button type="button" data-sp-ev="${i}"><span class="sp-cov" aria-hidden="true">${thumb(e)}</span><span class="sp-rt"><b>${esc(e.title)}</b><small>${esc([when(e.date), e.host ? "You hosted" : ""].filter(Boolean).join(" · "))}</small></span></button></li>`).join("")}</ul>` });
-    qa("[data-sp-ev]", S.bg).forEach((b) => (b.onclick = () => { const e = L[+b.dataset.spEv]; S.close(); pick(e, o); })); return S; }
-  /** Nobody to add photos for yet: one line of why, and one next step. */
-  function newSheet(from) { const host = !!(D || EMPTY).host;
-    return sheet({ title: "Your story starts with an event", from, body: `<p class="sp-p">Photos go with an event you went to or hosted.</p><div class="sp-row">${host ? `<a class="sp-b go" href="/?app=1&new=1#studio">Plan something</a>` : `<a class="sp-b go" href="/discover">Find something to go to</a>`}</div>` }); }
-  /** "Your story" and every "add photos" with no event named: the right sheet for this person. */
-  function open(from, o = {}) { uploader(); const go = () => ((D || EMPTY).events.length ? eventSheet(from, o) : newSheet(from)); if (D) return go(); return load().then(go); }
+  /** "Your story" and every "add photos" with no event named: the story composer. */
+  function open(from, o = {}) { return compose({ ...o, from }); }
 
   // ---------- the card: "How was <event>? Add a photo to your story" ----------
   function cardHtml(c) { return `<span class="sp-cov" aria-hidden="true">${thumb(c)}</span><div><p class="sp-h" id="spCardH" role="heading" aria-level="2">How was ${esc(c.title)}?</p><p class="sp-s">Add a photo to your story.</p>${c.added ? `<p class="sp-who">${esc(c.added)}.</p>` : ""}</div>
@@ -86,7 +88,7 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
   function card(host, { before = null } = {}) { const c = hush ? null : (D || EMPTY).card, old = q("#spCard"); if (old && (!c || old.dataset.ev !== c.id || !host.contains(old))) old.remove(); if (!c || !host) return null; if (q("#spCard")) return q("#spCard");
     css(); uploader(); const el = document.createElement("section"); el.className = "sp-card"; el.id = "spCard"; el.dataset.ev = c.id; el.setAttribute("aria-labelledby", "spCardH"); el.innerHTML = cardHtml(c);
     before && before.parentElement === host ? host.insertBefore(el, before) : host.prepend(el);
-    q("[data-sp-add]", el).onclick = () => pick(c, {});
+    q("[data-sp-add]", el).onclick = (e) => compose({ eventId: c.id, from: e.currentTarget }); // the composer, already set to this event
     q("[data-sp-not]", el).onclick = async (e) => { e.currentTarget.disabled = true; try { const r = await fetch("/api/me/story-prompt/dismiss", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: c.id }) }); if (!r.ok) throw 0; } catch { e.currentTarget.disabled = false; q(".sp-msg", el).textContent = "That didn't save. Try again."; return; }
       hush = true; el.remove(); dropCookie(); loading = null; load(true).then(() => changed(0, c)); };
     return el; }
@@ -134,7 +136,7 @@ html body .sp-b.go{background:var(--pl-accent,#29489A);border-color:var(--pl-acc
         catch (e) { b.disabled = false; let m = q(".sp-msg", el); if (!m) { m = document.createElement("p"); m.className = "sp-msg"; m.setAttribute("role", "status"); el.appendChild(m); } m.textContent = e.message; } }; };
     draw(); }
 
-  window.StoryPrompt = { load, card, open, pick, line, hostAsk, onChange: (f) => subs.push(f), get data() { return D; }, linked, css };
+  window.StoryPrompt = { load, card, open, compose, pick, line, hostAsk, onChange: (f) => subs.push(f), get data() { return D; }, linked, css };
   const start = () => { if (/^\/([ei]\/|g$)/.test(PATH)) { invitePage(); if (PATH === "/g") addEventListener("hashchange", () => { invFor = ""; invitePage(); }); }
     else if (PATH === "/feed") { load(); feedKudos(); }
     };

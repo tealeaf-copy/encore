@@ -67,6 +67,8 @@
     else el.innerHTML = `<div class="fv-rail" role="list" aria-label="Stories">${add}${order.map(([s, i]) => `<button type="button" role="listitem" class="fv-ring ${unseen(s) ? "new" : "seen"}" data-fv-story="rail:${i}" aria-label="${esc(s.host.name)}${s.showcase ? ", a page on Pottery Lab" : ""}${s.recap ? ", recap of " + esc(s.recap.title) : ""}. ${s.items.length} ${s.items.length === 1 ? "story" : "stories"}${unseen(s) ? ", new" : ""}"><span class="fv-ring-c">${ringThumb(s)}</span>${s.recap ? `<i class="fv-ring-dot" title="Recap"></i>` : s.showcase && s.example ? `<i class="fv-ring-tag">Example</i>` : ""}<small>${esc(String(s.host.name || "").replace(/'s\b/, ""))}</small></button>`).join("")}</div>`;
     el.hidden = false; $("#fvAdd", el) && ($("#fvAdd", el).onclick = () => onAdd?.());
     $$("[data-fv-story]", el).forEach((b) => (b.onclick = () => openStories(order.map(([, i]) => "rail:" + i), order.findIndex(([, i]) => "rail:" + i === b.dataset.fvStory), b))); }
+  /** One set of stories, opened at one of its items (a bell note's link to a story). */
+  function openOne(set, k = 0, o = {}) { REG.set("one", set); return openStories(["one"], 0, null, k, o); }
   function refreshRings() { $$("[data-fv-story^='rail:']").forEach((b) => { const s = REG.get(b.dataset.fvStory); if (s && !unseen(s) && b.classList.contains("new")) { b.classList.remove("new"); b.classList.add("seen", "just-seen"); } }); }
 
   // ---------- recap stories (server/feedvisual.js recapOf): a title card, the photos, a kudos quote, what's next ----------
@@ -82,7 +84,9 @@
       if (r.ok) { b.textContent = "Following"; return; } location.href = b.dataset.url || "#"; } catch { location.href = b.dataset.url || "#"; } }
 
   // ---------- the viewer ----------
-  function openStories(keys, si = 0, opener = null, k0 = 0) { css(); const sets = keys.map((k) => REG.get(k)).filter(Boolean); if (!sets.length) return; si = Math.max(0, Math.min(si, sets.length - 1));
+  // the stickers, reply box and seen-by of a story made in the composer: fetched the first time one is on screen
+  const storyView = (then) => need("/storykit.js", () => need("/storyview.js", () => window.PLStoryView && then(), "PLStoryView"), "PLStoryKit");
+  function openStories(keys, si = 0, opener = null, k0 = 0, o = {}) { css(); const sets = keys.map((k) => REG.get(k)).filter(Boolean); if (!sets.length) return; si = Math.max(0, Math.min(si, sets.length - 1)); let wantInsights = !!o.insights;
     let s = sets[si], k = Math.max(0, Math.min(k0, s.items.length - 1)), raf = 0, t0 = 0, elapsed = 0, dur = 5000, paused = false, hold = null, muted = true, vid = null, down = null;
     try { muted = sessionStorage.getItem("fv.unmuted") !== "1"; } catch {}
     const el = document.createElement("div"); el.className = "fv-sv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.tabIndex = -1;
@@ -98,23 +102,26 @@
         : it.type === "image" ? `<img src="${esc(it.url)}" alt="${esc(it.note || it.caption || "Story photo")}" decoding="async">`
         : it.type === "recap" ? recapCard(it) : it.type === "quote" ? quoteCard(it) : it.type === "end" ? endCard(it, s)
         : `<div class="fv-sv-art" style="${tintStyle(T)}"><div class="fv-sv-artc">${art({ ...it.art, look: it.look }, { title: it.art?.title || "" })}</div></div>`;
+      // a story made in the composer (server/storymake.js): its 9:16 slide, a video's overlay, and a layer for the stickers people can tap (public/storyview.js)
+      const stx = it.st || null, slide = stx ? `<div class="fv-sv-box">${media}${stx.overlay ? `<img class="fv-sv-over" src="${esc(stx.overlay)}" alt="">` : ""}<div class="fv-sv-layer" data-sv-layer></div></div>` : media;
       el.setAttribute("aria-label", `Stories from ${s.host.name}`); el.classList.toggle("light", ["recap", "end"].includes(it.type)); // dark words on the pale recap cards
       el.innerHTML = `<div class="fv-sv-in"><div class="fv-sv-bars" aria-hidden="true">${s.items.map((_, i) => `<i><b style="transform:scaleX(${i < k ? 1 : 0})"></b></i>`).join("")}</div>
         <div class="fv-sv-top">${avatar(s.host, 36)}<div><b>${esc(s.host.name)}</b><small>${esc(it.caption || "")}${it.by ? ` · from ${esc(it.by)}` : ""}</small></div>
           ${it.type === "video" ? `<button type="button" class="fv-sv-mute" aria-pressed="${!muted}" aria-label="${muted ? "Unmute" : "Mute"}">${muted ? "🔇" : "🔊"}</button>` : ""}<button type="button" class="fv-sv-pause" aria-pressed="false" aria-label="Pause">❚❚</button><button type="button" class="fv-sv-x" aria-label="Close stories">✕</button></div>
-        <div class="fv-sv-stage">${media}</div>
+        <div class="fv-sv-stage">${slide}</div>
         <button type="button" class="fv-sv-prev" aria-label="Previous story"><span aria-hidden="true">‹</span></button><button type="button" class="fv-sv-next" aria-label="Next story"><span aria-hidden="true">›</span></button>
-        <div class="fv-sv-foot">${it.cta?.follow ? `<button type="button" class="fv-sv-cta" data-fv-follow="${esc(it.cta.follow)}" data-url="${esc(it.cta.url || "#")}">${esc(it.cta.label || "Follow")}</button>` : `<a class="fv-sv-cta${it.type === "end" ? " big" : ""}" href="${esc(it.cta?.url || "#")}">${esc(it.cta?.label || "See page")} <span aria-hidden="true">→</span></a>`}${it.type === "end" && it.ev && !/^s[cx]-/.test(it.ev) ? `<button type="button" class="fv-sv-cta" data-pl-like="${esc(it.ev)}" data-title="${esc(it.end?.title || "")}"><i class="gl" style="--g:var(--g-spark)" aria-hidden="true"></i> Host one like this</button>` : ""}${it.type === "video" && muted ? `<button type="button" class="fv-sv-unmute">🔇 Tap for sound</button>` : ""}</div>
+        <div class="fv-sv-foot">${stx ? `<div class="sv-foot" data-sv-foot></div>` : it.cta?.follow ? `<button type="button" class="fv-sv-cta" data-fv-follow="${esc(it.cta.follow)}" data-url="${esc(it.cta.url || "#")}">${esc(it.cta.label || "Follow")}</button>` : `<a class="fv-sv-cta${it.type === "end" ? " big" : ""}" href="${esc(it.cta?.url || "#")}">${esc(it.cta?.label || "See page")} <span aria-hidden="true">→</span></a>`}${it.type === "end" && it.ev && !/^s[cx]-/.test(it.ev) ? `<button type="button" class="fv-sv-cta" data-pl-like="${esc(it.ev)}" data-title="${esc(it.end?.title || "")}"><i class="gl" style="--g:var(--g-spark)" aria-hidden="true"></i> Host one like this</button>` : ""}${it.type === "video" && muted ? `<button type="button" class="fv-sv-unmute">🔇 Tap for sound</button>` : ""}</div>
         <p class="fv-sv-sr" aria-live="polite">${esc(`${k + 1} of ${s.items.length}. ${it.caption || ""}`)}</p></div>`;
       const bars = $$(".fv-sv-bars b", el), bar = bars[k];
       $(".fv-sv-x", el).onclick = close; $(".fv-sv-prev", el).onclick = prev; $(".fv-sv-next", el).onclick = next; $(".fv-sv-pause", el).onclick = () => setPaused(!paused);
       const mute = (m) => { muted = m; try { sessionStorage.setItem("fv.unmuted", m ? "0" : "1"); } catch {} if (vid) vid.muted = m; const b = $(".fv-sv-mute", el); if (b) { b.textContent = m ? "🔇" : "🔊"; b.setAttribute("aria-pressed", String(!m)); b.setAttribute("aria-label", m ? "Unmute" : "Mute"); } $(".fv-sv-unmute", el)?.remove(); };
       $(".fv-sv-mute", el) && ($(".fv-sv-mute", el).onclick = () => mute(!muted)); $(".fv-sv-unmute", el) && ($(".fv-sv-unmute", el).onclick = (e) => { e.stopPropagation(); mute(false); });
       $(".fv-sv-cta[data-fv-follow]", el) && ($(".fv-sv-cta[data-fv-follow]", el).onclick = (ev) => { ev.stopPropagation(); followFrom(ev.currentTarget); });
-      vid = $(".fv-sv-stage video", el); dur = it.type === "video" ? 15000 : it.type === "end" ? 8000 : it.type === "recap" || it.type === "quote" ? 6000 : 5000;
-      if (vid) { vid.onloadedmetadata = () => { if (isFinite(vid.duration) && vid.duration > 0) dur = Math.min(15, vid.duration) * 1000; }; vid.onended = () => next(); vid.onerror = () => { dur = 5000; }; vid.play?.().catch(() => { if (!muted) { mute(true); vid.play().catch(() => {}); } }); }
-      const tick = (t) => { if (!paused) { elapsed = vid && vid.currentTime > 0 && isFinite(vid.duration) ? vid.currentTime * 1000 : t - t0; const p = Math.min(1, elapsed / dur); bar.style.transform = `scaleX(${p})`; if (p >= 1) return next(); } raf = requestAnimationFrame(tick); };
+      vid = $(".fv-sv-stage video", el); const t0v = stx?.trim?.[0] || 0, cap = stx ? (stx.dur || 30000) / 1000 : 15; dur = stx ? stx.dur || 5000 : it.type === "video" ? 15000 : it.type === "end" ? 8000 : it.type === "recap" || it.type === "quote" ? 6000 : 5000;
+      if (vid) { vid.onloadedmetadata = () => { if (t0v) { try { vid.currentTime = t0v; } catch {} } if (isFinite(vid.duration) && vid.duration > 0) dur = Math.min(cap, vid.duration - t0v) * 1000; }; vid.onended = () => next(); vid.onerror = () => { dur = 5000; }; vid.play?.().catch(() => { if (!muted) { mute(true); vid.play().catch(() => {}); } }); }
+      const tick = (t) => { if (!paused) { elapsed = vid && vid.currentTime > 0 && isFinite(vid.duration) ? Math.max(0, vid.currentTime - t0v) * 1000 : t - t0; const p = Math.min(1, elapsed / dur); bar.style.transform = `scaleX(${p})`; if (p >= 1) return next(); } raf = requestAnimationFrame(tick); };
       raf = requestAnimationFrame(tick); if (paused) setPaused(true); prefetch();
+      if (stx) { const go = () => { if (s.items[k] !== it || !document.contains(el)) return; window.PLStoryView.mount({ el, it, s, pause: setPaused, next, close, removed: () => { s.items.splice(k, 1); if (!s.items.length) { sets.splice(si, 1); if (!sets.length) return close(); si = Math.min(si, sets.length - 1); s = sets[si]; k = 0; } else k = Math.min(k, s.items.length - 1); show(); } }); if (wantInsights) { wantInsights = false; $("[data-seen]", el)?.click(); } }; window.PLStoryView && window.PLStoryKit ? go() : storyView(go); }
       // tap left or right, hold to pause, swipe down to close
       const stage = $(".fv-sv-stage", el);
       stage.onpointerdown = (e) => { if (e.button) return; down = { x: e.clientX, y: e.clientY, t: performance.now() }; hold = setTimeout(() => { hold = "held"; setPaused(true); }, 220); };
@@ -123,8 +130,8 @@
         if (dy > 90 && Math.abs(dy) > Math.abs(dx)) return close(); if (held) return setPaused(false); if (Math.abs(dx) > 50) return dx < 0 ? next() : prev();
         if (performance.now() - d0.t < 400) { const r = stage.getBoundingClientRect(); (e.clientX - r.left < r.width / 3 ? prev : next)(); } };
       stage.onpointerup = up; stage.onpointercancel = () => { clearTimeout(hold); down = null; el.classList.remove("dragging"); if (hold === "held") setPaused(false); }; }
-    const onKey = (e) => { if (!document.contains(el)) return; if (e.key === "Escape") { e.preventDefault(); close(); } else if (e.key === "ArrowRight") { e.preventDefault(); next(); } else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); } else if ((e.key === " " || e.key === "k") && !/^(BUTTON|A)$/.test(document.activeElement?.tagName || "")) { e.preventDefault(); setPaused(!paused); } else if (e.key === "m" && vid) { $(".fv-sv-mute", el)?.click(); }
-      else if (e.key === "Tab") { const F = $$("button,a[href]", el).filter((x) => x.offsetParent !== null); if (!F.length) return; const i = F.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); F.slice(-1)[0].focus(); } else if (!e.shiftKey && i === F.length - 1) { e.preventDefault(); F[0].focus(); } } };
+    const onKey = (e) => { if (!document.contains(el)) return; if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "")) { if (e.key === "Escape") { e.preventDefault(); e.target.blur(); } return; } /* typing a reply: the keys are for the words */ if (e.key === "Escape") { e.preventDefault(); close(); } else if (e.key === "ArrowRight") { e.preventDefault(); next(); } else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); } else if ((e.key === " " || e.key === "k") && !/^(BUTTON|A)$/.test(document.activeElement?.tagName || "")) { e.preventDefault(); setPaused(!paused); } else if (e.key === "m" && vid) { $(".fv-sv-mute", el)?.click(); }
+      else if (e.key === "Tab") { const F = $$("button:not(:disabled),a[href],input", el).filter((x) => x.offsetParent !== null); if (!F.length) return; const i = F.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); F.slice(-1)[0].focus(); } else if (!e.shiftKey && i === F.length - 1) { e.preventDefault(); F[0].focus(); } } };
     document.addEventListener("keydown", onKey, true); show(); $(".fv-sv-x", el)?.focus({ preventScroll: true });
     return { close }; }
 
@@ -628,6 +635,7 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fv-sv-top{position:relative;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 10px 8px 14px}.fv-sv-top>div{flex:1;min-width:0}.fv-sv-top b{display:block;font:600 16px var(--sys-title)}.fv-sv-top small{display:block;opacity:.85;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fv-sv-top button{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:16px;cursor:pointer}.fv-sv-top button:focus-visible,.fv-sv-foot a:focus-visible,.fv-sv-foot button:focus-visible,.fv-sv-prev:focus-visible,.fv-sv-next:focus-visible{outline:3px solid var(--fv-butter);outline-offset:2px}
 .fv-sv-stage{position:absolute;inset:0;display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none}.fv-sv-stage img,.fv-sv-stage video{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.fv-sv-box{position:relative;width:min(100%,calc(100vh * .5625));width:min(100%,calc(100dvh * .5625));aspect-ratio:9/16;max-height:100%;overflow:hidden;background:#000}.fv-sv-stage .fv-sv-over{position:absolute;inset:0;z-index:1}.fv-sv-layer{position:absolute;inset:0;z-index:2;pointer-events:none}
 .fv-sv-art{position:absolute;inset:0;display:grid;place-items:center;background:var(--tint)}.fv-sv-artc{position:relative;width:min(88%,420px);aspect-ratio:4/5;border-radius:18px;overflow:hidden;box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
 .fv-sv-prev,.fv-sv-next{position:absolute;top:50%;z-index:3;width:44px;height:44px;margin-top:-22px;border-radius:50%;border:0;background:rgba(0,0,0,.35);color:#fff;font-size:28px;line-height:1;cursor:pointer;opacity:0}.fv-sv-prev{left:6px}.fv-sv-next{right:6px}.fv-sv-prev:focus-visible,.fv-sv-next:focus-visible{opacity:1}
 @media (hover:hover){.fv-sv-in:hover .fv-sv-prev,.fv-sv-in:hover .fv-sv-next{opacity:.8}}
@@ -768,7 +776,7 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
   const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
-  window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
+  window.FeedVisual = { rail, openStories, openOne, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
   window.FeedVisual.actRow = actRow; // list cards (public/listcards.js) reuse the kudos, comment and share row
   // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:
   // on a first visit it used to cover the whole feed and its tab bar

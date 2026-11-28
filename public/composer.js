@@ -100,6 +100,7 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
     const st = { text: draft?.text || "", link: draft?.link || "", photo: draft?.photo || "", ask: !!draft?.ask, club: !!draft?.club && !!O.club, id: draft?.id || "" };
     const T = O.tiles || [];
     const tile = (k) => k === "event" ? `<a class="pc-tile" href="/?app=1&new=1#studio" data-tile="event">${I.event}<span>New event</span></a>`
+      : k === "story" ? `<button type="button" class="pc-tile" data-tile="story">${I.camera}<span>Story</span></button>`
       : k === "drop" ? `<button type="button" class="pc-tile" data-tile="drop">${I.drop}<span>Drop</span></button>`
       : k === "photos" ? `<button type="button" class="pc-tile" data-tile="photos">${I.photos}<span>Event photos</span></button>`
       : k === "club" ? `<button type="button" class="pc-tile" data-tile="club">${I.club}<span>Fan club update</span></button>` : "";
@@ -157,6 +158,7 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
     sc.querySelectorAll("[data-tile]").forEach((t) => (t.onclick = (e) => { const k = t.dataset.tile;
       if (k === "event") { if (has()) keepDraft(); return; } // a link to the app's own New flow
       e.preventDefault();
+      if (k === "story") { sc.close(); const go = () => window.StoryPrompt.compose({ onDone: () => onPosted?.(null) }); if (window.StoryPrompt?.compose) go(); else { const s = document.createElement("script"); s.src = "/storyprompt.js"; s.onload = go; document.head.appendChild(s); } return; }
       if (k === "club") { st.club = !st.club; if (st.club) st.ask = false; paint(); ta.placeholder = st.club ? "A note for your members" : "What are you up to?"; ta.focus(); return; }
       if (k === "drop") { sc.close(); const go = () => (window.EncoreDrop?.setup ? window.EncoreDrop.setup({}) : (location.href = "/?app=1&new=1#studio")); if (window.EncoreDrop) go(); else { const s = document.createElement("script"); s.src = "/drop.js"; s.onload = go; s.onerror = () => (location.href = "/?app=1&new=1#studio"); document.head.appendChild(s); } return; }
       if (k === "photos") { const body = q(".pc-body"); q(".pc-tools").hidden = true; q("[data-tiles]").hidden = true;

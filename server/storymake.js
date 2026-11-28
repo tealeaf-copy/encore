@@ -168,7 +168,8 @@ export function makeStoryMake(store, { C, X, V, blocksOf = () => [] }) {
       const d = { kind: "pstory", id: crypto.randomBytes(9).toString("hex"), batch, n, author: email, authorEmail: email /* account deletion finds it by this (server/account.js) */, authorName: cleanText(u.name, 80), ws: u.ws, at: now + n, until: now + storyHours() * HOUR, audience, ...(x ? { eventId: x.id } : {}),
         type: media.as, url: media.url, ...(media.w && media.h ? { w: media.w, h: media.h } : {}), ...(media.as === "video" && poster?.as === "poster" ? { poster: poster.url } : {}), ...(media.as === "video" && over?.as === "overlay" ? { overlay: over.url } : {}),
         dur: media.as === "video" ? Math.round(Math.min(storyVideoSeconds(), media.seconds || storyVideoSeconds()) * 1000) : Math.round(num(s.dur, STORY_LIMITS.minMs, STORY_LIMITS.maxMs, 5000)), stickers: C0.stickers, ...(C0.dropped ? { dropped: C0.dropped } : {}) };
-      if (media.as === "video" && Array.isArray(s.trim)) { const max = media.seconds || storyVideoSeconds(), a = num(s.trim[0], 0, max, 0), z = num(s.trim[1], 0, max, max); if (z - a >= 1 && (a > 0.05 || z < max - 0.05)) { d.trim = [Math.round(a * 10) / 10, Math.round(z * 10) / 10]; d.dur = Math.round((z - a) * 1000); } }
+      if (media.as === "video") { const cap = storyVideoSeconds(), max = media.seconds || cap, T = Array.isArray(s.trim) ? s.trim : []; let a = num(T[0], 0, max, 0), z = num(T[1], 0, max, max); if (z - a < 1) { a = 0; z = max; } if (z - a > cap) z = a + cap; // never more than the play window, whatever was asked
+        if (a > 0.05 || z < max - 0.05) { d.trim = [Math.round(a * 10) / 10, Math.round(z * 10) / 10]; d.dur = Math.round((z - a) * 1000); } }
       made.push(d); }
     // the event's photos: the same rules a moment has (server/social.js POST /api/moments)
     let photos = 0, photoNote = "";
@@ -259,7 +260,7 @@ export function mountStoryMake(app, { store, small, raw, currentUser, C, X }) {
     const max = as === "overlay" || as === "poster" ? 2 * 1048576 : momentMaxBytes(kind); if (body.length > max) return bad(res, `${as === "video" ? "Videos" : "Photos"} can be up to ${Math.round((max / 1048576) * 10) / 10} MB.`, 413, "too_large");
     const real = sniffedAs(ct, body); if (!real || real === "image/gif" || (as === "overlay" && real !== "image/png")) return bad(res, as === "video" ? "That file isn't a video we can play. Try an MP4, MOV or WebM." : "That file isn't a photo we can show.", 415, "unsupported_type");
     let seconds = 0; if (as === "video") { seconds = videoSeconds(body); const said = +req.query.duration || 0, cap = storyVideoSeconds();
-      if (seconds > cap + 0.6 || said > cap + 0.6) return bad(res, `Videos can be up to ${cap} seconds. Trim it and try again.`, 400, "too_long");
+      if (seconds > cap * 2 + 0.6 || said > cap * 2 + 0.6) return bad(res, `Videos can be up to ${cap * 2} seconds long. A story plays up to ${cap} of them.`, 400, "too_long"); // the composer's trim picks which seconds play; the file is kept whole
       if (!seconds && body.length > unreadVideoMaxBytes()) return bad(res, "We couldn't read this video's length. Try an MP4 from your camera.", 400, "unknown_length"); seconds = seconds || said || 0; }
     const meta = await X.saveBlob(body, real, u.ws), w = Math.floor(+req.query.w || 0), h = Math.floor(+req.query.h || 0);
     M.noteUpload(u.email, { url: meta.url, as, ct: real, at: Date.now(), ...(w > 0 && h > 0 && w <= 20000 && h <= 20000 ? { w, h } : {}), ...(seconds ? { seconds: Math.round(seconds * 10) / 10 } : {}) });

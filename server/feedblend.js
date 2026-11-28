@@ -359,7 +359,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     const ids = new Set([...(I.att.get(email) || []).map((a) => a.eventId), ...[...I.events.values()].filter((x) => x.ws === ws).map((x) => x.id)]), past = [];
     for (const id of ids) { const x = I.events.get(id); if (!x || !x.e.date || x.e.date >= t || x.e.cancelled || x.e.example || Date.parse(x.e.date) < now - 60 * DAY) continue; past.push({ id, title: clean(x.e.pubTitle || x.e.name || "Your event", 80), date: x.e.date }); }
     past.sort((a, b) => b.date.localeCompare(a.date));
-    const tiles = ["event", ...(prof?.handle ? ["drop"] : []) /* anyone with a page can open a drop, even before their first event */, ...(past.length ? ["photos"] : []), ...(club ? ["club"] : [])];
+    const tiles = ["event", "story" /* the story composer (public/storycomposer.js) */, ...(prof?.handle ? ["drop"] : []) /* anyone with a page can open a drop, even before their first event */, ...(past.length ? ["photos"] : []), ...(club ? ["club"] : [])];
     return { signedIn: true, name: first(p.name) || first(prof?.name) || "", face: { name: first(p.name), emoji: p.emoji || "", color: p.color || "", handle: p.handle || "" }, host, club, past: past.slice(0, 6), tiles }; }
   return { composeOptions, blend, decorate, arrange, follows, peopleFor, viewerOf, milestones, recaps, events, giveKudos, kudosDoc, dismiss, dismissed, kudosTarget, cardOf, kudosFor, kudosLine, itemOf, kudosPeople, personFor, nameShown, nameRule, myFace, hostHandle: (ws) => { try { return lc(C.profileOf(ws)?.handle || ""); } catch { return ""; } }, comments: CS };
 }

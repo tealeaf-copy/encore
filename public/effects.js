@@ -4,7 +4,7 @@
 // server/looks.js keeps the same ids and the same map from removed ids to the ones that replaced them.
 // The rules: an effect is drawn inside the cover, on one small canvas, never over words, buttons or fields. Confetti is
 // the one that crosses the page, once, gone in under 2.5 seconds. Candlelight and paper grain also tint the page's
-// background layer, behind everything. Something shows in the first frame, the motion settles after 8 seconds, nothing
+// background layer, behind everything; candlelight is light, so it is blended into the cover, not painted on it. Something shows in the first frame, the motion settles after 8 seconds, nothing
 // is drawn while the tab is hidden or the cover is off screen, and less motion gets a still frame (confetti and rain: nothing).
 (function (root) {
   "use strict";
@@ -59,11 +59,12 @@
   const KINDS = {
     petals: Object.assign(turning(petal, 1, 20, (p, c) => { p.r = rnd(8, 13); p.v = rnd(30, 52); p.c = mix(pick(["#F2A7B5", "#F7CDD4", "#E98FA2", "#FADDE1"]), c.accent, 0.1); p.c2 = mix(p.c, "#B8506A", 0.4); }), { n: 18 }),
     leaves: Object.assign(turning(leaf, 2, 30, (p, c) => { p.r = rnd(9, 14); p.v = rnd(36, 62); p.c = pick(["#C2792B", "#A94A2A", "#D2A23C", mix(c.accent, "#C2792B", 0.45)]); p.c2 = mix(p.c, "#6B4A22", 0.45); }), { n: 16 }),
-    snow: { n: 32, init: (I) => drift(I, (p) => { p.r = 1.6 + p.z * p.z * 2.8; p.v = rnd(24, 42); p.sp = rnd(-0.5, 0.5); p.fv = 0; p.k = p.z > 0.7 && p.i % 4 === 0; }),
-      draw: (I, g, dt) => { const s = soft(I, "snow", I.photo ? [[0, "#FFFFFF"], [0.4, "rgba(255,255,255,.9)"], [1, "rgba(255,255,255,0)"]] : [[0, "rgba(184,200,234,.95)"], [0.42, "rgba(184,200,234,.85)"], [1, "rgba(170,188,226,0)"]]), col = I.photo ? "#FFFFFF" : mix(I.c.deep, "#8FA3C4", 0.6);
-        for (const p of I.P) { if (p.off) continue; if (dt) move(I, p, dt, 12, 1); const al = 0.5 + 0.5 * p.z;
-          if (p.k) { g.globalAlpha = al * 0.85; g.strokeStyle = col; g.lineWidth = 1.2; g.lineCap = "round"; g.beginPath(); for (let i = 0; i < 3; i++) { const a = p.a + (i * Math.PI) / 3, dx = Math.cos(a) * p.r * 1.9, dy = Math.sin(a) * p.r * 1.9; g.moveTo(p.x - dx, p.y - dy); g.lineTo(p.x + dx, p.y + dy); } g.stroke(); }
-          else stamp(g, s, p.x, p.y, p.r * 1.7, al); } } },
+    // snow: drawn like the cover art: white flakes with a thin cool outline (a blur reads as a smudge on a pale cover)
+    snow: { n: 30, init: (I) => drift(I, (p) => { p.r = 1.8 + p.z * p.z * 3; p.v = rnd(24, 42); p.sp = rnd(-0.5, 0.5); p.fv = 0; p.k = p.z > 0.7 && p.i % 4 === 0; }),
+      draw: (I, g, dt) => { const col = I.photo ? "#FFFFFF" : mix(I.c.deep, "#7F95BC", 0.65); g.strokeStyle = col; g.fillStyle = "#FFFFFF"; g.lineCap = "round";
+        for (const p of I.P) { if (p.off) continue; if (dt) move(I, p, dt, 12, 1); const al = 0.45 + 0.55 * p.z; g.beginPath();
+          if (p.k) { g.globalAlpha = al * 0.9; g.lineWidth = 1.2; for (let i = 0; i < 3; i++) { const a = p.a + (i * Math.PI) / 3, dx = Math.cos(a) * p.r * 1.8, dy = Math.sin(a) * p.r * 1.8; g.moveTo(p.x - dx, p.y - dy); g.lineTo(p.x + dx, p.y + dy); } g.stroke(); }
+          else { g.globalAlpha = al; g.arc(p.x, p.y, p.r, 0, TAU); g.fill(); if (!I.photo) { g.globalAlpha = al * 0.7; g.lineWidth = 0.9; g.stroke(); } } } } },
     bubbles: { n: 14, init: (I) => drift(I, (p) => { p.r = rnd(3.5, 9) * (0.6 + 0.4 * p.z); p.v = rnd(26, 50); p.sp = p.fv = 0; p.top = rnd(0.04, 0.42) * I.H; p.y = rnd(p.top, I.H); }),
       draw: (I, g, dt) => { const col = mix(I.c.accent, I.c.deep, 0.35);
         for (const p of I.P) { if (p.off) continue; let r = p.r, al = 0.35 + 0.4 * p.z;
@@ -97,17 +98,19 @@
           if (!I.flat) stamp(g, soft(I, "h" + b.c, [[0, rgba(b.c, 0.75)], [0.3, rgba(b.c, 0.4)], [1, rgba(b.c, 0)]]), b.x, y + 8, 17, 0.75 * on);
           g.globalAlpha = 1; g.fillStyle = INK; g.fillRect(b.x - 2, y, 4, 4); g.fillStyle = mix(mix(b.c, INK, 0.45), mix(b.c, "#FFFFFF", 0.15), Math.min(1, on)); g.beginPath(); g.ellipse(b.x, y + 8.5, 3.6, 5, 0, 0, TAU); g.fill(); g.globalAlpha = 0.55; g.strokeStyle = INK; g.lineWidth = 0.8; g.stroke();
           g.globalAlpha = 0.8 * Math.min(1, on); g.fillStyle = "#FFFFFF"; g.beginPath(); g.ellipse(b.x - 1.2, y + 7, 0.9, 1.6, 0.3, 0, TAU); g.fill(); } } },
-    // candlelight: the cover dims a little, like a room in the evening, and two to four flames out of focus along its
-    // lower edge lift it back to a warm glow. The light is cut out of the dimming, so drawn lines under it stay crisp.
-    twinkle: { n: 0, res: 0.75 /* all soft light: a small canvas, scaled up, looks the same and costs a fraction */, init: (I) => { const { W, H } = I, n = W < 300 ? 2 : W < 520 ? 3 : 4; I.F = [];
-        for (let i = 0; i < n; i++) { const z = (i * 0.37 + rnd(0.1, 0.35)) % 1; I.F.push({ x: W * ((i + 0.5) / n + rnd(-0.1, 0.1)), y: H * rnd(0.84, 1.02), r: Math.max(8, Math.min(48, H * (0.11 + 0.15 * (1 - z)))), z, p1: rnd(0, TAU), p2: rnd(0, TAU), dip: 0, next: rnd(0.4, 2) }); } },
-      draw: (I, g, dt) => { const { W, H } = I, up = I.still ? 1 : ease(I.t / 0.6), A = (I.lively ? 0.3 : 0.24) * up, dim = g.createLinearGradient(0, 0, 0, H); dim.addColorStop(0, `rgba(92,50,18,${A})`); dim.addColorStop(1, `rgba(92,50,18,${A * 0.55})`); g.fillStyle = dim; g.fillRect(0, 0, W, H);
-        const hole = soft(I, "hole", [[0, "rgba(0,0,0,1)"], [0.35, "rgba(0,0,0,.8)"], [0.7, "rgba(0,0,0,.25)"], [1, "rgba(0,0,0,0)"]]), pool = soft(I, "pool", [[0, "rgba(255,176,82,.5)"], [0.5, "rgba(255,186,98,.2)"], [1, "rgba(255,190,110,0)"]]),
-          disc = soft(I, "disc", [[0, "rgba(255,246,220,.95)"], [0.55, "rgba(255,228,164,.92)"], [0.8, "rgba(255,200,112,.88)"], [0.9, "rgba(255,172,74,.6)"], [1, "rgba(255,160,60,0)"]]), calm = 0.4 + 0.6 * I.q;
-        for (const f of I.F) { if (dt) { f.next -= dt; if (f.next <= 0) { f.dip = rnd(0.14, 0.34) * calm; f.next = rnd(0.7, 3.2) / calm; } f.dip *= Math.exp(-dt * 7); }
-          f.v = I.still ? 1 : 0.9 + 0.07 * Math.sin(I.t * 1.3 + f.p1) + 0.04 * Math.sin(I.t * 3.3 + f.p2) - f.dip; }
-        g.globalCompositeOperation = "destination-out"; for (const f of I.F) stamp(g, hole, f.x, f.y - f.r * 0.3, H * 1.05 * (0.85 + 0.15 * f.v), 0.9 * f.v * up);
-        g.globalCompositeOperation = "source-over"; for (const f of I.F) { const x = f.x + Math.sin(I.t * 0.9 + f.p2) * 1.5; stamp(g, pool, x, f.y, H * 0.62 * f.v, 0.8 * f.v * up); stamp(g, disc, x, f.y, f.r * (0.95 + 0.07 * f.v), (0.35 + 0.5 * f.z) * f.v * up); } } },
+    // candlelight: a map of light, multiplied into the cover (.fxe-k-twinkle in the CSS). The cover falls to a warm evening
+    // shade and two to four flames, out of focus along its lower edge, light it back; ink under the light stays ink. Each
+    // flame breathes on two slow waves of its own and gutters now and then, never in step with the others.
+    twinkle: { n: 0, res: 0.5 /* soft light: a small canvas, scaled up */, init: (I) => { const { W, H } = I, n = W < 300 ? 2 : W < 520 ? 3 : 4; I.F = [];
+        for (let i = 0; i < n; i++) { const z = (i * 0.41 + rnd(0.05, 0.3)) % 1; I.F.push({ x: W * ((i + 0.5) / n + rnd(-0.12, 0.12)), y: H * (0.76 + 0.18 * z + rnd(-0.03, 0.03)), r: Math.max(7, Math.min(44, H * (0.07 + 0.11 * z))), z, p1: rnd(0, TAU), p2: rnd(0, TAU), w1: rnd(1, 1.7), w2: rnd(2.6, 4.1), dip: 0, next: rnd(0.3, 1.6) }); } },
+      draw: (I, g, dt) => { const { W, H } = I, up = I.still ? 1 : ease(I.t / 0.7), k = (I.lively ? 1.25 : 1) * up, calm = 0.4 + 0.6 * I.q, sh = (c) => "rgb(" + c.map((v) => Math.round(255 - (255 - v) * k)) + ")";
+        const amb = g.createLinearGradient(0, 0, 0, H); amb.addColorStop(0, sh([234, 214, 195])); amb.addColorStop(0.45, sh([236, 211, 180])); amb.addColorStop(1, sh([244, 216, 172])); g.fillStyle = amb; g.fillRect(0, 0, W, H);
+        const pool = soft(I, "pool", [[0, "rgba(255,240,208,.85)"], [0.3, "rgba(255,238,204,.5)"], [0.65, "rgba(255,234,196,.16)"], [1, "rgba(255,230,190,0)"]]),
+          near = soft(I, "near", [[0, "rgba(255,250,236,.85)"], [0.76, "rgba(255,247,228,.8)"], [0.92, "rgba(255,238,206,.45)"], [1, "rgba(255,230,190,0)"]]), far = soft(I, "far", [[0, "rgba(255,250,236,.62)"], [0.5, "rgba(255,246,226,.46)"], [1, "rgba(255,236,200,0)"]]);
+        for (const f of I.F) { if (dt) { f.next -= dt; if (f.next <= 0) { f.dip = rnd(0.12, 0.4) * calm; f.next = rnd(0.5, 3.4) / calm; } f.dip *= Math.exp(-dt * 6); }
+          f.v = I.still ? 1 : 0.9 + (0.07 * Math.sin(I.t * f.w1 + f.p1) + 0.04 * Math.sin(I.t * f.w2 + f.p2)) * calm - f.dip; f.at = f.x + (I.still ? 0 : Math.sin(I.t * 0.8 + f.p2) * 1.6 + f.dip * 5);
+          stamp(g, pool, f.at, f.y, H * (0.75 + 0.3 * f.z) * (0.9 + 0.1 * f.v), f.v * k); }
+        for (const f of I.F) stamp(g, f.z > 0.5 ? far : near, f.at, f.y, f.r * (0.94 + 0.08 * f.v), (1 - 0.3 * f.z) * f.v * up); } },
     // dice: two (three when lively) tumble in along the bottom of the cover, bounce and come to rest there
     dice: { n: 0, init: (I) => { const n = I.lively ? 3 : 2, s = Math.max(16, Math.min(30, I.H * 0.15)); I.D = [];
         for (let i = 0; i < n; i++) I.D.push({ x: I.W * 0.82 - i * s * 1.7, y: s * (0.2 - i * 0.9), vx: -rnd(1.6, 2.6) * (I.W / 360), vy: rnd(1, 2), r: rnd(0, TAU), vr: rnd(0.2, 0.3), face: 1 + ((Math.random() * 6) | 0), s, rest: false }); },
@@ -161,9 +164,9 @@
     I.size(); if (I.still) still(I); else { LIVE.add(I); frame(I, 0); wake(); } return I; }
 
   // ---------- the layers: one in the cover, and for candlelight and paper grain one behind the page ----------
-  const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .25 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")`;
+  const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .25 0 0 0 1.4 -.56'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")`;
   const CSS = `body.fxe-bk,.fxe-cover{isolation:isolate}.fxe-layer{pointer-events:none;overflow:hidden;contain:strict}.fxe-cov{position:absolute;inset:0;z-index:1;border-radius:inherit}.fxe-cover>.fxe-cov:not(#_):not(#_):not(#_){display:block!important}.fxe-vp{position:fixed;inset:0;z-index:40}.fxe-back{position:fixed;inset:0;z-index:-1}
-.fxe-layer canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;visibility:visible!important;border-radius:0}.fxe-k-paper{background-image:${GRAIN};opacity:.5;mix-blend-mode:multiply}.fxe-k-paper.lively{opacity:.85}
+.fxe-layer canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;visibility:visible!important;border-radius:0}.fxe-cov.fxe-k-twinkle{mix-blend-mode:multiply}.fxe-k-paper{background-image:${GRAIN};opacity:.5;mix-blend-mode:multiply}.fxe-k-paper.lively{opacity:.85}
 .fxe-back.fxe-k-twinkle{background:radial-gradient(130% 62% at 50% 104%,rgba(255,166,70,.34),rgba(255,188,108,.15) 44%,rgba(255,200,130,0) 76%);opacity:.8;animation:fxeUp .7s ease-out}.fxe-back.fxe-k-twinkle.lively{opacity:1}
 @keyframes fxeUp{from{opacity:0}}@media (prefers-reduced-motion:reduce){.fxe-back.fxe-k-twinkle{animation:none}}`;
   function css() { if (document.getElementById("fxe-css")) return; const s = document.createElement("style"); s.id = "fxe-css"; s.textContent = CSS; document.head.appendChild(s); }

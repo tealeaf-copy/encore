@@ -225,6 +225,25 @@ test("the host: one reply, up to 3 pinned on top, and Hide, which the author sti
   assert.ok(byName((await view({ host: "maya-rv" })).j, "Sam")); assert.ok(!(await getJ("/api/admin/reports", admin)).j.reports.some((x) => x.hostHide));
 });
 
+test("photos: up to 3 of the guest's own photos from that event, and they follow the photo rules", async () => {
+  const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  const up = async (who, ev) => { const r = await fetch(`${srv.base}/api/moments?eventId=${ev}&rid=${rid[who]}&code=${code[who]}`, { method: "POST", headers: { "Content-Type": "image/png" }, body: PNG }); assert.equal(r.status, 200, await r.clone().text()); return (await r.json()).url; };
+  const mine = [await up("p2", "rvPaid"), await up("p2", "rvPaid"), await up("p2", "rvPaid"), await up("p2", "rvPaid")], theirs = await up("p1", "rvPaid");
+  assert.equal((await getJ(`/api/public/reviews/form?subject=event:rvPaid&rid=${rid.p2}&code=${code.p2}`)).j.canPhoto, true);
+  const w = await write("p2", "rvPaid", { rating: 4, text: "Worth every dollar. The ragu took two days and you could tell.", photos: [...mine, theirs, "/_blob/notaphotoatall00000", "https://evil.example/x.png"] });
+  assert.equal(w.status, 200); assert.deepEqual(w.j.review.photos.map((p) => p.url), mine.slice(0, 3), "her own, three at most; someone else's photo and outside links are dropped");
+  assert.equal((await view({ event: "rvPaid" })).j.reviews.find((r) => r.name === "Lena").photos.length, 3, "an open event's photos show to anyone");
+  // the host hides one photo: it leaves the review everywhere but the author's and host's own view
+  const mid = S.list("moments").find((d) => d.data.url === mine[0]).id; S.update("moments/" + mid, { hidden: true }); srv.app.locals.social.bust();
+  assert.equal((await view({ event: "rvPaid" })).j.reviews.find((r) => r.name === "Lena").photos.length, 2);
+  S.update("moments/" + mid, { hidden: false }); srv.app.locals.social.bust();
+  // a private event's review photos never reach a public page
+  const pv = await up("v1", "rvPriv"); await write("v1", "rvPriv", { rating: 1, text: "Private dinner, honest words that are for the table only.", photos: [pv] });
+  assert.ok(!JSON.stringify([(await view({ host: "maya-rv" })).j, (await getJ("/api/public/profile/maya-rv")).j.strengths.reviews]).includes(pv));
+  assert.equal((await view({ event: "rvPriv", proofs: [{ id: "rvPriv", rid: rid.v2, code: code.v2 }] })).j.reviews[0].photos.length, 1, "a guest who was there sees it");
+  assert.equal((await getJ(`/api/public/reviews/form?subject=booking:bkdone1&t=${R.bookingToken("bkdone1")}`)).j.canPhoto, false, "a booking has no photo wall to add to");
+});
+
 test("the host's bell rings once for a new review, not for an edit", async () => {
   const inbox = srv.app.locals.social.inbox("maya.rv@example.com").filter((n) => n.kind === "review-in");
   const ana = inbox.filter((n) => /^Ana wrote a review of Harvest supper/.test(n.text)); assert.equal(ana.length, 1, "edits don't ring again");

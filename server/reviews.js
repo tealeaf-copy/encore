@@ -153,7 +153,7 @@ export function makeReviews(store, { C, X, V = () => null }) {
   function out(r, viewer = {}, ev = subjectEvent(r)) {
     const mine = !!viewer.keys?.has(r.authorKey), host = !!viewer.host && viewer.host === r.ws, I = X.index(), FV = V();
     const listed = r.kind === "booking" ? true : !!ev && !!ev.discoverable && !ev.cancelled; // an event's name only where the event is on the host's page, as kudos do
-    const photos = (r.photos || []).map((u) => I.moments.find((m) => m.ws === r.ws && m.url === u && m.eventId === r.eventId && m.type === "image")).filter((m) => m && (mine || host || FV?.momentSeen?.(I, m, viewer.email || ""))).slice(0, PHOTO_MAX).map((m) => ({ url: m.url, ...(m.w && m.h ? { w: m.w, h: m.h } : {}) }));
+    const photos = (r.photos || []).map((u) => I.moments.find((m) => m.ws === r.ws && m.url === u && m.eventId === r.eventId && m.type === "image")).filter((m) => m && (mine || host || FV?.momentSeen?.(I, m, viewer.email || "") || (!m.hidden && !!viewer.there?.(r.eventId)))).slice(0, PHOTO_MAX).map((m) => ({ url: m.url, ...(m.w && m.h ? { w: m.w, h: m.h } : {}) }));
     const month = r.kind === "event" && ev && /^\d{4}-\d{2}/.test(ev.date || "") ? ev.date.slice(0, 7) : new Date(r.at || Date.now()).toISOString().slice(0, 7);
     const h = C.profileOf(r.ws) || {};
     return { id: r.id, review: true, kind: r.kind, name: (!r.deletedAccount && first(r.name)) || "A guest", love: noContact(r.text), ...(r.rating ? { rating: r.rating } : {}), at: r.at, ...(r.editedAt ? { edited: true } : {}),
@@ -276,6 +276,7 @@ export function mountReviews(app, { store, small, currentUser, C, X }) {
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   const hits = new Map(); const limited = (req, n, k0 = "w") => { const k = k0 + (req.ip || "?"), now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600e3) { h = { n: 0, start: now }; hits.set(k, h); } if (hits.size > 20000) hits.clear(); return ++h.n > n; };
   R.resetLimits = () => hits.clear();
+  const perHour = () => { const n = Math.floor(+process.env.ENCORE_REVIEWS_PER_IP_HOUR); return n > 0 ? n : WRITES_PER_HOUR; }; // writes, edits and deletes from one place
   const proofOf = (o = {}) => ({ rid: String(o.rid || "").slice(0, 80), code: String(o.code || "").slice(0, 40), t: String(o.t || "").slice(0, 60) });
 
   // may I write one, and what did I write? (the form's own data)
@@ -283,11 +284,11 @@ export function mountReviews(app, { store, small, currentUser, C, X }) {
     const st = R.standing(req.query.subject, proofOf(req.query), user(req)); if (!st.ok) return res.json({ can: false, code: st.code, message: st.message, title: st.title || "" });
     res.json(R.formOf(st)); });
   // write or change mine
-  app.post("/api/public/reviews", small, (req, res) => { res.set("Cache-Control", "private, no-store"); if (limited(req, WRITES_PER_HOUR)) return bad(res, "That's a lot of reviews in an hour. Try again later.", 429, "rate_limited");
+  app.post("/api/public/reviews", small, (req, res) => { res.set("Cache-Control", "private, no-store"); if (limited(req, perHour())) return bad(res, "That's a lot of reviews in an hour. Try again later.", 429, "rate_limited");
     const b = req.body || {}, u = user(req), st = R.standing(b.subject, proofOf(b), u); if (!st.ok) return bad(res, st.message, st.status, st.code);
     const x = R.save(st, { rating: b.rating, text: b.text, photos: b.photos }); if (x.error) return bad(res, x.error, 400, x.code || "invalid");
     const v = R.viewerOf(u); v.keys.add(st.author.key); res.json({ ok: true, created: x.created, review: R.out(x.doc, v), where: R.whereLine(st) }); });
-  app.post("/api/public/reviews/delete", small, (req, res) => { if (limited(req, WRITES_PER_HOUR)) return bad(res, "Slow down.", 429, "rate_limited");
+  app.post("/api/public/reviews/delete", small, (req, res) => { if (limited(req, perHour())) return bad(res, "Slow down.", 429, "rate_limited");
     const b = req.body || {}, st = R.standing(b.subject, proofOf(b), user(req)); if (!st.ok) return bad(res, st.message, st.status, st.code);
     if (!R.remove(st)) return bad(res, "No review to delete.", 404, "not_found"); res.json({ ok: true }); });
   // read: one host's page, one event or drop, one experience, or one booking. Reply proofs ride in the body, never the URL.

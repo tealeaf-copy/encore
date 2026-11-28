@@ -118,7 +118,7 @@ export function mountStoryApprove(app, { store, small, currentUser, C, X, sendSt
     if (typeof b.cover === "string") { if (b.cover) { const T = momentAt(b.cover); if (!T || T.x.id !== ev || T.m.hidden) return bad(res, "Pick one of this event's photos."); } p.cover = b.cover; }
     store.set(recapPath(ev), { ...d, ...p }); X.bust(); res.json({ ok: true, ...p }); });
   // highlights: named sets that outlive the 14 days and the 24 hours. items: "m:<photo id>" or "r:<event id>" from this host's own events
-  const okItem = (u, I, it) => { const m = /^(m|r):([A-Za-z0-9_-]{1,80})$/.exec(String(it || "")); if (!m) return false; if (m[1] === "r") return I.events.get(m[2])?.ws === u.ws && !!recapDoc(m[2]); const T = momentAt(m[2]); return !!T && isHost(u, T.x) && !T.m.hidden; };
+  const okItem = (u, I, it) => { const m = /^(m|r|s):([A-Za-z0-9_-]{1,80})$/.exec(String(it || "")); if (!m) return false; if (m[1] === "s") return !!X.storyOf?.mine(m[2], u.email); /* a story the person made (server/storymake.js) */ if (m[1] === "r") return I.events.get(m[2])?.ws === u.ws && !!recapDoc(m[2]); const T = momentAt(m[2]); return !!T && isHost(u, T.x) && !T.m.hidden; };
   app.post("/api/me/stories/highlights", small, (req, res) => { const u = me(req, res); if (!u) return; const I = X.index(), b = req.body || {}, L = A.highlightsOf(u.ws).slice(), name = cleanText(b.name, STORY_LIMITS.name);
     if (Array.isArray(b.order)) { const by = new Map(L.map((h) => [h.id, h])), next = b.order.map((id) => by.get(id)).filter(Boolean); for (const h of L) if (!next.includes(h)) next.push(h); A.save(u.ws, { highlights: next }); return res.json({ ok: true, highlights: next }); }
     let h = b.id ? L.find((y) => y.id === b.id) : null; if (b.id && !h) return bad(res, "No such highlight.", 404, "not_found");
@@ -134,6 +134,7 @@ export function mountStoryApprove(app, { store, small, currentUser, C, X, sendSt
   function highlightsFor(ws, email = "") { const I = X.index(), h = V.hostOf(ws, I); if (!h) return [];
     return A.highlightsOf(ws).map((hl) => { const items = [];
       for (const it of hl.items || []) { const [k, id] = [it.slice(0, 1), it.slice(2)];
+        if (k === "s") { const si = X.storyOf?.kept(id, ws, email, I, "h:" + hl.id + ":"); if (si) items.push({ ...si, caption: si.caption || hl.name, cta: si.cta || { label: "See the page", url: `/@${h.handle}` } }); continue; }
         if (k === "m") { const m = I.moments.find((y) => y.id === id), x = m ? I.events.get(m.eventId) : null; if (!m || !x || x.ws !== ws || A.waiting(m, x) || !V.momentSeen(I, m, email)) continue; const o = V.momentOut(m);
           items.push({ id: "h:" + hl.id + ":" + m.id, ev: x.id, type: m.type === "video" ? "video" : "image", url: m.url, ...(o.poster ? { poster: o.poster } : {}), thumb: m.type === "video" ? o.poster || "" : m.url, caption: x.e.pubTitle || x.e.name || "", note: o.caption, by: o.by, at: m.at || 0, past: true, cta: { label: "See the page", url: `/@${h.handle}` } }); }
         else { const x = I.events.get(id), R = x && x.ws === ws ? V.recapOf(I, x, { email, keep: true }) : null; if (R) items.push(...R.items.map((i) => ({ ...i, id: "h:" + hl.id + ":" + i.id }))); } }

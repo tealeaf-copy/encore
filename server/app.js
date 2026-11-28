@@ -53,6 +53,7 @@ import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, medi
 import { mountFeedComments } from "./feedcomments.js"; // comments under feed cards: list, add, delete, fresh counts
 import { mountKudosAsk } from "./kudosask.js";
 import { mountStoryApprove } from "./storyapprove.js"; // your stories: approve, captions, order, covers, highlights (server/storyapprove.js)
+import { mountStoryMake } from "./storymake.js"; // making a story: slides, stickers, audience, votes, replies, seen by (server/storymake.js)
 import { mountStoryPrompt } from "./storyprompt.js"; // story prompts: the after-event card, the bell note, Ask guests for photos (server/storyprompt.js)
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
@@ -905,6 +906,7 @@ export function createApp({ store, dataDir }) {
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountPlaces(app, { store, small, currentUser, C, X, sendStatic }); // after the map: it reads its geo (server/places.js)
   mountStoryApprove(app, { store, small, currentUser, C, X, sendStatic: (...a) => sendStatic(...a) }); // ---- your stories (server/storyapprove.js) ----
+  mountStoryMake(app, { store, small, currentUser, C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // ---- making a story (server/storymake.js) ----
   mountStoryPrompt(app, { store, small, currentUser, C, X }); // ---- story prompts (server/storyprompt.js) ----
   mountDelightAfter(app, { store, small, currentUser, C, X }); // ---- delight after: after plans, places and Potto by text, which it reads (server/delightafter.js) ----
   mountSuggest(app, { store, small, currentUser, X }); mountPlaceSuggest(app, { store, small, currentUser, C, X }); // autocomplete: before the gate, so /start and sign-up get it signed out (server/suggest.js)

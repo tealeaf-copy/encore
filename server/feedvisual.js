@@ -103,7 +103,7 @@ export function makeFeedVisual(store, { C, X }) {
   // writes that change what the feed shows: a host page (system/ws-), an event, reply, photo, kudos, badge or reaction
   let wsGen = 0, feedGen = 0;
   store.events?.on?.("change", (e) => { const p = String(e?.path || ""); if (p.startsWith("system/ws-")) wsGen++;
-    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide|prefs|stories|recap)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes|reviews)\/[^/]+$/.test(p)) feedGen++; });
+    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide|prefs|stories|recap|pstory)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes|reviews)\/[^/]+$/.test(p)) feedGen++; });
   function G(I) { let g = groups.get(I); if (g && g.gen !== wsGen) { g.gen = wsGen; g.host = new Map(); g.sample = new Map(); } if (g) return g;
     g = { gen: wsGen, mom: new Map(), momWs: new Map(), kud: new Map(), came: new Map(), host: new Map(), sample: new Map(), when: new Map() };
     const push = (M, k, v) => { let L = M.get(k); if (!L) M.set(k, (L = [])); L.push(v); };
@@ -257,25 +257,29 @@ export function makeFeedVisual(store, { C, X }) {
   /** Stories: one circle per host with photos, videos or flyers from the last 14 days, and recap stories, newest first. */
   function stories({ email = "", following = [], now = Date.now() } = {}) {
     const I = X.index(), since = now - 14 * DAY, t = today(now), by = new Map();
+    let SH = null; try { SH = X.storyHook?.({ I, email, now }) || null; } catch (err) { console.warn("story rings", err?.message); } // stories people made (server/storymake.js)
     const add = (ws, it) => { const h = hostOf(ws, I); if (!h) return null; if (!by.has(h.handle)) by.set(h.handle, { key: "h:" + h.handle, host: h, items: [], showcase: false, _ws: ws, ...(sample(ws, I) ? { sample: true } : {}) }); if (it) by.get(h.handle).items.push(it); return by.get(h.handle); };
     const CT = new Map(), ctaOf = (x) => memo(CT, x.id, () => ((x.e.date || "") >= t ? eventCta(x.e, x.id) : afterCta(I, x, t)));
     const when = (e) => memo(G(I).when, e.date || "", () => { const d = e.date ? new Date(e.date + "T12:00:00") : null; return d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short" }) : ""; });
     for (const m of I.moments) { if (!(m.at > since) || !momentSeen(I, m, email)) continue; const x = I.events.get(m.eventId); if (A.waiting(m, x)) continue; // your stories: a guest's photo waits for the host
-      add(x.ws, { id: "m:" + m.id, ev: x.id, type: m.type === "video" ? "video" : "image", url: m.url, ...(MEDIA_OK(m.poster) ? { poster: m.poster } : {}), thumb: m.type === "video" ? (MEDIA_OK(m.poster) ? m.poster : "") : m.url, caption: [x.e.pubTitle || x.e.name, when(x.e)].filter(Boolean).join(" · "), note: momentOut(m).caption, by: first(m.authorName) || "", at: m.at, past: true, cta: ctaOf(x) }); }
+      if (SH?.skip.has(m.id)) continue; // its story is on this ring already
+      add(x.ws, { ...(SH?.deco.get(m.id) || {}), id: "m:" + m.id, ev: x.id, type: m.type === "video" ? "video" : "image", url: m.url, ...(MEDIA_OK(m.poster) ? { poster: m.poster } : {}), thumb: m.type === "video" ? (MEDIA_OK(m.poster) ? m.poster : "") : m.url, caption: [x.e.pubTitle || x.e.name, when(x.e)].filter(Boolean).join(" · "), note: momentOut(m).caption, by: first(m.authorName) || "", at: m.at, past: true, cta: ctaOf(x) }); }
     for (const x of I.events.values()) { const e = x.e; if (!cardPublic(e) && !wasThere(I, x.id, email)) continue; const at = e.updatedAt || e.createdAt || 0, up = (e.date || "") >= t;
       if (up && (at > since || Date.parse(e.date) - now < 21 * DAY)) add(x.ws, { id: "f:" + x.id, type: MEDIA_OK(e.coverPhoto) ? "image" : "art", url: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", thumb: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", art: { title: e.pubTitle || e.name || "", activity: e.activity || "", coverArt: artOf(e), date: e.date || "", id: x.id }, look: lookOf(e), caption: [e.pubTitle || e.name, when(e)].filter(Boolean).join(" · "), at: Math.max(at, since + 1), past: false, cta: eventCta(e, x.id) });
       else if (!up && e.date && Date.parse(e.date) > since && MEDIA_OK(e.coverPhoto) && momentsOnPage(e)) add(x.ws, { id: "c:" + x.id, ev: x.id, type: "image", url: e.coverPhoto, thumb: e.coverPhoto, caption: [e.pubTitle || e.name, when(e)].filter(Boolean).join(" · "), at: Date.parse(e.date) + 20 * 3600e3, past: true, cta: ctaOf(x) });
       // a recap goes first on the host's ring (its photos aren't shown twice)
       const R = !up ? recapOf(I, x, { email, now }) : null; if (R) { const s = add(x.ws, null); if (s) (s.recaps ||= []).push(R); } }
+    for (const [ws, items] of SH?.byWs || []) { const s = add(ws, null); if (s) { s.story = items; if (SH.own.has(ws)) s.own = true; } }
     const F = new Set(following); let L = [...by.values()].map((s) => { const R = (s.recaps || []).sort((a, b) => b.madeAt - a.madeAt), done = new Set(R.map((r) => r.eventId));
       s.items.sort((a, b) => (!!a.past === !!b.past ? a.at - b.at : a.past ? -1 : 1)); /* what happened, oldest first, then what's next */
       s.items = A.arrange(s._ws, s.items); // the host's own order within an event
       const rc = A.ringCover(s._ws), rcm = rc ? I.moments.find((m) => m.id === rc && m.type === "image" && momentSeen(I, m, email) && !A.waiting(m, I.events.get(m.eventId))) : null;
-      const rest = s.items.filter((i) => !(i.ev && done.has(i.ev))); s.items = [...R.flatMap((r) => r.items).slice(0, 14), ...rest.filter((i) => i.past).slice(-7), ...rest.filter((i) => !i.past).slice(0, 3)];
+      const rest = s.items.filter((i) => !(i.ev && done.has(i.ev))); s.items = [...(s.story || []) /* a day's stories lead the ring */, ...R.flatMap((r) => r.items).slice(0, 14), ...rest.filter((i) => i.past).slice(-7), ...rest.filter((i) => !i.past).slice(0, 3)]; if (s.story) s.fresh = true; delete s.story;
       s.latestAt = Math.max(0, ...s.items.map((i) => i.at)); s.thumb = (rcm ? rcm.url : "") /* the cover the host chose for their ring */ || (MEDIA_OK(s.host?.avatarUrl) ? s.host.avatarUrl : "") /* the host's own profile picture on their ring, like a face */ || R[0]?.thumb || (s.items.slice().reverse().find((i) => i.thumb) || {}).thumb || photoOf(I, s._ws, email);
       if (R.length) s.recap = { eventId: R[0].eventId, title: R[0].items[0].recap.title };
       delete s.recaps; delete s._ws; return s; }).filter((s) => s.items.length)
-      .sort((a, b) => (F.has(b.host.handle) - F.has(a.host.handle)) || (!!b.recap - !!a.recap) || (!!a.sample - !!b.sample) || b.latestAt - a.latestAt).slice(0, 20);
+      .concat(SH?.people || [])
+      .sort((a, b) => (!!b.own - !!a.own) || (F.has(b.host.handle) - F.has(a.host.handle)) || (!!b.fresh - !!a.fresh) || (!!b.recap - !!a.recap) || (!!a.sample - !!b.sample) || b.latestAt - a.latestAt).slice(0, 20);
     // a quiet week still has something to tap: prepared pages, with their covers and illustrated art
     if (L.filter((s) => !s.sample).length < 6) for (const P of listedShowcases()) { if (L.length >= 12) break; const items = [];
       for (const p of P.past) items.push(p.cover ? { id: "s:" + p.id, type: "image", url: p.cover, thumb: p.cover, caption: [p.title, p.place].filter(Boolean).join(" · "), at: 0, past: true, cta: P.cta } : { id: "s:" + p.id, type: "art", url: "", thumb: "", art: { title: p.title, activity: p.title, id: p.id }, caption: [p.title, p.place].filter(Boolean).join(" · "), at: 0, past: true, cta: P.cta });

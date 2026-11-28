@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
 import { pottoReply, daysOf, isSupport, pickEvent } from "../server/pottorules.js";
-import { buildAction, allowedLinks, ACTION_URL, estimateTokens } from "../server/potto.js";
+import { buildAction, allowedLinks, ACTION_URL, estimateTokens, suggestFor, missingOf } from "../server/potto.js";
 import { fakeText } from "../server/ai.js";
 
 let srv;
@@ -170,4 +170,68 @@ test("history: listed, opened, deleted one at a time or all, and gone with the a
   assert.ok(srv.store.get(k)); assert.ok(srv.store.get(u));
   const r = await post("/api/me/delete", { confirm: "DELETE", when: "now" }, d.cookie); assert.equal(r.status, 200, await r.text());
   assert.equal(srv.store.get(k), null, "history is removed with the account"); assert.equal(srv.store.get(u), null, "and the usage count");
+});
+
+// ---- QA round 4: Potto as a co-host when someone is stuck (what's missing, no date, no place, the day before, after) ----
+test("stuck while planning: Potto says what the invite still needs, how friends pick a date, and never names a venue", () => {
+  const T = "2026-11-28", ev = (o) => ({ id: "e1", title: "Dumpling night", date: "2026-12-04", time: "19:00", where: "Bed-Stuy, Brooklyn", spots: 8, going: 1, open: 7, maybe: 1, maybeNames: ["Lee"], goingNames: ["Sam"], noReply: ["Rae"], missing: [], shared: true, link: "/?app=1&open=e1#studio", guestsLink: "/?app=1&open=e1&step=6#studio", chatLink: "/chats/e1", pageLink: "/e/e1", ...o });
+  const draft = { id: "d1", title: "Draft supper", missing: ["a date", "a place", "a few words on what to expect"], shared: false, link: "/?app=1&open=d1#studio" };
+  const mk = (o = {}) => ({ today: T, me: { host: true, first: "Mai" }, myEvents: [], plans: [], public: [], ...o });
+  const R = (q, ctx, mode = "fake") => pottoReply(q, ctx, { mode });
+  // what a draft still needs, by name; "Draft supper" is a title, not a request to draft a thank-you
+  let r = R("What's missing from Draft supper?", mk({ drafts: [draft] }));
+  assert.equal(r.intent, "missing"); assert.match(r.answer, /Draft supper still needs a date, a place and a few words on what to expect\./); assert.deepEqual(r.links, [{ label: "Draft supper", href: draft.link }]); assert.doesNotMatch(r.answer, /Thanks for coming/);
+  r = R("Is Draft supper ready to share?", mk({ drafts: [draft] })); assert.equal(r.intent, "missing");
+  r = R("Is my invite ready to share?", mk({ myEvents: [ev({ shared: false })] })); assert.match(r.answer, /has a date, a place and a description\. It isn't shared yet/);
+  r = R("What do I still need to add?", mk({ myEvents: [ev({ missing: ["a place"] })] })); assert.match(r.answer, /Dumpling night still needs a place\. Guests can already open it/);
+  r = R("What's missing?", mk()); assert.match(r.answer, /haven't started an event yet/); assert.equal(r.links[0].href, "/?app=1&new=1#studio");
+  // no date: friends vote, in the editor
+  for (const q of ["Can you poll my friends for a date?", "find a time that works", "Which day is best for a dinner?", "Can I share without a date?", "I don't know what date works for everyone"]) { r = R(q, mk()); assert.equal(r.intent, "date", q); assert.match(r.answer, /Ask friends first\. Add up to three dates/); assert.equal(r.links[0].href, "/?app=1&new=1#studio"); }
+  r = R("Which date works for everyone?", mk({ drafts: [draft] })); assert.match(r.answer, /Open Draft supper, tap the date/); assert.equal(r.links[0].href, draft.link);
+  // no place: where the picks are, and no invented venue
+  for (const q of ["Suggest a place near me", "Where should I host a dinner for 8?", "Find a restaurant for a birthday in Brooklyn", "What's a good bar for 10 people?", "Add a place to my event", "I don't have space at home, where can we go?"]) { r = R(q, mk(), "offline"); assert.equal(r.intent, "place", q); assert.match(r.answer, /I won't guess a venue/); assert.ok(!r.needsAi); }
+  // someone with nothing coming up isn't told about reminders they can't send
+  r = R("What time should I tell people?", mk()); assert.doesNotMatch(r.answer, /draft reminders/); assert.match(r.answer, /What are you planning\?/); assert.equal(r.links[0].label, "New event");
+  r = R("I'm new, where do I start?", mk()); assert.equal(r.intent, "start");
+  r = R("What's easy to host on a weeknight?", mk()); assert.equal(r.intent, "ideas");
+  // shared, few replies; the day before; after
+  const C = mk({ myEvents: [ev()] });
+  assert.match(R("Who said maybe?", C).answer, /^Lee said Maybe to Dumpling night\.$/);
+  assert.match(R("How many spots are left for Dumpling night?", C).answer, /7 of 8 spots open\. 1 in\./);
+  r = R("Only one person replied, what do I do?", C); assert.equal(r.intent, "fill"); assert.match(r.answer, /7 open spots/);
+  r = R("Message everyone who's in", C); assert.deepEqual(r.links, [{ label: "Group chat", href: "/chats/e1" }]);
+  r = R("What do I need to prep for Dumpling night?", C); assert.equal(r.intent, "prep"); assert.match(r.answer, /Dumpling night is Fri, Dec 4 · 7pm in Bed-Stuy\. 1 in, 1 maybe, 1 yet to reply\./);
+  r = R("Should I ask guests to bring something?", C); assert.equal(r.intent, "bring"); assert.match(r.answer, /What to bring/);
+  r = R("How did Last week's supper go?", mk({ myEvents: [ev({ id: "p1", title: "Last week's supper", date: "2026-11-23", pageLink: "/e/p1" }), ev()] })); assert.equal(r.intent, "after"); assert.match(r.answer, /Last week's supper was Mon, Nov 23\. 1 guest was in\./); assert.deepEqual(r.links, [{ label: "Last week's supper", href: "/e/p1" }]);
+  // a guest asking about a plan gets the invite's facts and the area, never the street
+  const G = { today: T, me: { host: true, first: "Sam" }, myEvents: [], public: [], plans: [{ id: "e1", title: "Dumpling night", date: "2026-12-04", time: "19:00", where: "Bed-Stuy, Brooklyn", host: "Mai", going: 2, names: [], link: "/g#rsvp-e1", chatLink: "/chats/e1" }] };
+  assert.equal(R("Where is Dumpling night?", G).answer, "Dumpling night is Fri, Dec 4 · 7pm, in Bed-Stuy, Brooklyn. The exact spot is on your invite.");
+  assert.match(R("What time does it start?", G).answer, /Fri, Dec 4 · 7pm/);
+  assert.match(R("I can't make it anymore", G).answer, /tap Can't go/);
+  assert.match(R("Can I bring a friend?", G).answer, /That's up to Mai/);
+  assert.deepEqual(R("Message the host", G).links[0], { label: "Group chat", href: "/chats/e1" });
+  assert.match(R("What should I bring to Dumpling night?", G).answer, /Anything Mai asked for is on the invite/);
+  assert.equal(R("What's on this weekend?", G).intent, "search"); // still a search
+});
+
+test("the sheet opens with three questions about this person's own events, and each one has a real answer", async () => {
+  assert.deepEqual(missingOf({}), ["a date", "a place", "a few words on what to expect"]); assert.deepEqual(missingOf({ date: "2026-12-04", meetPoint: "Home", why: "Dumplings." }), []);
+  assert.deepEqual(missingOf({ stage: "interest", dateOptions: ["2026-12-04"], venueName: "Lilia" }), ["a few words on what to expect"]);
+  assert.deepEqual(suggestFor({ today: "2026-11-28", myEvents: [], plans: [] }).suggest, ["What should I host?", "Which date works for everyone?", "Where could I host it?"]);
+  // nothing going on: how to start, never a made-up event
+  const nu = await person("Nora New"); let s = await getJ("/api/potto/status", nu.cookie);
+  assert.deepEqual(s.suggest, ["What should I host?", "Which date works for everyone?", "Where could I host it?"]); assert.equal(s.here, null);
+  for (const q of s.suggest) { const j = await askJ(nu, q); assert.doesNotMatch(j.answer, /draft reminders/, q); assert.ok(j.links.length, q); }
+  // a host with a dateless draft and a shared event: the draft first, then the event; on the event's screen, that event
+  const h = await host("Dee Stuck", "dee-stuck");
+  await put("events/sdraft", { name: "Clothes swap", kind: "social", casual: true }, h.cookie);
+  await put("events/sopen", { name: "Soup night", kind: "social", casual: true, date: day(5), startTime: "19:00", city: "New York", meetPoint: "My place", why: "Soup.", published: true, headcount: 6, guests: [{ name: "Rae Lin", email: "rae2@example.com", status: "Invited" }] }, h.cookie);
+  s = await getJ("/api/potto/status", h.cookie); assert.equal(s.suggest.length, 3); assert.equal(s.suggest[0], "What's missing from Clothes swap?"); assert.ok(s.suggest.includes("Who hasn't replied to Soup night?"));
+  let j = await askJ(h, s.suggest[0]); assert.match(j.answer, /Clothes swap still needs a date, a place and a few words on what to expect/); assert.deepEqual(j.links, [{ label: "Clothes swap", href: "/?app=1&open=sdraft#studio" }]);
+  j = await askJ(h, "Who hasn't replied to Soup night?"); assert.match(j.answer, /One person hasn't replied to Soup night: Rae/);
+  s = await getJ("/api/potto/status?eventId=sopen", h.cookie); assert.deepEqual(s.here, { eventId: "sopen", title: "Soup night" }); assert.equal(s.suggest[0], "Who hasn't replied to Soup night?"); assert.ok(s.suggest.includes("Fill the open spots for Soup night"));
+  s = await getJ("/api/potto/status?eventId=not-mine", h.cookie); assert.equal(s.here, null);
+  // the sheet uses them, and no longer offers questions about events that may not exist
+  const src = (await import("node:fs")).readFileSync(new URL("../public/potto.js", import.meta.url), "utf8");
+  assert.match(src, /st\.suggest\.slice\(0, 3\)/); assert.doesNotMatch(src, /Friday's game night|Draft a reminder for Saturday/);
 });

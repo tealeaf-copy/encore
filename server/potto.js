@@ -4,7 +4,8 @@
 //   → { threadId, answer, links: [{ label, href }], actions: [{ id, label, confirm, method, url, body, done }], mode, note? }
 //   or { route: "help" } for support questions: the sheet asks the help guide (POST /api/help/ask, server/help.js) and
 //   keeps "Talk to a person" there, so one Potto covers both. POST /api/potto/note saves that answer to the thread.
-// - GET /api/potto/status: what works here (AI on, off or offline mode) and today's allowance.
+// - GET /api/potto/status?eventId=&tz=: what works here (AI on, off or offline mode), today's allowance, and three
+//   questions to open with (suggestFor): about the event on screen, a draft that still needs something, what's next.
 // - GET /api/potto/events: events to attach (yours, and your plans).
 // - GET /api/potto/threads, GET /api/potto/threads/:id, DELETE /api/potto/threads/:id, DELETE /api/potto/threads.
 //
@@ -51,6 +52,8 @@ const PAGE = /^\/(discover|plans|saved|chats|inbox|settings|ideas|feed|about|com
 // what an action may call: existing endpoints only
 export const ACTION_URL = /^\/api\/(chats\/[A-Za-z0-9_-]{1,80}\/messages|host\/broadcast|host\/announce)$/;
 
+/** What an invite still needs before it's shared, in the order a guest would miss it. Words only, never the values. */
+export const missingOf = (e) => [!e?.date && !(e?.stage === "interest" && (e.dateOptions || []).length) && "a date", !String(e?.meetPoint || e?.venueName || e?.reservation?.restaurant || e?.lodging?.name || "").trim() && "a place", !String(e?.why || e?.description || "").trim() && "a few words on what to expect"].filter(Boolean);
 /** The context for one person. Everything in it is theirs to see. */
 export function buildContext({ store, C, X, F, safety, user, tz = "", eventId = "", now = Date.now() }) {
   const em = lc(user.email), today = todayIn(tzOk(tz) ? tz : ""), soon = addDays(today, 60), W = getWorkspace(user.ws), h = C?.profileOf?.(user.ws);
@@ -59,10 +62,13 @@ export function buildContext({ store, C, X, F, safety, user, tz = "", eventId = 
   const okHost = (handle) => !handle || !(blocked.has("host:" + lc(handle)) || hid.has("host:" + lc(handle)));
   const isHost = !!h?.handle && W?.personal !== false;
   // my own events
-  const myEvents = [];
+  const myEvents = [], drafts = [];
   if (user.ws && user.ws !== DEFAULT_WS) {
     const S = scopeStore(store, user.ws), R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data }));
-    for (const d of S.list("events")) { const e = d.data; if (!e || e.example || e.sample || e.cancelled || !e.date || e.date < addDays(today, -7) || e.date > soon) continue;
+    for (const d of S.list("events")) { const e = d.data; if (!e || e.example || e.sample || e.cancelled) continue;
+      // a draft with no date yet: only its title and what it still needs, so Potto can say what's missing before sharing
+      if (!e.date) { if (drafts.length < 10 && !e.published) drafts.push({ id: d.id, title: clean(e.pubTitle || e.name, 90) || "Untitled event", missing: missingOf(e), shared: false, link: `/?app=1&open=${encodeURIComponent(d.id)}#studio` }); continue; }
+      if (e.date < addDays(today, -7) || e.date > soon) continue;
       const rs = R.filter((r) => r.eventId === d.id && okPerson(r.email)), going = rs.filter((r) => r.response === "going");
       const seats = going.reduce((n, r) => n + seatsOf(r, e), 0), spots = +e.headcount || 0;
       const replied = new Set(rs.flatMap((r) => [lc(r.email), lc(r.name)]).filter(Boolean));
@@ -71,6 +77,7 @@ export function buildContext({ store, C, X, F, safety, user, tz = "", eventId = 
       myEvents.push({ id: d.id, title: e.pubTitle || e.name || "Your event", date: e.date, time: e.startTime || "", where: where(e), spots, going: seats, open: spots ? Math.max(0, spots - seats) : 0,
         maybe: rs.filter((r) => r.response === "maybe").length, asked: rs.filter((r) => r.response === "requested").length, waitlist: waitlistOf(rs.map((r) => ({ id: r.id, data: r }))).length,
         goingNames: going.map((r) => first(r.name)).filter(Boolean).slice(0, 40), maybeNames: rs.filter((r) => r.response === "maybe").map((r) => first(r.name)).filter(Boolean).slice(0, 20), noReply: noReply.slice(0, 40),
+        missing: missingOf(e), shared: !!(e.published || e.discoverable), pageLink: `/e/${id}`,
         discoverable: !!e.discoverable, audienceWho: e.audienceWho ? clean(e.audienceWho, 80) : "", approval: !!e.approvalRequired,
         link: `/?app=1&open=${id}#studio`, guestsLink: `/?app=1&open=${id}&step=6#studio`, shareLink: `/?app=1&open=${id}#studio`, chatLink: `/chats/${id}` }); }
     myEvents.sort((a, b) => a.date.localeCompare(b.date));
@@ -82,15 +89,39 @@ export function buildContext({ store, C, X, F, safety, user, tz = "", eventId = 
     const R = scopeStore(store, x.ws).list("rsvps").map((d) => d.data).filter((r) => r && r.eventId === a.eventId && r.response === "going");
     const meIn = R.some((r) => lc(r.email) === em);
     const names = meIn && !e.hideGuests ? R.filter((r) => lc(r.email) !== em && r.showMe !== false && okPerson(r.email)).map((r) => first(r.name)).filter(Boolean).slice(0, 30) : null;
-    plans.push({ id: a.eventId, title: e.pubTitle || e.name || "Event", date: e.date, time: e.startTime || "", where: where(e), host: ph?.name || "", going: R.reduce((n, r) => n + seatsOf(r, e), 0), names, link: `/g#rsvp-${encodeURIComponent(a.eventId)}` }); } } catch {}
+    plans.push({ id: a.eventId, title: e.pubTitle || e.name || "Event", date: e.date, time: e.startTime || "", where: where(e), host: ph?.name || "", going: R.reduce((n, r) => n + seatsOf(r, e), 0), names, link: `/g#rsvp-${encodeURIComponent(a.eventId)}`, ...(meIn ? { chatLink: `/chats/${encodeURIComponent(a.eventId)}` } : {}) }); } } catch {}
   plans.sort((a, b) => a.date.localeCompare(b.date));
   // hosts I follow
   let follows = []; try { follows = (F?.followedHosts?.(em) || []).filter((x) => okHost(x.handle)).slice(0, 20).map((x) => ({ name: x.name, handle: x.handle, link: `/@${x.handle}` })); } catch {}
   // public events
   let pub = []; try { pub = (C?.discover?.().events || []).filter((c) => c && !c.private && !String(c.id).startsWith("p-") && c.date && c.date >= today && c.date <= addDays(today, 21) && okHost(c.host?.handle))
     .slice(0, 60).map((c) => ({ id: c.id, title: c.title, date: c.date, time: c.startTime || "", where: [c.hood, c.city].filter(Boolean).join(", "), size: +c.headcount || 0, going: +c.going || 0, price: c.priceLine || (c.free || !c.price ? "Free" : String(c.price)), tags: (c.tags || []).slice(0, 5), kind: c.activity || c.kind || "", host: c.host?.name || "", link: `/e/${encodeURIComponent(c.id)}` })); } catch {}
-  const attached = eventId && ID.test(eventId) && (myEvents.some((e) => e.id === eventId) || plans.some((e) => e.id === eventId)) ? eventId : "";
-  return { today, me: { first: first(user.name), host: isHost, handle: h?.handle || "", city: h?.city || "", followers: isHost ? (C?.followersOf?.(user.ws) || []).length : 0 }, myEvents, plans, follows, public: pub, attached };
+  const attached = eventId && ID.test(eventId) && (myEvents.some((e) => e.id === eventId) || drafts.some((e) => e.id === eventId) || plans.some((e) => e.id === eventId)) ? eventId : "";
+  return { today, me: { first: first(user.name), host: isHost, handle: h?.handle || "", city: h?.city || "", followers: isHost ? (C?.followersOf?.(user.ws) || []).length : 0 }, myEvents, ...(drafts.length ? { drafts } : {}), plans, follows, public: pub, attached };
+}
+
+/**
+ * Three questions to open the sheet with, from what this person has going on and the event on screen (eventId), each
+ * one a question the plain rules answer from the context. Never a made-up event: with nothing going on, how to start.
+ */
+export function suggestFor(ctx, { eventId = "" } = {}) {
+  const t = (e) => clean(e.title, 48), mine = ctx.myEvents || [], drafts = ctx.drafts || [], up = mine.filter((e) => e.date >= ctx.today), past = mine.filter((e) => e.date < ctx.today).sort((a, b) => b.date.localeCompare(a.date)), plans = ctx.plans || [];
+  const out = [], add = (q) => { if (q && out.length < 3 && !out.includes(q)) out.push(q); };
+  const forEvent = (e) => { if (!e) return; if (e.date && e.date < ctx.today) return add(`How did ${t(e)} go?`);
+    if (e.missing?.length || !e.shared) add(`What's missing from ${t(e)}?`);
+    if (!e.date) return add("Which date works for everyone?");
+    if ((e.noReply || []).length) add(`Who hasn't replied to ${t(e)}?`);
+    if (e.going && e.date <= addDays(ctx.today, 2)) add(`Draft a reminder for ${t(e)}`);
+    if (e.shared && e.open > 0) add(`Fill the open spots for ${t(e)}`);
+    if (e.going) add(`Draft a reminder for ${t(e)}`); };
+  const here = eventId && ID.test(eventId) ? [...drafts, ...mine].find((e) => e.id === eventId) : null, plan = eventId ? plans.find((e) => e.id === eventId) : null;
+  forEvent(here);
+  if (plan) { add(`What time is ${t(plan)}?`); add(`Who else is going to ${t(plan)}?`); add(`What should I bring to ${t(plan)}?`); }
+  forEvent(drafts[0]); forEvent(up[0]); forEvent(past[0]); forEvent(up[1]);
+  if (!mine.length && !drafts.length) { if (plans[0]) { add(`What time is ${t(plans[0])}?`); add(`Who else is going to ${t(plans[0])}?`); }
+    add("What should I host?"); add("Which date works for everyone?"); add("Where could I host it?"); }
+  add("What should I host?"); add("What's on this weekend?");
+  return { suggest: out, here: here || plan ? { eventId: (here || plan).id, title: t(here || plan) } : null };
 }
 
 /** The prompt for the model: the rules, the context, the last few turns and the question. */
@@ -102,6 +133,7 @@ ${POTTO_VOICE}
 At most 90 words. No headings. Say "spots", not "seats". Say "guests", not "attendees".
 Links: only hrefs that appear in the context, at most 3.
 Ideas to host: start from "ideas" in the context, in order, and say each one's label as given. Only ideas with source "platform" are measured; call the rest trends on social or general ideas, never data, and never add numbers to them.
+Planning help: "missing" on an event or a draft lists what its invite still needs; name those, and say it's ready only when the list is empty. No date yet: in the editor, tapping the date offers "Ask friends first" (up to three dates, friends tap the ones that work). No place yet: never name a venue; in the editor, places nearby that fit show under the title once a kind is picked.
 At most one action, only for the host's own events (myEvents): "remind" with text (a short reminder for the group chat, under 300 characters), "broadcast" (tell people on Pottery Lab it suits, when discoverable or audienceWho is set) or "announce" (tell the host's followers). The person confirms before anything is sent, so describe it, don't claim it's done.
 Reply with only JSON: {"answer": string, "links": [{"label": string, "href": string}], "action": null or {"type": "remind" | "broadcast" | "announce", "eventId": string, "text": string}}
 <context>
@@ -117,7 +149,7 @@ ${message}
 
 /** Links a reply may carry: ones in the context, or the app's own pages. */
 export function allowedLinks(ctx, links) {
-  const known = new Set(); for (const L of [ctx.myEvents, ctx.plans, ctx.public, ctx.follows]) for (const e of L || []) for (const k of ["link", "guestsLink", "shareLink", "chatLink"]) if (e[k]) known.add(e[k]);
+  const known = new Set(); for (const L of [ctx.myEvents, ctx.drafts, ctx.plans, ctx.public, ctx.follows]) for (const e of L || []) for (const k of ["link", "guestsLink", "shareLink", "chatLink", "pageLink"]) if (e[k]) known.add(e[k]);
   const out = []; for (const l of Array.isArray(links) ? links : []) { const href = safeLink(l?.href), label = clean(l?.label, 60); if (!href || !label || !(known.has(href) || PAGE.test(href) || RUN_LINK.test(href)) || out.some((x) => x.href === href)) continue; out.push({ label, href }); if (out.length >= 3) break; }
   return out;
 }
@@ -159,7 +191,8 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
   app.locals.potto = { P, ctxOf, lastPrompt: "" };
 
   const hosting = (u) => { try { const t = new Date().toISOString().slice(0, 10); return scopeStore(store, u.ws).list("events").some((d) => d.data && !d.data.example && !d.data.sample && !d.data.cancelled && (d.data.date || "") >= t); } catch { return false; } };
-  app.get("/api/potto/status", (req, res) => { const u = me(req, res); if (!u) return; res.json({ ...status(u), hosting: hosting(u), first: first(u.name) }); });
+  app.get("/api/potto/status", (req, res) => { const u = me(req, res); if (!u) return; let sug = {}; try { sug = suggestFor(ctxOf(req, u), { eventId: clean(req.query.eventId, 80) }); } catch {} // what to ask from here
+    res.json({ ...status(u), hosting: hosting(u), first: first(u.name), ...sug }); });
   app.get("/api/potto/events", (req, res) => { const u = me(req, res); if (!u) return; const c = ctxOf(req, u);
     res.json({ events: [...c.myEvents.filter((e) => e.date >= c.today).map((e) => ({ id: e.id, title: e.title, when: whenOf(e), mine: true })), ...c.plans.map((e) => ({ id: e.id, title: e.title, when: whenOf(e) }))].slice(0, 20) }); });
   app.post("/api/potto/ask", body, async (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {};

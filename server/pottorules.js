@@ -70,6 +70,49 @@ export function pottoReply(message, ctx = {}, { mode = "offline" } = {}) {
 
   if (isSupport(m)) return out({ intent: "help", route: "help", answer: "That's one for the help guide. Here's what it says." });
 
+  const upcoming = mine.filter((x) => x.date >= today), drafts = ctx.drafts || [], past = mine.filter((x) => x.date < today).sort((a, b) => b.date.localeCompare(a.date));
+  const NEW = { label: "New event", href: "/?app=1&new=1#studio" }, titled = (L) => L.find((e) => e.id === ctx.attached) || L.find((e) => words(e.title).some((w) => words(m).includes(w)));
+  // ---- a guest asking about a plan: the facts on the invite, never more ----
+  const plan = titled(plans) || (plans.length === 1 && !upcoming.length && !drafts.length ? plans[0] : null);
+  if (plan && !titled(upcoming)) { const P = { label: plan.title, href: plan.link }, chat = plan.chatLink ? [{ label: "Group chat", href: plan.chatLink }] : [], by = plan.host || "the host";
+    if (/\bcan'?t (make|go|come)\b|\bcancel\b|\bchange my (reply|rsvp)\b|\bnot coming\b/i.test(m)) return out({ intent: "plan", answer: `Open your invite for ${plan.title} and tap Can't go, so someone else can have the spot. ${by} sees it right away.`, links: [P] });
+    if (/\bcalendar\b/i.test(m)) return out({ intent: "plan", answer: `Add to calendar is on your invite for ${plan.title} (${whenOf(plan)}).`, links: [P, { label: "Plans", href: "/plans" }] });
+    if (/\bbring\b|\bwear\b|\bdress\b|\bparking\b/i.test(m) && !/\bfriend|\bplus[- ]?one|\bpartner\b/i.test(m)) return out({ intent: "plan", answer: `Anything ${by} asked for is on the invite. If it isn't there, ask in the group chat.`, links: [P, ...chat] });
+    if (/\b(friend|plus[- ]?one|partner)\b/i.test(m) && /\bbring|\badd|\bcan i\b/i.test(m)) return out({ intent: "plan", answer: `That's up to ${by}. Ask in the group chat.`, links: [...chat, P] });
+    if (/\b(message|ask|tell|text|write to|contact)\b.*\bhost\b|\bgroup chat\b/i.test(m)) return out({ intent: "plan", answer: chat.length ? `The group chat for ${plan.title} reaches ${by} and everyone who's in.` : `Reply on the invite first, then the group chat opens.`, links: [...chat, P] });
+    if (/\bwhere\b|\bwhat time\b|\bwhen\b|\bstart|\baddress\b/i.test(m) && !/\bwhat'?s on\b/i.test(m)) return out({ intent: "plan", answer: `${plan.title} is ${whenOf(plan) || "coming up"}${plan.where ? `, in ${plan.where}` : ""}. The exact spot is on your invite.`, links: [P] });
+  }
+  if (host) {
+    const mineAll = [...drafts, ...upcoming], ev = titled(mineAll) || (mineAll.length === 1 ? mineAll[0] : null), open = (e) => (e ? [{ label: e.title, href: e.link }] : [NEW]);
+    // what's missing before sharing
+    if (/\bmissing\b|\bready to (share|send|go)\b|\bcheck my (invite|event|draft)\b|\bbefore (i )?(shar|send)|\bstill need\b|\bwhat should i add\b|\bwhat('?s| is| do i do| comes)? ?next\b|\bis (it|my \w+) ready\b/i.test(m)) {
+      const e = ev || drafts[0] || upcoming.find((x) => !x.shared || x.missing?.length) || upcoming[0];
+      if (!e) return out({ intent: "missing", answer: "You haven't started an event yet. Start one: pick what it is and I set up the time, the spots and a cover. Then it needs a date and a place.", links: [NEW, { label: "Ideas", href: "/ideas" }] });
+      const M = e.missing || [], share = e.shared ? "" : " It isn't shared yet: open it, tap Save and you get the link to send.";
+      return out({ intent: "missing", answer: M.length ? `${e.title} still needs ${list(M)}.${e.shared ? " Guests can already open it, so add that soon." : " Open it and tap the part to fill it in."}` : `${e.title} has a date, a place and a description.${e.shared ? " It's shared. Nothing is missing." : share}`, links: open(e) });
+    }
+    // no date yet: friends can vote
+    if (/\b(which|what|best|good) (day|date)\b|\b(date|day|time) (that )?works?\b|\bpoll\b|\bvote\b|\bfind a time\b|\bdon'?t know (what|which|the|a) (date|day)\b|\bwithout a date\b|\bpick between\b|\bsometime in\b|\bno date\b/i.test(m))
+      return out({ intent: "date", answer: `You don't have to pick alone. ${ev ? `Open ${ev.title}, tap the date` : "In a new event, tap the date"} and choose Ask friends first. Add up to three dates, friends tap the ones that work, and you call it. Nothing is booked until you do.`, links: open(ev) });
+    // no place yet: never a made-up venue
+    if (/\bwhere (should|can|could|do) (i|we)\b(?! start)|\b(suggest|find|recommend|need|pick|add|book) (me )?(a |an |the )?(good |nice )?(place|venue|spot|restaurant|bar|caf[eé]|park|space|table)\b|\bplaces? near\b|\bno space\b|\bdon'?t have (a |the |any )?(space|place|room)\b|\bgood (bar|park|restaurant|place|spot|venue|caf[eé]) for\b|\bwhere do .* meet\b/i.test(m))
+      return out({ intent: "place", answer: `I won't guess a venue from here. ${ev ? `Open ${ev.title}` : "Start the event"} and say what it is: places near you that fit show under the title, and a tap adds one. Hosting at home works too. Only guests who are in see the address.`, links: open(ev) });
+    if (/\baddress\b/i.test(m)) return out({ intent: "place", answer: `Only guests who are in see the address, on the invite. ${ev ? `Change it on ${ev.title} and they're told it changed.` : "Change it on the event and they're told it changed."}`, links: ev ? open(ev) : [] });
+    // what to bring
+    if (/\bbring\b/i.test(m)) return out({ intent: "bring", answer: `Add What to bring to the invite, one thing per line. Guests see it before they reply.${ev ? ` It's a tap on ${ev.title}.` : ""}`, links: open(ev) });
+    // the day before: the facts, and a reminder if anyone is in
+    if (/\bprep\b|\bchecklist\b|\bget ready\b|\bday before\b/i.test(m)) { const e = pickEvent(upcoming, m, today, ctx.attached);
+      if (e) return out({ intent: "prep", answer: `${e.title} is ${whenOf(e)}${e.where ? ` in ${e.where.split(",")[0]}` : ""}. ${e.going} in${e.maybe ? `, ${e.maybe} maybe` : ""}${(e.noReply || []).length ? `, ${e.noReply.length} yet to reply` : ""}.${e.missing?.length ? ` The invite still needs ${list(e.missing)}.` : ""} ${e.going ? "A short reminder the day before helps. Ask me to draft one." : "No one is in yet, so send the link again first."}`, links: [{ label: e.title, href: e.link }, { label: "Guest list", href: e.guestsLink }] }); }
+    // quick lookups on one of my events
+    if (/\bwho\b.*\bmaybe\b/i.test(m)) { const e = pickEvent(upcoming, m, today, ctx.attached); if (e) return out({ intent: "maybe", answer: (e.maybeNames || []).length ? `${list(e.maybeNames.slice(0, 8))} said Maybe to ${e.title}.` : `No one said Maybe to ${e.title}.`, links: [{ label: "Guest list", href: e.guestsLink }] }); }
+    if (/\bhow many\b.*\b(spots?|seats?|places?)\b|\b(spots?|seats?) (are )?(left|open)\b/i.test(m)) { const e = pickEvent(upcoming, m, today, ctx.attached); if (e) return out({ intent: "spots", answer: e.spots ? `${e.title} has ${e.open} of ${e.spots} spots open. ${e.going} in.` : `${e.title} has no spot limit. ${e.going} in.`, links: [{ label: "Guest list", href: e.guestsLink }] }); }
+    if (/\b(message|tell|text|write to)\b.*\b(everyone|guests|people who|all)\b/i.test(m) && !/\bmore people\b/i.test(m)) { const e = pickEvent(upcoming, m, today, ctx.attached); if (e) return out({ intent: "chat", answer: `The group chat for ${e.title} reaches everyone who's in (${e.going} so far). Or ask me to draft a reminder.`, links: [{ label: "Group chat", href: e.chatLink }] }); }
+    // after: how it went
+    if (past.length && /\bhow did\b|\bkudos\b|\brecap\b|\bphotos?\b|\bwho (came|went|would)\b|\b(come|go) again\b|\blast (week|night|time)\b/i.test(m) && !/\bthank/i.test(m)) { const e = titled(past) || past[0];
+      return out({ intent: "after", answer: `${e.title} was ${nice(e.date)}. ${e.going} ${e.going === 1 ? "guest was" : "guests were"} in. Kudos, who'd come again and the photos are on its page, and guests can add theirs from the same link.`, links: [{ label: e.title, href: e.pageLink || e.link }] }); }
+    if (/\bwhere do i start\b|\bi'?m new\b|\bget(ting)? started\b|\bfirst (event|time)\b/i.test(m) && !mineAll.length)
+      return out({ intent: "start", answer: "Start with New event. Pick what it is and I set up the time, the spots and a cover. Then add a date, or let friends vote on one, and a place. Save gives you a link to send.", links: [NEW, { label: "Ideas", href: "/ideas" }] });
+  }
   // a reminder for one of my events
   if (/\bremind(er)?s?\b/i.test(m) && host) {
     const e = pickEvent(mine.filter((x) => x.date >= today), m, today, ctx.attached);
@@ -87,7 +130,7 @@ export function pottoReply(message, ctx = {}, { mode = "offline" } = {}) {
     return out({ intent: "noreply", answer, links: [{ label: "Guest list", href: e.guestsLink }] });
   }
   // fill open spots
-  if (/\b(fill|empty|open|spare|free)\b.*\b(seats?|spots?|places?|tables?)\b|\bmore (people|guests)\b|\bfill (it|up|my)\b/i.test(m) && host) {
+  if (/\b(fill|empty|open|spare|free)\b.*\b(seats?|spots?|places?|tables?)\b|\bmore (people|guests)\b|\bfill (it|up|my)\b|\b(only|just) (one|two|three|a few|\d+) (person |people )?(repl|rsvp|said|is in|are in)|\b(few|no|not many) (replies|rsvps)\b|\b(nobody|no one) (has )?(repl|rsvp|said)/i.test(m) && host) {
     const e = pickEvent(mine.filter((x) => x.date >= today && x.open > 0), m, today, ctx.attached);
     if (!e) return out({ intent: "fill", answer: "Your upcoming events are full, or have no spot limit. Nice.", links: [{ label: "Your events", href: "/?app=1" }] });
     const reach = e.discoverable || e.audienceWho ? "Tell people it suits on Pottery Lab" : ctx.me?.followers ? `Tell your ${ctx.me.followers} followers` : "";
@@ -95,7 +138,7 @@ export function pottoReply(message, ctx = {}, { mode = "offline" } = {}) {
       links: [{ label: "Share invite", href: e.shareLink || e.link }], action: reach ? { type: e.discoverable || e.audienceWho ? "broadcast" : "announce", eventId: e.id } : null });
   }
   // ideas
-  if (/\bideas?\b|\bbrainstorm|\bsuggest|\btheme(s)?\b|\bwhat should i host\b/i.test(m)) {
+  if (/\bideas?\b|\bbrainstorm|\bsuggest|\btheme(s)?\b|\bwhat should i host\b|\bwhat\b.*\b(to )?host\b|\bno idea\b/i.test(m)) {
     // trends (server/trends.js): what people here loved first, each with its source, so nothing general reads as measured
     // only for "what should I host?"; a themed ask ("ideas for a winter supper club") keeps its own answer below
     const T = (ctx.ideas || []).filter((x) => x && x.title && x.label).slice(0, 4), themed = /\bfor (?:a|an|my|our|the) (?!party\b|get-?together\b|event\b|night\b|weekend\b)\w+|\btheme/i.test(m);
@@ -105,9 +148,11 @@ export function pottoReply(message, ctx = {}, { mode = "offline" } = {}) {
     return out({ intent: "ideas", answer: `A few to start from:\n${I.map((x) => `• ${x}`).join("\n")}\n\nPick one and I'll help you set it up.`, links: [{ label: "New event", href: "/?app=1&new=1#studio" }, { label: "More ideas", href: "/ideas" }] });
   }
   // a general draft (an invite blurb, a thank-you)
-  if (/\b(draft|write|compose)\b/i.test(m)) {
-    if (mode === "offline") return out({ intent: "draft", needsAi: true, answer: noAi, links: host ? [{ label: "Your events", href: "/?app=1" }] : [] });
+  const bare = [...mine, ...(ctx.drafts || [])].reduce((t, e) => t.split(lc(e.title)).join(" "), lc(m)); // without my events' own titles ("Draft supper" is a name)
+  if (/\b(draft|write|compose)\b/i.test(bare)) {
     const e = host ? pickEvent(mine, m, today, ctx.attached) : null;
+    if (!/\bthank/i.test(m) && /\b(description|blurb|invite|about)\b/i.test(m)) return out({ intent: "draft", needsAi: mode === "offline", answer: `${mode === "offline" ? noAi + " " : ""}Open the invite and tap the description: say what it is, who it's for and what to expect. Two or three plain lines do it.`, links: e ? [{ label: e.title, href: e.link }] : host ? [{ label: "Your events", href: "/?app=1" }] : [] });
+    if (mode === "offline") return out({ intent: "draft", needsAi: true, answer: noAi, links: host ? [{ label: "Your events", href: "/?app=1" }] : [] });
     return out({ intent: "draft", answer: e ? `Here's a start for ${e.title}:\n\n"Thanks for coming to ${e.title}. It was a good one. Same time next month?"` : "Here's a start:\n\n\"Thanks for coming. It was a good one. Same time next month?\"", links: e ? [{ label: e.title, href: e.link }] : [] });
   }
   // who's going
@@ -138,5 +183,6 @@ export function pottoReply(message, ctx = {}, { mode = "offline" } = {}) {
   const W = words(m), hit = (ctx.public || []).filter((e) => W.some((w) => lc(`${e.title} ${(e.tags || []).join(" ")}`).includes(w))).slice(0, 3);
   if (hit.length) return out({ intent: "search", answer: `These match:\n${hit.map((e) => `• ${e.title}, ${whenOf(e)}`).join("\n")}`, links: hit.map((e) => ({ label: e.title, href: e.link })) });
   if (mode === "offline") return out({ intent: "other", needsAi: true, answer: `${host ? "I can find what's on, tell you who's in or who hasn't replied, and draft a plain reminder." : "I can find what's on and tell you who's going to your plans."} Open questions need AI, which isn't set up on this server.`, links: [{ label: "Discover", href: "/discover" }] });
+  if (host && !mine.some((x) => x.date >= today)) return out({ intent: "other", answer: "I can help you plan one: ideas, a date your friends vote on, what the invite still needs. Or I can find something to go to. What are you planning?", links: [{ label: "New event", href: "/?app=1&new=1#studio" }, { label: "Discover", href: "/discover" }] });
   return out({ intent: "other", answer: host ? "I can draft reminders, tell you who hasn't replied and help fill open spots. What's next on your list?" : "I can find something to go to and tell you who's going. What are you in the mood for?" });
 }

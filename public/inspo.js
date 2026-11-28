@@ -47,7 +47,7 @@
 .fx-snow{background-image:radial-gradient(circle,#fff 2.4px,transparent 3px),radial-gradient(circle,#fff 1.5px,transparent 2px);background-size:40px 44px,23px 29px;background-position:0 0,11px 15px}
 .fx-confetti{background-image:linear-gradient(45deg,transparent 46%,var(--f2) 47% 53%,transparent 54%),linear-gradient(-45deg,transparent 46%,var(--f1) 47% 53%,transparent 54%);background-size:34px 40px,27px 31px;opacity:.35}
 .fx-petals{background-image:radial-gradient(ellipse 6px 3px,var(--f2) 90%,transparent 100%),radial-gradient(ellipse 4px 7px,#fff 90%,transparent 100%);background-size:52px 48px,37px 41px;background-position:0 0,18px 22px;opacity:.6}
-.fx-stars,.fx-twinkle{background-image:radial-gradient(circle,#FFF6D8 1.4px,transparent 2px),radial-gradient(circle,var(--f2) 1px,transparent 1.6px);background-size:28px 33px,47px 41px;background-position:0 0,9px 17px}
+.fx-twinkle{background:radial-gradient(120% 70% at 50% 108%,rgba(255,170,74,.6),rgba(255,196,120,.25) 45%,transparent 75%);opacity:1}
 .fx-velvet{background:radial-gradient(120% 80% at 30% 10%,rgba(255,255,255,.18),transparent 60%),repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 6px)}
 .fx-paper{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 4px);opacity:1}
 .pli-fade{animation:pliIn .45s cubic-bezier(.2,.8,.2,1) both}@keyframes pliIn{from{opacity:0;transform:translateY(8px)}}

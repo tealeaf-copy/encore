@@ -4,8 +4,8 @@
 (function () {
   const C = window.EncoreColor;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"], ["jarwall", "Jar wall"],
-    ["streamers", "Streamers"], ["balloons", "Balloons"], ["bulbs", "String lights"], ["dice", "Dice"], ["leaves", "Leaves"], ["rain", "Rain"], ["steam", "Steam"], ["bubbles", "Bubbles"]]; // the last row is drawn by public/effects.js
+  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["twinkle", "Candlelight"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"], ["jarwall", "Jar wall"],
+    ["bulbs", "String lights"], ["dice", "Dice"], ["leaves", "Leaves"], ["rain", "Rain"], ["steam", "Steam"], ["bubbles", "Bubbles"]]; // the last row is drawn by public/effects.js
   // title fonts: the title only; the rest of the page stays in the house sans
   const FONTS = {
     clean: { label: "Clean", css: '"Inter", "IBM Plex Sans", system-ui, sans-serif', q: "Inter:wght@700;800", w: 800, ls: "-.035em", k: 1 },
@@ -214,7 +214,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
 /* a dark look: one palette from the look's own tokens. The cover sits in the page's deep tone with the drawing in light
    lines, cards are the raised surface, fields the field tone, secondary buttons outlined. Nothing white, no offset shadows */
 /* the drawing's one spot of colour is the look's accent (docs/brand-kit.md: a drawing never brings a hue of its own) */
-.lk-on :is(.cov,.gxcover,.mk-cov,.em-drawn,.cv-cover) .ea-art svg :is([fill="#29489A"],[fill="#C2431F"],[fill="#56683F"]){fill:var(--lk-spot)}
+.lk-light :is(.cov,.gxcover,.mk-cov,.em-drawn,.cv-cover) .ea-art svg :is([fill="#29489A"],[fill="#C2431F"],[fill="#56683F"]){fill:var(--lk-spot)}
 .lk-dark :is(.cov,.gxcover,.cv-cover):not(.poster):not(.lk-pcov){background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
 .lk-dark :is(.cov,.gxcover,.cv-cover) .ea-cover:not(.lk-deck):not(.ea-custom){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
 .lk-dark :is(.cov,.gxcover,.em-drawn,.cv-cover) .ea-art svg [stroke="#2A2622"],.lk-dark .em-drawn svg [stroke="#2A2622"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover,.cv-cover) .ea-art svg [fill="#2A2622"],.lk-dark .em-drawn svg [fill="#2A2622"]{fill:var(--lk-ink)}
@@ -403,11 +403,11 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
   // Surprise me rolls one of each, so the result is random but never a clash (a snowflake on a garden party, say).
   const MOODS = {
     garden: { pal: [["#E3E6D6", "#344A2E", "#9A4128"], ["#E9E4D6", "#3E5A3A", "#7A5C2E"]], fx: ["none", "petals"], font: ["serif", "clean"], em: ["🌿", "🌷", "🌸", "🙌"] },
-    jazz: { pal: [["#EFE9DF", "#33291F", "#9C7232"], ["#E6E8E6", "#26312F", "#9A6E36"]], fx: ["none", "paper", "stars"], font: ["serif", "typewriter", "bold"], em: ["🎷", "🎶", "🍷", "🥂"] },
+    jazz: { pal: [["#EFE9DF", "#33291F", "#9C7232"], ["#E6E8E6", "#26312F", "#9A6E36"]], fx: ["none", "paper", "sparkles"], font: ["serif", "typewriter", "bold"], em: ["🎷", "🎶", "🍷", "🥂"] },
     winter: { pal: [["#E6EAEE", "#2B3E52", "#8E3B24"], ["#ECEBE6", "#2F3F4F", "#5F6B57"]], fx: ["snow", "none"], font: ["clean", "serif"], em: ["❄️", "⛄", "🎁", "🕯️"] },
     velvet: { pal: [["#F2E7E4", "#5A1F27", "#A9844C"], ["#EEE6EA", "#4A2A3A", "#A07A50"]], fx: ["none", "twinkle"], font: ["serif", "script"], em: ["🏺", "🍷", "✨", "🕯️"] },
     flower: { pal: [["#F3E8E6", "#3A2A30", "#8C5A55"], ["#EEEAE2", "#2F4034", "#A86A5E"]], fx: ["petals", "none"], font: ["script", "serif"], em: ["💐", "🌷", "🌸", "🌿"] },
-    night: { pal: [["#E8EAEF", "#252C40", "#B0702A"], ["#E4EAE8", "#1F3532", "#A07A2E"]], fx: ["lanterns", "stars", "none"], font: ["clean", "bold", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
+    night: { pal: [["#E8EAEF", "#252C40", "#B0702A"], ["#E4EAE8", "#1F3532", "#A07A2E"]], fx: ["lanterns", "twinkle", "none"], font: ["clean", "bold", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
     market: { pal: [["#E6EBE1", "#26392E", "#A5823A"], ["#F1E6E2", "#572228", "#A9844C"]], fx: ["twinkle", "snow", "none"], font: ["serif", "bold"], em: ["🎄", "🎁", "🍵", "✨"] },
     terminal: { pal: [["#E8ECEA", "#22423A", "#8A6A22"], ["#E8E9EE", "#29304A", "#4E7A5A"]], fx: ["scanlines", "none"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
     pixel: { pal: [["#EAEEE2", "#26324A", "#B4495B"], ["#F1E9DC", "#2E2442", "#3D6A4C"]], fx: ["pixels", "none"], font: ["pixel", "mono"], em: ["👾", "🎮", "🕹️", "🎲"] },

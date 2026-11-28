@@ -288,7 +288,9 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
         at: last?.at || 0, unread: A.state?.muted ? 0 : unread, unreadMuted: A.state?.muted ? unread : 0, muted: !!A.state?.muted, role: W.role, readOnly: !A.write, upcoming: !W.ev.date || W.ev.date >= today, cancelled: !!W.ev.cancelled,
       }); }
     const up = out.filter((c) => c.upcoming).sort((a, b) => (a.date || "9").localeCompare(b.date || "9") || b.at - a.at), past = out.filter((c) => !c.upcoming).sort((a, b) => b.at - a.at || String(b.date).localeCompare(String(a.date)));
-    return { chats: [...up, ...past], unread: out.filter((c) => c.unread > 0).length, messages: out.reduce((n, c) => n + (c.unread || 0), 0), signedIn: !!u };
+    // direct messages share the list (server/dm.js): their rows, the requests waiting, and links to the threads that live elsewhere
+    let D = { dms: [], requests: [] }, L2 = []; if (u) { try { D = app.locals.dm?.rows(u.email) || D; L2 = app.locals.dm?.links(u) || []; } catch (e) { console.warn("[chat] dm rows", e?.message); } }
+    return { chats: [...up, ...past], dms: D.dms, requests: D.requests, links: L2, unread: out.filter((c) => c.unread > 0).length + D.dms.filter((c) => c.unread > 0).length, messages: out.reduce((n, c) => n + (c.unread || 0), 0) + D.dms.reduce((n, c) => n + (c.unread || 0), 0), signedIn: !!u };
   }
   app.post("/api/chats", small, (req, res) => { res.set("Cache-Control", "private, no-store"); res.json(inbox(req, req.body?.proofs)); });
   app.get("/api/chats", (req, res) => { res.set("Cache-Control", "private, no-store"); res.json(inbox(req, [])); });
@@ -304,6 +306,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
       for (const m of byWs.get(W.ws).get(eventId) || []) { if ((m.at || 0) <= readAt || legacyMk(m, W.ws) === W.mk || !visible(m, W, blocked)) continue; n++;
         if (!latest || m.at > latest.at) latest = { chat: eventId, title: W.ev.pubTitle || W.ev.name || "Event", by: first(m.by) || "Someone", text: m.kind === "photo" ? "" : String(m.text || "").replace(/\s+/g, " ").slice(0, 140), photo: m.kind === "photo", at: m.at || 0 }; }
       if (n) { chats++; messages += n; } }
+    if (u) { try { const D = app.locals.dm?.counts(u.email); if (D) { chats += D.chats; messages += D.messages; if (D.latest && (!latest || D.latest.at > latest.at)) latest = D.latest; } } catch {} } // direct messages count too (server/dm.js)
     return { chats, messages, latest, signedIn: !!u };
   }
   // someone with a visible tab polls every 45 seconds or so: a chat message that arrives then is a pop-up, not a push

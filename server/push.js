@@ -24,7 +24,7 @@ const pem = (v) => { const s = String(v || "").trim().replace(/\\n/g, "\n"); if 
 
 // What people can turn off, and which bell kinds belong to each (anything else counts as "replies").
 export const PUSH_KINDS = {
-  replies: { label: "Replies and messages", kinds: ["reply", "msg", "faq", "inquiry", "booked", "order", "help", "support"] },
+  replies: { label: "Replies and messages", kinds: ["reply", "msg", "dm" /* direct messages (server/dm.js) */, "faq", "inquiry", "booked", "order", "help", "support"] },
   in: { label: "You're in, and event updates", kinds: ["letin", "itson", "invite", "ifwith", "table", "sametable"] },
   spots: { label: "A spot opened up", kinds: ["waitlist", "drop"] },
   reminders: { label: "Reminders", kinds: ["prep", "kudos", "after", "reminded", "saved", "alert", "digest", "nudge", "payremind", /* delight after (server/delightafter.js): */ "dayof", "hostcheck", "aftersum", "scrapbook", "keepintouch"] },
@@ -122,7 +122,7 @@ export function makePush(store, env = process.env) {
   }
 
   // the bell -> push: when someone's inbox gets new unread items, push the newest (at most 3 at once)
-  const titleFor = (n) => ({ reply: "New reply", msg: "New message", letin: "You're in", waitlist: "A spot opened up", photos: "New photos", prep: "Reminder", kudos: "How was it?", friend: "New friend", itson: "It's on", alert: "Something new near you", nudge: "Potto" })[n.kind] || "Pottery Lab";
+  const titleFor = (n) => ({ reply: "New reply", msg: "New message", dm: "New message", letin: "You're in", waitlist: "A spot opened up", photos: "New photos", prep: "Reminder", kudos: "How was it?", friend: "New friend", itson: "It's on", alert: "Something new near you", nudge: "Potto" })[n.kind] || "Pottery Lab";
   const strip = (s) => String(s || "").replace(/^[\p{Extended_Pictographic}️\s]+/u, "");
   async function fromInbox(path) {
     const d = store.get(path)?.data; if (!d?.email || !Array.isArray(d.list)) return;

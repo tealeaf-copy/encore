@@ -168,6 +168,17 @@ calendar to be a link (it is a sheet now), and journey 4 expects the + sheet's o
 
 ## Results
 
+On main at "About: a 'What it is' section under the hero" (trends, Paid Insights and the homepage tagline on board),
+after the glitch fixes were ported on top:
+
+- `node scripts/click-audit.mjs --width both`: 0 issues on 4,133 taps (1,230 over the 60 a page cap were not tapped),
+  journeys 8/8. The first pass found a host's Library failing to load (500) and one focus slip in the drop chooser;
+  both are fixed.
+- `node scripts/crawl-pages.mjs --width 390` and `--width 1280`: 0 problems.
+- `npm test`: 1,580 tests, all passing.
+
+Earlier run:
+
 On main at "Leaderboard: How it's ranked and the footer wait for the board" (branch `qa-audit-port-on-b0a4ecb`), a quiet machine:
 
 - `node scripts/click-audit.mjs --width 390`: 0 issues on 1,593 taps across 90 pages and sheets (167 controls over the 60 a page cap were not tapped).

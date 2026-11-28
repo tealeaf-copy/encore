@@ -152,12 +152,14 @@ test("a poll counts one vote each and shows results after; a slider the same; re
   assert.equal(bell().length, 1, "one note, not one per tap"); assert.equal(bell()[0].text, "2 people reacted to your story"); assert.equal(bell()[0].link, "/feed?st=" + P.st);
   // a reply and a question's answer reach the author's inbox, and only the author can read them
   assert.equal((await post(`/api/story/${P.st}/reply`, { text: "   " }, U.zed.cookie)).status, 400);
-  assert.equal((await post(`/api/story/${P.st}/reply`, { text: "Save me a seat <b>please</b>, call 212 555 0142" }, U.zed.cookie)).status, 200); assert.equal((await post(`/api/story/${P.st}/reply`, { text: "and one for Jun" }, U.zed.cookie)).status, 200);
-  const re = bell().filter((n) => /^st-re-/.test(n.key)); assert.equal(re.length, 1, "two replies, one note"); assert.equal(re[0].text, "Zed sent 2 replies to your story");
+  assert.equal((await post(`/api/story/${P.st}/reply`, { text: "Save me a seat <b>please</b>, call 212 555 0142" }, U.zed.cookie)).status, 200); 
+  // a reply is a direct message now (server/dm.js, test/dm.test.js). Zed has no tie to Mai, so his is a request: one message until she accepts, and the bell says who, not what
+  const again = await post(`/api/story/${P.st}/reply`, { text: "and one for Jun" }, U.zed.cookie); assert.equal(again.status, 403); assert.match((await again.json()).message, /once Mai accepts/);
+  assert.equal(bell().filter((n) => /^st-re-/.test(n.key)).length, 0, "no second kind of note for a reply"); const dm = X.inbox(U.mai.email).filter((n) => n.kind === "dm"); assert.equal(dm.length, 1); assert.equal(dm[0].title, "Zed New wants to send you a message"); assert.equal(dm[0].link, "/chats/dm/requests");
   assert.equal((await post(`/api/story/${P.st}/answer`, { sticker: "q", text: "What should I bring?" }, U.linh.cookie)).status, 200); assert.equal((await post(`/api/story/${P.st}/answer`, { sticker: "p", text: "x" }, U.linh.cookie)).status, 404);
   assert.equal(bell().find((n) => /^st-q-/.test(n.key)).text, 'Linh answered "Ask me something": What should I bring?');
   assert.equal(X.inbox(U.zed.email).filter((n) => n.kind === "story").length, 0); assert.equal(X.inbox(U.linh.email).filter((n) => n.kind === "story").length, 0);
-  const I = await getJ(`/api/story/${P.st}/insights`, U.mai.cookie); assert.deepEqual(I.replies.map((r) => [r.name, r.text]).reverse(), [["Zed", "Save me a seat please , call …"], ["Zed", "and one for Jun"]]);
+  const I = await getJ(`/api/story/${P.st}/insights`, U.mai.cookie); assert.deepEqual(I.replies.map((r) => [r.name, r.text]).reverse(), [["Zed", "Save me a seat please , call …"]]);
   assert.deepEqual(I.stickers.find((s) => s.id === "q").answers.map((a) => [a.name, a.text]), [["Linh", "What should I bring?"]]); assert.ok(!JSON.stringify(I).includes("@example.com"), "names only, never an address");
   for (const who of [U.zed, U.linh, U.jun]) assert.equal((await get(`/api/story/${P.st}/insights`, who.cookie)).status, 404, "insights are the author's");
   assert.equal((await get(`/api/story/${P.st}/insights`)).status, 401);
@@ -169,7 +171,7 @@ test("seen by: counted once per person, for the author only", async () => {
   assert.equal((await (await post("/api/story/seen", { ids: [P.st, P.st, "nope"] }, U.zed.cookie)).json()).seen, 0, "Zed voted and replied: already counted"); assert.equal((await (await post("/api/story/seen", { ids: [P.st, P.st, "nope"] }, U.gus.cookie)).json()).seen, 1); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.gus.cookie)).json()).seen, 0, "once"); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.zed.cookie)).json()).seen, 0);
   await post("/api/story/seen", { ids: [P.st] }, U.linh.cookie); assert.equal((await (await post("/api/story/seen", { ids: [P.st] }, U.mai.cookie)).json()).seen, 0, "your own look doesn't count");
   const I = await getJ(`/api/story/${P.st}/insights`, U.mai.cookie); assert.equal(I.count, 4); assert.deepEqual(I.seen.map((s) => s.name).sort(), ["Gus", "Jun", "Linh", "Zed"], "Jun voted, so Jun saw it"); assert.equal(I.seen.find((s) => s.name === "Zed").react, "😍");
-  const own = (await ring("mai-sc", U.mai.cookie)).items.find((i) => i.st?.sid === P.st).st; assert.equal(own.seen, 4); assert.equal(own.replies, 3);
+  const own = (await ring("mai-sc", U.mai.cookie)).items.find((i) => i.st?.sid === P.st).st; assert.equal(own.seen, 4); assert.equal(own.replies, 2);
   const theirs = (await ring("mai-sc", U.zed.cookie)).items.find((i) => i.st?.sid === P.st).st; assert.equal(theirs.seen, undefined); assert.equal(theirs.replies, undefined); assert.equal(theirs.myReact, "😍");
 });
 
@@ -364,14 +366,14 @@ for (const W of [390, 1280]) test(`browser at ${W}: make a story from the ring, 
     assert.deepEqual(await audit(page, ".fv-sv"), [], "the viewer"); await shot(page, "sv-viewer");
     await tap(page, '.fv-sv [data-sk-vote="0"]'); await page.waitForSelector(".fv-sv .sk-res.me"); assert.match(await page.$eval(".fv-sv .sk-res.me", (e) => e.textContent), /Broth\s*100%/, "results after voting"); assert.equal(await page.$(".fv-sv [data-sk-vote]"), null, "one vote");
     await tap(page, ".fv-sv [data-react]"); await page.waitForSelector(".fv-sv [data-rx]:not([hidden])"); await tap(page, '.fv-sv [data-r="🔥"]'); await page.waitForFunction(() => /will see your/.test(document.querySelector("[data-sv-msg]").textContent));
-    await page.fill("#svRe", "Save me a bowl"); await page.keyboard.press("Enter"); await page.waitForFunction(() => /Sent to Ana/.test(document.querySelector("[data-sv-msg]").textContent)); await shot(page, "sv-replied");
+    await page.fill("#svRe", "Save me a bowl"); await page.keyboard.press("Enter"); await page.waitForFunction(() => /Sent as a request\. Ana sees it under Requests\./.test(document.querySelector("[data-sv-msg]")?.textContent || "")); await shot(page, "sv-replied"); // Ben has no tie to Ana yet, so his reply is a message request (server/dm.js)
     assert.ok(await page.$(".fv-sv #svRe"), "typing a reply never moved the story on");
     await Promise.all([page.waitForURL((u) => new URL(u).pathname === "/e/" + EV, { timeout: 15000 }), tap(page, ".fv-sv [data-sk] a.sk-card")]);
     // the Share link: anyone who may see it lands on the story
     await page.goto(srv.base + "/feed?st=" + R.ids[1], { waitUntil: "domcontentloaded" }); await page.waitForSelector(".fv-sv .fv-sv-box img", { timeout: 20000 }); assert.equal(await page.$eval(".fv-sv .fv-sv-box img", (i) => i.getAttribute("src")), srv.store.get("system/pstory-" + R.ids[1]).data.url); await ctx.close();
 
     // ---- Ana again: who saw it, and the reply
-    assert.equal(X.inbox(ana.email).filter((n) => n.kind === "story").length, 2, "one note for the reaction, one for the reply");
+    assert.equal(X.inbox(ana.email).filter((n) => n.kind === "story").length, 1, "one note for the reaction"); assert.equal(X.inbox(ana.email).filter((n) => n.kind === "dm").length, 1, "and the reply as a message request");
     ctx = await ctxFor(ana); page = await ctx.newPage(); watch(page); await page.goto(srv.base + "/feed?st=" + R.ids[0], { waitUntil: "domcontentloaded" }); await page.waitForSelector(".fv-sv .sv-sheet .sv-list", { timeout: 20000 }); // the bell note's link opens the story with what came back
     const ins = await page.$eval(".fv-sv .sv-sheet", (s) => s.innerText); assert.match(ins, /Seen by 1/i); assert.match(ins, /Ben\s*🔥/); assert.match(ins, /Ben\s+Save me a bowl/); assert.match(ins, /Broth\s+1 \(100%\)/); assert.deepEqual(await audit(page, ".fv-sv .sv-sheet"), [], "seen by"); await shot(page, "sv-seen-by");
     await tap(page, ".fv-sv .sv-sheet [data-x]"); assert.match(await page.$eval(".fv-sv [data-seen]", (b) => b.textContent), /Seen by 1 · 1 reply/); assert.ok(await page.$(".fv-sv [data-del]"), "Delete on your own"); assert.equal(await page.$(".fv-sv #svRe"), null, "no reply box on your own story");

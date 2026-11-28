@@ -9901,7 +9901,7 @@ if(typeof inviteText==="function"){ const _it=inviteText; inviteText=function(d)
 // ==================================================================
 { const _opM=openPerson; openPerson=async function(eventId,key){ const r=await _opM.apply(this,arguments); try{ const sheet=document.querySelector("#ppBg .pp"); if(!sheet||sheet.querySelector(".pp-dm")||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return r;
       const nm=(sheet.querySelector("h3")?.textContent||"them").trim().split(/\s+/)[0];
-      const w=document.createElement("div"); w.className="pp-sec"; w.innerHTML=`<button class="btn pp-dm" type="button" style="width:100%;min-height:44px" data-dm-event="${esc(eventId)}" data-dm-pkey="${esc(key)}">Message ${esc(nm)}</button>`; sheet.appendChild(w);
+      const w=document.createElement("div"); w.className="pp-sec"; w.innerHTML=`<button class="btn ghost pp-dm" type="button" style="width:100%;min-height:44px;background:#fff!important;color:var(--pl-ink)!important;border:1.5px solid var(--pl-ink)!important;box-shadow:none" data-dm-event="${esc(eventId)}" data-dm-pkey="${esc(key)}">Message ${esc(nm)}</button>`; sheet.appendChild(w);
       w.querySelector(".pp-dm").onclick=function(){ const b=this, go=()=>window.PLDMStart.go(b); if(window.PLDMStart) return go(); const t=document.createElement("script"); t.src="/dmstart.js"; t.onload=go; document.head.appendChild(t) } }catch(err){ console.warn(err) } return r } }
 
 // ==================================================================

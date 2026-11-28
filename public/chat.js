@@ -70,7 +70,7 @@
   // a direct message: a round face where an event chat has its square cover, and "Direct message" under the last line
   function dmRowHTML(c) { const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0, req = c.state === "request_in";
     return `<a class="ch-row ch-dm${un ? " unread" : ""}" href="${hrefOf(c.id)}" data-id="${esc(c.id)}"${cur} aria-label="${esc(c.title)}, direct message${un ? `, ${c.unread} new` : ""}"><span class="ch-thumb round">${av(c.face, "big")}</span>
-      <span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname">${esc(c.title)}</span><span class="ch-rtime ch-mono">${esc(c.at ? rel(c.at) : "")}</span></span>
+      <span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname" title="${esc(c.title)}">${esc(c.title)}</span><span class="ch-rtime ch-mono">${esc(c.at ? rel(c.at) : "")}</span></span>
       <span class="ch-rlast"><span>${c.last ? `${c.last.by ? esc(c.last.by) + ": " : ""}${esc(c.last.text)}` : ""}</span>${c.muted ? G.mute.replace('class="ch-ic ', 'class="ch-ic ch-muted ') : ""}${un && !req ? `<b class="ch-n">${c.unread > 99 ? "99+" : c.unread}</b>` : ""}</span>
       <span class="ch-when"><span class="ch-kind">${req ? "Request" : "Direct message"}</span>${c.state === "request_out" ? " · Waiting for them to accept" : ""}</span></span></a>`; }
   function rowHTML(c) { if (c.dm) return dmRowHTML(c); const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0;

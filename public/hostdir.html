@@ -65,7 +65,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   const FIRST = 6, STEP = 12; // design review: six first, then "See all" reveals twelve at a time
   const U = new URLSearchParams(location.search); let H = [], kind = OLD[U.get("type")] || U.get("type") || "all", city = U.get("city") || "", q = (U.get("q") || "").toLowerCase(), shown = FIRST;
   let mine = ""; try { mine = localStorage.getItem("encore.city") || ""; } catch {}
-  const sync = () => { const P = new URLSearchParams(); if (kind !== "all") P.set("type", kind); if (city) P.set("city", city); if (q) P.set("q", q); history.replaceState(null, "", "/hosts" + (P.toString() ? "?" + P : "")); };
+  const sync = () => { const P = new URLSearchParams(); if (kind !== "all") P.set("type", kind); if (city) P.set("city", city); if (q) P.set("q", q); const v = new URLSearchParams(location.search).get("view"); if (v === "teamup") P.set("view", v); /* the Team up tab keeps its place */ history.replaceState(null, "", "/hosts" + (P.toString() ? "?" + P : "")); };
   const groupsOf = (h) => { const words = { title: [h.name, h.tagline, (h.tags || []).join(" "), (h.experiences || []).map((x) => x.name).join(" ")].join(" "), why: h.bio || "" }; const K = window.EventArt ? window.EventArt.kindsOf(words) : []; return new Set(K.map((k) => GROUP[k]).filter(Boolean)); };
   const cityOf = (h) => String(h.city || "").trim();
   const drawCity = () => { const b = $("#city"); if (!b) return; $("#cityName").textContent = city || "Anywhere"; b.classList.toggle("on", !!city); b.setAttribute("aria-label", `City: ${city || "Anywhere"}. Change city`); };

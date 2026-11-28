@@ -26,19 +26,20 @@
 /* the visual: a tinted card with a phone-shaped card rising out of it, and Potto sitting on its edge */
 .ds-visw{position:relative;margin:38px 0 0}.ds-tog+.ds-visw{margin-top:42px}
 .ds-potto{position:absolute;right:18px;top:-36px;width:64px;height:61px;z-index:2;pointer-events:none}.ds-potto>span{position:absolute;left:0;top:0}
-.ds-vis{position:relative;height:clamp(212px,30dvh,272px);border-radius:var(--ds-r);background:var(--ds-tint);overflow:hidden;padding:44px 18px 0;transition:background-color .2s}
+.ds-vis{position:relative;display:flex;flex-direction:column;height:272px;border-radius:var(--ds-r);background:var(--ds-tint);overflow:hidden;padding:42px 18px 16px;transition:background-color .2s}
 .ds-vis.drag{box-shadow:inset 0 0 0 2px var(--ds-acc)}
-.ds-tall .ds-vis{height:clamp(228px,calc(100dvh - 470px),380px)}.ds-tall .ds-ph{font-size:15px;max-width:320px;padding:18px 18px 0}.ds-tall .ds-ph .t{font-size:19px}.ds-tall .ds-fl small,.ds-tall .ds-hint{font-size:14px}.ds-tall .ds-tile b,.ds-tall .ds-tile small{font-size:14px}.ds-tall .ds-chip{font-size:15px}
-.ds-s2 .ds-vis{height:216px}.ds-s2 .ds-tp{aspect-ratio:4/3}
+.ds-grow .ds-vis{height:auto;min-height:272px}.ds-tall .ds-vis{height:auto;min-height:clamp(228px,calc(100dvh - 470px),380px)}.ds-tall .ds-ph{font-size:15px;max-width:320px;padding:18px}.ds-tall .ds-ph .t{font-size:19px}.ds-tall .ds-fl small,.ds-tall .ds-hint{font-size:14px}.ds-tall .ds-tile b,.ds-tall .ds-tile small{font-size:14px}.ds-tall .ds-chip{font-size:15px}
+.ds-chv .ds-vis{min-height:clamp(200px,calc(100dvh - 500px),340px)}.ds-ln b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.ds-bg .ds p#dsKind{min-height:2.8em;max-width:36ch}
 .ds-ex{position:absolute;left:12px;top:10px;z-index:1;min-height:28px;display:inline-flex;align-items:center;gap:4px;padding:0 12px;border-radius:var(--ds-pill);border:0;background:rgba(255,255,255,.86);color:var(--ds-ink);font:600 13px/1 var(--ds-text)}
 button.ds-ex{cursor:pointer;min-height:44px;top:2px;left:6px;background:transparent;padding:0 6px}button.ds-ex span{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 6px 0 12px;border-radius:var(--ds-pill);background:rgba(255,255,255,.86)}.ds-ex svg{width:14px;height:14px}
-.ds-ph{position:relative;display:block;width:100%;max-width:292px;height:100%;margin:0 auto;padding:14px 14px 0;border-radius:22px 22px 0 0;background:#fff;box-shadow:0 8px 28px rgba(31,26,23,.12);font-size:13px;line-height:1.3;text-align:left;overflow:hidden}
-.ds-ph b{font-weight:600}.ds-ph .t{display:block;font:600 16px/1.2 var(--ds-text);overflow-wrap:anywhere}.ds-ph .s{display:block;color:var(--ds-grey);margin-top:2px}
+.ds-ph{position:relative;display:block;flex:none;width:100%;max-width:292px;margin:auto;padding:14px;border-radius:22px;background:#fff;box-shadow:0 8px 28px rgba(31,26,23,.12);font-size:14px;font-weight:400;line-height:1.3;text-align:left;overflow:hidden}
+.ds-ph b{font-weight:600}.ds-ph .t{display:block;font:600 17px/1.2 var(--ds-text);overflow-wrap:anywhere}.ds-ph .s{display:block;color:var(--ds-grey);margin-top:2px}
 .ds-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
 .ds-tile{display:block;min-width:0}.ds-tp{display:grid;place-items:center;aspect-ratio:1;border-radius:14px;background:#F1ECE2;overflow:hidden}.ds-tp img{width:100%;height:100%;object-fit:cover;display:block}.ds-tp svg{width:70%;height:70%}
-.ds-tile b{display:block;margin-top:6px;font-size:12px;line-height:1.25;overflow-wrap:anywhere}.ds-tile small{display:block;font-size:12px;color:var(--ds-grey);font-variant-numeric:tabular-nums}
+.ds-tile b{display:block;margin-top:6px;font-size:13px;line-height:1.25;overflow-wrap:anywhere}.ds-tile small{display:block;font-size:13px;font-weight:400;color:var(--ds-grey);font-variant-numeric:tabular-nums}
+.ds-lis{display:grid;gap:6px;margin-top:10px}.ds-li{display:flex;align-items:center;gap:10px;min-width:0}.ds-li .ds-tp{flex:none;width:44px;height:44px;border-radius:12px}.ds-ln{flex:1;min-width:0}.ds-ln b{font-size:14px;line-height:1.25;overflow-wrap:anywhere}.ds-ln small{display:block;font-size:13px;font-weight:400;color:var(--ds-grey)}.ds-lp{flex:none;min-width:36px;text-align:right;font-size:14px;font-variant-numeric:tabular-nums}.ds-lp .ds-bar{width:36px;margin-left:auto}.ds-ln .ds-bar{width:70%}
 .ds-bar{display:block;height:8px;width:80%;border-radius:4px;background:#ECE7DC;margin:5px 0 3px}.ds-bar.s{width:40%}
-.ds-hint{display:block;margin-top:10px;color:var(--ds-grey);font-size:13px;text-align:center}
+.ds-hint{display:block;margin-top:10px;color:var(--ds-grey);font-size:14px;font-weight:400;text-align:center}
 .ds-fakeb{display:flex;align-items:center;justify-content:center;gap:6px;min-height:36px;margin-top:10px;border-radius:var(--ds-pill);background:var(--ds-acc);color:#fff;font:600 14px var(--ds-text);border:0;width:100%}
 button.ds-fakeb{cursor:pointer;min-height:44px}.ds-fakeb svg{width:18px;height:18px;flex:none}.ds-fakeb.done{background:#E3EFE6;color:#245A38}.ds-fakeb.q{background:#fff;color:var(--ds-ink);box-shadow:inset 0 0 0 1.5px var(--ds-ink)}
 .ds-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -86,18 +87,18 @@ button.ds-fakeb{cursor:pointer;min-height:44px}.ds-fakeb svg{width:18px;height:1
 .ds-menu-bg{position:absolute;inset:0;z-index:5;background:rgba(27,29,28,.4);display:flex;align-items:flex-end}.ds-menu{width:100%;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;background:var(--ds-bg);display:grid;gap:8px}
 .ds-menu p{margin:4px 4px 6px;font:600 17px var(--ds-text)}.ds-menu button{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 18px;border:0;border-radius:18px;background:#fff;color:var(--ds-ink);font:600 16px var(--ds-text);cursor:pointer;text-align:left}.ds-menu button.q{justify-content:center;background:transparent}
 /* the tutorial and chooser mocks */
-.ds-flow{display:grid;gap:8px;margin-top:8px}.ds-fl{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:#F6F2EA}.ds-fl i{flex:none;width:32px;height:32px;border-radius:10px;background:#fff;display:grid;place-items:center;font-style:normal}.ds-fl i svg{width:22px;height:22px}.ds-fl span{min-width:0}.ds-fl small{display:block;color:var(--ds-grey);font-size:12px}
+.ds-flow{display:grid;gap:8px;margin-top:8px}.ds-fl{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:#F6F2EA}.ds-fl i{flex:none;width:32px;height:32px;border-radius:10px;background:#fff;display:grid;place-items:center;font-style:normal}.ds-fl i svg{width:22px;height:22px}.ds-fl span{min-width:0}.ds-fl small{display:block;color:var(--ds-grey);font-size:13px;font-weight:400}
 .ds-dots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:10px}.ds-dots span{display:grid;place-items:center;aspect-ratio:1;border-radius:12px;background:#F8E6DA}.ds-dots span svg{width:78%;height:78%}.ds-dots span.gone{background:#F1ECE2}.ds-dots span.gone svg{opacity:.18}
-.ds-av{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;font:600 12px var(--ds-text);color:#1B1D1C;flex:none}
+.ds-av{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;font:600 13px var(--ds-text);color:#1B1D1C;flex:none}
 .ds-cov{display:grid;place-items:center;height:74px;margin:-14px -14px 10px;background:#F6EBC4}.ds-cov svg{height:58px;width:58px}
-.ds-rep{display:flex;align-items:center;gap:8px;margin-top:8px}.ds-kind p{margin:14px 4px 0;text-align:center;font-size:17px;line-height:1.4;text-wrap:pretty}.ds-kind p+p{margin-top:4px;font-size:15px;color:var(--ds-grey)}
+.ds-rep{display:flex;align-items:center;gap:8px;margin-top:8px}
 .ds-step{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:4px 4px 4px 12px;border-radius:14px;background:#F6F2EA}.ds-step span{display:flex;align-items:center;gap:2px}.ds-step button{width:44px;height:44px;border:0;border-radius:50%;background:#fff;font:600 20px var(--ds-text);cursor:pointer;color:var(--ds-ink)}.ds-step b{min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
 /* the cover picker inside More options keeps the drop's own cover frame */
 .ds .dp-cov{border:0;border-radius:16px}
 @media (prefers-reduced-motion:no-preference){
   .ds-bg:not(.ds-again) .ds{animation:ds-up .18s ease-out both}
-  .ds-pane.f{animation:ds-f .16s ease-out both}.ds-pane.b{animation:ds-b .16s ease-out both}
-  .ds-tile.pop .ds-tp,.ds-pop{animation:ds-pop .32s cubic-bezier(.3,1.4,.5,1) both}
+  .ds-pane.ds-fwd{animation:ds-f .16s ease-out both}.ds-pane.ds-bwd{animation:ds-b .16s ease-out both}
+  .ds-tile.pop .ds-tp,.ds-li.pop .ds-tp,.ds-pop{animation:ds-pop .32s cubic-bezier(.3,1.4,.5,1) both}
   .ds-seq>*{animation:ds-in .3s ease-out both}.ds-seq>:nth-child(2){animation-delay:.25s}.ds-seq>:nth-child(3){animation-delay:.5s}.ds-seq>:nth-child(4){animation-delay:.75s}
   .ds-go:active,.ds-sec:active{transform:scale(.985)}
 }
@@ -111,5 +112,9 @@ body:has(#dpSheet.ds-bg) #dpToast{bottom:auto;top:calc(64px + env(safe-area-inse
 .ds #dpPayM{min-height:112px;margin:0 0 12px}.ds #dpPayM[hidden]{display:none}.ds #dpPayM>*{border:0!important;border-radius:20px!important;background:#fff!important;box-shadow:0 1px 0 rgba(31,26,23,.04),0 4px 18px rgba(31,26,23,.06);padding:16px!important;margin:0!important}
 .ds .ds-f .ds-money input:focus{outline:none!important;box-shadow:none!important;border:0!important}
 .ds-url{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:20px;background:#fff;box-shadow:0 1px 0 rgba(31,26,23,.04),0 4px 18px rgba(31,26,23,.06);margin:0 0 4px}.ds-url span{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}.ds-url .ds-sm{flex:none;background:#F1ECE2}
-@media (max-height:700px){.ds-vis{padding-top:36px}.ds-tp{aspect-ratio:4/3}}
+@media (max-height:700px){.ds-vis{padding-top:38px;padding-bottom:12px}.ds-tiles .ds-tp{aspect-ratio:4/3}}
 .ds #dpPayM .pm-ln{min-height:44px;display:inline-flex;align-items:center;font-size:16px}
+/* an item's extra photos: big enough to tap, in the same soft shapes */
+.ds .dp-thumbs{gap:10px;margin:0 0 10px}.ds .dp-th,.ds .dp-addph{width:104px;height:104px;border-radius:14px}.ds .dp-th{border:0}.ds .dp-th button{width:44px;height:44px;border-radius:50%}.ds .dp-th .main{left:6px;top:6px;padding:5px 9px;border-radius:999px;font:600 13px/1 var(--ds-text);text-transform:none}
+.ds .dp-addph{gap:2px;align-content:center;border-color:var(--ds-edge);background:var(--ds-bg);color:var(--ds-ink);font:600 14px/1.2 var(--ds-text)}
+.ds input::placeholder,.ds textarea::placeholder{color:#6F736F;opacity:1}

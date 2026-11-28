@@ -43,7 +43,9 @@ test("the tutorial is offered before a first drop, once a person, and the setups
   for (const [f, t] of [["dropsetup.js", ds], ["dropsetup.css", css]]) { assert.doesNotMatch(t, /—/, f); assert.doesNotMatch(t, /\b(elevate|curated|seamless|unlock|marketplace|magical)\b/i, f); assert.doesNotMatch(t, /\b(claude|gpt|gemini|sonnet|opus|haiku)\b/i, f); }
   assert.match(ds, /A batch is how many you're making this time\./); assert.doesNotMatch(ds, /this batch/);
   // motion is opt-in, and the bottom button is a sibling of the scroll area, never a layer over it
-  assert.match(css, /@media \(prefers-reduced-motion:no-preference\)\{[\s\S]*ds-pane\.f\{animation:ds-f \.16s/); assert.doesNotMatch(css.split("@media (prefers-reduced-motion:no-preference)")[0], /animation:/);
+  assert.match(css, /@media \(prefers-reduced-motion:no-preference\)\{[\s\S]*ds-pane\.ds-fwd\{animation:ds-f \.16s/); assert.doesNotMatch(css.split("@media (prefers-reduced-motion:no-preference)")[0], /animation:/);
+  // class names stay our own: the app shell styles a bare ".f" as a bold 13px label, which once made every explanation here bold
+  assert.doesNotMatch(ds, /classList\.add\([^)]*"[a-z]"\)/); assert.doesNotMatch(css, /\.ds-pane\.[a-z]\{/);
   assert.match(css, /\.ds-ft\{flex:none;/); assert.doesNotMatch(css, /\.ds-ft\{[^}]*position:(sticky|fixed|absolute)/);
 });
 
@@ -66,9 +68,13 @@ for (const [W, H] of [[390, 844], [390, 664]]) test(`in a browser at ${W}x${H}: 
           const vis = e.type === "date" ? e.parentNode : e; const vb = box(vis); if (vb.height < 43.5 && !e.closest(".ds-ph")) out.push(`short (${vb.height}): ${tag}`); if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.tagName) && e.type !== "date" && parseFloat(getComputedStyle(e).fontSize) < 16) out.push("small text: " + tag); }
         sc.scrollTop = 1e6; await new Promise((r) => setTimeout(r, 30)); const last = ctl[ctl.length - 1], lastOk = !last || box(last).bottom <= box(sc).bottom + 1; sc.scrollTop = 0;
         return { hPx: h ? parseFloat(getComputedStyle(h).fontSize) : 0, hText: h?.textContent || "", sub: sub?.textContent || "", subPx: sub ? parseFloat(getComputedStyle(sub).fontSize) : 0, vis: d.querySelectorAll(".ds-vis").length, primaries: go.length, goW: G?.width || 0, goH: G?.height || 0, dW: box(d).width, scBottom: S.bottom, ftTop: F.top, ftBottom: F.bottom, vh: innerHeight, out, lastOk,
+          fonts: [...d.querySelectorAll(".ds-h,.ds-sub,.ds-note,.ds-help,.ds-say,.ds-made,.ds-hint,.ds-f small,.ds-ph .s,.ds-f>span:first-child,.ds-go,input:not([type=file]):not([type=date]),select,textarea")].filter((e) => e.offsetParent && (e.textContent.trim() || e.matches("input,select,textarea"))).map((e) => { const c = getComputedStyle(e), k = e.matches(".ds-h") ? "h" : e.matches(".ds-go") ? "go" : e.matches(".ds-f>span:first-child") ? "label" : e.matches("input,select,textarea") ? "field" : "body"; return [k, c.fontFamily.split(",")[0].replace(/"/g, ""), parseFloat(c.fontSize), +c.fontWeight, e.textContent.trim().slice(0, 24)]; })
+            .filter(([k, fam, px, w]) => fam !== "IBM Plex Sans" || (k === "h" ? px < 28 || w !== 600 : k === "go" ? px !== 18 || w !== 600 : k === "label" ? px !== 15 || w !== 600 : k === "field" ? px !== 16 || w !== 400 : w !== 400 || px < 13 || px > 17)),
+          mock: (() => { const ph = d.querySelector(".ds-vis .ds-ph"), v = d.querySelector(".ds-vis"); if (!ph) return 0; return Math.max(0, Math.round(box(ph).bottom - box(v).bottom), ...[...ph.querySelectorAll("*")].filter((e) => e.offsetParent).map((e) => Math.round(box(e).bottom - box(ph).bottom))); })(),
           sideways: document.documentElement.scrollWidth - innerWidth, wide: sc.scrollWidth - sc.clientWidth, cut: [...d.querySelectorAll(".ds-h,.ds-sub,.ds-go,.ds-sec,.ds-f>span,.ds-tog button,.ds-tabs button")].filter((e) => e.offsetParent && e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.trim()) }; });
       if (head) { assert.ok(r.hPx >= 28, `${name}: the headline is ${r.hPx}px`); assert.ok(r.hText.length > 5, name + ": a headline"); assert.ok(r.sub.length > 20 && r.subPx >= 16, name + ": a grey line under it"); }
-      if (visual) assert.equal(r.vis, 1, name + ": one visual");
+      if (visual) { assert.equal(r.vis, 1, name + ": one visual"); assert.equal(r.mock, 0, name + ": the visual's card is whole, nothing cut off inside it"); }
+      assert.deepEqual(r.fonts, [], name + ": headings are the only heading-weight text; explanations are the regular body face");
       assert.equal(r.primaries, 1, name + ": one primary"); assert.ok(r.goW >= r.dW - 34 && r.goH >= 52, `${name}: the primary is full width and tall (${r.goW} of ${r.dW}, ${r.goH})`);
       assert.ok(r.scBottom <= r.ftTop + 0.5, name + ": the scroll area ends above the button"); assert.ok(r.ftBottom <= r.vh + 0.5, name + ": the button is on screen");
       assert.deepEqual(r.out, [], name + ": every control scrolls clear, is 44px and reads at 16px"); assert.ok(r.lastOk, name + ": the last control scrolls fully into view");
@@ -76,11 +82,13 @@ for (const [W, H] of [[390, 844], [390, 664]]) test(`in a browser at ${W}x${H}: 
     const visText = () => p.locator("#dsVis").innerText();
 
     // ---- the chooser: one screen, three choices one tap each, a different demo for each, one Start ----
+    // from here on nothing may jump: shifts are counted from the moment a setup opens (the app's own first paint is test/perf-robustness's)
+    await p.waitForTimeout(600); await p.evaluate(() => { window.__shift = []; new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__shift.push([+e.value.toFixed(4), (e.sources || []).map((x) => x.node?.className || x.node?.nodeName || "?").join(",")]); }).observe({ type: "layout-shift" }); });
     await p.evaluate(() => window.EncoreDrop.choose({ event: () => (window.__ev = 1) })); await p.waitForSelector("#dsStart");
     await screen("chooser"); assert.equal(await p.locator("#dpSheet [data-kind]").count(), 3); const demos = new Set();
     for (const [kind, re, go] of [["event", /Dumpling night[\s\S]*I'm in[\s\S]*Lan is in/, "Start an event"], ["drop", /Pandan this Saturday[\s\S]*Pandan cake[\s\S]*Order · \$36/, "Start a drop"], ["book", /Pottery class for your team[\s\S]*\$55 a person[\s\S]*Acme Design asks for a date[\s\S]*You quote \$660/, "Start something to book"]]) {
       await p.tap(`#dpSheet [data-kind="${kind}"]`); assert.equal(await p.locator(`#dpSheet [data-kind="${kind}"]`).getAttribute("aria-checked"), "true"); const tx = await visText(); assert.match(tx, re, kind); demos.add(tx);
-      assert.equal(await p.locator("#dsStart").innerText(), go); assert.match(await p.locator("#dsKind").innerText(), /\S[\s\S]*Like: /); }
+      assert.equal(await p.locator("#dsStart").innerText(), go); assert.ok((await p.locator("#dsKind").innerText()).length > 30, "one plain sentence"); assert.match(await p.locator("#dsLike").innerText(), /^Like: \S/, "and a real example"); }
     assert.equal(demos.size, 3, "a different demo for each"); await p.waitForTimeout(500); assert.ok(await p.locator("#dsStart").isVisible(), "nothing moved on by itself");
     // ---- A drop, the first time: the tutorial, four cards ----
     await p.tap('#dpSheet [data-kind="drop"]'); await p.tap("#dsStart"); await p.waitForSelector("#dsSkip");
@@ -110,6 +118,7 @@ for (const [W, H] of [[390, 844], [390, 664]]) test(`in a browser at ${W}x${H}: 
     await p.locator("[data-n]").nth(1).fill("Kaya toast box"); await p.locator("[data-p]").nth(1).fill("9.5"); await p.locator("[data-p]").nth(1).blur(); assert.equal(await p.locator("[data-p]").nth(1).inputValue(), "9.50"); await p.locator("[data-s]").first().fill("12");
     await p.tap('[data-mv="1:-1"]'); assert.equal(await p.locator(".dp-item [data-ih]").first().innerText(), "Kaya toast box"); assert.match(await p.locator(".ds-undo").innerText(), /Moved Kaya toast box up\.\s*Undo/); await p.tap("#dsUndo"); assert.equal(await p.locator(".dp-item [data-ih]").first().innerText(), "Pandan honeycomb cake");
     await p.tap('[data-rm="1"]'); assert.equal(await p.locator(".dp-item").count(), 1); await p.tap("#dsUndo"); assert.equal(await p.locator(".dp-item").count(), 2); assert.equal(await p.locator("[data-s]").first().inputValue(), "12");
+    await p.locator("[data-s]").first().dispatchEvent("change"); assert.match(await visText(), /Pandan honeycomb cake\s*12 of 12 left\s*\$18[\s\S]*Kaya toast box\s*\$9\.50/, "the visual shows the name, the batch as guests see it, and the price");
     await screen("step 2 filled"); assert.equal(await p.locator("#dpNext").innerText(), "Next: pickup times");
     // ---- step 3: on a date or every week; the app's date and time words; the neighbourhood lands on the visual ----
     await p.tap("#dpNext"); await p.waitForSelector("#dpArea"); r = await screen("step 3"); assert.equal(r.hText, "When do they pick up?");
@@ -125,7 +134,7 @@ for (const [W, H] of [[390, 844], [390, 664]]) test(`in a browser at ${W}x${H}: 
     await p.tap('#dpSheet [data-tog="pickup"]'); assert.match(await visText(), /Pay \$36 at pickup/); assert.match(await p.locator("#dsSay").innerText(), /Cash or a tap when they collect/); assert.ok(await p.locator("#dpPayM").isHidden());
     await p.tap('#dpSheet [data-tog="either"]'); assert.match(await visText(), /Pay \$36[\s\S]*I'll pay at pickup/); assert.equal(await p.locator('#dpSheet [data-tog="either"]').getAttribute("aria-checked"), "true");
     await p.tap("details.ds-more > summary"); await p.fill("#dpTitle", "Pandan this Saturday"); await screen("step 4 with more options"); assert.equal(await p.locator("#dpNext").innerText(), "Open for orders");
-    const cls = await p.evaluate(() => new Promise((res) => { let s = 0; new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) s += e.value; }).observe({ type: "layout-shift", buffered: true }); setTimeout(() => res(s), 300); })); assert.ok(cls < 0.05, "the screens hold still: " + cls);
+    await p.waitForTimeout(300); const shifts = await p.evaluate(() => window.__shift), cls = shifts.reduce((a, x) => a + x[0], 0); assert.ok(cls < 0.05, "the screens hold still: " + cls + " " + JSON.stringify(shifts));
     await p.tap("#dpNext"); await p.waitForFunction(() => /Your drop is live/.test(document.querySelector("#dpSheet .ds-h")?.textContent || ""));
     r = await screen("live"); assert.equal(await p.locator("#dpShare").innerText(), "Share my drop"); assert.match(await visText(), /What guests see[\s\S]*Pandan this Saturday[\s\S]*Pandan honeycomb cake[\s\S]*\$18/);
     const D = (await getJ("/api/host/drops", { cookie })).drops; assert.equal(D.length, 1); const d = D[0];

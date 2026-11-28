@@ -51,7 +51,8 @@ button.ds-fakeb{cursor:pointer;min-height:44px}.ds-fakeb svg{width:18px;height:1
 .ds-body{margin-top:18px}.ds-f{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:0 0 16px;min-width:0}.ds-f>span:first-child,.ds-lab{font:600 15px/1.3 var(--ds-text)}.ds-f small,.ds-help{display:block;font-size:14px;line-height:1.4;font-weight:400;color:var(--ds-grey);text-wrap:pretty}.ds-f>span:first-child small{display:inline}
 .ds .ds-f input:not([type=file]):not([type=date]),.ds .ds-f select,.ds .ds-f textarea,.ds-money,.ds-date{width:100%;min-height:48px;height:48px;padding:0 14px;border:1.5px solid var(--ds-edge)!important;border-radius:14px!important;background:#fff!important;color:var(--ds-ink);font:400 16px/1.3 var(--ds-text);margin:0;box-shadow:none}
 .ds .ds-f textarea{height:auto;min-height:76px;padding:12px 14px;resize:vertical}.ds .ds-f select{-webkit-appearance:none;appearance:none;padding:0 10px;text-align:center;text-align-last:center;cursor:pointer}
-.ds .ds-f input:focus,.ds .ds-f select:focus,.ds .ds-f textarea:focus,.ds-money:focus-within,.ds-date:focus-within{outline:none;border-color:var(--ds-acc)!important;box-shadow:0 0 0 3px rgba(41,72,154,.28)}
+/* focus on a field is the house one (public/system.css): an ink edge and a soft ring. The price and day wrappers wear it for the input inside them */
+.ds-money:focus-within,.ds-date:focus-within{outline:none;border-color:var(--pl-ink,#1B1D1C)!important;box-shadow:0 0 0 3px rgba(201,74,48,.22)}
 .ds .ds-f [aria-invalid=true],.ds-money:has([aria-invalid=true]){border-color:var(--pl-danger,#A2361A)!important}
 .ds-money{display:flex;align-items:center;gap:2px}.ds-money>b{font-weight:400;color:var(--ds-ink)}.ds .ds-f .ds-money input:not([type=file]){border:0!important;box-shadow:none!important;padding:0;min-height:0;height:44px;flex:1;min-width:0;width:auto;background:transparent!important;border-radius:0!important}
 .ds-date{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap}.ds-date b{font-weight:400}.ds-date input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;margin:0}
@@ -110,7 +111,7 @@ button.ds-fakeb{cursor:pointer;min-height:44px}.ds-fakeb svg{width:18px;height:1
 /* notes from the drop module rise above the bottom button while a setup is open */
 body:has(#dpSheet.ds-bg) #dpToast{bottom:auto;top:calc(64px + env(safe-area-inset-top))}
 .ds #dpPayM{min-height:112px;margin:0 0 12px}.ds #dpPayM[hidden]{display:none}.ds #dpPayM>*{border:0!important;border-radius:20px!important;background:#fff!important;box-shadow:0 1px 0 rgba(31,26,23,.04),0 4px 18px rgba(31,26,23,.06);padding:16px!important;margin:0!important}
-.ds .ds-f .ds-money input:focus{outline:none!important;box-shadow:none!important;border:0!important}
+html body .ds .ds-f .ds-money input:not([type=file]):focus{outline:none!important;box-shadow:none!important;border:0!important}
 .ds-url{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:20px;background:#fff;box-shadow:0 1px 0 rgba(31,26,23,.04),0 4px 18px rgba(31,26,23,.06);margin:0 0 4px}.ds-url span{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}.ds-url .ds-sm{flex:none;background:#F1ECE2}
 @media (max-height:700px){.ds-vis{padding-top:38px;padding-bottom:12px}.ds-tiles .ds-tp{aspect-ratio:4/3}}
 .ds #dpPayM .pm-ln{min-height:44px;display:inline-flex;align-items:center;font-size:16px}

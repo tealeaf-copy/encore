@@ -195,7 +195,9 @@ test("Reactions on a comment: add, count, one per person, the same again takes i
   const leos = (await (await get("/api/feed/comments?target=e:fsGame", U.jun.cookie)).json()).comments.find((x) => x.name === "Leo"); assert.ok(leos);
   assert.equal((await react("noor", "e:fsGame", leos.id, "heart")).status, 404, "a blocked person's comment isn't there to react to");
   // rate limited
-  process.env.ENCORE_FEED_COMMENTS_PER_HOUR = "1"; let last = 0; for (let i = 0; i < 8; i++) last = (await react("sam", "e:fsChess", c.id, "wow")).status; assert.equal(last, 429);
+  process.env.ENCORE_FEED_COMMENTS_PER_HOUR = "1"; let last = 0; for (let i = 0; i < 8; i++) last = (await react("rosa", "e:fsChess", c.id, "wow")).status; assert.equal(last, 429);
+  // Ivy blocked Sam: her comment is gone for Sam too, so there is nothing for him to react to
+  process.env.ENCORE_FEED_COMMENTS_PER_HOUR = "500"; assert.equal((await react("sam", "e:fsChess", c.id, "wow")).status, 404);
 });
 
 test("GIFs: only the provider's own CDN is kept, the words still go through the filter, and stickers are ours", async () => {

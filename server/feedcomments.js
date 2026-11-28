@@ -18,8 +18,9 @@
 //   default | follow: people they follow | hosts: only the card's host). Anyone else sees "A guest" and a plain face,
 //   and no key to block by (the key is the email in base64). See feedblend.js nameShown.
 // - Who may delete: the writer, and the host of the card (the page's owner or anyone in its workspace). A reply goes
-//   on its own. A first comment with replies, deleted by its writer, leaves "Comment removed" in its place and the
-//   replies stay; when the host removes someone's comment, or the team hides it, its replies go with it.
+//   on its own. A first comment with replies, deleted by its writer or by the host, leaves "Comment removed" in its
+//   place and the replies stay; the host can then delete "Comment removed" to clear the whole thread. When the team
+//   hides a first comment, its replies go with it.
 // - Report and block: a comment the team hid ("comment:<id>", "text:<hash>" or its writer "person:<key>") is gone for
 //   everyone; a blocked person's comments (and kudos) are gone for the person who blocked them, and the blocker's
 //   comments are gone for the person they blocked; a deleted account's are gone. Replies under a comment you can't see
@@ -93,10 +94,10 @@ export function makeCommentStore(store, { X = null, safety = () => null, who = n
     for (const x of Object.values(c.rx || {})) { if (!x || !REACTIONS.includes(x.r) || (x.e && blocks.has("person:" + keyOf(x.e)))) continue; N.set(x.r, (N.get(x.r) || 0) + 1); if (me && x.e === me) mine.add(x.r); }
     return REACTIONS.filter((r) => N.get(r)).map((r) => ({ r, n: N.get(r), ...(mine.has(r) ? { mine: true } : {}) })); }
   /** The person a reply to a reply answers, as this viewer may see them: { to: { name, guest?, mine?, href? } }; left off when they are someone the viewer can't see. */
-  function toOf(c, v, ctx) { const em = lc(c.to); if (!em) return {}; if (em === lc(v.email)) return { to: { name: "you", mine: true } };
-    if ((v.blocks || new Set()).has("person:" + keyOf(em)) || hiddenSet().has("person:" + keyOf(em)) || !here(em) || (v.email && blocksOf(em).some((b) => b.target === "person:" + keyOf(v.email)))) return {};
+  function toOf(c, v, ctx) { const em = lc(c.to); if (!em) return {}; const mine = !!v.email && em === lc(v.email), k = "person:" + keyOf(em);
+    if (!mine && ((v.blocks || new Set()).has(k) || hiddenSet().has(k) || !here(em) || (v.email && blocksOf(em).some((b) => b.target === "person:" + keyOf(v.email))))) return {};
     const P = writer(v, { email: em, name: c.toName }, ctx); if (P.guest) return { to: { name: "A guest", guest: true } };
-    let h = ""; try { h = lc(X?.person?.(em)?.handle || ""); } catch {} return { to: { name: P.name, ...(/^[a-z0-9][a-z0-9-]{1,29}$/.test(h) ? { href: "/@" + h } : {}) } }; }
+    let h = ""; try { h = lc(X?.person?.(em)?.handle || ""); } catch {} return { to: { name: P.name, ...(mine ? { mine: true } : {}), ...(/^[a-z0-9][a-z0-9-]{1,29}$/.test(h) ? { href: "/@" + h } : {}) } }; }
   /** One comment as the page draws it. */
   function shape(c, v, ctx = {}) { const me = lc(v.email), mine = !!me && lc(c.email) === me, P = writer(v, c, ctx), rx = rxOf(c, v);
     return { id: c.id, name: P.name, text: c.text || "", at: c.at || 0, face: P.face, ...(P.guest ? { guest: true } : {}), ...(mine ? { mine: true } : {}), ...(ctx.owner && lc(c.email) === lc(ctx.owner) ? { host: true } : {}), ...(c.re ? { re: c.re, parent: c.re } : {}), ...toOf(c, v, ctx),
@@ -207,8 +208,8 @@ export function mountFeedComments(app, { small, currentUser, X, sendHtml = (req,
     const target = targetOf(req.query.target || req.body?.target), { u, v, card, host } = open(req, target); if (!card) return bad(res, "No such post.", 404, "not_found");
     const c = CS.find(target, String(req.params.id || "").slice(0, 40)); if (!c) return bad(res, "No such comment.", 404, "not_found");
     const mine = !c.del && lc(c.email) === lc(u.email); if (!mine && !host) return bad(res, c.del ? "No such comment." : "You can delete your own comments.", c.del ? 404 : 403, c.del ? "not_found" : "not_granted");
-    // your own first comment leaves "Comment removed" over its replies; a host removing someone's comment (or asking to, thread=1) takes the replies too
-    const out = CS.remove(target, c.id, { all: host && (!mine || String(req.query.thread || req.body?.thread || "") === "1") }) || { ids: [], kept: false };
+    // a first comment with replies leaves "Comment removed" over them, whoever deletes it; the host clears a whole thread by deleting that line (or asking to, thread=1)
+    const out = CS.remove(target, c.id, { all: host && (!!c.del || String(req.query.thread || req.body?.thread || "") === "1") }) || { ids: [], kept: false };
     const S = CS.summary(target, v, card); res.json({ ok: true, target, count: S.count, summary: S, removed: out.ids, kept: out.kept }); });
   // fresh counts for the cards on screen (the feed itself may be a minute old, or a saved copy on a slow connection)
   app.get("/api/feed/social", (req, res) => { res.set("Cache-Control", "private, no-store");

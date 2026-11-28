@@ -37,6 +37,8 @@ export async function seedRoutes(base) {
   await post("/api/chats/rtOpen/messages", { text: "So glad you're coming." }, host.cookie);
   await post("/api/chats/rtOpen/messages", { rid: g.rid, code: g.code, text: "Can't wait." }, guest.cookie);
   await post("/api/public/follow", { handle: "mai-routes", email: guest.email, name: guest.name }, guest.cookie);
+  // a direct message from the guest to the host, so Chats has one of each kind (server/dm.js)
+  { const o = await (await fetch(`${base}/api/dm/open`, { method: "POST", headers: { "content-type": "application/json", cookie: guest.cookie }, body: JSON.stringify({ handle: "mai-routes" }) })).json(); if (o.id) await post(`/api/dm/${o.id}/messages`, { text: "Is there parking nearby?" }, guest.cookie); }
   // review 18: one of each scale (server/kinds.js): a booked table, a weekend away, a summit with a public speaker
   await put("events/rtTable", ev({ name: "Dinner at Lilia", date: day(7), startTime: "19:30", planKind: "table", noMaybe: true, discoverable: false, unlisted: true, headcount: 5, venueName: "Lilia", meetPoint: "",
     reservation: { restaurant: "Lilia", time: "19:30", party: 6, link: "https://resy.com/lilia", confirmation: "R-1", holdUntil: day(5), split: "even" } }), host.cookie);
@@ -65,7 +67,7 @@ export async function seedRoutes(base) {
 export function pagesFor(S) {
   const q = (r) => `rid=${encodeURIComponent(r.rid)}&code=${encodeURIComponent(r.code)}`;
   return [
-    "/", "/feed", "/discover", "/events", "/ideas", "/hosts", "/saved", "/plans", "/chats", `/chats/${S.open}`, "/settings", "/community", "/playbook",
+    "/", "/feed", "/discover", "/events", "/ideas", "/hosts", "/saved", "/plans", "/chats", `/chats/${S.open}`, "/chats/dm/requests", "/settings", "/community", "/playbook",
     "/signup", "/login", "/about", "/privacy", "/terms", `/@${S.handle}`, `/e/${S.open}`, `/e/${S.past}`, `/i/${S.open}`, "/g", `/x/${S.handle}/${S.exp}`,
     `/plans/rtTable`, `/plans/rtTrip`, `/plans/rtSummit`, `/speakers/rtSummit/sp1`, `/e/rtTable`, "/start?t=table", "/guides/weekend-away", `/again/${S.past}?${q(S.pastRid)}`, `/k/${S.past}?${q(S.pastRid)}`, `/recap/${S.handle}`, `/p/${S.past}?${q(S.pastRid)}`, "/?app=1", "/leaderboard", "/pricing", "/me", `/year/${new Date().getFullYear()}`, /* Your places and the year in nights (server/places.js) */ `/post/e/${S.open}`, `/post/r/${S.past}` /* the feed's post pages (server/feedcomments.js) */,
     // friend invites (server/friendinvites.js): the admin page, and a link that no longer works

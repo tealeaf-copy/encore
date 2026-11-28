@@ -99,7 +99,7 @@ export function makeReviews(store, { C, X, V = () => null }) {
   function standing(subject, proof = {}, u = null) {
     const m = /^(event|booking):([A-Za-z0-9_-]{2,80})$/.exec(String(subject || "")), no = (message, status = 403, code = "not_granted") => ({ ok: false, status, code, message });
     if (!m) return no("Which event is this about?", 400, "invalid");
-    if (m[1] === "booking") { const B = bookingOf(m[2]); if (!B) return no("No such booking.", 404, "not_found");
+    if (m[1] === "booking") { const B = bookingOf(m[2]); if (!B || (B.b.kind && B.b.kind !== "booking")) return no("No such booking.", 404, "not_found"); // experiences only, not gift orders
       const b = B.b, byLink = !!proof.t && String(proof.t) === bookingToken(m[2]), email = byLink ? lc(b.email) : u && lc(u.email) === lc(b.email) ? lc(u.email) : "";
       const base = { ws: B.ws, S: B.S, kind: "booking", sid: m[2], rated: true, b, title: String(b.experience?.name || "").slice(0, 120) || "an experience" };
       if (isDemo(B.ws) || b.demo || b.example) return { ...base, ...no("This is an example page, so it doesn't take reviews.") };

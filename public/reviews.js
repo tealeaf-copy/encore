@@ -163,7 +163,7 @@
         ${f.canPhoto && window.MomentUpload ? `<div><button type="button" class="rv-btn" id="rvAdd">Add photos</button><p class="rv-note">Up to ${L.photos}. They join the photos from the day.</p><div class="rv-thumbs" id="rvThumbs" aria-live="polite"></div></div>` : ""}
         <p class="rv-where">${esc(f.where || "")}</p>
         <p class="rv-err" id="rvErr" role="alert"></p>
-        <div class="rv-row"><button type="submit" class="rv-btn rv-go" id="rvSave">Save</button><button type="button" class="rv-btn" data-x>Cancel</button>${m ? `<button type="button" class="rv-link rv-end" id="rvDel">Delete review</button>` : ""}</div>
+        <div class="rv-row"><button type="submit" class="rv-btn rv-go" id="rvSave">Save</button><button type="button" class="rv-btn" data-x>Cancel</button>${m ? `<button type="button" class="rv-btn rv-end" id="rvDel">Delete review</button>` : ""}</div>
         </form>`);
       const el = S.el, T = $("#rvText", el), C = $("#rvCount", el), err = $("#rvErr", el);
       const paint = () => { const v = +($("input[name=rating]:checked", el)?.value || 0); $$(".rv-pick label", el).forEach((l, i) => $("svg", l).classList.toggle("on", i < v)); const s = $("#rvSay", el); if (s) s.textContent = v ? `${v} of 5` : ""; };
@@ -202,7 +202,7 @@
   function replySheet(r, after) { const S = sheet(`<h2 id="rvT">${r.reply ? "Edit your reply" : `Reply to ${esc(r.name || "this review")}`}</h2>
       <form novalidate><div><label class="rv-l" for="rvReply">Your reply</label><p class="rv-note" id="rvRH">Public, under their review. One reply, up to 400 characters.</p>
       <textarea id="rvReply" rows="4" maxlength="400" aria-describedby="rvRH">${esc(r.reply?.text || "")}</textarea></div><p class="rv-err" id="rvErr" role="alert"></p>
-      <div class="rv-row"><button type="submit" class="rv-btn rv-go">Save</button><button type="button" class="rv-btn" data-x>Cancel</button>${r.reply ? `<button type="button" class="rv-link rv-end" id="rvRm">Remove reply</button>` : ""}</div></form>`, "rvT");
+      <div class="rv-row"><button type="submit" class="rv-btn rv-go">Save</button><button type="button" class="rv-btn" data-x>Cancel</button>${r.reply ? `<button type="button" class="rv-btn rv-end" id="rvRm">Remove reply</button>` : ""}</div></form>`, "rvT");
     const send = async (text) => { try { const j = await api("/api/host/reviews/" + encodeURIComponent(r.id), { reply: text }); S.close(); after(j); } catch (e) { $("#rvErr", S.el).textContent = e.message; } };
     $("form", S.el).onsubmit = (e) => { e.preventDefault(); const t = $("#rvReply", S.el).value.trim(); if (t.length < 2) { $("#rvErr", S.el).textContent = "Write your reply first."; return; } send(t); };
     const rm = $("#rvRm", S.el); if (rm) rm.onclick = () => send(""); }

@@ -25,6 +25,8 @@ before(async () => {
   Object.assign(process.env, { ENCORE_SIGNUP: "1", SESSION_SECRET: "fv-secret", ENCORE_SIGNUP_PER_HOUR: "200", ENCORE_FAKE_EMAIL: "1" }); resetLoginLimits();
   S.mai = await join("Mai Pham", "mai.fv@example.com");
   assert.ok((await post("/api/host/profile", { handle: "mai-fv", name: "Mai's supper club", tagline: "Small dinners for new friends.", city: "Brooklyn", emoji: "🍜" }, S.mai.cookie)).ok);
+  // your stories (server/storyapprove.js): this host shows guests' photos and recaps without asking, as every host did before approvals
+  assert.equal((await fetch(srv.base + "/api/me/stories/settings", { method: "POST", headers: { "content-type": "application/json", cookie: S.mai.cookie }, body: JSON.stringify({ guestsAuto: true }) })).status, 200);
   // an open supper (on Discover), an Ask to join one, a link-only one, all last week; and one coming up with a flyer look
   const base = { kind: "social", casual: true, city: "Brooklyn", activity: "dinner", date: day(-4) };
   for (const [id, extra] of [["fvOpen", { name: "Open supper", discoverable: true }], ["fvAsk", { name: "Ask supper", discoverable: true, approvalRequired: true }], ["fvLink", { name: "Link supper", discoverable: false, published: true }]])

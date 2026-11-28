@@ -32,6 +32,8 @@ before(async () => {
   Object.assign(process.env, { ENCORE_SIGNUP: "1", SESSION_SECRET: "nu-secret", ENCORE_SIGNUP_PER_HOUR: "200", ENCORE_FAKE_EMAIL: "1" }); resetLoginLimits();
   S.mai = await join("Mai Pham", "mai.nu@example.com");
   assert.ok((await post("/api/host/profile", { handle: "mai-nu", name: "Mai's dumpling club", tagline: "Dumplings and new friends.", city: "Brooklyn", emoji: "🥟" }, S.mai.cookie)).ok);
+  // your stories (server/storyapprove.js): this host shows guests' photos and recaps without asking, as every host did before approvals
+  assert.equal((await fetch(srv.base + "/api/me/stories/settings", { method: "POST", headers: { "content-type": "application/json", cookie: S.mai.cookie }, body: JSON.stringify({ guestsAuto: true }) })).status, 200);
   const open = { kind: "social", casual: true, discoverable: true, published: true, city: "Brooklyn", activity: "dinner" };
   const ev = { nuPast: { ...open, name: "Dumpling night", date: day(-1) }, nuNext: { ...open, name: "Dumpling night", date: day(12), startTime: "19:00" }, nuSalsa: { ...open, name: "Salsa on the roof", activity: "dance", date: day(3) },
     nuQueens: { ...open, name: "Queens sunrise 5k", city: "Queens", activity: "run", date: day(2) }, nuFriends: { kind: "social", casual: true, friendsOnly: true, discoverable: true, name: "Birthday dinner", city: "Brooklyn", date: day(-1) },

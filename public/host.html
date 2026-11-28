@@ -133,7 +133,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
-<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/listpublic.js" defer></script><script src="/memberships.js"></script><script src="/kudoswall.js"></script>
+<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/listpublic.js" defer></script><script src="/highlights.js" defer></script><!-- highlights: the rings a host kept (public/highlights.js) --><script src="/memberships.js"></script><script src="/kudoswall.js"></script>
 <!-- [arrange hook] the host's page layout: the shared rules, then the page side (public/arrange-core.js, public/arrange.js) -->
 <script src="/arrange-core.js"></script><script src="/arrange.js"></script><script src="/hostitems.js"></script><!-- Coming up, Order ahead, Book me; Pin and Hide per item (public/hostitems.js) -->
 <script>
@@ -175,7 +175,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
   // "Notify me when they join" on a preview page, "Edit page" on your own page (test/save-follow.test.js audits each kind)
   function headAction() { if (document.querySelector("[data-head-act]")) return; const share = document.getElementById("shareBtn"), row = share?.parentElement || document.querySelector(".head > div"); if (!row) return;
     const w = document.createElement("span"); w.className = "head-act"; w.dataset.headAct = "1";
-    w.innerHTML = isOwner ? `<a class="plf-btn" id="topEdit" href="?edit=1">Edit page</a>` : h.showcase ? (PF ? PF.button({ handle: h.handle, name: h.name, showcase: true }, { id: "topNotify" }) : "") : folBtn("topFollow", "");
+    w.innerHTML = isOwner ? `<a class="plf-btn" id="topEdit" href="?edit=1">Edit page</a><a class="plf-btn" id="topStories" href="/your-stories">Your stories</a>` /* your stories: approve, captions, highlights (public/yourstories.html) */ : h.showcase ? (PF ? PF.button({ handle: h.handle, name: h.name, showcase: true }, { id: "topNotify" }) : "") : folBtn("topFollow", "");
     if (!w.firstElementChild) return; if (share) share.before(w); else row.appendChild(w);
     const ed = w.querySelector("#topEdit"); if (ed) ed.onclick = (ev) => { const fab = document.querySelector(".store-fab:not(.shop-fab)"); if (fab) { ev.preventDefault(); fab.click(); } }; }
   // the Follow button (public/follow.js): follows in place, Following opens notifications and Unfollow

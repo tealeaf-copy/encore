@@ -27,7 +27,7 @@
 .pin h2{font:600 clamp(28px,6vw,38px)/1.02 var(--sys-display);margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:var(--pl-accent)}
 .pin .pin-sub{color:var(--pl-soft);margin:0 0 14px;max-width:420px}
 .pin .pin-x{position:absolute;z-index:3;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:2px solid var(--pl-ink);background:#fff;font-size:22px;line-height:1;cursor:pointer;box-shadow:2px 2px 0 var(--pl-ink)}
-.pin .pin-potto{position:absolute;z-index:1;top:-6px;right:70px;width:86px;transform:rotate(8deg);pointer-events:none}
+.pin .pin-potto{position:absolute;z-index:1;top:-6px;right:96px;width:86px;transform:rotate(8deg);pointer-events:none}
 .pin-chips{display:flex;flex-wrap:wrap;gap:10px 8px;margin:6px 0 16px}
 .pin-chip{--r:0deg;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:6px 16px 6px 12px;border:2.5px solid var(--pl-ink);border-radius:999px;background:#fff;font:600 16px var(--sys-title);color:var(--pl-ink);cursor:pointer;transform:rotate(var(--r));box-shadow:2px 3px 0 var(--pl-ink);transition:transform .2s cubic-bezier(.3,1.7,.5,1),background .15s}
 .pin-chip span{font-size:22px;line-height:1}.pin-chip:hover{transform:rotate(0) scale(1.04)}
@@ -39,6 +39,7 @@
 .pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid var(--pl-ink);background:var(--pl-surface);border-radius:999px;padding:4px 12px;font:600 14px "IBM Plex Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
 .pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,var(--pl-page) 30%);padding:14px 0 4px;margin-top:4px}
 .pin-main{min-height:52px;padding:0 24px;border:1.5px solid var(--pl-accent);border-radius:var(--pl-r-btn,6px);background:var(--pl-accent);color:#fff;font:600 17px "IBM Plex Sans",system-ui;cursor:pointer;box-shadow:none}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
+.pin-card{margin:28px 0 8px;padding:18px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink)}.pin-card h2{margin:0 0 4px;font:600 22px/1.2 "IBM Plex Sans",system-ui}.pin-card p{margin:0 0 12px;color:var(--pl-soft);font:400 16px/1.5 "IBM Plex Sans",system-ui}.pin-card-go{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.pin-card .pin-main{min-height:48px;background:var(--pl-surface);color:var(--pl-ink);border:1.5px solid var(--pl-ink)}
 .pin-skip{background:none;border:0;color:var(--pl-soft);text-decoration:underline;font:500 15px "IBM Plex Sans",system-ui;cursor:pointer;min-height:44px}
 .pin-n{font:600 14px "IBM Plex Sans",system-ui;color:var(--pl-soft)}
 .pin h3{font:600 20px var(--pl-font-text);margin:18px 0 8px}
@@ -56,7 +57,7 @@
 .pin-ev b{font:600 16px/1.15 var(--sys-title);display:block}.pin-ev small{color:var(--pl-soft);font-size:13.5px;display:block}.pin-ev .fr{color:#4F6B3A;font-weight:600}
 .pin-empty{background:var(--pl-surface);border:2px dashed #C9BBA7;border-radius:var(--pl-r-md,6px);padding:14px;color:var(--pl-soft)}
 @media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:118px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
-@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:var(--pl-r-lg,6px) var(--pl-r-lg,6px) 0 0;max-height:94vh;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
+@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:var(--pl-r-lg,6px) var(--pl-r-lg,6px) 0 0;max-height:94vh;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:84px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
 /* round 11 UX pass: UI controls take the app's one line (1.5px) and no sticker shadows or tilts; the thick ink line
    stays on illustrations. Picked chips fill with their colour and gain Potto's brown line */
 .pin{border:1.5px solid var(--pl-frame);box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
@@ -137,9 +138,15 @@
       await suggestions(box.querySelector("#pinS"), v); };
     step1(); { const hd = box.querySelector("h1,h2,h3") || box.querySelector(".pin-chip"); if (hd && !hd.matches("button")) { hd.tabIndex = -1; hd.style.outline = "none"; } hd?.focus({ preventScroll: true }); } }
 
-  /** The first visit to /feed, /events or /discover, signed out: show the picker once. */
+  /** The first visit to /feed, /events or /discover, signed out: an invitation to the picker at the end of the page.
+   *  Nothing opens by itself (it used to pop the sheet over the page 0.9s after load); the button opens it. It goes at
+   *  the end of the page, so nothing on screen moves when it arrives. */
   // on /feed the swipe deck (public/swipedeck.js) comes first; its "Pick topics instead" opens this picker
-  function maybeAuto() { try { if (signedIn() || localStorage.getItem(SEEN) || local()) return; if ((location.pathname === "/feed" || location.pathname === "/") && !localStorage.getItem("pl.deckDone")) return; } catch { return; } if (!/^\/(feed|events|discover)$/.test(location.pathname)) return; setTimeout(() => open({ after: "visit" }), 900); }
+  function maybeAuto() { try { if (signedIn() || localStorage.getItem(SEEN) || local()) return; if ((location.pathname === "/feed" || location.pathname === "/") && !localStorage.getItem("pl.deckDone")) return; } catch { return; } if (!/^\/(feed|events|discover)$/.test(location.pathname)) return;
+    const m = document.querySelector("main") || document.querySelector("body > .wrap, body > .ls-wrap"); if (!m || document.getElementById("pinCard")) return; css(); const c = document.createElement("section"); c.id = "pinCard"; c.className = "pin-card"; c.setAttribute("aria-labelledby", "pinCardH");
+    c.innerHTML = `<h2 id="pinCardH">What are you into?</h2><p>Pick a few and we'll show you hosts and events near you. No account needed.</p><div class="pin-card-go"><button class="pin-main" type="button">Pick a few</button><button class="pin-skip" type="button">Not now</button></div>`;
+    const gone = () => { try { localStorage.setItem(SEEN, "1"); } catch {} c.remove(); };
+    c.querySelector(".pin-main").onclick = () => { gone(); open({ after: "visit" }); }; c.querySelector(".pin-skip").onclick = gone; m.appendChild(c); }
   /** Swipe deck picks train the interests: merge these interest ids (and a city when none is set) and save. */
   async function train(ids = [], city = "") { const cur = await get(), I = [...new Set([...(cur.interests || []), ...ids.filter((x) => /^[a-z0-9-]{1,30}$/.test(x))])].slice(0, 20);
     if (!ids.length && (cur.city || !city)) return cur; return save({ interests: I, city: cur.city || city || "" }); }

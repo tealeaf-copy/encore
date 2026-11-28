@@ -32,7 +32,7 @@
     return { bg, ink: dark ? "#EFEBE2" : "#1B1D1C", soft: dark ? "#EFEBE2" : lum(bg) < 0.45 ? "#1B1D1C" : "#444845", acc, dark }; } /* a mid-tone tint keeps soft text at full ink so it stays at 4.5:1 */
   const tintStyle = (T) => `--tint:${T.bg};--tink:${T.ink};--tsoft:${T.soft};--tacc:${T.acc}`;
   function btnText(e, fallback = "I'm in") { const L = e.look || {}, em = L.buttonEmoji ? L.buttonEmoji + " " : ""; if (e.approvalRequired) return em + "Ask to join"; return em + (L.buttonLabel && L.buttonLabel !== "Ask to join" ? L.buttonLabel : fallback); }
-  function art(e, opts = {}) { const A = window.EventArt; if (!A) return `<div class="fv-artfb">${esc(e.emoji || "🎉")}</div>`; return A.cover({ ...e, name: e.title, pubTitle: e.title, coverArt: e.coverArt || undefined }, { ...(opts.title != null ? { title: opts.title } : {}) }); }
+  function art(e, opts = {}) { const A = window.EventArt; if (!A) return `<div class="fv-artfb">${esc(e.emoji || "🎉")}</div>`; return A.cover({ ...e, name: e.title, pubTitle: e.title, coverArt: e.coverArt || undefined }, { title: opts.title ?? "", label: opts.label ?? "" }); } // the drawing only: the card's own tag and title say what it is
   // The platform frame (docs/brand-kit.md): on shared surfaces a host brings a cover, a title, a face and one accent.
   // A cover shows only when it can carry the card: there, wider than 600px, and not near-black, blown out or flat.
   // Anything else gets our drawn cover. The 4:5 crop is fixed; a saved focal point (look.coverPos, "x% y%") steers it.

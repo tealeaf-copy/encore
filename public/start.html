@@ -34,6 +34,9 @@ label{display:grid;gap:6px;font-weight:600;font-size:15px}label small{font-weigh
 input,textarea{width:100%;min-height:48px;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:16px var(--pl-font-text);padding:10px 12px}
 textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px solid var(--pl-accent);outline-offset:1px;border-color:var(--pl-accent)}
 .two{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}
+/* date and time in the app's words ("Fri, Dec 4", "7pm"), with the phone's own picker over them */
+.dfield{position:relative;display:flex;align-items:center;justify-content:center;height:48px;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:500 16px var(--pl-font-text)}.dfield:focus-within{outline:2px solid var(--pl-accent);outline-offset:1px;border-color:var(--pl-accent)}
+.dfield input{position:absolute;inset:0;width:100%;height:100%;min-height:0;opacity:0;cursor:pointer;border:0;padding:0}
 .step{display:flex;align-items:center;gap:0;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);width:max-content}
 .step button{width:48px;height:48px;border:0;background:none;font:500 22px var(--pl-font-mono);color:var(--pl-ink);cursor:pointer}.step output{min-width:40px;text-align:center;font:500 18px var(--pl-font-mono)}
 .saved{font:400 13px var(--pl-font-mono);color:var(--pl-soft);display:flex;align-items:center;gap:6px;min-height:20px}
@@ -81,7 +84,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
       <label>What is it<input name="title" maxlength="80" placeholder="Dinner for 4"></label>
       <div id="stNight" hidden></div><!-- co-host: Here's your night from one sentence (public/cohost.js) -->
       <div id="stPicks" hidden></div><!-- Potto's picks (public/placesuggest.js): opens on a chip tap or typing, never by itself -->
-      <div class="two"><label>When<input name="date" type="date"></label><label>Time<input name="time" type="time" step="900"></label></div>
+      <div class="two"><label>When<span class="dfield"><span id="dfDate">Pick a night</span><input name="date" type="date"></span></label><label>Time<span class="dfield"><span id="dfTime">7pm</span><input name="time" type="time" step="900"></span></label></div>
       <label id="placeL">Where <small>A neighbourhood is enough for now</small><input name="place" maxlength="80" placeholder="My place, Greenpoint"></label>
       <div><span id="seatsL" style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Spots</span><div class="step"><button type="button" id="less" aria-label="One fewer spot">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more spot">+</button></div></div>
       <label>A line for guests <small>Optional</small><textarea name="note" maxlength="280" placeholder="I'm making dumplings. Bring something to drink."></textarea></label>
@@ -154,10 +157,11 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   const fmtWhen = () => { const s = d.date ? new Date(d.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "Pick a night"; const [h, m] = String(d.time || "19:00").split(":").map(Number);
     return s + (d.endDate ? " to " + new Date(d.endDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", day: "numeric" }) : "") + " · " + ((h % 12) || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h < 12 ? "am" : "pm"); };
   function draw() {
+    { const [h, m] = String(d.time || "").split(":").map(Number); $("#dfDate").textContent = d.date ? new Date(d.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "Pick a night"; $("#dfTime").textContent = d.time ? ((h % 12) || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h < 12 ? "am" : "pm") : "Pick a time"; }
     // a booked table: the place is the restaurant, the seats are the party size, and guests get a reply-by day
     const X = T[t] || {}; $("#placeL").firstChild.textContent = X.place ? X.place + " " : "Where "; $("#seatsL").textContent = X.seatWord || "Spots";
     const hold = t === "table" && d.date ? new Date(new Date(d.date + "T12:00:00").getTime() - 2 * 864e5).toLocaleDateString("en-US", { weekday: "long" }) : "";
-    $("#cKind").textContent = d.kind || "Dinner"; $("#cTitle").textContent = d.title || T[t].title; $("#cWhen").textContent = fmtWhen(); $("#cWhere").textContent = d.place || (T[t].place ? "The restaurant" : "Somewhere you like"); F.place.placeholder = T[t].placeHint || "My place, Greenpoint";
+    $("#cKind").textContent = (() => { /* the title's own words name the kind ("Coffee chat with Sam" is Coffee, not the Dinner chip it started from) */ try { const I = d.title && /^(Dinner|Coffee|Drinks|Game night)$/.test(d.kind || "") && window.PLSuggestPlaces?.intentOf?.({ text: d.title }); if (I?.label) return I.label; } catch {} return d.kind || "Dinner"; })(); $("#cTitle").textContent = d.title || T[t].title; $("#cWhen").textContent = fmtWhen(); $("#cWhere").textContent = d.place || (T[t].place ? "The restaurant" : "Somewhere you like"); F.place.placeholder = T[t].placeHint || "My place, Greenpoint";
     $("#cSeats").innerHTML = Array.from({ length: Math.min(24, d.seats) }, () => "<i></i>").join("") + (d.seats > 24 ? `<span class="meta">+${d.seats - 24}</span>` : "");
     $("#cNote").hidden = !d.note && !hold; $("#cNote").textContent = [d.note || "", hold ? `Reply by ${hold} so I can update the booking.` : ""].filter(Boolean).join(" "); $("#seatsOut").textContent = d.seats;
     document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.t === t)));
@@ -166,6 +170,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   const fill = () => { F.title.value = d.title || ""; F.date.value = d.date || ""; F.time.value = d.time || ""; F.place.value = d.place || ""; F.note.value = d.note || ""; };
   $("#chips").innerHTML = [...new Set([t, ...CHIPS])].map((k) => `<button type="button" class="chip" data-t="${k}" aria-pressed="false">${T[k].chip}</button>`).join("");
   $("#chips").onclick = (e) => { const b = e.target.closest(".chip"); if (!b) return; const keepPlace = d.place; t = b.dataset.t; d = { ...fresh(t), place: keepPlace }; fill(); draw(); keep(); copy(); fx.haptic?.("light"); };
+  F.addEventListener("click", (e) => { const i = e.target.closest?.(".dfield input"); if (i) try { i.showPicker?.(); } catch {} });
   F.addEventListener("input", () => { d.title = F.title.value; d.date = F.date.value; d.time = F.time.value; d.place = F.place.value; d.note = F.note.value; if (d.endDate && d.date && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); draw(); keep(); });
   const seat = (n) => { const was = d.seats; d.seats = Math.max(2, Math.min(200, d.seats + n)); if (d.seats !== was) { fx.tick ? fx.tick($("#seatsOut"), d.seats, 180) : 0; fx.haptic?.("light"); fx.sound?.("tap"); } draw(); keep(); };
   $("#less").onclick = () => seat(-1); $("#more").onclick = () => seat(1);

@@ -41,7 +41,7 @@
   const ready = (d) => { const c = cache.get(keyOf(d)); return c && !(c instanceof Promise) ? c : null; };
   /** The shared cover recipe for this drawing (null until it's drawn). */
   const art = (d) => { const c = ready(d); return c ? { kind: "custom", svg: c.svg, prompt: c.prompt, tone: c.tone, drawnFor: "title" } : null; };
-  const tileArt = (d, c) => window.EventArt.cover({ ...d, coverArt: null, title: titleOf(d) }, { svg: c.svg, tone: c.tone, title: "Drawn for this event", label: "" });
+  const tileArt = (d, c) => window.EventArt.cover({ ...d, coverArt: null, title: titleOf(d) }, { svg: c.svg, tone: c.tone, title: "", label: "" }); // the drawing only, no words over it (the tile's label names it)
   const isMine = (d) => !d.coverPhoto && d.coverArt?.drawnFor === "title" && !!d.coverArt?.svg;
   /** For the "Change photo" sheet: the drawn tile first (the suggestion when there's no photo), then the usual ones. */
   function tiles(d, list) { const c = ready(d); if (!c || !window.EventArt || !Array.isArray(list)) return list; return [{ id: "drawn-for-event", label: "A cover Potto drew for this event", on: isMine(d), html: tileArt(d, c) }, ...list]; }

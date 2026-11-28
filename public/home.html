@@ -16,7 +16,7 @@ p{margin:0;text-wrap:pretty}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--pl-r-btn);padding:0 20px;font:600 17px var(--pl-font-text);text-decoration:none;border:1.5px solid transparent}
 .btn.primary{background:var(--pl-accent);color:var(--pl-on-accent)}.btn.primary:hover{background:var(--pl-accent-press)}
 .btn.quiet{border-color:var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink)}.btn.quiet:hover{background:var(--pl-raised)}
-.ctas{display:flex;gap:10px;flex-wrap:wrap}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}@media (max-width:560px){.ctas .btn{flex:1 1 100%}}
 .ab-go{display:inline-flex;align-items:center;min-height:44px;font-weight:600;color:var(--pl-accent-text);text-underline-offset:3px}
 /* top */
 .top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0}
@@ -99,7 +99,7 @@ footer .ftl{display:flex;gap:16px;flex-wrap:wrap}footer a{text-decoration:none}f
 <section class="sec" aria-labelledby="what">
   <span class="kick">What it is</span>
   <h2 id="what">A personal assistant for events.</h2>
-  <p class="lede">Potto is your personal assistant for events. It helps you pick the idea, finds a date that works for everyone, designs the invite, handles the replies and keeps the group going after. And it introduces you to hosts near you: a flower workshop for your team, a chef for a birthday, a run club to join, or a fellow host to team up with.</p>
+  <p class="lede">Potto helps you pick the idea, finds a date that works for everyone, designs the invite, handles the replies and keeps the group going after. And it introduces you to hosts near you: a flower workshop for your team, a chef for a birthday, a run club to join, or a fellow host to team up with.</p>
   <div class="cols">
     <div class="ab-col"><span class="kick">Plan it with Potto</span><h3>Start to finish.</h3><p>From the first idea to the follow-up: the date that suits everyone, an invite people get excited about, replies, reminders and who owes what.</p><a class="ab-go" href="/start" data-plan>Plan with Potto</a></div>
     <div class="ab-col"><span class="kick">Find people who host</span><h3>Discover and book.</h3><p>Workshops, supper clubs, chefs, run clubs and makers near you. Follow the ones you like, bring your friends, or book them for your team.</p><a class="ab-go" href="/hosts">Find hosts near you</a></div>

@@ -73,7 +73,8 @@
     if (ss.get("plw-" + id) && !tg) { tgAsked = ""; setTimeout(together, 400); } // came through a link: show "Mia and Jo are in" straight away
     const box = document.createElement("div"); box.className = "cwm-box"; const b = button(ss.get("cwm-want-" + id) ? "pulse" : ""); box.appendChild(b);
     if (gview) at.after(box); else { const bt = $(".btns", at), h = $("h2", at); if (bt) bt.before(box); else (h?.nextElementSibling?.matches?.("p") ? h.nextElementSibling : h)?.after(box); } // review round 12: the door code stays right under "Show this at the door"
-    b.onclick = async () => { busy = true; b.disabled = true; const M2 = mine(id) || M; await send(() => fetch("/api/public/come-with", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: id, rid: M2.rid, code: M2.code }) }), { title: (document.querySelector("#view-guest h1, main h1")?.textContent || "").trim(), box }); b.disabled = false; busy = false; };
+    b.onclick = async () => { busy = true; b.disabled = true; const M2 = mine(id) || M; const r0 = await send(() => fetch("/api/public/come-with", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: id, rid: M2.rid, code: M2.code }) }), { title: (document.querySelector("#view-guest h1, main h1")?.textContent || "").trim(), box }); b.disabled = false; busy = false;
+      /* the reply changed since this page drew the ticket (Maybe, Can't go): say why nothing opened */ if (r0?.replyFirst) { let n = $(".cwm-note", box); if (!n) { n = document.createElement("p"); n.className = "cwm-note err"; n.setAttribute("role", "status"); box.appendChild(n); } n.textContent = "Reply I'm in first, then invite friends."; } };
     together(); }
   // "Mia and Jo are in": above the names on the light invite, under the title on the full one
   async function together() { if (!id || id === "_preview" || tgAsked === id) return; tgAsked = id; let A = null; try { A = await (await fetch("/api/public/attendees/" + encodeURIComponent(id), { credentials: "same-origin" })).json(); } catch {} const T = A?.together || []; if (!T.length) return;
@@ -84,5 +85,10 @@
     new MutationObserver(() => { if (!window.__cwmT) window.__cwmT = setTimeout(() => { window.__cwmT = 0; placeHello(); placeButton(); placeTg(); }, 150); }) /* a throttle, not a debounce: /g keeps changing, and a debounce never ran there */.observe(document.body, { childList: true, subtree: true }); placeButton(); }
   window.addEventListener("hashchange", boot);
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();
+  // the light invite: the second tap of a double tap on Send would land on the ticket that replaces the form (and open
+  // the group chat), so a tap on the ticket within half a second of a tap elsewhere, on the same spot, is ignored (a quick
+  // tap on Follow or Add to calendar somewhere else on the new ticket goes through). It lives here, not in the invite's
+  // own page, which has to stay under 40,000 characters.
+  { let at = 0, onTk = false, x = 0, y = 0; document.addEventListener("click", (e) => { const tk = !!e.target.closest?.("#tk"), now = Date.now(); if (tk && !onTk && now - at < 500 && Math.hypot(e.clientX - x, e.clientY - y) < 40) { e.preventDefault(); e.stopPropagation(); return; } at = now; onTk = tk; x = e.clientX; y = e.clientY; }, true); }
   window.PLComeWith = { fromFeed, button, css, send };
 })();

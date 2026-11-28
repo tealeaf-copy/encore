@@ -14,6 +14,7 @@ import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
+import { coverOf } from "./eventcover.js"; // one cover per event everywhere
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { mountReplyFill } from "./replyfill.js"; // Potto fills in the reply form from what you told us before
 import { PREVIEW_LABEL } from "./previews.js";
@@ -346,8 +347,10 @@ export function createApp({ store, dataDir }) {
 
   app.disable("x-powered-by");
   // ---- speed and robustness at the HTTP layer (server/perf.js) ----
-  // every HTML page sent as a string gets versioned script/style URLs and local fonts
-  app.use((req, res, next) => { const send = res.send; res.send = function (body) { if (typeof body === "string" && (/^text\/html/.test(this.get("Content-Type") || "") || (!this.get("Content-Type") && /^\s*<(!doctype|html|head)/i.test(body)))) body = optimizeHtml(body, PUBLIC_DIR); return send.call(this, body); }; next(); });
+  // every HTML page sent as a string gets versioned script/style URLs and local fonts, and the app tags every full page
+  // has (server/appstore.js pwaHead: the page-fade opt-in and its quiet handler, netguard, the manifest), so a page sent
+  // straight from a route (the brand and admin pages) moves between pages the same way as the rest
+  app.use((req, res, next) => { const send = res.send; res.send = function (body) { if (typeof body === "string" && (/^text\/html/.test(this.get("Content-Type") || "") || (!this.get("Content-Type") && /^\s*<(!doctype|html|head)/i.test(body)))) body = optimizeHtml(pwaHead(body, req.path), PUBLIC_DIR); return send.call(this, body); }; next(); });
   app.use("/api", compressJson());
   const idem = idempotency({ who: (req) => (/(?:^|;\s*)encore_auth=([^;]+)/.exec(req.headers.cookie || "") || [])[1] || req.get("x-encore-key") || req.ip || "" }); app.locals.idempotency = idem; app.use(idem);
   // fonts: the families our pages ask Google for, served from public/fonts (font files never change name in place)
@@ -662,7 +665,7 @@ export function createApp({ store, dataDir }) {
   // The app's big inline scripts and styles are served as their own files, named by a hash of their content and cached
   // for a year. A guest opening their second invite (or the same one again) downloads only the small page around them,
   // and the browser fetches the scripts in parallel while it draws the invite preview.
-  const APP_ASSETS = new Map(), SPLIT_MIN = 8000;
+  const APP_ASSETS = new Map(), SPLIT_MIN = 4000; // (8000 let the shell grow past its 80,000-character budget as features landed; test/pm-mcp.test.js)
   function splitPage(html) {
     const add = (body, ext) => { const h = crypto.createHash("sha1").update(body).digest("base64url").slice(0, 16), key = `${h}.${ext}`;
       if (!APP_ASSETS.has(key)) { const buf = Buffer.from(body), A = { type: ext === "js" ? "application/javascript; charset=utf-8" : "text/css; charset=utf-8", body: buf, gz: zlib.gzipSync(buf, { level: 9 }), br: null };
@@ -681,7 +684,11 @@ export function createApp({ store, dataDir }) {
     out = out.replace(/(<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*")>/, '$1 id="gfonts"><script>if(location.pathname==="/g"){const l=document.getElementById("gfonts");l.media="print";addEventListener("load",()=>{l.media="all"})}</script>');
     return out;
   }
-  app.get(/^\/_app\/([A-Za-z0-9_-]{16}\.(?:js|css))$/, (req, res) => { const A = APP_ASSETS.get(req.params[0]); if (!A) return res.status(404).type("text").send("Not found");
+  // A page drawn by the deploy before this one asks for that deploy's files, which this server never built (they live in
+  // memory): a missing script reloads the page once a minute at most, so it comes back whole from this deploy instead of
+  // half-drawn without its scripts; a missing stylesheet is empty (the reload brings the real one).
+  const STALE_JS = `(function(){try{var k="pl.staleApp",t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,String(Date.now()));location.reload()}}catch(e){}})();`;
+  app.get(/^\/_app\/([A-Za-z0-9_-]{16}\.(?:js|css))$/, (req, res) => { const A = APP_ASSETS.get(req.params[0]); if (!A) { res.set("Cache-Control", "no-store"); return req.params[0].endsWith(".js") ? res.type("application/javascript").send(STALE_JS) : res.type("text/css").send(""); }
     res.set({ "Cache-Control": "public, max-age=31536000, immutable", "Content-Type": A.type, Vary: "Accept-Encoding" }); const ae = req.headers["accept-encoding"] || "";
     if (A.br && /\bbr\b/.test(ae)) return res.set("Content-Encoding", "br").send(A.br); if (/\bgzip\b/.test(ae)) return res.set("Content-Encoding", "gzip").send(A.gz); res.send(A.body); });
   async function builtPage() {
@@ -711,7 +718,7 @@ export function createApp({ store, dataDir }) {
   // Without a photo, a share link shows the line-art card for the event's illustration (public/og/<kind>.png, made by
   // scripts/make-og.cjs). The illustration is picked the same way the invite picks its cover, using eventart.js itself.
   let EA = null; try { const sandbox = { window: {}, document: { head: { appendChild() {} }, createElement: () => ({ style: {} }), getElementById: () => null, querySelector: () => null } }; sandbox.window.document = sandbox.document; vm.runInNewContext(fs.readFileSync(path.join(PUBLIC_DIR, "eventart.js"), "utf8"), sandbox); EA = sandbox.window.EventArt || null; } catch {}
-  const ogCardFor = (ev, base) => { try { const pick = ev.coverArt && typeof ev.coverArt === "object" && EA?.valid(ev.coverArt.kind) ? String(ev.coverArt.kind).split("+")[0] : EA ? EA.kindOf(ev) : "party"; return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
+  const ogCardFor = (ev, base) => { try { const pick = String(coverOf(ev).art?.kind || "party").split("+")[0]; /* the drawing every card shows (server/eventcover.js) */ return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
   // A share link with a preview: /e/<id> tells iMessage, WhatsApp and Instagram the event's title, date and cover,
   // and is the reply page itself (public/invite.html). The part after "#" never reaches a server, so /g links can't preview.
   // "Come with me?" links (/i/<id>?with=<token>) open the same light invite; the preview says who sent it

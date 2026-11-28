@@ -47,12 +47,15 @@
 .ac-msg{font:400 14px var(--pl-font-text);color:var(--pl-success)}`;
   const css = () => { if (document.getElementById("ac-css")) return; const s = document.createElement("style"); s.id = "ac-css"; s.textContent = CSS; document.head.appendChild(s); };
   let openMenu = null; const close = () => { if (openMenu) { openMenu.el.remove(); openMenu.btn?.setAttribute("aria-expanded", "false"); openMenu.btn?.focus?.(); openMenu = null; } };
-  addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  // a small sheet of its own (over the Plans peek too): Esc closes only it and focus goes back to its button; Tab stays inside it
+  addEventListener("keydown", (e) => { if (!openMenu) return; if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+    if (e.key === "Tab") { const F = [...openMenu.el.querySelectorAll("a[href]")]; if (!F.length) return; const i = F.indexOf(document.activeElement);
+      if (i < 0 || (e.shiftKey ? i === 0 : i === F.length - 1)) { e.preventDefault(); e.stopImmediatePropagation(); (e.shiftKey ? F[F.length - 1] : F[0]).focus(); } } }, true);
   addEventListener("click", (e) => { if (openMenu && !openMenu.el.contains(e.target) && e.target.closest("[data-addcal]") !== openMenu.btn) close(); }, true);
   /** The menu next to a button: Apple / iPhone, Google, Outlook, Download .ics (and the plan's days, for a trip). */
   function open(btn, it) { css(); const same = openMenu?.btn === btn; close(); if (same) return;
-    const U = urls(it), el = document.createElement("div"); el.className = "ac-menu"; el.setAttribute("role", "menu");
-    el.innerHTML = `<b>Add to calendar</b><a role="menuitem" href="${esc(U.ics)}">Apple or iPhone</a><a role="menuitem" href="${esc(U.google)}" target="_blank" rel="noopener">Google Calendar</a><a role="menuitem" href="${esc(U.outlook)}" target="_blank" rel="noopener">Outlook</a><a role="menuitem" href="${esc(U.ics)}" download="${esc((it.title || "plan").replace(/[^\w -]+/g, "").slice(0, 40) || "plan")}.ics">Download .ics</a>${U.itinerary ? `<a role="menuitem" href="${esc(U.itinerary)}">Every part of the plan</a>` : ""}`;
+    const U = urls(it), el = document.createElement("div"); el.className = "ac-menu"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Add to calendar");
+    el.innerHTML = `<b>Add to calendar</b><a href="${esc(U.ics)}">Apple or iPhone</a><a href="${esc(U.google)}" target="_blank" rel="noopener">Google Calendar</a><a href="${esc(U.outlook)}" target="_blank" rel="noopener">Outlook</a><a href="${esc(U.ics)}" download="${esc((it.title || "plan").replace(/[^\w -]+/g, "").slice(0, 40) || "plan")}.ics">Download .ics</a>${U.itinerary ? `<a href="${esc(U.itinerary)}">Every part of the plan</a>` : ""}`;
     document.body.appendChild(el); const r = btn.getBoundingClientRect(); el.style.top = Math.min(innerHeight - el.offsetHeight - 8, r.bottom + 6) + "px"; el.style.left = Math.max(8, Math.min(innerWidth - el.offsetWidth - 8, r.right - el.offsetWidth)) + "px";
     el.addEventListener("click", (e) => { if (e.target.closest("a")) setTimeout(close, 50); }); btn.setAttribute("aria-expanded", "true"); openMenu = { el, btn }; el.querySelector("a")?.focus(); }
 

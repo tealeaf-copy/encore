@@ -42,7 +42,7 @@
   }
   function coverHtml(p) {
     if (p.cover) return `<img src="${esc(p.cover)}" alt="" loading="lazy">`;
-    try { const E = window.EventArt; if (E?.cover) { E.ensureCss?.(); const a = E.cover({ title: p.title, coverArt: p.coverArt, date: p.date }, { title: "", label: "" }); if (typeof a === "string" && a) return a; } } catch {}
+    try { const E = window.EventArt; if (E?.cover) { E.ensureCss?.(); const a = E.cover({ title: p.title, coverArt: p.coverArt, date: p.date, coverSpec: p.coverSpec }, { title: "", label: "" }); if (typeof a === "string" && a) return a; } } catch {}
     return `<span class="pk-art-blank" aria-hidden="true"></span>`;
   }
   function whoHtml(w) { if (!w || !w.count) return w ? `<p class="pk-who"><span class="pk-whotxt">No one's in yet.</span></p>` : "";
@@ -65,7 +65,7 @@
   function actsHtml(p) { const A = p.actions || {}, host = p.role === "host", L = [];
     if (host) { L.push(`<a class="pk-btn pk-pri" href="${esc(p.manage.href)}">${I.edit}Manage event</a>`); if (p.manage.share) L.push(`<button type="button" class="pk-btn" data-pk-share>${I.share}Share invite</button>`); L.push(`<a class="pk-btn" href="${esc(p.href)}">${I.open}Open event page</a>`); }
     else L.push(`<a class="pk-btn pk-pri" href="${esc(p.href)}">${I.open}Open event page</a>`);
-    if (A.calendar) L.push(`<button type="button" class="pk-btn" data-pk-cal aria-haspopup="menu" aria-expanded="false">${I.cal}Add to calendar</button>`);
+    if (A.calendar) L.push(`<button type="button" class="pk-btn" data-pk-cal aria-haspopup="dialog" aria-expanded="false">${I.cal}Add to calendar</button>`);
     if (A.invite) L.push(`<button type="button" class="pk-btn" data-pk-invite>${I.pair}Invite friends</button>`);
     if (A.chat) L.push(`<a class="pk-btn" href="${esc(A.chat)}">${I.chat}Open group chat</a>`);
     return `<div class="pk-acts">${L.join("")}</div><div class="pk-note" aria-live="polite"></div>`; }

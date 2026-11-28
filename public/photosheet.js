@@ -126,7 +126,7 @@
           dgo.onclick = go; ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go(); } }); if (drawn.length) dgo.textContent = "Draw another"; }
         // recent uploads
         fetch("/api/photos/recent", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { photos: [] })).then((j) => { const box = body.querySelector("[data-recent]"); if (!box) return; const L = (j.photos || []).slice(0, 12);
-          box.innerHTML = L.length ? L.map((p, i) => `<button type="button" class="phs-t" style="aspect-ratio:${K.round ? 1 : 4 / 3}" data-i="${i}" aria-pressed="${p.url === cur.source}" aria-label="Use this upload"><img src="${esc(p.url)}" alt="" loading="lazy"></button>`).join("") : `<p class="phs-quiet">Photos you upload show here, so you can use one again.</p>`;
+          box.innerHTML = L.length ? L.map((p, i) => `<button type="button" class="phs-t" style="aspect-ratio:${K.round ? 1 : 4 / 3}" data-i="${i}" aria-pressed="${p.url === cur.source}" aria-label="Use upload ${i + 1} of ${L.length}"><img src="${esc(p.url)}" alt="" loading="lazy"></button>`).join("") : `<p class="phs-quiet">Photos you upload show here, so you can use one again.</p>`;
           box.querySelectorAll("[data-i]").forEach((b) => (b.onclick = async () => { const p = L[+b.dataset.i]; try { frame({ img: await loadImage(p.url), source: p.url, focus: p.url === cur.source && cur.focus ? cur.focus : { x: 50, y: 50 } }); } catch (err) { say(err.message); } })); }).catch(() => {});
         // templates
         const showT = (T) => { const box = body.querySelector("[data-tpl]"); if (!box) return; if (!T.length) { box.previousElementSibling.remove(); box.remove(); return; }

@@ -2,6 +2,8 @@
 /* The invite, on its own: what a guest needs to say yes, in a page small enough to open instantly on a phone.
    Ask to join events reply here too. Anything more involved (paid spots with a pay step, slots, polls, plus-ones, work
    events) opens the full invite at /g#rsvp-<id>. */
+/* the page-to-page fade's opt-in (server/appstore.js VT_OPT_IN): here, so a fade from the feed or Discover into /e/ never aborts */
+@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
 :root{--paper:var(--pl-page);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--ember-d:var(--pl-accent-text);--line:var(--pl-line);--card:#fff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 a{color:var(--ember-d)}main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 110px}

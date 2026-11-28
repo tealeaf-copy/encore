@@ -100,7 +100,7 @@
     const where = [...new Set([e.meetPoint || e.venueName, e.hood || e.city])].filter(Boolean).join(" · "), route = httpsUrl(e.routeUrl), bring = bringOf(e);
     // the kicker over the title: "MADISON IS HOSTING · HACK NIGHT"
     const kw = (() => { try { const w = LK?.cornerWord?.(e) || ""; return /^event$/i.test(w) || w == window.EventTypes?.labelOf(e) ? "" : w; } catch { return ""; } })(), hn = esc(first), T = e.teamUp?.hosts || [], who = T[1] ? esc(T.map((x) => x.first || x.name).join(" and ")) + " are hosting" : h.name || e.hostName ? `${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${hn}</a>` : hn} is hosting` : "";
-    const kicker = (window.EventTypes ? EventTypes.tag(e, { cls: "pl-type--b" }) : "") + (who || kw ? `<p class="kicker">${[who, esc(kw)].filter(Boolean).join(" · ")}</p>` : "");
+    const kicker = (window.EventTypes && !kw ? EventTypes.tag(e, { cls: "pl-type--b" }) : "") + (who || kw ? `<p class="kicker">${[who, esc(kw)].filter(Boolean).join(" · ")}</p>` : "");
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
     // "6 pairs" or "12 spots" (public/spots.js)
@@ -178,11 +178,11 @@
     /\brun/.test(e.activity) && more("/runfollow.js", () => RunFollow(e, h, data, rid, code, eid));
     // a guest who steps out frees their spot and hears it went through
     const out = $("#out"); if (out) out.onclick = async () => { out.disabled = true;
-      try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": S.ws }, body: JSON.stringify({ response: "no", changedAt: Date.now() }) }); if (!r.ok) throw 0;
+      try { const r = await fetch("/api/public/reply/" + encodeURIComponent(eid), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ response: "no", rid, code }) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "");
         try { const m0 = JSON.parse(ls.get("encore-rsvp-" + eid) || "{}"); ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, response: "no" })); } catch {}
         const tk = $("#tk"); tk.innerHTML = `<h2>You're out</h2><p class="muted" style="margin:0">Thanks for telling ${who}.</p><div class="btns"><a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">Change reply</a></div>`;
         if (yes && $(".going-n")) { const n = $(".going-n"), k = Math.max(0, (parseInt(n.textContent, 10) || 1) - 1); if (k) n.textContent = `${k} in`; else document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); } }
-      catch { out.disabled = false; out.textContent = "Didn't go through. Tap to try again"; } };
+      catch (x) { out.disabled = false; out.textContent = (x.message ? x.message + " " : "") + "Didn't go through. Tap to try again"; } };
     const payBtn = $("#payBtn"), iPaid = $("#iPaid");
     const payPass = $("#payPass"), payDrop = $("#payDrop");
     if (payBtn && iPaid) { [payBtn, payPass, payDrop].filter(Boolean).forEach((b) => b.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; }));

@@ -41,6 +41,24 @@
   addEventListener("error", (e) => { const img = e.target; if (!img || img.tagName !== "IMG" || img.dataset.plBroken || img.hasAttribute("data-no-fallback")) return; img.dataset.plBroken = "1";
     try { const box = img.closest(".ls-media,.fv-media,.gxcover,.cover,[data-cover]"); if (box && window.EventArt?.cover) { const t = document.createElement("div"); t.innerHTML = window.EventArt.cover({ title: img.alt || box.closest("article,a,section")?.querySelector("h2,h3,.ls-title,.fv-title")?.textContent || "" }, { title: "", label: "" }); const art = t.firstElementChild; if (art) { art.setAttribute("aria-hidden", "true"); img.replaceWith(art); return; } } } catch {}
     img.style.visibility = "hidden"; }, true);
+  // a script a tap fetches on demand (a sheet's module) that didn't load (a dropped connection, a deploy mid-tap): its tag
+  // goes, so the next tap fetches it again instead of finding a dead tag and doing nothing, and one calm line says so
+  addEventListener("error", (e) => { const s = e.target; if (!s || s.tagName !== "SCRIPT" || !s.src || !same(s.src) || document.readyState === "loading") return; s.remove();
+    if (!document.body || document.getElementById("plRetry")) return; const b = document.createElement("div"); b.id = "plRetry"; b.setAttribute("role", "status");
+    b.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:2147483601;max-width:420px;margin:0 auto;padding:12px 14px;border-radius:6px;background:var(--pl-ink,#1D1B18);color:#fff;font:500 15px/1.35 'IBM Plex Sans',system-ui,sans-serif;text-align:center";
+    b.textContent = navigator.onLine === false ? "You're offline. Tap again when you're back." : "That didn't load. Tap it again."; document.body.appendChild(b); setTimeout(() => b.remove(), 4000); }, true);
+  // a floating button (the host page's pencil, a shop's cart) never sits on top of a control: while one is under it, it
+  // steps aside (fades and lets taps through) until the page scrolls on. Pages add their FABs late, so it looks each time.
+  { const FAB = ".store-fab,.shop-fab,.own-fab", CTL = 'a[href],button,input,select,textarea,summary,[role="button"],[tabindex="0"]'; let q = 0;
+    const fixed = (n) => { for (; n && n !== document.body; n = n.parentElement) if (/fixed|sticky/.test(getComputedStyle(n).position)) return true; return false; };
+    const look = () => { q = 0; for (const f of document.querySelectorAll(FAB)) { if (!f.getClientRects().length) continue; const r = f.getBoundingClientRect(); let hit = false;
+      for (const [x, y] of [[r.left + 4, r.top + 4], [r.right - 4, r.top + 4], [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4], [r.left + r.width / 2, r.top + r.height / 2]]) {
+        for (const el of document.elementsFromPoint(x, y)) { if (f.contains(el)) continue; const c = el.closest(CTL); if (c && !f.contains(c) && !fixed(c)) { hit = true; break; } } if (hit) break; }
+      f.classList.toggle("pl-fab-dodge", hit); } };
+    const soon = () => { if (!q && window.requestAnimationFrame) q = requestAnimationFrame(look); };
+    addEventListener("scroll", soon, { passive: true }); addEventListener("resize", soon); addEventListener("load", soon);
+    const st = () => { if (document.getElementById("plFabCss")) return; const s = document.createElement("style"); s.id = "plFabCss"; s.textContent = ".pl-fab-dodge{opacity:0!important;pointer-events:none!important;transition:opacity .15s}"; document.head.appendChild(s); };
+    if (document.head) st(); else addEventListener("DOMContentLoaded", st); setTimeout(soon, 1500); }
   // the service worker drew this page from its cache and the fresh copy turned out different in kind: load that one
   try { navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.plReload && e.data.plReload === location.href) location.reload(); }); } catch {}
   const key = () => { try { return crypto.randomUUID(); } catch { return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12); } };
@@ -54,6 +72,22 @@
   addEventListener("pagereveal", (e) => { quiet(e.viewTransition); cap(e.viewTransition); }); addEventListener("pageswap", (e) => quiet(e.viewTransition));
   // a dropped connection rejects fetch with a TypeError; pages catch most of them, the rest shouldn't read as crashes
   addEventListener("unhandledrejection", (e) => { const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(String(r.message))) { e.preventDefault(); if (!window.__plNetNoted) { window.__plNetNoted = 1; console.warn("[net] a request failed:", r.message); } } });
+  // a sheet that says aria-modal keeps Tab inside it, whichever script drew it: Tab from the last control goes to the
+  // first, Shift+Tab from the first to the last, and a Tab while focus is still on the page behind goes into the sheet
+  // (public/savelist.js does the same on the light invite, which doesn't load this file)
+  window.__plTrap = 1;
+  addEventListener("keydown", (e) => { if (e.key !== "Tab" || e.defaultPrevented) return;
+    const D = [...document.querySelectorAll('[aria-modal="true"]')].filter((d) => d.getClientRects().length && getComputedStyle(d).visibility !== "hidden"), d = D[D.length - 1]; if (!d) return;
+    const F = [...d.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter((x) => x.getClientRects().length && !x.closest("[hidden],[inert]"));
+    if (!F.length) return; const i = F.indexOf(document.activeElement);
+    if (!d.contains(document.activeElement) || (e.shiftKey ? i <= 0 : i === F.length - 1)) { e.preventDefault(); (e.shiftKey ? F[F.length - 1] : F[0]).focus(); } });
+  // and when that sheet goes away and leaves focus nowhere (on the page body), it goes back to what had it before
+  let back = null, had = false; addEventListener("focusin", (e) => { const t = e.target; if (t && t !== document.body && t.closest && !t.closest('[aria-modal="true"]')) back = t; }, true);
+  const watchModal = () => new MutationObserver(() => { const now = [...document.querySelectorAll('[aria-modal="true"]')].some((d) => d.getClientRects().length); /* a sheet that hides instead of leaving counts as gone */ if (had && !now && (!document.activeElement || document.activeElement === document.body) ) { /* what had focus may have been drawn again meanwhile (a form that became a ticket): then the page's heading, or its first control */ let t = back?.isConnected && back.getClientRects().length ? back : [...document.querySelectorAll("main h1, h1, main h2, h2")].find((h) => h.getClientRects().length && !h.closest("[aria-modal]")) || [...document.querySelectorAll("a[href], button")].find((x) => x.getClientRects().length && !x.closest("nav, header, [aria-modal]")); if (t && t !== back && !t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1"); try { t?.focus({ preventScroll: true }); } catch {} } had = now; }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "class", "open"] });
+  if (document.body) watchModal(); else addEventListener("DOMContentLoaded", watchModal);
+  // sheets lock the page's scroll while they're open (overflow: hidden on the body); on a desktop with classic
+  // scrollbars that took the scrollbar away and slid the whole page sideways under the sheet. Keep its gutter.
+  try { document.documentElement.style.scrollbarGutter = "stable"; } catch {}
 })();
 
 // "Read more" on a clamped intro (.pl-intro in public/system.css): a [data-pl-more] button opens the intro it names

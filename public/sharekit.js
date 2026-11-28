@@ -139,7 +139,7 @@
 .plsh-qr{width:min(64vw,252px);aspect-ratio:1;display:block;border-radius:16px;border:1px solid var(--pl-line,#E2DCD1);background:#fff}
 .plsh-dc{border:0;background:none;color:var(--pl-soft,#5D564E);font:500 13px var(--pl-font-text,system-ui);text-decoration:underline;text-underline-offset:3px;min-height:36px;cursor:pointer;margin-top:-6px}
 .plsh-tap{margin:0;color:var(--pl-muted,#6E665D);font-size:13px;text-align:center;min-height:18px}
-.plsh-dots{display:flex;justify-content:center;align-items:center;margin:6px 0 0}.plsh-dots button{width:28px;height:28px;border:0;background:none;display:grid;place-items:center;cursor:pointer;padding:0}.plsh-dots button::after{content:"";width:6px;height:6px;border-radius:3px;background:var(--pl-line-strong,#CFC6B8);transition:width .2s,background .2s}.plsh-dots button[aria-current="true"]::after{width:18px;background:var(--pl-ink,#1D1B18)}
+.plsh-dots{display:flex;justify-content:center;align-items:center;margin:6px 0 0}.plsh-dots button{width:44px;height:44px;margin:-8px;border:0;background:none;display:grid;place-items:center;cursor:pointer;padding:0}.plsh-dots button::after{content:"";width:6px;height:6px;border-radius:3px;background:var(--pl-line-strong,#CFC6B8);transition:width .2s,background .2s}.plsh-dots button[aria-current="true"]::after{width:18px;background:var(--pl-ink,#1D1B18)}
 .plsh-nav{position:absolute;top:46%;width:40px;height:40px;border-radius:50%;border:1px solid var(--pl-line,#E2DCD1);background:var(--pl-surface,#FBF9F5);color:var(--pl-ink,#1D1B18);display:none;place-items:center;cursor:pointer}@media (hover:hover) and (min-width:700px){.plsh-nav{display:grid}}.plsh-nav[disabled]{opacity:0;pointer-events:none}.plsh-nav.p{left:10px}.plsh-nav.n{right:10px}
 .plsh-row{display:flex;justify-content:center;gap:4px;padding:14px 8px 0}
 .plsh-t{flex:0 1 68px;min-width:0;display:grid;justify-items:center;gap:6px;border:0;background:none;color:var(--pl-ink,#1D1B18);font:500 13px/1.2 var(--pl-font-text,system-ui);cursor:pointer;padding:4px 0;text-align:center}
@@ -156,7 +156,7 @@
   async function shareFile(blob, name, extra = {}) { try { const f = new File([blob], name, { type: blob.type }); if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], ...extra }); return true; } } catch (e) { if (e?.name === "AbortError") return true; } return false; }
   const phone = () => matchMedia("(pointer:coarse)").matches;
 
-  async function open(opts = {}) { css(); await fill(opts); const D = norm(opts), prev = document.activeElement;
+  async function open(opts = {}) { const prev0 = document.activeElement; css(); await fill(opts); const D = norm(opts), prev = prev0 && prev0 !== document.body && prev0.isConnected ? prev0 : document.activeElement;
     const name = (D.title || "invite").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 40) || "invite";
     const msg = opts.text || `${D.title}${D.when ? `, ${D.when}` : ""}${D.where ? ` at ${D.where}` : ""}. Are you in? ${D.url}`;
     const S = [
@@ -181,7 +181,7 @@
     const tapOff = (l) => { l.textContent = "Tap to copy"; l.classList.toggle("on", false); };
     let nt = 0; const say = (t) => { live.textContent = t; const line = $$(".plsh-tap", bg)[Math.max(0, at)]; $$(".plsh-tap", bg).forEach(tapOff);
       if (line) { line.textContent = t; line.classList.toggle("on", true); } clearTimeout(nt); nt = setTimeout(() => line && tapOff(line), 2600); };
-    const close = () => { bg.remove(); document.removeEventListener("keydown", key, true); document.documentElement.style.overflow = prevOverflow; try { prev?.focus?.({ preventScroll: true }); } catch {} opts.onClose?.(); };
+    const close = () => { bg.remove(); document.removeEventListener("keydown", key, true); document.documentElement.style.overflow = prevOverflow; try { /* back to what opened it; a tap leaves focus on the body, and the button may have been drawn again: then the page's heading */ const t = prev && prev !== document.body && prev.isConnected ? prev : [...document.querySelectorAll("#tk h2, main h1, main h2, h1, h2")].find((h) => h.getClientRects().length && !h.closest("[aria-modal]")); if (t && t !== prev && !t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1"); t?.focus?.({ preventScroll: true }); } catch {} opts.onClose?.(); };
     const key = (e) => { if (!bg.isConnected) return; if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && !/TEXTAREA|INPUT/.test(e.target?.tagName || "")) { e.preventDefault(); go(at + (e.key === "ArrowRight" ? 1 : -1)); } };
     document.addEventListener("keydown", key, true); $(".plsh-x", bg).onclick = close; bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
     const tr = (t) => { try { opts.track?.(t); } catch {} };
@@ -193,9 +193,9 @@
     paint("card").then((b) => { if (b && opts.onCard) { try { opts.onCard(b, D); } catch {} } }); setTimeout(() => { paint("flyer"); paint("qr"); }, 60);
     // the actions
     // Messages: sms:?&body= on iPhone, sms:?body= on Android; elsewhere the share sheet, then copy (friend invites use the same, public/invites.js)
-    const UA = navigator.userAgent || "", droid = /Android/i.test(UA), phone = droid || /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const UA = navigator.userAgent || "", droid = /Android/i.test(UA), isPhone = droid || /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const smsTo = (m) => (droid ? "sms:?body=" : "sms:?&body=") + encodeURIComponent(m);
-    const sms = async () => { tr("sms"); if (phone) { location.href = smsTo(msg); return; } if (navigator.share) { try { await navigator.share({ text: msg }); return; } catch (e) { if (e && e.name === "AbortError") return; } } if (await copyText(msg)) say("Copied. Paste it into a text"); };
+    const sms = async () => { tr("sms"); if (isPhone) { location.href = smsTo(msg); return; } if (navigator.share) { try { await navigator.share({ text: msg }); return; } catch (e) { if (e && e.name === "AbortError") return; } } if (await copyText(msg)) say("Copied. Paste it into a text"); };
     const more = async () => { tr("more"); if (navigator.share) { try { await navigator.share({ title: D.title, text: msg.replace(D.url, "").trim(), url: D.url }); return; } catch (e) { if (e?.name === "AbortError") return; } } if (await copyText(msg)) say("Copied. Paste it anywhere"); };
     // Instagram takes no link from a web page, so the link is copied and Instagram opens, ready to paste in a chat
     const insta = async () => { tr("instagram"); const ok = await copyText(D.url); say(ok ? "Link copied. Paste it in an Instagram chat" : "Opening Instagram");
@@ -203,7 +203,7 @@
     const img = async (k, how) => { const b = await paint(k); if (!b) return say("One second, it's still drawing"); const file = `${name}-${k}.png`; tr(how === "story" ? "story" : how === "save" ? "save" : how === "sms" ? "sms" : "more");
       if (how === "save") { if (phone() && (await shareFile(b, file))) return; download(b, file); return say(k === "qr" ? "QR code saved" : "Flyer saved"); }
       if (how === "story") { const ok = await copyText(D.url); if (await shareFile(b, file)) return; download(b, file); return say(ok ? "Saved. The link is copied for a link sticker" : "Saved. Add it to your story"); }
-      if (await shareFile(b, file, { text: msg })) return; download(b, file); await copyText(msg); if (how === "sms") { say("Saved. Attach it in Messages"); if (phone) setTimeout(() => { location.href = smsTo(msg); }, 600); } else say("Saved, and the link is copied"); };
+      if (await shareFile(b, file, { text: msg })) return; download(b, file); await copyText(msg); if (how === "sms") { say("Saved. Attach it in Messages"); if (isPhone) setTimeout(() => { location.href = smsTo(msg); }, 600); } else say("Saved, and the link is copied"); };
     const ROWS = {
       link: [["Copy link", IC.link, async () => { tr("copy"); if (await copyText(D.url)) say("Link copied"); }, 1], ["Messages", IC.sms, sms], ["Instagram", IC.ig, insta], ["WhatsApp", IC.wa, () => { tr("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener"); }], ["More", IC.more, more]],
       flyer: [["Save", IC.save, () => img("flyer", "save"), 1], ["Messages", IC.sms, () => img("flyer", "sms")], ["Stories", IC.story, () => img("flyer", "story")], ["More", IC.more, () => img("flyer", "more")]],

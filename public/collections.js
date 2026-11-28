@@ -30,7 +30,7 @@
   function hostCard(h) { return `<article class="plk-host"><span class="plk-av" aria-hidden="true">${face(h)}</span><div class="plk-hid"><a class="plk-hn" href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>
       <small>${esc([h.area || h.city, h.again].filter(Boolean).join(" · "))}</small>${h.next ? `<a class="plk-nx" href="${esc(SAFE(h.next.url) ? h.next.url : "/e/" + encodeURIComponent(h.next.id))}"><b>Next</b> <span>${esc([day(h.next.date), h.next.title].filter(Boolean).join(" · "))}</span></a>` : ""}</div></article>`; }
   const CSS = `
-section.plk-shelves{display:grid;gap:28px;margin:4px 0 8px;padding:8px 0 0}section.plk-sh{padding:0}
+section.plk-shelves{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;margin:4px 0 8px;padding:8px 0 0}section.plk-sh{padding:0}
 .plk-shelves:empty{display:none}
 .plk-slc{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:12px 0 0;padding:0 14px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}.plk-slc:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
 .plk-card .plk-sl{position:absolute;top:8px;right:8px;z-index:2;width:44px;height:44px;display:grid;place-items:center;border-radius:999px;border:1.5px solid var(--pl-ink,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);cursor:pointer;padding:0}.plk-card .plk-sl:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}

@@ -54,9 +54,11 @@
   function footLink() {
     if (OWN.test(P) || (P === "/" && signed()) || [...document.querySelectorAll("[data-help],[data-help-open],a[href='/help']")].some((a) => a.getClientRects().length)) return; // a Help link people can see (the rail's hides on a phone)
     const f = [...document.querySelectorAll("footer")].at(-1), a = document.createElement("a"); a.href = "/help"; a.setAttribute("data-help", ""); a.textContent = "Help";
+    // 44px tall and wide to a finger, without moving the line it sits in
+    a.style.cssText = "display:inline-block;padding:12px 8px;margin:-12px -2px;min-width:44px;box-sizing:border-box;text-align:center";
     if (f) { a.className = "pl-help-link"; f.append(" ", a); return; }
     const p = document.createElement("p"); p.className = "pl-help-foot"; p.style.cssText = "margin:24px 16px 32px;text-align:center;font:500 16px/1.4 var(--pl-font-text,'IBM Plex Sans',system-ui,sans-serif);color:var(--pl-soft,#444845)";
-    a.textContent = "Need a hand? Get help"; a.style.color = "var(--pl-accent-text,#29489A)"; p.append(a); (document.querySelector("main") || document.body).append(p);
+    a.textContent = "Need a hand? Get help"; a.style.color = "var(--pl-accent-text,#29489A)"; a.style.margin = "-12px 0"; p.append(a); (document.querySelector("main") || document.body).append(p);
   }
 
   // "Something went wrong" toasts: add Get help and the ref

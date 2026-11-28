@@ -36,6 +36,7 @@
 .hl-links{display:flex;gap:14px;flex-wrap:wrap;font-size:14px}.hl-links a{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-accent-text);font-weight:600;text-decoration:none}
 .hl-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:9990;display:flex;align-items:flex-end;justify-content:center}
 .hl-sheet{background:var(--pl-page);border:1px solid var(--pl-ink);border-radius:6px 6px 0 0;width:100%;max-width:480px;padding:20px 16px calc(20px + env(safe-area-inset-bottom));text-align:center;color:var(--pl-ink)}
+.hl-cel{display:flex;gap:12px;align-items:flex-start;margin:0 0 12px;padding:14px 16px;border:1px solid var(--pl-line);border-radius:6px;background:var(--pl-surface)}.hl-cel h2{font:600 24px/1.2 var(--pl-font-display);margin:0 0 4px}.hl-cel p{margin:0 0 10px;color:var(--pl-soft)}.hl-cel svg{flex:none}
 @media (min-width:600px){.hl-sheet-bg{align-items:center}.hl-sheet{border-radius:6px}}
 .hl-sheet h2{font:600 28px/1.15 var(--pl-font-display);margin:8px 0 6px}.hl-sheet p{margin:0 0 16px;color:var(--pl-soft)}
 `;
@@ -50,10 +51,11 @@
     post: async (u, b) => { const r = await fetch(u, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(b || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "That didn't work."), { status: r.status }); return j; } };
 
   /** The once-only celebration for a real milestone: a sheet, Potto cheering, paper confetti. */
+  // (it opened as a sheet over Home by itself; now it's a card at the top of Home's own card, and the confetti)
   function celebrate(c, { link = "" } = {}) {
-    if (!c) return; const bg = document.createElement("div"); bg.className = "hl-sheet-bg";
-    bg.innerHTML = `<div class="hl-sheet" role="dialog" aria-modal="true" aria-labelledby="hlCelTitle">${potto("cheer", 96)}<h2 id="hlCelTitle">${esc(c.title)}</h2><p>${esc(c.line)}</p><div class="hl-foot" style="justify-content:center">${link ? `<a class="hl-btn pri" href="${esc(link)}">Open it</a>` : ""}<button type="button" class="hl-btn" id="hlCelOk">Thanks, Potto</button></div></div>`;
-    document.body.appendChild(bg); fx.confetti(); const close = () => bg.remove(); bg.querySelector("#hlCelOk").onclick = close; bg.onclick = (e) => { if (e.target === bg) close(); }; bg.querySelector("#hlCelOk").focus();
+    if (!c || document.getElementById("hlCel")) return; const at = document.getElementById("hlCard"); if (!at) return; const bg = document.createElement("section"); bg.id = "hlCel"; bg.className = "hl-cel"; bg.setAttribute("role", "status"); bg.setAttribute("aria-labelledby", "hlCelTitle");
+    bg.innerHTML = `${potto("cheer", 64)}<div><h2 id="hlCelTitle">${esc(c.title)}</h2><p>${esc(c.line)}</p><div class="hl-foot">${link ? `<a class="hl-btn pri" href="${esc(link)}">Open it</a>` : ""}<button type="button" class="hl-btn" id="hlCelOk">Thanks, Potto</button></div></div>`;
+    at.before(bg); fx.confetti(); bg.querySelector("#hlCelOk").onclick = () => bg.remove();
   }
 
   // ---------- host Home's card ----------

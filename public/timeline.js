@@ -80,7 +80,7 @@
   const peekAttr = (it) => (it.eventId && it.kind !== "session" ? ` data-peek="${esc(it.eventId)}"` : ""); // a saved session opens the agenda itself
   /** One row: the time, a node on the line, the title (serif for events), one muted sub-line, a chevron. */
   const calOk = (it) => it.kind !== "todo" && !it.draft && /^\d{4}-\d{2}-\d{2}$/.test(it.date || "");
-  const calBtn = (it) => `<button type="button" class="tl-cal" data-addcal="${esc(it.key)}" aria-label="Add ${esc(it.title)} to your calendar" aria-haspopup="menu" aria-expanded="false">${ICON.cal}</button>`;
+  const calBtn = (it) => `<button type="button" class="tl-cal" data-addcal="${esc(it.key)}" aria-label="Add ${esc(it.title)} to your calendar" aria-haspopup="dialog" aria-expanded="false">${ICON.cal}</button>`;
   function rowHtml(it, { now = Date.now(), dim = true, cal = false } = {}) { const withCal = cal && calOk(it);
     const past = dim && isPast(it, now), live = isLive(it, now), time = it.allDay ? (it.span ? "" : "All day") : clock(it.time);
     const st = it.status ? `<span class="tl-st">${esc(it.status)}</span>` : "", rest = it.host ? esc(`with ${it.host}`) : "";

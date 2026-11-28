@@ -39,7 +39,7 @@ import { latestReplies } from "./tables.js";
 const ISO = /^\d{4}-\d{2}-\d{2}$/, ID = /^[A-Za-z0-9_-]{2,80}$/;
 const clean = (v, n = 200) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s*\u2014\s*/g, ", ").replace(/\s+/g, " ").trim().slice(0, n);
 const lc = (s) => String(s || "").trim().toLowerCase();
-const first = (n) => { const w = String(n || "").trim().split(/\s+/)[0] || ""; return w ? w[0].toUpperCase() + w.slice(1) : ""; };
+const first = (n) => { const w = (String(n || "").trim().split(/\s+/)[0] || "").replace(/['’]s$/i, ""); /* "Tom's Weekends" is Tom, not "Tom's is asking" */ return w ? w[0].toUpperCase() + w.slice(1) : ""; };
 const newId = () => crypto.randomBytes(5).toString("hex");
 const dayMs = 864e5;
 const dayNo = (d) => Math.round(Date.parse(d + "T12:00:00Z") / dayMs);

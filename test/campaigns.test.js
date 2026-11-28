@@ -165,7 +165,7 @@ test("the guest's own link: reply, choose to share, and feedback after; sign-ups
 test("the report: members and people with the link only, and the link can be turned off", async () => {
   const id = S.campaigns.C1;
   assert.equal((await get(`/teams/campaigns/${id}/report`)).status, 404);
-  const html = await (await get(`/teams/campaigns/${id}/report`, S.viewer.c)).text(); assert.match(html, /Campaign report/); assert.doesNotMatch(html, /@/);
+  const html = await (await get(`/teams/campaigns/${id}/report`, S.viewer.c)).text(); assert.match(html, /Campaign report/); assert.doesNotMatch(html, /[\w.+-]+@[\w-]+\.[a-z]{2,}/i, "no email addresses"); // (the app head's CSS has @media and @view-transition)
   assert.equal((await post(`/api/campaigns/${id}/report-link`, {}, S.viewer.c)).status, 403);
   const { url } = await ok(await post(`/api/campaigns/${id}/report-link`, {}, S.editor.c)); assert.equal((await get(url)).status, 200);
   assert.equal((await get(url.replace(/k=\w+/, "k=wrong"))).status, 404);

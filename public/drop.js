@@ -79,7 +79,7 @@
   /* the guest-facing "What I offer" on the host page wears the host's brand kit (the page's --head, --body, --accent, --card, --line) */
   .offer{margin:24px 0 8px}.offer>h2{margin:0 0 4px}.offer>.of-sub{margin:0 0 12px;color:var(--soft,var(--pl-soft,#444845));font-size:16px}
   .of-list{display:grid;gap:12px}.of-row{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:center;padding:14px;border:1.5px solid var(--line,var(--pl-line,#CFC8B9));border-radius:6px;background:var(--card,#fff)}
-  .of-art{width:64px;height:64px;border-radius:6px;background:color-mix(in srgb,var(--accent,var(--pl-accent,#29489A)) 14%,var(--card,#fff));color:var(--accent,var(--pl-accent,#29489A));display:grid;place-items:center;overflow:hidden}.of-art img{width:100%;height:100%;object-fit:cover}.of-art svg{width:100%;height:auto}.of-art svg[width]{width:28px;height:28px}
+  .of-art{width:64px;height:64px;border-radius:6px;background:color-mix(in srgb,var(--accent,var(--pl-accent,#29489A)) 14%,var(--card,#fff));color:var(--accent,var(--pl-accent,#29489A));display:grid;place-items:center;overflow:hidden}.of-art img{width:100%;height:100%;object-fit:cover}.of-art{position:relative}.of-art:has(.ea-cover){color:var(--pl-ink,#1B1D1C)}.of-art .ea-cover{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;border-radius:0!important}.of-art .ea-cover svg[width]{width:100%;height:100%}.of-art svg{width:100%;height:auto}.of-art svg[width]{width:28px;height:28px}
   .of-b{min-width:0}.of-k{display:block;font:600 13px var(--body,"IBM Plex Sans"),system-ui,sans-serif;color:var(--soft,var(--pl-soft,#444845));margin:0 0 2px}.of-b b{display:block;text-wrap:balance;font:600 18px/1.25 var(--head,var(--pl-font-text,"IBM Plex Sans")),system-ui,sans-serif;overflow-wrap:anywhere}.of-b p{margin:2px 0 0;font-size:14px;color:var(--soft,var(--pl-soft,#444845));overflow-wrap:anywhere;text-wrap:pretty}.of-b p span{white-space:nowrap}
   .of-go{grid-column:1/-1;justify-self:start;min-height:44px;padding:0 20px;border-radius:6px;white-space:nowrap;background:var(--accent,var(--pl-accent,#29489A));color:var(--on-brand,#fff);border:0;font:600 16px var(--head,var(--pl-font-text,"IBM Plex Sans")),system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
   @media (min-width:700px){.of-row{grid-template-columns:72px minmax(0,1fr) auto}.of-art{width:72px;height:72px}.of-go{grid-column:auto;justify-self:end}}
@@ -88,12 +88,15 @@
   .of-empty{padding:16px;border:1.5px solid var(--line,var(--pl-line,#CFC8B9));border-radius:6px;color:var(--soft,var(--pl-soft,#444845))}`;
   const css = () => { if ($("#dp-css")) return; const s = document.createElement("style"); s.id = "dp-css"; s.textContent = CSS + PCSS; document.head.appendChild(s); };
 
-  function sheet({ title, sub = "", step = 0, of = 0, stepName = "", body, foot = "", label }) { css(); $("#dpSheet")?.remove();
-    const bg = document.createElement("div"); bg.className = "dp-bg"; bg.id = "dpSheet";
+  // a step, or the next sheet in a flow, draws into the sheet that is already open: the backdrop never flashes off and
+  // on between them (one tap, one screen), and focus stays where it was going back to
+  function sheet({ title, sub = "", step = 0, of = 0, stepName = "", body, foot = "", label }) { css(); const old = $("#dpSheet"), keep = old?.__prev;
+    if (old) { old.__key && document.removeEventListener("keydown", old.__key); old.remove(); }
+    const bg = document.createElement("div"); bg.className = "dp-bg" + (old ? " dp-again" : ""); bg.id = "dpSheet";
     bg.innerHTML = `<div class="dp-sheet" role="dialog" aria-modal="true" aria-label="${esc(label || title)}"><div class="dp-hd"><div style="flex:1;min-width:0">${of ? `<p class="dp-step">Step ${step} of ${of} · ${esc(stepName)}</p><div class="dp-bar" aria-hidden="true">${Array.from({ length: of }, (_, i) => `<i class="${i < step ? "on" : ""}"></i>`).join("")}</div>` : ""}<h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</div><button type="button" class="dp-x" aria-label="Close">${I.x}</button></div><div class="dp-body">${body}</div>${foot ? `<div class="dp-ft">${foot}</div>` : ""}</div>`;
-    document.body.appendChild(bg); const prev = document.activeElement; document.documentElement.style.overflow = "hidden";
+    document.body.appendChild(bg); const prev = (keep && keep !== document.body && keep.isConnected ? keep : null) || document.activeElement; /* a sheet that opened by itself had nothing to go back to: then the control that opened this one */ bg.__prev = prev; document.documentElement.style.overflow = "hidden";
     const close = () => { bg.remove(); document.documentElement.style.overflow = ""; document.removeEventListener("keydown", key); try { prev?.focus?.(); } catch {} }, key = (e) => { if (e.key === "Escape" && bg.isConnected) close(); };
-    document.addEventListener("keydown", key); $(".dp-x", bg).onclick = close; bg.addEventListener("mousedown", (e) => { if (e.target === bg) close(); });
+    bg.__key = key; document.addEventListener("keydown", key); $(".dp-x", bg).onclick = close; bg.addEventListener("mousedown", (e) => { if (e.target === bg) close(); });
     setTimeout(() => { if (matchMedia("(pointer:fine)").matches) $(".dp-x", bg)?.focus({ preventScroll: true }); else $(".dp-sheet", bg)?.setAttribute("tabindex", "-1"), $(".dp-sheet", bg)?.focus({ preventScroll: true }); }, 30); return { bg, close, body: $(".dp-body", bg) }; }
 
   // ---- pickup windows: "Sat 9 to 10am", the way the brand writes times ----

@@ -134,7 +134,7 @@ const noContact = (t) => String(t || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A
 // field: never the reviewer's email, the reply id, "improve" or "compare".
 const VERIFIED = new Set(Object.keys(VERIFIED_LABEL));
 function reviewItem(k) { const v = VERIFIED.has(k.verified) ? k.verified : null;
-  return { name: first(k.name) || "A guest", text: s(noContact(k.love), 500), tags: (k.tags || []).filter((t) => TAG_LABEL[t]).map((t) => TAG_LABEL[t]), at: k.at ? new Date(k.at).toISOString().slice(0, 10) : "", verified: v, verified_label: v ? VERIFIED_LABEL[v] : "" }; }
+  return { name: first(k.name) || "A guest", text: s(noContact(typeof k.love === "string" ? k.love : ""), 500) /* a kudos with no words is its tags, never "true" */, tags: (k.tags || []).filter((t) => TAG_LABEL[t]).map((t) => TAG_LABEL[t]), at: k.at ? new Date(k.at).toISOString().slice(0, 10) : "", verified: v, verified_label: v ? VERIFIED_LABEL[v] : "" }; }
 // ---- end verified labels ----
 // the host page's numbers: reviews are kudos with words or chips; "would go again" is the same definition the page uses
 function summarize(K, { items = 10 } = {}) {

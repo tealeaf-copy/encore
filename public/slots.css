@@ -194,12 +194,12 @@ html body #view-guest#view-guest.ev2 .in :is(.gk-row,.ev2-extra) :is(p,b,span:no
 html body #view-guest#view-guest.ev2 .in .gk-ic{width:16px!important;height:20px!important;font-size:0!important}
 html body #view-guest#view-guest.ev2 .in>.ev2-acts{margin:16px 0 0!important;gap:8px!important}
 html body #view-guest#view-guest.ev2 .ev2-side>.gxcover{border-radius:var(--pl-r-md)!important;border:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;background:var(--lk-cover,var(--pl-surface))!important}
-html body #view-guest#view-guest.ev2 .ev2-side>.gxcover :is(.ea-cover,.ev2-poster){background:var(--lk-cover,var(--pl-surface))!important}
+/* the drawn cover keeps its own pastel tone here, the same picture as on cards and the feed (it was painted over in plain surface) */
 /* host chrome: one slim line, never more than 40px above the cover */
 html body #view-guest#view-guest #geBar.ge-slim{display:flex!important;align-items:center;gap:8px;flex-wrap:nowrap;box-sizing:border-box;height:32px;margin:0 0 -8px!important;padding:0 4px 0 12px!important;border:1px dashed var(--pl-line)!important;border-radius:var(--pl-r-sm)!important;background:transparent!important;box-shadow:none!important;font:500 13px/18px var(--pl-font-text)!important;color:var(--pl-soft)!important;white-space:nowrap;overflow:hidden}
 html body #view-guest#view-guest #geBar.ge-slim .ge-t{color:var(--pl-ink)}
 html body #view-guest#view-guest #geBar.ge-slim .ge-a{all:unset;display:inline-flex;align-items:center;min-height:44px;padding:0 4px;cursor:pointer;color:var(--lk-link,var(--kit-accent-text,var(--pl-accent-text)));font-weight:600;text-decoration:underline;text-underline-offset:3px}
-html body #view-guest#view-guest #geBar.ge-slim .ge-x{all:unset;cursor:pointer;margin-left:auto;width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:var(--pl-soft)}
+html body #view-guest#view-guest #geBar.ge-slim .ge-x{all:unset;cursor:pointer;margin-left:auto;flex:none;width:44px;min-width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:var(--pl-soft)}
 html body #view-guest#view-guest #geBar.ge-slim :is(.ge-a,.ge-x):focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
 /* the sticky bar on /g: the date and spots in the page's format, the one button */
 html body #gBar.g-bar{background:var(--pl-surface)!important;border-top:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;backdrop-filter:none!important;padding:12px 16px calc(12px + var(--inv-safe-b))!important;gap:12px}
@@ -300,3 +300,9 @@ html body #view-guest#view-guest.ev2 .ev2-rs.pl-was :is(.tcode,.pl-out,.pl-tk-ca
 :is(html body #m#m,html body #view-guest#view-guest) .hrow>a b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 :is(html body #m#m,html body #view-guest#view-guest) .hrow .hav{width:40px;height:40px;flex:none;border-radius:50%;border:1.5px solid var(--pl-line-strong);background:var(--pl-raised);display:grid;place-items:center;overflow:hidden;font:600 16px/1 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);color:var(--pl-ink)}
 :is(html body #m#m,html body #view-guest#view-guest) .hrow .hav img{width:100%;height:100%;object-fit:cover}
+
+/* the sticky reply bar: its button is the primary (ink blue, or the brand kit's button colour), never plain text under a look
+   or an effect; and the page keeps room under its last line for the bar and the safe area */
+html body #gBar#gBar#gBar.g-bar .btn.primary{background:var(--kit-accent,var(--pl-accent,#29489A))!important;color:var(--kit-on-accent,#fff)!important;border:1.5px solid transparent!important;min-height:44px;padding:0 20px!important;border-radius:var(--pl-r-btn,6px)!important;font-weight:600!important;text-decoration:none!important}
+html body:has(#gBar.g-bar) #view-guest{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
+html body #view-guest#view-guest .hrow .plf-btn:not([aria-pressed="true"]){color:#fff!important} /* Follow on the host row: white on the accent, never ink on blue */

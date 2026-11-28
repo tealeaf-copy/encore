@@ -145,7 +145,7 @@ html.plp-lock{overflow:hidden}
   const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
   async function boot() { const P = location.pathname;
     // /me: your card, in #plPlacesHook
-    if (P === "/me") { const el = document.getElementById("plPlacesHook"); if (!el || !signedIn()) return; try { card(el, await getJ(`/api/me/places?year=${YEAR}`), { own: true }); } catch {} return; }
+    if (P === "/me") { const el = document.getElementById("plPlacesHook"); if (!el || !signedIn()) return; /* under the stats: wait until they're drawn, or they land on top and push the map card down the page */ for (let i = 0; i < 40 && !document.querySelector("#s > :not([data-calm-wait]):not(.plc)"); i++) await new Promise((r) => setTimeout(r, 150)); try { card(el, await getJ(`/api/me/places?year=${YEAR}`), { own: true }); } catch {} return; }
     // a page: yours (always), or theirs when they show it; under the side column's extras
     const m = P.match(/^\/@([a-z0-9][a-z0-9-]{1,29})\/?$/i); if (m) { let d; try { d = await getJ(`/api/public/places/${encodeURIComponent(m[1].toLowerCase())}?year=${YEAR}`); } catch { return; } if (!d.on || (!d.own && !d.places?.length)) return;
       let n = 0; const put = () => { const side = document.getElementById("sideExtras"); if (!side) { if (++n < 40) setTimeout(put, 250); return; } if (document.getElementById("plPlacesPub")) return; const w = document.createElement("div"); w.id = "plPlacesPub"; w.style.marginBottom = "12px"; side.appendChild(w); card(w, d, { own: !!d.own, handle: m[1].toLowerCase() }); }; put(); return; }

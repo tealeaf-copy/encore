@@ -335,7 +335,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     if (m[1] === "m") { const ms = (memo.ms || (memo.ms = milestones(v))).find((x) => x.id === m[2]); if (!ms) return null; const ws = C.wsOfHandle(ms.host.handle); return { target: tg, kind: "milestone", ws, owner: lc(getWorkspace(ws)?.ownerEmail), title: ms.text }; }
     const x = I.events.get(m[2]), h = x && hostOK(I, x.ws); if (!h || v.blocks.has("host:" + lc(h.handle)) || v.blocks.has("event:" + x.id)) return null;
     const e = x.e, mine = !!v.email && lc(x.owner) === v.email, card = { target: tg, ws: x.ws, owner: lc(x.owner), title: clean(e.pubTitle || e.name, 80) || "an event", eventId: x.id, chat: chatOf(v, x) };
-    if (m[1] === "e") { if ((e.date || "") < t) return null; const M = memo.M || (memo.M = memberEvents(v));
+    if (m[1] === "e") { if ((e.date || "") < t && !(e.drop && !e.date)) return null; /* a drop that takes orders any time has no date (it is still on the feed) */ const M = memo.M || (memo.M = memberEvents(v));
       let hostOfMembers = false; try { hostOfMembers = mine && !!fc && fc.visibility(x.ws, x.id) === "members" && !e.cancelled && !e.private && !e.example; } catch {}
       return (V.cardPublic(e) && (mine || !earlyFor(v, x))) || M.has(x.id) || hostOfMembers ? { ...card, kind: "event" } : null; }
     return e.date && e.date < t && !e.example && (V.cardPublic(e) || (!e.cancelled && V.wasThere(I, x.id, v.email))) ? { ...card, kind: "recap" } : null; }

@@ -161,7 +161,8 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     document.head.appendChild(st); document.getElementById("plAboutRoom")?.remove(); /* the room the feed held for this line */ (document.getElementById("rail") || m).before(n);
     const done = () => { try { localStorage.setItem("pl.aboutNote", "1"); } catch {} };
     n.querySelector("a").addEventListener("click", done); n.querySelector("button").onclick = () => { done(); n.remove(); }; };
-  document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", put) : put(); } catch {} })();
+  // the page's main is already there when this runs at the end of the body: add the line now, before the first paint, so the feed doesn't jump down when it lands
+  document.querySelector("main") || document.readyState !== "loading" ? put() : document.addEventListener("DOMContentLoaded", put); } catch {} })();
 
 // ---- delight after (public/delightafter.js): Plans (today's card, the morning after, keep in touch), the host's manage view (the hour-before checklist, the summary, the polaroid, the next one) and its switches in Settings; signed in only ----
 (function () { try { if (window.__plDelightLoad || !/^\/(plans|settings)?$/.test(location.pathname) || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; window.__plDelightLoad = 1;

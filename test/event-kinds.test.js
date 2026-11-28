@@ -293,7 +293,9 @@ test("a summit: the agenda by track and room, saving sessions up to the room's c
   // unsave frees the seat
   assert.equal((await save("a1", "d1", false)).status, 200); assert.equal((await save("a3", "d1")).status, 200);
   // the host's view: room clashes, the door tools, every speaker with their flags; guests get the agenda instead of the run of show
-  const H = await kinds("kSummit", "", { cookie: mina.cookie }); assert.deepEqual(H.agenda.clashes, []); assert.equal(H.door.checkin, "/people/event/kSummit"); assert.equal(H.speakers.length, 3); assert.equal(H.speakers[2].public, false);
+  const H = await kinds("kSummit", "", { cookie: mina.cookie }); assert.deepEqual(H.agenda.clashes, []); assert.equal(H.door.checkin, "/contacts/event/kSummit"); assert.equal(H.speakers.length, 3); assert.equal(H.speakers[2].public, false);
+  // the door link is a real page (it once pointed at /people/event, which is Find people and 404s)
+  assert.equal((await fetch(srv.base + H.door.checkin, { headers: { cookie: mina.cookie } })).status, 200);
   const plan = (await (await get("/api/public/plan/kSummit" + proof("a1"))).json()).plan; assert.equal(plan.runOfShow, true); assert.ok(plan.days.every((d) => !d.items.length), "the run of show stays with the host");
   const hp = (await (await get("/api/public/plan/kSummit", { cookie: mina.cookie })).json()).plan; assert.ok(hp.days[0].items.length, "the host keeps the run of show");
 });

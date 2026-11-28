@@ -118,7 +118,7 @@
   const sortPinned = (L) => L.slice().sort((a, b) => (a.pinned || 99) - (b.pinned || 99) || String(a.raw.date || "9").localeCompare(String(b.raw.date || "9")));
   /** Draw the offer into sec. o: { h, d, owner, events, drops, exps, art: { drop(x), exp(x) }, onReq(id), onDrop(id), onExp(id), ownBar } */
   function render(sec, o) { css(); Object.assign(R, { owner: !!o.owner, h: o.h, d: o.d, cb: o, sec });
-    const evs = (o.events || []).map((e) => ({ kind: "event", id: e.id, title: e.title || e.name || "Untitled", raw: e, pinned: e.pinned || 0, hidden: !!e.pageHidden, art: e.coverPhoto ? `<img src="${esc(e.coverPhoto)}" alt="" loading="lazy">` : "", line: evLine(e) }));
+    const evs = (o.events || []).map((e) => ({ kind: "event", id: e.id, title: e.title || e.name || "Untitled", raw: e, pinned: e.pinned || 0, hidden: !!e.pageHidden, art: window.EventArt?.thumb ? window.EventArt.thumb(e) /* the same cover as its invite and the feed (coverSpec), never a stock icon */ : e.coverPhoto ? `<img src="${esc(e.coverPhoto)}" alt="" loading="lazy">` : "", line: evLine(e) }));
     const drops = (o.drops || []).map((x) => ({ kind: "drop", id: x.id, title: x.title, raw: x, pinned: x.pinned || 0, hidden: !!x.pageHidden, art: o.art?.drop?.(x) || "", line: o.line?.drop?.(x) || "" }));
     const exps = (o.exps || []).map((x) => ({ kind: "experience", id: x.id, title: x.name, raw: x, pinned: x.pinned || 0, hidden: !!x.pageHidden, art: o.art?.exp?.(x) || "", line: o.line?.exp?.(x) || "" }));
     R.items = [...evs, ...drops, ...exps]; draw(); }

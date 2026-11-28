@@ -147,3 +147,49 @@ export async function seedAudit(base) {
     packages: [{ name: "Supper club for your team", story: "Six courses at a long table.", moods: ["client", "bonding"], perPersonCents: 12000, minimumCents: 120000, minGuests: 6, maxGuests: 14, leadDays: 7, includes: ["Ingredients", "Venue", "Service"], weekdays: [1, 2, 3, 4, 5], time: "evening", taxBps: 0, depositPct: 25 }] }, H)).json().catch(() => ({}));
   return { ...S, nia, bo, secret: SECRET, drop: d.id || "", pkg: B?.setup?.packages?.[0]?.id || "", states: st };
 }
+
+// The whole cast for scripts/click-audit.mjs: everything seedRoutes() makes, plus a new guest with no replies, guests
+// who said maybe and who are on a waitlist, a fan club with a member, a drop seller with a live drop and a pre-order,
+// a summit host and a trip host of their own, and (with a store) the Fernwood Labs brand world: a team with campaigns,
+// bookings, briefs and a report (test/brand-panel-seed.js). Audits and screenshots only, always in a temp store.
+export async function seedClickAudit(base, store, { brand = true } = {}) {
+  const S = await seedRoutes(base);
+  const cookieOf = (r) => (r.headers.get("set-cookie") || "").split(";")[0];
+  const post = async (p, body, cookie, h = {}) => { const r = await fetch(base + p, { method: "POST", headers: { ...J, ...(cookie ? { cookie } : {}), ...h }, body: JSON.stringify(body) }); if (!r.ok) throw new Error(`${p} ${r.status} ${(await r.text()).slice(0, 200)}`); return r; };
+  const put = async (p, body, cookie) => { const r = await fetch(base + "/api/db/doc?path=" + p, { method: "PUT", headers: { ...J, cookie }, body: JSON.stringify(body) }); if (!r.ok) throw new Error(`put ${p} ${r.status}`); };
+  const signup = async (name, email) => { const r = await post("/api/signup", { name, email, password: "long-password-1", mode: "friends" }); const j = await r.json(); return { cookie: cookieOf(r), ws: j.workspace.id, email, name }; };
+  const answer = async (eventId, key, response, who) => { const doc = await (await fetch(base + "/api/db/doc?path=events/" + eventId, { headers: { "x-encore-guest": "1" } })).json(), code = "C" + key.slice(-5).toUpperCase();
+    const r = await fetch(base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": key, "x-encore-workspace": doc.workspace, ...(who.cookie ? { cookie: who.cookie } : {}) }, body: JSON.stringify({ eventId, response, name: who.name, email: who.email, code, createdAt: Date.now(), via: "invite-lite", ...(who.extra || {}) }) });
+    const j = await r.json(); return { rid: String(j.id || "").split("/").pop(), code, response: j.response || response }; };
+  const ev = (o) => ({ kind: "social", casual: true, activity: "dinner", city: "Brooklyn", meetPoint: "Bed-Stuy", startTime: "19:00", headcount: 8, emoji: "🥟", published: true, discoverable: true, unlisted: false, ...o });
+  const newGuest = await signup("Nia New", "nia.audit@example.com");
+  const maybe = await signup("Lee Maybe", "lee.audit@example.com"), wait = await signup("Wren Wait", "wren.audit@example.com");
+  // a small table that fills, so the next yes waits
+  await put("events/rtSmall", ev({ name: "Six seat supper", date: day(8), headcount: 2 }), S.host.cookie);
+  await answer("rtSmall", "kauditsmall1", "going", { name: "Fay Full", email: "fay.audit@example.com" });
+  await answer("rtSmall", "kauditsmall2", "going", { name: "Gil Full", email: "gil.audit@example.com" });
+  const maybeRid = await answer(S.open, "kauditmaybe1", "maybe", maybe), waitRid = await answer("rtSmall", "kauditwait01", "going", wait);
+  // the host's fan club, with the guest in it
+  await post("/api/host/club", { on: true, name: "Supper regulars", pitch: "First pick of seats.", perks: ["Seats a day early"], earlyHours: 24 }, S.host.cookie);
+  await post(`/api/me/club/${S.handle}/join`, {}, S.guest.cookie);
+  // a drop seller with a live drop and one pre-order
+  const seller = await signup("Bo Tran", "bo.audit@example.com");
+  await post("/api/host/profile", { handle: "bo-bakes", name: "Bo Bakes", city: "Brooklyn", hood: "Sunset Park", tagline: "Pandan cakes on Saturdays.", emoji: "🍰" }, seller.cookie);
+  const drop = await (await post("/api/host/drops", { title: "Pandan this Saturday", items: [{ name: "Pandan honeycomb cake", price: "18", stock: 12 }, { name: "Kaya toast box", price: "9.50", stock: 6 }], slots: ["Sat 9 to 10am"], area: "Sunset Park", address: "5 Audit St, Apt 2", always: true, pay: "pickup" }, seller.cookie)).json();
+  const order = await answer(drop.id, "kauditorder1", "going", { ...S.guest, extra: { orderQty: [{ i: 0, qty: 1 }] } });
+  // a summit host and a trip host of their own
+  const summitHost = await signup("Ana Summit", "ana.audit@example.com"), tripHost = await signup("Tom Trip", "tom.audit@example.com");
+  await post("/api/host/profile", { handle: "ana-summit", name: "Small Summits", city: "Brooklyn", hood: "Dumbo", tagline: "One day, eighty people." }, summitHost.cookie);
+  await post("/api/host/profile", { handle: "tom-trips", name: "Tom's Weekends", city: "Brooklyn", hood: "Park Slope", tagline: "Cabins with friends." }, tripHost.cookie);
+  await put("events/auSummit", ev({ name: "Design summit", date: day(16), endDate: day(17), startTime: "09:30", planKind: "summit", kind: "summit", noMaybe: true, itineraryPublic: true, headcount: 80,
+    speakers: [{ id: "sp1", name: "Ana Ruiz", title: "Head of Design", public: true }], agenda: { tracks: ["Design"], rooms: [{ name: "Main hall", capacity: 80 }], sessions: [{ id: "s1", day: 1, time: "10:00", title: "Keynote", track: "Design", room: "Main hall", speakers: ["sp1"] }] } }), summitHost.cookie);
+  await put("events/auTrip", ev({ name: "Lake weekend", date: day(12), endDate: day(14), startTime: "16:00", planKind: "weekend", noMaybe: true, carpool: true, discoverable: false, unlisted: true,
+    lodging: { name: "Lake House", area: "Woodstock", checkIn: "16:00", checkOut: "11:00", address: "9 Lake Rd" }, beds: [{ id: "b1", room: "Loft", label: "Queen", sleeps: 2 }] }), tripHost.cookie);
+  await answer("auSummit", "kauditsumm01", "going", S.guest); await answer("auTrip", "kaudittrip01", "going", S.guest);
+  // a group trip still at the feeler stage (server/trips.js): friends answer which weekend and what they'd spend
+  const yr = new Date().getFullYear() + 1, vegas = (await (await post("/api/host/trips", { say: "Vegas for a 30th, sometime in March" }, tripHost.cookie)).json()).id;
+  await post(`/api/host/trips/${vegas}/feeler`, { destination: "Las Vegas", weekends: [{ from: `${yr}-03-12`, to: `${yr}-03-14` }, { from: `${yr}-03-26`, to: `${yr}-03-28` }], note: "Two nights, flights on your own.", publish: true }, tripHost.cookie);
+  let B = null;
+  if (brand && store) { const { seedBrandPanel } = await import("./brand-panel-seed.js"); B = await seedBrandPanel(base, store, { guests: 60 }); }
+  return { ...S, newGuest, maybe: { ...maybe, rid: maybeRid }, wait: { ...wait, rid: waitRid }, small: "rtSmall", seller, drop: drop.id, order, summitHost, tripHost, summit: "auSummit", trip: "auTrip", vegas, brand: B };
+}

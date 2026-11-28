@@ -110,22 +110,38 @@
   const thanksOf = (y) => { const d = new Date(Date.UTC(y, 10, 1)); return 1 + ((11 - d.getUTCDay()) % 7) + 21; };
   const labelOf = (k, e = {}) => String(k).split("+").map((x) => { if (x === "turkey" && /^\d{4}-11-\d{2}/.test(e.date || "")) { const y = +e.date.slice(0, 4), dd = +e.date.slice(8, 10); return dd === thanksOf(y) ? "Thanksgiving" : "Thanksgiving week"; } return LABEL[x] || x; }).join(" + ");
   // a whole cover as HTML: label, title, drawing. opts: { label, title, kind, tone, mark (html for bottom-left) }
+  // One cover for an event everywhere (the invite, /g, the feed, cards, thumbnails, link previews): the host's photo
+  // (with its focus point) if there is one, else this drawing. spec(e) is the drawing's recipe (kind, tone and the scene's
+  // kinds); the server works it out with this same file (server/eventcover.js) and sends it as e.coverSpec, so a card that only
+  // has the title and the activity still draws the same picture as the invite.
+  const SPEC_OK = (a) => a && typeof a === "object" && valid(a.kind) && PASTELS[a.tone] && (!a.scene || (Array.isArray(a.scene) && a.scene.every((k) => ART[k])));
+  function spec(e = {}) { if (SPEC_OK(e.coverSpec?.art)) return e.coverSpec.art; const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = valid(pick.kind) ? pick.kind : kindOf(e), tone = PASTELS[pick.tone] ? pick.tone : toneOf(e, kind);
+    if (typeof pick.svg === "string" && /^<svg /.test(pick.svg)) return { kind, tone, custom: true };
+    const parts = String(kind).split("+"), extra = kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = (K0.length < 3 ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, Math.max(3, Math.min(4, K0.length)));
+    return { kind, tone, scene: K }; }
   function cover(e = {}, opts = {}) {
-    const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (valid(pick.kind) ? pick.kind : kindOf(e)), tone = opts.tone || (PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), bg = PASTELS[tone], spot = SPOT[tone];
+    const S0 = !opts.kind && !opts.tone && SPEC_OK(e.coverSpec?.art) ? e.coverSpec.art : null;
+    const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (S0 ? S0.kind : valid(pick.kind) ? pick.kind : kindOf(e)), tone = opts.tone || (S0 ? S0.tone : PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), bg = PASTELS[tone], spot = SPOT[tone];
     const title = opts.title ?? (e.pubTitle || e.title || e.name || ""), label = opts.label ?? labelOf(kind, e);
         // a drawing the host made with a prompt: always shown as an image (it can't run anything), never as HTML
     const custom = opts.svg || (!opts.kind && typeof pick.svg === "string" && /^<svg /.test(pick.svg) ? pick.svg : "");
     if (custom) return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""} ea-custom" style="--ea-bg:${bg}"><div class="ea-txt">${(opts.label ?? pick.label ?? "") ? `<small class="ea-label">${esc(opts.label ?? pick.label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art"><img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(custom)}"></div>${opts.mark || ""}</div>`;
     // full covers fill out with the event's other themes and its place; picker tiles show exactly the option
-    const parts = String(kind).split("+"), extra = opts.exact ? [] : kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = (K0.length < 3 && !opts.exact ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, opts.exact ? 4 : Math.max(3, Math.min(4, K0.length))), full = K.length >= 3;
-    return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""}${full ? " ea-full" : ""}" style="--ea-bg:${bg}"><div class="ea-txt">${label ? `<small class="ea-label">${esc(label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art">${full ? scene(K, spot) : drawing(kind, spot)}</div>${opts.mark || ""}</div>`;
+    const parts = String(kind).split("+"), extra = opts.exact ? [] : kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = S0?.scene && !opts.exact ? S0.scene : (K0.length < 3 && !opts.exact ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, opts.exact ? 4 : Math.max(3, Math.min(4, K0.length))), full = K.length >= 3;
+    return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""}${full ? " ea-full" : ""}${!title && !label ? " ea-bare" : ""}" style="--ea-bg:${bg}"><div class="ea-txt">${label ? `<small class="ea-label">${esc(label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art">${full ? scene(K, spot) : drawing(kind, spot)}</div>${opts.mark || ""}</div>`;
   }
   const CSS = `.ea-cover{position:absolute;inset:0;background:var(--ea-bg);color:${INK};font-family:"IBM Plex Sans","Inter",system-ui,sans-serif;text-align:left;overflow:hidden;container-type:size}
 .ea-txt{position:absolute;left:6.5%;top:7%;right:8%;display:grid;gap:.25em}.ea-long .ea-title{font-size:clamp(13px,6.2cqw,30px)}
 .ea-label{font-size:clamp(10px,4.6cqw,15px);font-weight:600;letter-spacing:-.005em;opacity:1}
 .ea-title{font-size:clamp(15px,8.6cqw,40px);line-height:1.06;font-weight:700;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
+.ea-bare .ea-txt{display:none}.ea-cover.ea-bare .ea-art{left:7%;right:7%;top:9%;bottom:6%;width:auto;height:auto;max-width:none;justify-content:center;align-items:center}
 .ea-art{position:absolute;right:2%;bottom:3%;width:52%;max-width:340px;height:46%;display:flex;justify-content:flex-end;align-items:flex-end;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}.ea-art svg,.ea-art img{display:block;width:auto;height:100%;max-width:100%}.ea-custom .ea-art{width:58%;height:60%}.ea-full .ea-art{width:88%;height:64%;max-width:none;right:4%;bottom:4%}`;
   function ensureCss() { if (document.getElementById("eaCss")) return; const s = document.createElement("style"); s.id = "eaCss"; s.textContent = CSS; document.head.appendChild(s); }
   if (typeof document !== "undefined") ensureCss();
-  window.EventArt = { kindsOf, suggest, labelOf, valid, PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
+  /** The event's cover for a small frame (a card, a row, a tile): the same photo or the same drawing as the big cover, no words. */
+  function thumb(e = {}, { alt = "" } = {}) { const c = e.coverSpec && typeof e.coverSpec === "object" ? e.coverSpec : null, u = c?.photo || e.coverPhoto || "";
+    if (/^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(u) || /^https:\/\/[^\s"'<>()]+$/.test(u)) { const f = c?.focus || e.coverFocus, pos = f && isFinite(f.x) && isFinite(f.y) ? ` style="object-position:${Math.round(f.x)}% ${Math.round(f.y)}%"` : "";
+      return `<img class="ea-thumb" src="${esc(u)}" alt="${esc(alt)}"${pos} loading="lazy" decoding="async">`; }
+    if (typeof document !== "undefined") ensureCss(); return cover(e, { title: "", label: "" }); }
+  window.EventArt = { spec, thumb, kindsOf, suggest, labelOf, valid, PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
 })();

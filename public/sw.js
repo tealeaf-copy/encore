@@ -5,7 +5,7 @@
 //   (Shell pages used to be stale-while-revalidate: a phone could keep drawing an old or broken copy of a page with
 //   another day's scripts, and the fix only showed on the visit after. REV below drops every copy kept that way.)
 // - Versioned files (/x.js?v=<hash>, served immutable), hashed app bundles (/_app/*) and fonts: cache first.
-//   Other scripts, styles and icons: stale-while-revalidate, 200s only.
+//   Other scripts and styles: network first (the kept copy only when slow or offline); icons: stale-while-revalidate, 200s only.
 // - A few read-only APIs the shell pages open with (your plans, the feed, Discover, your chats): network first with a
 //   timeout. A slow or dropped answer falls back to the last copy (marked x-pl-cache: stale) instead of a spinner.
 //   Every other API call and upload goes straight to the network. Signing out or in drops the cached pages and data.
@@ -101,7 +101,22 @@ self.addEventListener("fetch", (e) => {
       return res; })));
     return;
   }
-  if ((same && /\.(js|css|svg|png|webp|jpg|woff2?|webmanifest|json)$/.test(url.pathname)) || fonts) {
+  // a script or stylesheet loaded by name, without ?v= (a sheet's module fetched on the first tap): network first, the
+  // kept copy only when the network is down or slow. Stale-while-revalidate ran yesterday's module against today's page
+  // for one visit after every deploy.
+  if (same && /\.(js|css)$/.test(url.pathname)) {
+    e.respondWith((async () => {
+      const c = await caches.open(STATIC);
+      const net = fetch(req).then((res) => { if (cacheable(res)) c.put(req, res.clone()).catch(() => {}); return res; });
+      e.waitUntil(net.catch(() => {}));
+      const first = await Promise.race([net.catch(() => "down"), new Promise((r) => setTimeout(() => r("late"), API_TIMEOUT))]);
+      if (first !== "late" && first !== "down") return first;
+      const hit = await c.match(req); if (hit) return hit;
+      return net.catch(() => Response.error());
+    })());
+    return;
+  }
+  if ((same && /\.(svg|png|webp|jpg|woff2?|webmanifest|json)$/.test(url.pathname)) || fonts) {
     e.respondWith((async () => {
       const c = await caches.open(STATIC), hit = await c.match(req);
       const net = fetch(req).then((res) => { if (cacheable(res) || (fonts && res.type === "opaque")) c.put(req, res.clone()).catch(() => {}); return res; }).catch(() => hit || Response.error());

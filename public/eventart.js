@@ -142,6 +142,6 @@
   function thumb(e = {}, { alt = "" } = {}) { const c = e.coverSpec && typeof e.coverSpec === "object" ? e.coverSpec : null, u = c?.photo || e.coverPhoto || "";
     if (/^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(u) || /^https:\/\/[^\s"'<>()]+$/.test(u)) { const f = c?.focus || e.coverFocus, pos = f && isFinite(f.x) && isFinite(f.y) ? ` style="object-position:${Math.round(f.x)}% ${Math.round(f.y)}%"` : "";
       return `<img class="ea-thumb" src="${esc(u)}" alt="${esc(alt)}"${pos} loading="lazy" decoding="async">`; }
-    ensureCss(); return cover(e, { title: "", label: "" }); }
+    if (typeof document !== "undefined") ensureCss(); return cover(e, { title: "", label: "" }); }
   window.EventArt = { spec, thumb, kindsOf, suggest, labelOf, valid, PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
 })();

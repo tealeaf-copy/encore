@@ -37,6 +37,7 @@ import { asksAhead, pickupOk } from "./droppay.js"; // a drop's order email: the
 import { mountCover } from "./cover.js"; // the host page cover photo
 import { mountIgImport } from "./igimport.js"; // "Start from your Instagram": a draft of the host page from their own Instagram (server/igimport.js)
 import { mountMarket } from "./market.js";
+import { mountReviews } from "./reviews.js"; // written reviews, on top of kudos
 import { mountInterest } from "./interest.js"; // one page per experience or shop item (/x/...), and "I'm interested" on preview pages
 import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
@@ -854,6 +855,7 @@ export function createApp({ store, dataDir }) {
   mountCover(app, { assetsDir, currentUser, C });
   mountIgImport(app, { store, currentUser, C, assetsDir, publicOrigin: (req) => originOf(req), sendStatic: (...a) => sendStatic(...a) }); // ---- Start from your Instagram (server/igimport.js) ----
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountReviews(app, { store, small, currentUser, C, X }); // ---- reviews (server/reviews.js): after kudos, the feed and bookings, which it reads ----
   mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
   const BC = brandView(C); // the brand side sees example hosts too (server/brandexamples.js); everything else sees real hosts only
   app.locals.brandDemo = mountBrandDemo(app, { store, small, currentUser, C: BC, X, PUBLIC_DIR, publicOrigin: (req) => originOf(req) }); // /teams/demo and its sandbox, before the brand pages (server/branddemo.js)

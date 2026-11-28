@@ -133,7 +133,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
-<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/listpublic.js" defer></script><script src="/memberships.js"></script><script src="/kudoswall.js"></script>
+<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/listpublic.js" defer></script><script src="/memberships.js"></script><script src="/kudoswall.js"></script><script src="/reviews.js"></script><!-- reviews hook -->
 <!-- [arrange hook] the host's page layout: the shared rules, then the page side (public/arrange-core.js, public/arrange.js) -->
 <script src="/arrange-core.js"></script><script src="/arrange.js"></script><script src="/hostitems.js"></script><!-- Coming up, Order ahead, Book me; Pin and Hide per item (public/hostitems.js) -->
 <script>
@@ -232,7 +232,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
     ex.innerHTML = `${(h.gallery || []).length ? `<div class="s-work"><h2 class="sec" style="margin-top:22px">Recent work</h2><div class="gal work">${h.gallery.map((u) => `<img src="${esc(u)}" alt="" loading="lazy">`).join("")}</div></div>` : ""}
       ${S.moments?.length ? `<div class="s-photos"><h2 class="sec" style="margin-top:22px">Photos</h2><div class="gal">${S.moments.map((m) => m.type === "video" ? `<video src="${esc(m.url)}" muted playsinline controls preload="metadata"></video>` : `<img src="${esc(m.url)}" alt="${esc(m.caption || "")}" loading="lazy">`).join("")}</div></div>` : ""}`;
     // kudos: one section, its own file (public/kudoswall.js); it goes above the past events
-    window.EncoreKudos?.mount(S, { owner: isOwner, pastId: d.past?.[0]?.id || "", at: ex });
+    window.EncoreKudos?.mount(S, { owner: isOwner, pastId: d.past?.[0]?.id || "", at: ex }); window.EncoreReviews?.host(S, { owner: isOwner, pastId: d.past?.[0]?.id || "", at: ex, handle }); /* reviews hook: the viewer's own view (public/reviews.js) */
     if ((h.gifts || []).length) window.EncoreShop?.gifts?.(h, first);
     if ((h.experiences || []).length) { window.EncoreShop?.experiences(h, first, S); const bk = document.getElementById("book"), sec = document.querySelector("h2.sec.s-coming");
       if (bk && sec && !d.upcoming.length) { sec.before(bk); document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; }); } }

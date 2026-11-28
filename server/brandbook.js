@@ -437,7 +437,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const E = exampleByWs(ws);
     const brandReviews = E ? E.reviews : mine.map((r) => ({ r, v: reviewsFor(r, "public").public })).filter((x) => x.v).sort((a, b) => b.v.at - a.v.at).slice(0, 12).map(({ r, v }) => ({ ...v, pkg: r.pkgName, headcount: r.headcount, month: r.date ? r.date.slice(0, 7) : "" }));
     let T = {}; try { T = !E && X.trustOf ? X.trustOf(ws) : {}; } catch {}
-    const guestReviews = E ? E.kudos : (T.testimonials || []).filter((t) => t.source === "guest").slice(0, 6).map((t) => ({ text: t.quote, name: first(t.name), event: t.event || "" }));
+    const guestReviews = E ? E.kudos : (T.testimonials || []).filter((t) => t.source === "guest").slice(0, 6).map((t) => ({ text: t.quote, name: first(t.name), event: t.event || "", ...(t.rating ? { rating: t.rating } : {}) /* reviews hook: a guest's stars */ }));
     const others = s.packages.filter((x) => x.on && x.id !== p.id).map((x) => ({ id: x.id, name: x.name, perPersonCents: x.perPersonCents, unitPrice: unitPrice(x), photo: (x.photos || [])[0] || null, lead: photoLead(x), art: x.art || "" }));
     const months = [today.slice(0, 7), isoDay(Date.parse(today.slice(0, 7) + "-15T12:00:00Z") + 31 * DAY).slice(0, 7)];
     res.set("Cache-Control", "private, no-store").json({ host: { ...hostCard(ws, h), story: s.story || h.bio || "", city: s.city || h.city || "", gallery: (h.gallery || []).slice(0, 8) }, pkg: pkgPublic(p), stats: { ...st, checks: st.checks },

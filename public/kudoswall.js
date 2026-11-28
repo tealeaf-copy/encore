@@ -8,6 +8,8 @@
 // - 1 or 2: just the cards, no count line, no row. None: nothing for visitors (a new host isn't shown "no kudos");
 //   the host on their own page gets a quiet line and, once they have a past event, a way to ask past guests.
 // Colours, faces and corners come from the tokens (--pl-*, --sys-*), so a host's brand kit flows through.
+// Written reviews (public/reviews.js, server/reviews.js) join the section when there are some: it reads "Kudos and reviews",
+// the review cards come first (pinned, then newest) and the count line leads with "4.8 · 12 reviews" once 3 are rated.
 // Server data: hostStrengths in server/social.js (first names only, the event and month only for events on the page).
 // The cards keep the .kq class and the quote in the card's first <p>, so the report menu (public/safety.js) finds them.
 (function () {
@@ -86,22 +88,25 @@
     const W = K.filter((k) => String(k.love || "").trim()), lead = [], seen = new Set();
     for (const k of W) { const ev = k.event || k.month || ""; if (lead.length < 3 && ev && !seen.has(ev)) { seen.add(ev); lead.push(k); } }
     const L = [...lead, ...W.filter((k) => !lead.includes(k)), ...K.filter((k) => !String(k.love || "").trim())];
-    if (!L.length) {
+    // reviews hook (public/reviews.js): written reviews come first, pinned ones on top, as the server sends them
+    const RV = window.EncoreReviews, R = RV ? (S && S.reviews) || [] : [], all = L.length + R.length, word = R.length ? "Kudos and reviews" : "Kudos";
+    if (!all) {
       if (!o.owner) return "";
       return `<section class="kd kd-empty s-kudos" id="kudos" aria-labelledby="kdH"><div class="kd-head"><h2 class="sec" id="kdH">Kudos</h2></div>`
         + `<p>${o.pastId ? "No kudos yet. Guests who were in can send them after an event, and they show here." : "Kudos from guests show here after your first event."}</p>`
         + (o.pastId ? `<a class="kd-ask" href="/?app=1&amp;open=${encodeURIComponent(o.pastId)}#studio">Ask past guests</a>` : "") + `</section>`;
     }
-    const row = L.length >= 3, evN = +S?.kudosEvents || new Set(L.map((k) => k.event).filter(Boolean)).size, latest = monthOfMs(Math.max(...L.map((k) => +k.at || 0)));
+    const row = all >= 3, evN = +S?.kudosEvents || new Set(L.map((k) => k.event).filter(Boolean)).size, latest = monthOfMs(Math.max(...L.map((k) => +k.at || 0), ...R.map((k) => +k.at || 0)));
+    const rsum = R.length || S?.rating ? RV.sumHTML(Math.max(+S?.reviewCount || 0, R.length), S?.rating) : "";
     const back = +S?.returning || 0; // guests who came back: the one number a host can't curate. Shown from 3, a smaller number reads as weak
-    const sum = row ? [evN > 1 ? `From guests at ${evN} events` : "From guests", back >= 3 ? `${back} came back` : "", latest ? `latest ${latest}` : ""].filter(Boolean).join(" · ") : "";
+    const total = n + R.length, sum = row && L.length ? [evN > 1 ? `From guests at ${evN} events` : "From guests", back >= 3 ? `${back} came back` : "", latest ? `latest ${latest}` : ""].filter(Boolean).join(" · ") : row && latest ? `latest ${latest}` : "";
     const top = n >= 5 ? (S.tags || []).filter((t) => t && t.n > 1).slice(0, 3) : [];
-    return `<section class="kd s-kudos ${row ? "is-row" : "kd-few"}" id="kudos" aria-labelledby="kdH" data-n="${L.length}">`
-      + `<div class="kd-head"><h2 class="sec" id="kdH">Kudos${row ? ` <span class="kd-n">${n}</span>` : ""}</h2>`
+    return `<section class="kd s-kudos ${row ? "is-row" : "kd-few"}" id="kudos" aria-labelledby="kdH" data-n="${all}">`
+      + `<div class="kd-head"><h2 class="sec" id="kdH">${word}${row ? ` <span class="kd-n">${total}</span>` : ""}</h2>`
       + (row ? `<div class="kd-ctl"><button type="button" class="kd-nav" data-dir="-1" aria-controls="kdList" aria-label="Previous kudos">${ARROW("M11 4 6 9l5 5")}</button><button type="button" class="kd-nav" data-dir="1" aria-controls="kdList" aria-label="Next kudos">${ARROW("m7 4 5 5-5 5")}</button><button type="button" class="kd-all" aria-expanded="false" aria-controls="kdList">See all</button></div>` : "")
-      + `</div>${sum ? `<p class="kd-sum">${esc(sum)}</p>` : ""}`
+      + `</div>${sum || rsum ? `<p class="kd-sum">${rsum}${rsum && sum ? " · " : ""}${esc(sum)}</p>` : ""}`
       + (top.length ? `<ul class="kd-tags" aria-label="What guests mention most">${top.map((t) => `<li>${esc(t.label || TAGS[t.tag] || t.tag)} <b>${+t.n} of ${n}</b></li>`).join("")}</ul>` : "")
-      + `<div class="kd-list" id="kdList"${row ? ` role="region" aria-roledescription="carousel" aria-label="Kudos from guests" tabindex="0"` : ""}>${L.map((k, i) => card(k, i, L.length, row)).join("")}</div>`
+      + `<div class="kd-list" id="kdList"${row ? ` role="region" aria-roledescription="carousel" aria-label="${word} from guests" tabindex="0"` : ""}>${R.map((r, i) => RV.card(r, i, all, row)).join("")}${L.map((k, i) => card(k, i + R.length, all, row)).join("")}</div>`
       + (row ? `<p class="kd-sr" aria-live="polite"></p>` : "") + `</section>`;
   }
 
@@ -127,7 +132,7 @@
     if (all) all.addEventListener("click", () => { const open = !sec.classList.contains("is-all"); sec.classList.toggle("is-all", open); all.setAttribute("aria-expanded", String(open)); all.textContent = open ? "Show fewer" : "See all";
       // a grid is not a carousel: the roles follow the layout
       if (open) { list.removeAttribute("aria-roledescription"); list.removeAttribute("role"); list.removeAttribute("tabindex"); list.setAttribute("aria-label", "All kudos"); sec.querySelectorAll(".kd-card").forEach((c) => c.removeAttribute("aria-roledescription")); }
-      else { list.setAttribute("role", "region"); list.setAttribute("aria-roledescription", "carousel"); list.setAttribute("tabindex", "0"); list.setAttribute("aria-label", "Kudos from guests"); sec.querySelectorAll(".kd-card").forEach((c) => c.setAttribute("aria-roledescription", "slide")); list.scrollLeft = 0;
+      else { list.setAttribute("role", "region"); list.setAttribute("aria-roledescription", "carousel"); list.setAttribute("tabindex", "0"); list.setAttribute("aria-label", sec.querySelector(".rv-card") ? "Kudos and reviews from guests" : "Kudos from guests"); sec.querySelectorAll(".kd-card").forEach((c) => c.setAttribute("aria-roledescription", "slide")); list.scrollLeft = 0;
         const r = sec.getBoundingClientRect(); if (r.top < 0) sec.scrollIntoView({ block: "start" }); }
       clampCheck(); state(); });
     clampCheck(); state();

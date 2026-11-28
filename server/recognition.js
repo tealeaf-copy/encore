@@ -157,6 +157,8 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const SOCIAL = { instagram: "Instagram", tiktok: "TikTok", strava: "Strava", linkedin: "LinkedIn" };
 const fmtCount = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "")}M` : n >= 1e4 ? `${Math.round(n / 1e3)}k` : n >= 1e3 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}k` : String(n));
 
+/** "4.8 · 12 reviews" once there are 3 rated reviews, else "12 reviews" (server/reviews.js). */
+export const reviewLine = (n, rating) => (rating ? `${rating.avg.toFixed(1)} · ` : "") + `${n} ${n === 1 ? "review" : "reviews"}`;
 /** Everything a brand should see about a host, assembled from real activity. Pure: callers pass the data in. */
 export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proof = {}, scrapbook = [], badges = [], followers = 0, person = "", now = today() } = {}) {
   const tag = (real) => (example ? "Example" : real);
@@ -173,7 +175,9 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   for (const g of h.gigs || []) add(g.client, g.what, g.when, "host", "Added by the host");
   // testimonials: guests' own kudos (from the platform) and quotes the host typed in (labelled); no placeholder authors
   const testimonials = [];
-  for (const k of (S.kudos || []).filter((k) => k.love && k.love.length >= 12 && !isPlaceholderName(k.name)).slice(0, 6)) testimonials.push({ quote: k.love, name: k.name, event: k.event || "", source: "guest", label: tag("Kudos from a guest on Pottery Lab") });
+  // reviews hook (server/reviews.js): guests' written reviews come first, with their stars where the thing was paid for
+  for (const k of (S.reviews || []).filter((k) => k.love && k.love.length >= 12 && !isPlaceholderName(k.name)).slice(0, 6)) testimonials.push({ quote: k.love, name: k.name, event: k.event || "", source: "guest", ...(k.rating ? { rating: k.rating } : {}), review: true, label: tag("Review from a guest on Pottery Lab") });
+  for (const k of (S.kudos || []).filter((k) => k.love && k.love.length >= 12 && !isPlaceholderName(k.name)).slice(0, Math.max(0, 6 - testimonials.length))) testimonials.push({ quote: k.love, name: k.name, event: k.event || "", source: "guest", label: tag("Kudos from a guest on Pottery Lab") });
   for (const q of h.corpQuotes || []) if (q.quote && !isPlaceholderName(q.name) && !isPlaceholderBrand(q.company || "")) testimonials.push({ quote: q.quote, name: q.name, title: q.title || "", company: q.company || "", source: "host", label: tag("Added by the host") });
   const pastCorporate = (proof.pastEvents || []).map((x) => ({ ...x, label: tag("Added by the host") }));
   const socials = (proof.socials || []).filter((x) => SOCIAL[x.platform] && x.handle).map((x) => ({ ...x, name: SOCIAL[x.platform], followersText: x.followers ? `${fmtCount(x.followers)} followers` : "", label: x.verifiedAt && !example ? "Verified" : tag("Self-reported") }));
@@ -188,6 +192,8 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   // what IS real, short lines in order of weight; nothing invented
   // "1 guest hosted", "1 of 2 guests came back", "2 events hosted" read as weak to a brand: those wait for n >= WEAK_MIN
   const lines = [];
+  const reviews = example ? 0 : Math.max(+S.reviewCount || 0, S.rating?.n || 0), rating = example ? null : S.rating || null; // reviews hook: "4.8 · 12 reviews" from 3 rated reviews, else just the count, and only when real
+  if (reviews) lines.push({ k: "reviews", text: reviewLine(reviews, rating) });
   if (done.length) lines.push({ k: "bookings", text: plural(done.length, "brand booking", "brand bookings") });
   if (guests >= WEAK_MIN) lines.push({ k: "guests", text: `${plural(guests, "guest", "guests")} hosted` });
   if (returned && guests >= WEAK_MIN) lines.push({ k: "returned", text: returned.text });
@@ -196,7 +202,7 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   if (pastSb.length) lines.push({ k: "scrapbook", text: `${plural(pastSb.length, "past event", "past events")} in their scrapbook` });
   if (kudos) lines.push({ k: "kudos", text: `${kudos} kudos from guests` });
   const isNewHere = !example && !guests && !done.length && !events;
-  return { example, guests, returning, kudos, events, followers, bookings: done.length, scrapbook: pastSb.length, returned, again, lines: lines.map((l) => ({ ...l, label: "" })), badges: example ? [] : badges,
+  return { example, guests, returning, kudos, reviews, rating, events, followers, bookings: done.length, scrapbook: pastSb.length, returned, again, lines: lines.map((l) => ({ ...l, label: "" })), badges: example ? [] : badges,
     workedWith: W, testimonials, pastCorporate, socials, insurance, isNewHere,
     newLine: isNewHere ? "Sending a request is free." : "",
     rules: { minN: MIN_N } };

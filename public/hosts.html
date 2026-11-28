@@ -98,7 +98,7 @@ html body .ex-chips button{border-style:solid;border-width:1.5px}
     const k = EA ? EA.kindsOf({ title: o.name }).filter(skip)[0] || byCat[o.category] || "" : ""; return k ? `<span class="xp-art">${EA.drawing(k, h.accent || "#29489A")}</span>` : esc(o.emoji || "✨"); }
   // the proof on a card: Example, or the real numbers with their n; one line each, nothing invented
   function proofChips(h, max = 2) { const T = h.trust || {}; if (h.example) return "";
-    const L = (T.lines || []).filter((l) => ["bookings", "returned", "again", "guests"].includes(l.k)); const out = L.slice(0, max).map((l) => `<span>${esc(l.text)}</span>`);
+    const L = (T.lines || []).filter((l) => ["reviews", "bookings", "returned", "again", "guests"].includes(l.k)).sort((a, b) => (b.k === "reviews") - (a.k === "reviews")) /* reviews hook: "4.8 · 12 reviews" first, only when real */; const out = L.slice(0, max).map((l) => `<span>${esc(l.text)}</span>`);
     if (!out.length) out.push(`<span class="new">New on Pottery Lab</span>`); if (T.insurance?.onFile) out.push(`<span>Insurance certificate on file</span>`); return out.join(""); }
   // review round 8: a description that only repeats the option's name isn't shown under it (speaker cards)
   const subOf = (o) => { const d = String(o?.desc || "").trim(), k = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); return d && k(d) !== k(o?.name) ? d : ""; };

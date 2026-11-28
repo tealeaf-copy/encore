@@ -102,7 +102,7 @@ export function makeFeedVisual(store, { C, X }) {
   // writes that change what the feed shows: a host page (system/ws-), an event, reply, photo, kudos, badge or reaction
   let wsGen = 0, feedGen = 0;
   store.events?.on?.("change", (e) => { const p = String(e?.path || ""); if (p.startsWith("system/ws-")) wsGen++;
-    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide|prefs)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes)\/[^/]+$/.test(p)) feedGen++; });
+    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide|prefs)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes|reviews)\/[^/]+$/.test(p)) feedGen++; });
   function G(I) { let g = groups.get(I); if (g && g.gen !== wsGen) { g.gen = wsGen; g.host = new Map(); g.sample = new Map(); } if (g) return g;
     g = { gen: wsGen, mom: new Map(), momWs: new Map(), kud: new Map(), came: new Map(), host: new Map(), sample: new Map(), when: new Map() };
     const push = (M, k, v) => { let L = M.get(k); if (!L) M.set(k, (L = [])); L.push(v); };
@@ -144,13 +144,13 @@ export function makeFeedVisual(store, { C, X }) {
   function card(I, x, { email = "", device = "" } = {}) {
     const e = x.e, past = !!e.date && e.date < today(), h = hostOf(x.ws, I), going = past ? 0 : (C.goingOf(x.ws, x.id, e).going || 0);
     const photos = momentsOf(I, x.id).filter((m) => momentSeen(I, m, email)).sort((a, b) => (a.at || 0) - (b.at || 0)).slice(0, 12).map(momentOut);
-    const K = kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length), q = K.filter((k) => k.love && k.verified).sort((a, b) => (b.verified === "guest_list") - (a.verified === "guest_list") || b.love.length - a.love.length)[0];
+    const K = kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length), rq = past ? X.reviewQuote?.(x, email) : null /* reviews hook: a written review is the quote when there is one (server/reviews.js) */, q = K.filter((k) => k.love && k.verified).sort((a, b) => (b.verified === "guest_list") - (a.verified === "guest_list") || b.love.length - a.love.length)[0];
     const came = G(I).came.get(x.id) || 0;
     const cap = +e.headcount || 0;
     return { id: x.id, etype: typeOf(e), title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
       ...(e.drop ? { drop: true, pickup: globalThis.PLPickup.line(e), free: false } : {}), // a drop reads Pickup, never an event date
       approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : e.drop ? (e.orderItems || []).map((it) => (it.photos || [])[0] || it.photo || "").find(MEDIA_OK) || "" : "", coverArt: artOf(e), coverSpec: coverOf(e, x.id), look: lookOf(e), host: h, url: e.drop ? `/e/${encodeURIComponent(x.id)}` : `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
-      ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
+      ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(rq ? { quote: rq } : q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
       ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
         const T = togetherOf(scopeStore(store, x.ws).listShared("rsvps"), e, x.id); /* read only: parsed once per change (server/db.js) */ return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),
       fresh: (Date.now() - (e.createdAt || e.updatedAt || 0)) < 4 * DAY, cta: email && lc(x.owner || "") === email ? { label: "Manage", url: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, own: true } /* the host's own event: not I'm in */ : past ? afterCta(I, x) : eventCta(e, x.id) };

@@ -69,7 +69,15 @@
     for (const [re, k] of WORDS) if (re.test(rest)) add(k);
     const where = `${e.meetPoint || ""} ${e.venueName || ""} ${e.hood || ""}`.toLowerCase(); for (const [re, k] of WORDS) if (re.test(where)) add(k);
     if (act === "class") add("workshop");
+    // a drop (order ahead) is things to pick up, most often food: its items name the picture, and with no word we know
+    // it still draws something baked or a market stall, never the party scene (a cake called "Pandan" drew a party hat)
+    if (e.drop || e.preorder || (Array.isArray(e.orderItems) && e.orderItems.length)) { const names = (Array.isArray(e.orderItems) ? e.orderItems : Array.isArray(e.items) ? e.items : []).map((x) => (x && x.name) || "").join(" ").toLowerCase(), txt = `${title} ${names}`;
+      for (const [re, k] of WORDS) if (re.test(names)) add(k);
+      if (!out.some((k) => FOOD_KINDS.includes(k))) { const k = SAVORY.test(txt) ? "cook" : SWEET.test(txt) ? "bake" : out.length && out[0] !== "party" ? "" : names ? "bake" : "market"; if (k) out.unshift(k); } }
     return out; }
+  const FOOD_KINDS = ["bake", "cook", "dumpling", "taco", "coffee", "tea", "wine", "dinner", "brunch", "potluck"];
+  const SWEET = /pandan|honeycomb|chiffon|kaya|\bjam\b|brownie|\btart|flan|pudding|custard|granola|dessert|sweet|treat|\bbun|loaf|bagel|focaccia|toast|banh|bánh|chocolate|caramel|macaron|scone|muffin|tiramisu|cheesecake|ube\b|matcha|snack/;
+  const SAVORY = /kimchi|chil[li]|crisp\b|sauce|noodle|pickle|ferment|tofu|\brice\b|curry|sando|sandwich|\bpho\b|broth|dumpling|empanada|tamale|lasagn|meal ?prep|bento|jerky|sausage|cheese\b/;
   function kindOf(e = {}) { return kindsOf(e)[0] || "party"; }
   const RELATED = { run: ["walk", "hike", "bike", "yoga"], walk: ["hike", "picnic", "run"], hike: ["walk", "picnic", "run"], bike: ["run", "picnic"], yoga: ["tea", "garden", "walk"], swim: ["picnic", "yoga"],
     bake: ["coffee", "tea", "brunch"], coffee: ["bake", "tea", "brunch"], tea: ["bake", "coffee", "book"], dinner: ["wine", "cook", "potluck"], cook: ["dinner", "potluck", "bake"], taco: ["wine", "party", "potluck"], dumpling: ["cook", "tea", "potluck"], potluck: ["dinner", "cook", "picnic"], brunch: ["coffee", "bake"], wine: ["dinner", "music"], picnic: ["wine", "games", "walk"],

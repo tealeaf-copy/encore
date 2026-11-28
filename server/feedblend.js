@@ -201,7 +201,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       .map((x) => eventItem(v, x, M)); }
   /** One upcoming event as a feed card (the stream and the post page draw the same thing). */
   function eventItem(v, x, M = memberEvents(v)) { const I = v.I, c = V.card(I, x, { email: v.email }), h = hostLead(v, x.ws, c.host), ctx = { owner: x.owner, ws: x.ws };
-    return { kind: "event", key: "e:" + x.id, id: x.id, host: h, title: c.title, line: descOf(x.e, x.ws), date: c.date, startTime: c.startTime, where: placeOf(x.e), city: c.city, cover: c.cover, coverArt: c.coverArt, look: { palette: c.look?.palette || [] },
+    return { kind: "event", key: "e:" + x.id, id: x.id, host: h, title: c.title, line: descOf(x.e, x.ws), date: c.date, startTime: c.startTime, where: placeOf(x.e), city: c.city, cover: c.cover, coverArt: c.coverArt, ...(c.coverSpec ? { coverSpec: c.coverSpec } : {}), look: { palette: c.look?.palette || [] },
       members: M.has(x.id), free: c.free, price: c.price, drop: !!(x.e.preorder || x.e.drop), ...(x.e.drop ? dropBits(x) : {}), etype: c.etype, going: c.going || 0, ...(c.spotsLeft != null ? { spotsLeft: c.spotsLeft } : {}), proof: proofOf(v, x, c.going), approvalRequired: c.approvalRequired,
       cta: c.cta?.own ? c.cta : V.eventCta(x.e, x.id) /* the event's own page; the host's own card says Manage */, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), chat: chatOf(v, x), kudos: kudosOf(v, "e:" + x.id, [], ctx), comments: commentsOf(v, "e:" + x.id, ctx), followed: v.followed.has(x.ws) }; }
 
